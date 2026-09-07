@@ -26,11 +26,27 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee gradle_output.txt
+
+      - name: Print Gradle Errors
+        if: failure()
+        run: |
+          echo "=== GRADLE FAILURE LOG SUMMARY ==="
+          grep -i -C 3 -E "e: |error:|exception:|failed" gradle_output.txt || tail -n 100 gradle_output.txt
 
       - name: Upload Debug APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: AuraReader-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Upload Build Log on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: gradle_output.txt
