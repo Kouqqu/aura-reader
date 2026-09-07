@@ -874,64 +874,60 @@ fun ChapterPagingView(
     onPageChange: (Int, Int) -> Unit,
     onUpdateProgress: (Int, Int) -> Unit
 ) {
-    val blocks = remember(chapter) {
-        if (chapter.blocks.isNotEmpty()) {
-            chapter.blocks
-        } else {
-            chapter.content.split("\n\n")
-                .filter { it.isNotBlank() }
-                .map { FormattedBlock(BlockType.PARAGRAPH, it.trim()) }
-        }
-    }
-
-    var pagesCount by remember { mutableIntStateOf(1) }
-    val pagerState = rememberPagerState(
-        initialPage = 0,
-        pageCount = { pagesCount.coerceAtLeast(1) }
-    )
-    val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(chapterIndex) {
-        pagerState.scrollToPage(0)
-    }
-
-    LaunchedEffect(pagerState.currentPage, pages.size) {
-        onPageChange(pagerState.currentPage, pages.size)
-        onUpdateProgress(pagerState.currentPage, pages.size.coerceAtLeast(1))
-    }
-
-    // React to requested page from page slider
-    LaunchedEffect(targetPage) {
-        if (targetPage != null) {
-            if (targetPage in pages.indices && targetPage != pagerState.currentPage) {
-                pagerState.scrollToPage(targetPage)
-            }
-            onConsumeTargetPage()
-        }
-    }
-
-    // Jump to search match page if target is given
-    LaunchedEffect(targetBlockIndex) {
-        if (targetBlockIndex != null) {
-            val foundPage = pages.indexOfFirst { page ->
-                page.any { it.first == targetBlockIndex }
-            }
-            if (foundPage >= 0) {
-                pagerState.animateScrollToPage(foundPage)
-            }
-            onConsumeTargetBlock()
-        }
-    }
-
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenHeightDp = maxHeight.value
         val screenWidthDp = maxWidth.value
 
+        val blocks = remember(chapter) {
+            if (chapter.blocks.isNotEmpty()) {
+                chapter.blocks
+            } else {
+                chapter.content.split("\n\n")
+                    .filter { it.isNotBlank() }
+                    .map { FormattedBlock(BlockType.PARAGRAPH, it.trim()) }
+            }
+        }
+
         val pages = remember(blocks, settings.fontSizeSp, settings.lineHeightMultiplier, screenHeightDp, screenWidthDp) {
             paginateBlocks(blocks, settings.fontSizeSp, settings.lineHeightMultiplier, screenHeightDp, screenWidthDp)
         }
-        LaunchedEffect(pages.size) {
-            pagesCount = pages.size
+
+        val pagerState = rememberPagerState(
+            initialPage = 0,
+            pageCount = { pages.size.coerceAtLeast(1) }
+        )
+        val coroutineScope = rememberCoroutineScope()
+
+        LaunchedEffect(chapterIndex) {
+            pagerState.scrollToPage(0)
+        }
+
+        LaunchedEffect(pagerState.currentPage, pages.size) {
+            onPageChange(pagerState.currentPage, pages.size)
+            onUpdateProgress(pagerState.currentPage, pages.size.coerceAtLeast(1))
+        }
+
+        // React to requested page from page slider
+        LaunchedEffect(targetPage) {
+            if (targetPage != null) {
+                if (targetPage in pages.indices && targetPage != pagerState.currentPage) {
+                    pagerState.scrollToPage(targetPage)
+                }
+                onConsumeTargetPage()
+            }
+        }
+
+        // Jump to search match page if target is given
+        LaunchedEffect(targetBlockIndex) {
+            if (targetBlockIndex != null) {
+                val foundPage = pages.indexOfFirst { page ->
+                    page.any { it.first == targetBlockIndex }
+                }
+                if (foundPage >= 0) {
+                    pagerState.animateScrollToPage(foundPage)
+                }
+                onConsumeTargetBlock()
+            }
         }
 
         HorizontalPager(
@@ -1364,6 +1360,7 @@ fun InteractiveText(
     footnotes: Map<String, String>,
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onToggleControls: () -> Unit,
+    onSaveQuote: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val annotated = remember(rawText, searchQuery, footnotes) {
@@ -1415,20 +1412,33 @@ fun InteractiveText(
         }
     }
 
-    ClickableText(
+    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+    Text(
         text = annotated,
         style = style,
-        onClick = { offset ->
-            val annotations = annotated.getStringAnnotations(tag = "FOOTNOTE", start = offset, end = offset)
-            if (annotations.isNotEmpty()) {
-                val ref = annotations.first().item
-                val content = resolveFootnoteText(ref, footnotes) ?: footnotes[ref] ?: "Примечание: $ref"
-                onFootnoteClick(ref, content)
-            } else {
-                onToggleControls()
-            }
-        },
-        modifier = modifier
+        onTextLayout = { textLayoutResult = it },
+        modifier = modifier.pointerInput(annotated) {
+            detectTapGestures(
+                onLongPress = {
+                    onSaveQuote(rawText)
+                },
+                onTap = { pos ->
+                    val layout = textLayoutResult
+                    if (layout != null) {
+                        val offset = layout.getOffsetForPosition(pos)
+                        val annotations = annotated.getStringAnnotations(tag = "FOOTNOTE", start = offset, end = offset)
+                        if (annotations.isNotEmpty()) {
+                            val ref = annotations.first().item
+                            val content = resolveFootnoteText(ref, footnotes) ?: footnotes[ref] ?: "Примечание: $ref"
+                            onFootnoteClick(ref, content)
+                            return@detectTapGestures
+                        }
+                    }
+                    onToggleControls()
+                }
+            )
+        }
     )
 }
 

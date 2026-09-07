@@ -13,6 +13,14 @@ import com.aura.reader.ui.screens.library.LibraryViewModel
 import com.aura.reader.ui.screens.reader.ReaderViewModel
 import com.aura.reader.ui.theme.AuraReaderTheme
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.aura.reader.data.model.ReaderSettings
+import com.aura.reader.ui.theme.AppLanguage
+import com.aura.reader.ui.theme.LocalAppStrings
+import com.aura.reader.ui.theme.getStrings
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var preferencesManager: PreferencesManager
@@ -33,15 +41,15 @@ class MainActivity : ComponentActivity() {
         handleIncomingIntent(intent)
 
         setContent {
-            val settings by preferencesManager.readerSettings.androidx.compose.runtime.collectAsState(
-                initial = com.aura.reader.data.model.ReaderSettings()
+            val settings by preferencesManager.readerSettings.collectAsState(
+                initial = ReaderSettings()
             )
-            val appLanguage by preferencesManager.appLanguage.androidx.compose.runtime.collectAsState(
-                initial = com.aura.reader.ui.theme.AppLanguage.RU
+            val appLanguage by preferencesManager.appLanguage.collectAsState(
+                initial = AppLanguage.RU
             )
 
-            androidx.compose.runtime.CompositionLocalProvider(
-                com.aura.reader.ui.theme.LocalAppStrings provides com.aura.reader.ui.theme.getStrings(appLanguage)
+            CompositionLocalProvider(
+                LocalAppStrings provides getStrings(appLanguage)
             ) {
                 AuraReaderTheme(themeMode = settings.themeMode) {
                     val navController = rememberNavController()

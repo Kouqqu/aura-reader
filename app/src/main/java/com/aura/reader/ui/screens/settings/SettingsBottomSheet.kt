@@ -119,10 +119,9 @@ fun SettingsBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val themes = listOf(
+                val themes: List<Pair<ReaderThemeMode, String>> = listOf(
                     ReaderThemeMode.SYSTEM_DYNAMIC to strings.themeSystem,
                     ReaderThemeMode.LIGHT to strings.themeLight,
-                    ReaderThemeMode.DARK to strings.themeDark,
                     ReaderThemeMode.AMOLED to strings.themeAmoled,
                     ReaderThemeMode.SEPIA to strings.themeSepia
                 )
