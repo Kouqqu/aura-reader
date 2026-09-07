@@ -406,4 +406,4 @@ fun SettingsBottomSheet(
             }
         }
     }
-}\n
+}

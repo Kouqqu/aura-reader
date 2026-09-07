@@ -882,6 +882,7 @@ fun EmptyLibraryView(
     onOpenFile: () -> Unit,
     onOpenSample: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     Column(
         modifier = Modifier
             .fillMaxSize()

@@ -220,7 +220,7 @@ class EnStrings : Strings {
     override val searchHint = "Search books and authors..."
     override val noBooksFound = "No books found"
     override val deleteBookTitle = "Delete book?"
-    override fun deleteBookMessage(title: String) = "Book "$title" will be removed from library."
+    override fun deleteBookMessage(title: String) = "Book \"$title\" will be removed from library."
     override val todayReadingTime = "Read today"
     override fun minutesRead(minutes: Int) = "$minutes min"
     override val readingStatsToggle = "Track reading time"

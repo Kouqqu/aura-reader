@@ -1509,7 +1509,7 @@ fun InteractiveText(
             }
 
             // Highlight footnote links e.g. [1], [note], {1}
-            val footnoteRegex = Regex("\[([a-zA-Z0-9а-яА-ЯёЁ_\\s-]{1,20})\]|\{([0-9]+)\}")
+            val footnoteRegex = Regex("""\[([a-zA-Z0-9а-яА-ЯёЁ_\s-]{1,20})\]|\{([0-9]+)\}""")
             for (match in footnoteRegex.findAll(rawText)) {
                 val ref = match.value
                 val resolved = resolveFootnoteText(ref, footnotes)
