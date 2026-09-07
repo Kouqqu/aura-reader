@@ -114,8 +114,10 @@ class BookRepository(
             val cleanTitle = book.title.trim()
             val existing = _recentBooks.value.find {
                 it.id == book.id || it.uriString == book.uriString || it.uriString == uri.toString() ||
-                (cleanTitle.isNotBlank() && it.title.trim().equals(cleanTitle, ignoreCase = true)) ||
-                (fileName.isNotBlank() && it.title.trim().equals(fileName.substringBeforeLast(".").trim(), ignoreCase = true))
+                (it.format == book.format && (
+                    (cleanTitle.isNotBlank() && it.title.trim().equals(cleanTitle, ignoreCase = true) && fileName.isNotBlank() && it.uriString.contains(fileName)) ||
+                    (fileName.isNotBlank() && it.uriString.endsWith(fileName, ignoreCase = true))
+                ))
             }
             val resolvedBook = if (existing != null) {
                 book.copy(
@@ -378,7 +380,9 @@ class BookRepository(
 
     private suspend fun addOrUpdateRecentBook(book: Book) {
         val currentList = _recentBooks.value.toMutableList()
-        val index = currentList.indexOfFirst { it.id == book.id || it.uriString == book.uriString }
+        val index = currentList.indexOfFirst {
+            it.id == book.id || (it.format == book.format && it.uriString == book.uriString)
+        }
         if (index >= 0) {
             currentList.removeAt(index)
         }

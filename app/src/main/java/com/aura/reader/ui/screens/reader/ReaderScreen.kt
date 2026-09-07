@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -46,6 +47,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,6 +69,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -142,6 +146,9 @@ fun ReaderScreen(
     var showChaptersSheet by remember { mutableStateOf(false) }
     var showBookmarksQuotesSheet by remember { mutableStateOf(false) }
     var selectedFootnote by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var currentPagingPage by remember { mutableIntStateOf(0) }
+    var totalPagingPages by remember { mutableIntStateOf(1) }
+    var requestPagingPage by remember { mutableStateOf<Int?>(null) }
     val coroutineScope = rememberCoroutineScope()
 
     AuraReaderTheme(themeMode = settings.themeMode) {
@@ -321,6 +328,8 @@ fun ReaderScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
+                    .then(if (!showControls) Modifier.statusBarsPadding().padding(top = 10.dp) else Modifier)
+                    .navigationBarsPadding()
             ) {
                 if (chapters.isNotEmpty()) {
                     if (settings.pagingMode && currentChapter != null) {
@@ -334,11 +343,17 @@ fun ReaderScreen(
                             searchQuery = searchQuery,
                             footnotes = footnotes,
                             targetBlockIndex = targetScrollOffset,
+                            targetPage = requestPagingPage,
                             onConsumeTargetBlock = { viewModel.consumeTargetScrollOffset() },
+                            onConsumeTargetPage = { requestPagingPage = null },
                             onToggleControls = { showControls = !showControls },
                             onPrevChapter = { viewModel.prevChapter() },
                             onNextChapter = { viewModel.nextChapter() },
                             onFootnoteClick = { ref, content -> selectedFootnote = ref to content },
+                            onPageChange = { page, total ->
+                                currentPagingPage = page
+                                totalPagingPages = total
+                            },
                             onUpdateProgress = { pageIdx, totalPages ->
                                 viewModel.updateScrollProgress(pageIdx, totalPages)
                             }
@@ -437,82 +452,178 @@ fun ReaderScreen(
                                 .padding(horizontal = 16.dp, vertical = 14.dp)
                         ) {
                             if (chapters.isNotEmpty()) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
+                                if (settings.pagingMode) {
+                                    // --- Paging Mode: Chapter Switcher Header + Page Slider ---
                                     Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.AutoStories,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = "Глава ${currentChapterIndex + 1} из ${chapters.size}: ${currentChapter?.title ?: ""}",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.SemiBold,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
+                                        IconButton(
+                                            onClick = { viewModel.prevChapter() },
+                                            enabled = currentChapterIndex > 0,
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(Icons.Default.SkipPrevious, contentDescription = "Предыдущая глава")
+                                        }
+
+                                        Column(
+                                            modifier = Modifier.weight(1f),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "Глава ${currentChapterIndex + 1} из ${chapters.size}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Text(
+                                                text = currentChapter?.title ?: "",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontWeight = FontWeight.SemiBold,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+
+                                        IconButton(
+                                            onClick = { viewModel.nextChapter() },
+                                            enabled = currentChapterIndex < chapters.size - 1,
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(Icons.Default.SkipNext, contentDescription = "Следующая глава")
+                                        }
                                     }
 
-                                    val progress = (((currentChapterIndex + 1).toFloat() / chapters.size) * 100).toInt()
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    // Page Slider
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        IconButton(
+                                            onClick = {
+                                                if (currentPagingPage > 0) {
+                                                    requestPagingPage = currentPagingPage - 1
+                                                }
+                                            },
+                                            enabled = currentPagingPage > 0,
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(Icons.Default.ChevronLeft, contentDescription = "Предыдущая страница")
+                                        }
+
+                                        Slider(
+                                            value = currentPagingPage.toFloat().coerceIn(0f, (totalPagingPages - 1).coerceAtLeast(0).toFloat()),
+                                            onValueChange = { requestPagingPage = it.toInt() },
+                                            valueRange = 0f..(totalPagingPages - 1).coerceAtLeast(1).toFloat(),
+                                            steps = (totalPagingPages - 2).coerceAtLeast(0),
+                                            modifier = Modifier.weight(1f),
+                                            colors = SliderDefaults.colors(
+                                                thumbColor = MaterialTheme.colorScheme.primary,
+                                                activeTrackColor = MaterialTheme.colorScheme.primary
+                                            )
+                                        )
+
+                                        IconButton(
+                                            onClick = {
+                                                if (currentPagingPage < totalPagingPages - 1) {
+                                                    requestPagingPage = currentPagingPage + 1
+                                                }
+                                            },
+                                            enabled = currentPagingPage < totalPagingPages - 1,
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(Icons.Default.ChevronRight, contentDescription = "Следующая страница")
+                                        }
+                                    }
+
                                     Text(
-                                        text = "$progress%",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.padding(start = 8.dp)
+                                        text = "Страница ${currentPagingPage + 1} из $totalPagingPages  •  Листание тапом по краям",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
                                     )
-                                }
-
-                                Spacer(modifier = Modifier.height(6.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    IconButton(
-                                        onClick = { viewModel.prevChapter() },
-                                        enabled = currentChapterIndex > 0,
-                                        modifier = Modifier.size(36.dp)
+                                } else {
+                                    // --- Continuous Mode: Chapter Slider ---
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(Icons.Default.ChevronLeft, contentDescription = "Предыдущая глава")
-                                    }
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.AutoStories,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Глава ${currentChapterIndex + 1} из ${chapters.size}: ${currentChapter?.title ?: ""}",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
 
-                                    Slider(
-                                        value = currentChapterIndex.toFloat(),
-                                        onValueChange = { viewModel.setChapter(it.toInt()) },
-                                        valueRange = 0f..(chapters.size - 1).coerceAtLeast(1).toFloat(),
-                                        steps = (chapters.size - 2).coerceAtLeast(0),
-                                        modifier = Modifier.weight(1f),
-                                        colors = SliderDefaults.colors(
-                                            thumbColor = MaterialTheme.colorScheme.primary,
-                                            activeTrackColor = MaterialTheme.colorScheme.primary
+                                        val progress = (((currentChapterIndex + 1).toFloat() / chapters.size) * 100).toInt()
+                                        Text(
+                                            text = "$progress%",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.padding(start = 8.dp)
                                         )
-                                    )
-
-                                    IconButton(
-                                        onClick = { viewModel.nextChapter() },
-                                        enabled = currentChapterIndex < chapters.size - 1,
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Icon(Icons.Default.ChevronRight, contentDescription = "Следующая глава")
                                     }
-                                }
 
-                                Text(
-                                    text = if (settings.pagingMode) "Листание по страницам тапом по краям экрана" else "Перемещение по главам (или свайп влево/вправо)",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.outline,
-                                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                                )
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        IconButton(
+                                            onClick = { viewModel.prevChapter() },
+                                            enabled = currentChapterIndex > 0,
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(Icons.Default.ChevronLeft, contentDescription = "Предыдущая глава")
+                                        }
+
+                                        Slider(
+                                            value = currentChapterIndex.toFloat(),
+                                            onValueChange = { viewModel.setChapter(it.toInt()) },
+                                            valueRange = 0f..(chapters.size - 1).coerceAtLeast(1).toFloat(),
+                                            steps = (chapters.size - 2).coerceAtLeast(0),
+                                            modifier = Modifier.weight(1f),
+                                            colors = SliderDefaults.colors(
+                                                thumbColor = MaterialTheme.colorScheme.primary,
+                                                activeTrackColor = MaterialTheme.colorScheme.primary
+                                            )
+                                        )
+
+                                        IconButton(
+                                            onClick = { viewModel.nextChapter() },
+                                            enabled = currentChapterIndex < chapters.size - 1,
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(Icons.Default.ChevronRight, contentDescription = "Следующая глава")
+                                        }
+                                    }
+
+                                    Text(
+                                        text = "Перемещение по главам (или свайп влево/вправо)",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    )
+                                }
                             }
                         }
                     }
@@ -714,11 +825,14 @@ fun ChapterPagingView(
     searchQuery: String,
     footnotes: Map<String, String>,
     targetBlockIndex: Int?,
+    targetPage: Int?,
     onConsumeTargetBlock: () -> Unit,
+    onConsumeTargetPage: () -> Unit,
     onToggleControls: () -> Unit,
     onPrevChapter: () -> Unit,
     onNextChapter: () -> Unit,
     onFootnoteClick: (ref: String, content: String) -> Unit,
+    onPageChange: (Int, Int) -> Unit,
     onUpdateProgress: (Int, Int) -> Unit
 ) {
     val blocks = remember(chapter) {
@@ -731,9 +845,9 @@ fun ChapterPagingView(
         }
     }
 
-    // Paginate blocks based on font size
-    val pages = remember(blocks, settings.fontSizeSp) {
-        paginateBlocks(blocks, settings.fontSizeSp)
+    // Paginate blocks based on font size and line height multiplier
+    val pages = remember(blocks, settings.fontSizeSp, settings.lineHeightMultiplier) {
+        paginateBlocks(blocks, settings.fontSizeSp, settings.lineHeightMultiplier)
     }
 
     val pagerState = rememberPagerState(
@@ -746,18 +860,27 @@ fun ChapterPagingView(
         pagerState.scrollToPage(0)
     }
 
-    LaunchedEffect(pagerState.currentPage) {
+    LaunchedEffect(pagerState.currentPage, pages.size) {
+        onPageChange(pagerState.currentPage, pages.size)
         onUpdateProgress(pagerState.currentPage, pages.size.coerceAtLeast(1))
+    }
+
+    // React to requested page from page slider
+    LaunchedEffect(targetPage) {
+        if (targetPage != null && targetPage in pages.indices && targetPage != pagerState.currentPage) {
+            pagerState.scrollToPage(targetPage)
+            onConsumeTargetPage()
+        }
     }
 
     // Jump to search match page if target is given
     LaunchedEffect(targetBlockIndex) {
         if (targetBlockIndex != null) {
-            val targetPage = pages.indexOfFirst { page ->
+            val foundPage = pages.indexOfFirst { page ->
                 page.any { it.first == targetBlockIndex }
             }
-            if (targetPage >= 0) {
-                pagerState.animateScrollToPage(targetPage)
+            if (foundPage >= 0) {
+                pagerState.animateScrollToPage(foundPage)
             }
             onConsumeTargetBlock()
         }
@@ -773,8 +896,8 @@ fun ChapterPagingView(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 22.dp, vertical = 20.dp)
-                    .padding(bottom = 40.dp),
+                    .padding(horizontal = 22.dp, vertical = 8.dp)
+                    .padding(bottom = 32.dp),
                 verticalArrangement = Arrangement.Top
             ) {
                 for ((_, block) in pageBlocks) {
@@ -854,92 +977,120 @@ fun ChapterPagingView(
 // PAGINATION HELPER
 // ------------------------------------------------------------------------------------------------
 
+private fun calculatePageCapacity(fontSizeSp: Float, lineHeightMultiplier: Float): Int {
+    val fs = fontSizeSp.coerceIn(12f, 36f)
+    val lh = lineHeightMultiplier.coerceIn(1.0f, 2.2f)
+    val effectiveLineHeight = fs * lh
+    // Average lines per page based on ~660dp usable text height
+    val linesPerPage = (660f / effectiveLineHeight).coerceIn(10f, 40f)
+    // Average characters per line based on ~330dp usable text width
+    val charsPerLine = (330f / (fs * 0.53f)).coerceIn(18f, 55f)
+    return (linesPerPage * charsPerLine).toInt().coerceIn(400, 1800)
+}
+
+private fun findBestBreak(text: String, targetLen: Int): Int {
+    if (text.length <= targetLen) return text.length
+    // Look for sentence endings (., !, ?) within [targetLen * 0.65 .. targetLen]
+    val minSearch = (targetLen * 0.65f).toInt().coerceAtLeast(0)
+    val window = text.substring(0, targetLen.coerceAtMost(text.length))
+
+    for (del in listOf(". ", "! ", "? ", ".\n", "!\n", "?\n")) {
+        val idx = window.lastIndexOf(del)
+        if (idx >= minSearch) {
+            return idx + del.length
+        }
+    }
+    for (del in listOf("; ", ": ", ", ")) {
+        val idx = window.lastIndexOf(del)
+        if (idx >= minSearch) {
+            return idx + del.length
+        }
+    }
+    val spaceIdx = window.lastIndexOf(' ')
+    if (spaceIdx >= minSearch) {
+        return spaceIdx + 1
+    }
+    return targetLen
+}
+
 private fun paginateBlocks(
     blocks: List<FormattedBlock>,
-    fontSizeSp: Float
+    fontSizeSp: Float,
+    lineHeightMultiplier: Float
 ): List<List<Pair<Int, FormattedBlock>>> {
     if (blocks.isEmpty()) return listOf(emptyList())
 
-    // Target characters per page (scaled with font size)
-    val targetChars = (14000 / fontSizeSp.coerceIn(12f, 32f)).toInt().coerceIn(400, 1200)
+    val targetChars = calculatePageCapacity(fontSizeSp, lineHeightMultiplier)
     val pages = mutableListOf<List<Pair<Int, FormattedBlock>>>()
     var currentPage = mutableListOf<Pair<Int, FormattedBlock>>()
     var currentChars = 0
 
-    for ((index, block) in blocks.withIndex()) {
-        if (block.type == BlockType.IMAGE) {
-            if (currentPage.isNotEmpty()) {
-                pages.add(ArrayList(currentPage))
-                currentPage.clear()
-                currentChars = 0
-            }
-            pages.add(listOf(index to block))
-            continue
-        }
-
-        if (block.type == BlockType.TITLE) {
-            if (currentPage.isNotEmpty()) {
-                pages.add(ArrayList(currentPage))
-                currentPage.clear()
-                currentChars = 0
-            }
-            currentPage.add(index to block)
-            currentChars += block.text.length
-            continue
-        }
-
-        // Long paragraphs split cleanly into sentence chunks
-        if (block.text.length > targetChars) {
-            if (currentPage.isNotEmpty()) {
-                pages.add(ArrayList(currentPage))
-                currentPage.clear()
-                currentChars = 0
-            }
-            val chunks = splitParagraph(block.text, targetChars)
-            for (chunk in chunks) {
-                pages.add(listOf(index to block.copy(text = chunk)))
-            }
-            continue
-        }
-
-        if (currentChars + block.text.length > targetChars && currentPage.isNotEmpty()) {
+    fun flushPage() {
+        if (currentPage.isNotEmpty()) {
             pages.add(ArrayList(currentPage))
             currentPage.clear()
             currentChars = 0
         }
-
-        currentPage.add(index to block)
-        currentChars += block.text.length
     }
 
-    if (currentPage.isNotEmpty()) {
-        pages.add(currentPage)
-    }
+    for ((originalIndex, block) in blocks.withIndex()) {
+        when (block.type) {
+            BlockType.IMAGE -> {
+                flushPage()
+                pages.add(listOf(originalIndex to block))
+            }
+            BlockType.TITLE, BlockType.SUBTITLE -> {
+                if (currentChars > targetChars * 0.3f) {
+                    flushPage()
+                }
+                currentPage.add(originalIndex to block)
+                currentChars += (block.text.length + 120)
+            }
+            BlockType.DIVIDER -> {
+                if (currentChars + 50 > targetChars) {
+                    flushPage()
+                } else {
+                    currentPage.add(originalIndex to block)
+                    currentChars += 50
+                }
+            }
+            BlockType.EPIGRAPH, BlockType.VERSE -> {
+                val weight = block.text.length + (if (block.type == BlockType.EPIGRAPH) 100 else 50)
+                if (currentChars + weight > targetChars && currentPage.isNotEmpty()) {
+                    flushPage()
+                }
+                currentPage.add(originalIndex to block)
+                currentChars += weight
+            }
+            BlockType.PARAGRAPH -> {
+                var remainingText = block.text.trim()
+                while (remainingText.isNotEmpty()) {
+                    val availableChars = targetChars - currentChars
+                    if (availableChars < 160 && currentPage.isNotEmpty()) {
+                        flushPage()
+                        continue
+                    }
 
-    return if (pages.isEmpty()) listOf(emptyList()) else pages
-}
-
-private fun splitParagraph(text: String, maxChars: Int): List<String> {
-    if (text.length <= maxChars) return listOf(text)
-    val result = mutableListOf<String>()
-    var remaining = text
-    while (remaining.length > maxChars) {
-        var splitPoint = -1
-        for (delimiter in listOf(". ", "! ", "? ", "\n", "; ", ", ", " ")) {
-            val idx = remaining.lastIndexOf(delimiter, maxChars)
-            if (idx > maxChars / 2) {
-                splitPoint = idx + delimiter.length
-                break
+                    if (remainingText.length <= availableChars) {
+                        currentPage.add(originalIndex to block.copy(text = remainingText))
+                        currentChars += remainingText.length + 40
+                        remainingText = ""
+                    } else {
+                        val splitIndex = findBestBreak(remainingText, availableChars)
+                        val chunk = remainingText.substring(0, splitIndex).trim()
+                        if (chunk.isNotEmpty()) {
+                            currentPage.add(originalIndex to block.copy(text = chunk))
+                        }
+                        flushPage()
+                        remainingText = remainingText.substring(splitIndex).trim()
+                    }
+                }
             }
         }
-        if (splitPoint == -1) splitPoint = maxChars
-        result.add(remaining.substring(0, splitPoint).trim())
-        remaining = remaining.substring(splitPoint).trim()
     }
-    if (remaining.isNotBlank()) {
-        result.add(remaining)
-    }
-    return result
+
+    flushPage()
+    return if (pages.isEmpty()) listOf(emptyList()) else pages
 }
 
 // ------------------------------------------------------------------------------------------------

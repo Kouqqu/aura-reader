@@ -23,56 +23,82 @@ data class UpdateInfo(
 
 object AppUpdateManager {
 
+    private const val GITHUB_LATEST_WEB_URL =
+        "https://github.com/Kouqqu/aura-reader/releases/latest"
     private const val GITHUB_API_LATEST_RELEASE =
         "https://api.github.com/repos/Kouqqu/aura-reader/releases/latest"
 
     suspend fun checkForUpdates(currentVersion: String = "v1.0.0"): Result<UpdateInfo?> =
         withContext(Dispatchers.IO) {
             try {
-                val url = URL(GITHUB_API_LATEST_RELEASE)
-                val conn = url.openConnection() as HttpURLConnection
-                conn.requestMethod = "GET"
-                conn.setRequestProperty("User-Agent", "AuraReader-App")
-                conn.connectTimeout = 8000
-                conn.readTimeout = 8000
+                var tagName = ""
+                var body = ""
+                var apkDownloadUrl = ""
 
-                if (conn.responseCode != 200) {
+                // 1. First, check latest tag via GitHub redirect (100% rate-limit-free)
+                try {
+                    val webUrl = URL(GITHUB_LATEST_WEB_URL)
+                    val webConn = webUrl.openConnection() as HttpURLConnection
+                    webConn.instanceFollowRedirects = false
+                    webConn.requestMethod = "GET"
+                    webConn.setRequestProperty("User-Agent", "AuraReader-App")
+                    webConn.connectTimeout = 6000
+                    webConn.readTimeout = 6000
+
+                    val location = webConn.getHeaderField("Location")
+                    if (!location.isNullOrBlank()) {
+                        tagName = location.substringAfterLast("/").trim()
+                    }
+                } catch (e: Exception) {}
+
+                // 2. Try fetching changelog from API if possible
+                try {
+                    val url = URL(GITHUB_API_LATEST_RELEASE)
+                    val conn = url.openConnection() as HttpURLConnection
+                    conn.requestMethod = "GET"
+                    conn.setRequestProperty("User-Agent", "AuraReader-App")
+                    conn.connectTimeout = 6000
+                    conn.readTimeout = 6000
+
+                    if (conn.responseCode == 200) {
+                        val jsonStr = conn.inputStream.bufferedReader().use { it.readText() }
+                        val json = JSONObject(jsonStr)
+                        if (tagName.isBlank()) {
+                            tagName = json.optString("tag_name", "").trim()
+                        }
+                        body = json.optString("body", "").trim()
+
+                        val assets = json.optJSONArray("assets")
+                        if (assets != null) {
+                            for (i in 0 until assets.length()) {
+                                val asset = assets.getJSONObject(i)
+                                val name = asset.optString("name", "")
+                                if (name.endsWith(".apk", ignoreCase = true)) {
+                                    apkDownloadUrl = asset.optString("browser_download_url", "")
+                                    break
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {}
+
+                if (tagName.isBlank()) {
                     return@withContext Result.success(null)
                 }
 
-                val jsonStr = conn.inputStream.bufferedReader().use { it.readText() }
-                val json = JSONObject(jsonStr)
-
-                val tagName = json.optString("tag_name", "").trim()
-                val body = json.optString("body", "").trim()
-
-                var apkDownloadUrl = ""
-                val assets = json.optJSONArray("assets")
-                if (assets != null) {
-                    for (i in 0 until assets.length()) {
-                        val asset = assets.getJSONObject(i)
-                        val name = asset.optString("name", "")
-                        if (name.endsWith(".apk", ignoreCase = true)) {
-                            apkDownloadUrl = asset.optString("browser_download_url", "")
-                            break
-                        }
-                    }
-                }
-
                 if (apkDownloadUrl.isBlank()) {
-                    apkDownloadUrl = "https://github.com/Kouqqu/aura-reader/releases/latest/download/AuraReader.apk"
+                    apkDownloadUrl = "https://github.com/Kouqqu/aura-reader/releases/download/$tagName/AuraReader.apk"
                 }
 
                 val cleanLatest = tagName.removePrefix("v").trim()
                 val cleanCurrent = currentVersion.removePrefix("v").trim()
-
                 val isNewer = isVersionNewer(cleanLatest, cleanCurrent)
 
                 Result.success(
                     UpdateInfo(
                         isAvailable = isNewer,
-                        latestVersion = tagName.ifBlank { "Новая версия" },
-                        changelog = body.ifBlank { "Улучшения производительности и исправление ошибок" },
+                        latestVersion = tagName,
+                        changelog = body.ifBlank { "Вышла новая версия $tagName с улучшениями и новыми функциями." },
                         downloadUrl = apkDownloadUrl
                     )
                 )
@@ -80,6 +106,44 @@ object AppUpdateManager {
                 Result.failure(e)
             }
         }
+
+    fun showUpdateNotification(context: Context, latestVersion: String) {
+        try {
+            val channelId = "app_updates"
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = android.app.NotificationChannel(
+                    channelId,
+                    "Обновления Aura Reader",
+                    android.app.NotificationManager.IMPORTANCE_DEFAULT
+                ).apply {
+                    description = "Уведомления о выходе новых версий"
+                }
+                notificationManager.createNotificationChannel(channel)
+            }
+
+            val intent = Intent(context, com.aura.reader.MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val pendingIntent = android.app.PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val builder = androidx.core.app.NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                .setContentTitle("Доступно обновление Aura Reader!")
+                .setContentText("Вышла новая версия $latestVersion. Нажмите для обновления.")
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+
+            notificationManager.notify(1001, builder.build())
+        } catch (e: Exception) {}
+    }
 
     private fun isVersionNewer(latest: String, current: String): Boolean {
         if (latest.isBlank()) return false

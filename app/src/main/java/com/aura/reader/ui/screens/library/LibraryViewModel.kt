@@ -83,13 +83,14 @@ class LibraryViewModel(
         checkForUpdates(manual = false)
     }
 
-    fun checkForUpdates(manual: Boolean = true) {
+    fun checkForUpdates(manual: Boolean = true, context: Context? = null) {
         viewModelScope.launch {
             val currentVersion = "v${com.aura.reader.BuildConfig.VERSION_NAME}"
             val result = AppUpdateManager.checkForUpdates(currentVersion)
             result.onSuccess { info ->
                 if (info != null && info.isAvailable) {
                     _updateInfo.value = info
+                    context?.let { AppUpdateManager.showUpdateNotification(it, info.latestVersion) }
                 } else if (manual) {
                     _uiState.value = LibraryUiState.Error("У вас установлена последняя версия!")
                 }

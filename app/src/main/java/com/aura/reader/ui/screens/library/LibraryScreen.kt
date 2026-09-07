@@ -120,6 +120,10 @@ fun LibraryScreen(
     var showOpenOptionsSheet by remember { mutableStateOf(false) }
     var bookToDelete by remember { mutableStateOf<Book?>(null) }
 
+    LaunchedEffect(Unit) {
+        viewModel.checkForUpdates(manual = false, context = context)
+    }
+
     // Delete Book Confirmation Dialog
     bookToDelete?.let { book ->
         AlertDialog(
@@ -213,7 +217,7 @@ fun LibraryScreen(
                 },
                 actions = {
                     // Check for updates
-                    IconButton(onClick = { viewModel.checkForUpdates(manual = true) }) {
+                    IconButton(onClick = { viewModel.checkForUpdates(manual = true, context = context) }) {
                         Icon(
                             imageVector = Icons.Default.SystemUpdate,
                             contentDescription = "Проверить обновления"
@@ -269,6 +273,60 @@ fun LibraryScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // Instant Update Notification Banner
+                    if (updateInfo != null && updateInfo!!.isAvailable) {
+                        item {
+                            Card(
+                                shape = RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SystemUpdate,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Доступно обновление ${updateInfo!!.latestVersion}",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                        Text(
+                                            text = "Нажмите для быстрой установки",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Button(
+                                        onClick = {
+                                            viewModel.startUpdateDownload(context, updateInfo!!.downloadUrl)
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary
+                                        )
+                                    ) {
+                                        Text("Обновить")
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Daily Reading Stats
                     item {
                         Surface(
