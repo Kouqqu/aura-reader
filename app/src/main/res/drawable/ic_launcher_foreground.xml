@@ -5,8 +5,8 @@
     android:viewportHeight="108">
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M32,24h44c4.4,0 8,3.6 8,8v44c0,4.4 -3.6,8 -8,8H32c-4.4,0 -8,-3.6 -8,-8V32c0,-4.4 3.6,-8 8,-8z"/>
+        android:pathData="M40,31h28c3.3,0 6,2.7 6,6v34c0,3.3 -2.7,6 -6,6H40c-3.3,0 -6,-2.7 -6,-6V37c0,-3.3 2.7,-6 6,-6z"/>
     <path
         android:fillColor="#6750A4"
-        android:pathData="M40,36h28v5H40zM40,48h28v5H40zM40,60h20v5H40z"/>
+        android:pathData="M42,41h24v4H42zM42,49h24v4H42zM42,57h16v4H42z"/>
 </vector>

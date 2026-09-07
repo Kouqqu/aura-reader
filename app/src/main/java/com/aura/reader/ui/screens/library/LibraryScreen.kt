@@ -101,6 +101,15 @@ fun LibraryScreen(
     val scope = rememberCoroutineScope()
     var showOpenOptionsSheet by remember { mutableStateOf(false) }
 
+    // Samsung My Files / System chooser with MULTI-SELECTION support (shows all FB2 and EPUB files on Samsung)
+    val getMultipleContentsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            viewModel.openBooksFromUris(uris)
+        }
+    }
+
     // SAF OpenMultipleDocuments picker supporting ANY file (*/*)
     val openMultipleDocumentsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments()
@@ -108,13 +117,6 @@ fun LibraryScreen(
         if (uris.isNotEmpty()) {
             viewModel.openBooksFromUris(uris)
         }
-    }
-
-    // Standard GetContent chooser
-    val getContentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { viewModel.openBookFromUri(it) }
     }
 
     LaunchedEffect(uiState) {
@@ -153,10 +155,10 @@ fun LibraryScreen(
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                                    imageVector = Icons.Default.AutoStories,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
                         }
@@ -210,7 +212,7 @@ fun LibraryScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { openMultipleDocumentsLauncher.launch(arrayOf("*/*")) },
+                onClick = { getMultipleContentsLauncher.launch("*/*") },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Добавить книги") },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -226,7 +228,7 @@ fun LibraryScreen(
         ) {
             if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
                 EmptyLibraryView(
-                    onOpenFile = { openMultipleDocumentsLauncher.launch(arrayOf("*/*")) },
+                    onOpenFile = { getMultipleContentsLauncher.launch("*/*") },
                     onOpenSample = { viewModel.openSampleBook() }
                 )
             } else {
@@ -326,7 +328,7 @@ fun LibraryScreen(
             },
             onSelectGetContent = {
                 showOpenOptionsSheet = false
-                getContentLauncher.launch("*/*")
+                getMultipleContentsLauncher.launch("*/*")
             },
             onSelectFile = { file ->
                 showOpenOptionsSheet = false
@@ -361,33 +363,33 @@ fun OpenBookBottomSheet(
                 .padding(bottom = 32.dp)
         ) {
             Text(
-                text = "Открыть книгу",
+                text = "Добавить книги",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Option 1: System Storage Access Framework (OpenDocument)
-            ListItem(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onSelectOpenDocument() },
-                headlineContent = { Text("Системный проводник", fontWeight = FontWeight.Medium) },
-                supportingContent = { Text("Стандартный диалог выбора файлов Android") },
-                leadingContent = {
-                    Icon(Icons.Default.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                }
-            )
-
-            // Option 2: GetContent (Opens Xiaomi/Samsung/Files app chooser)
+            // Option 1: Samsung My Files / Native Content Chooser (Multi-select)
             ListItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .clickable { onSelectGetContent() },
-                headlineContent = { Text("Файловый менеджер (GetContent)", fontWeight = FontWeight.Medium) },
-                supportingContent = { Text("Выбор через сторонний проводник или Google Files") },
+                headlineContent = { Text("Проводник устройства / Мои файлы", fontWeight = FontWeight.Medium) },
+                supportingContent = { Text("Мультивыбор любых файлов (FB2, EPUB и др.)") },
+                leadingContent = {
+                    Icon(Icons.Default.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                }
+            )
+
+            // Option 2: System Storage Access Framework (OpenMultipleDocuments)
+            ListItem(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onSelectOpenDocument() },
+                headlineContent = { Text("Системный проводник (DocumentsUI)", fontWeight = FontWeight.Medium) },
+                supportingContent = { Text("Стандартный диалог выбора файлов Android") },
                 leadingContent = {
                     Icon(Icons.Default.ManageSearch, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
                 }

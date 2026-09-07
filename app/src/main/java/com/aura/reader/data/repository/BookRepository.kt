@@ -160,11 +160,27 @@ class BookRepository(
 
             // Ensure unique ID per URI + format so different formats never collide
             val uniqueId = UUID.nameUUIDFromBytes("${uri}_${parsedBook.format.name}".toByteArray()).toString()
-            val book = parsedBook.copy(id = uniqueId)
+
+            // Save local persistent copy in app's internal filesDir
+            val safeName = fileName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+            val localBookDir = java.io.File(context.filesDir, "saved_books").apply { mkdirs() }
+            val localBookFile = java.io.File(localBookDir, "${uniqueId}_$safeName")
+            if (!localBookFile.exists() || localBookFile.length() != bytes.size.toLong()) {
+                try {
+                    localBookFile.writeBytes(bytes)
+                } catch (e: Exception) {}
+            }
+            val persistentUriString = if (localBookFile.exists()) {
+                Uri.fromFile(localBookFile).toString()
+            } else {
+                uri.toString()
+            }
+
+            val book = parsedBook.copy(id = uniqueId, uriString = persistentUriString)
 
             // Restore saved progress if exact book was opened before (same URI or same title AND format)
             val existing = _recentBooks.value.find {
-                it.id == book.id || it.uriString == uri.toString() ||
+                it.id == book.id || it.uriString == persistentUriString || it.uriString == uri.toString() ||
                 (it.format == book.format && it.title.equals(book.title, ignoreCase = true) && it.author.equals(book.author, ignoreCase = true))
             }
             val resolvedBook = if (existing != null) {
