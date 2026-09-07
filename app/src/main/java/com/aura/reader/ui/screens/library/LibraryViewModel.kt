@@ -45,6 +45,9 @@ class LibraryViewModel(
     val updateNotificationsEnabled: StateFlow<Boolean> = preferencesManager.updateNotificationsEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val readingStatsEnabled: StateFlow<Boolean> = preferencesManager.readingStatsEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     fun setAppLanguage(language: AppLanguage) {
         viewModelScope.launch { preferencesManager.updateAppLanguage(language) }
     }
@@ -55,6 +58,10 @@ class LibraryViewModel(
 
     fun setUpdateNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setUpdateNotificationsEnabled(enabled) }
+    }
+
+    fun setReadingStatsEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setReadingStatsEnabled(enabled) }
     }
 
     val recentBooks: StateFlow<List<Book>> = bookRepository.recentBooks

@@ -12,6 +12,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalTextToolbar
+import androidx.compose.ui.platform.TextToolbar
+import androidx.compose.ui.platform.TextToolbarStatus
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.TextLayoutResult
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -156,9 +168,38 @@ fun ReaderScreen(
     var currentPagingPage by remember { mutableIntStateOf(0) }
     var totalPagingPages by remember { mutableIntStateOf(1) }
     var requestPagingPage by remember { mutableStateOf<Int?>(null) }
+    var showReaderMenu by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
+    val defaultToolbar = LocalTextToolbar.current
+    val clipboardManager = LocalClipboardManager.current
+    var selectedQuoteCopyAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    val customTextToolbar = remember(defaultToolbar) {
+        object : TextToolbar {
+            override val status: TextToolbarStatus
+                get() = defaultToolbar.status
+
+            override fun hide() {
+                selectedQuoteCopyAction = null
+                defaultToolbar.hide()
+            }
+
+            override fun showMenu(
+                rect: Rect,
+                onCopyRequested: (() -> Unit)?,
+                onPasteRequested: (() -> Unit)?,
+                onCutRequested: (() -> Unit)?,
+                onSelectAllRequested: (() -> Unit)?
+            ) {
+                selectedQuoteCopyAction = onCopyRequested
+                defaultToolbar.showMenu(rect, onCopyRequested, onPasteRequested, onCutRequested, onSelectAllRequested)
+            }
+        }
+    }
+
     AuraReaderTheme(themeMode = settings.themeMode) {
+      CompositionLocalProvider(LocalTextToolbar provides customTextToolbar) {
         val resolvedFontFamily = when (settings.fontFamily) {
             ReaderFontFamily.SERIF -> FontFamily.Serif
             ReaderFontFamily.SANS_SERIF -> FontFamily.SansSerif
@@ -200,7 +241,7 @@ fun ReaderScreen(
                                 }) {
                                     Icon(
                                         imageVector = Icons.Default.ArrowBack,
-                                        contentDescription = "Закрыть поиск"
+                                        contentDescription = strings.closeSearch
                                     )
                                 }
                             },
@@ -216,7 +257,7 @@ fun ReaderScreen(
                                 ) {
                                     if (searchQuery.isEmpty()) {
                                         Text(
-                                            text = "Поиск по тексту...",
+                                            text = strings.searchInBookHint,
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -246,13 +287,13 @@ fun ReaderScreen(
                                         onClick = { viewModel.prevSearchResult() },
                                         modifier = Modifier.size(36.dp)
                                     ) {
-                                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Предыдущее")
+                                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = strings.previous)
                                     }
                                     IconButton(
                                         onClick = { viewModel.nextSearchResult() },
                                         modifier = Modifier.size(36.dp)
                                     ) {
-                                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Следующее")
+                                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = strings.next)
                                     }
                                 }
                                 IconButton(
@@ -262,7 +303,7 @@ fun ReaderScreen(
                                     },
                                     modifier = Modifier.size(36.dp)
                                 ) {
-                                    Icon(Icons.Default.Close, contentDescription = "Очистить")
+                                    Icon(Icons.Default.Close, contentDescription = strings.clear)
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -274,7 +315,7 @@ fun ReaderScreen(
                             title = {
                                 Column {
                                     Text(
-                                        text = book?.title ?: "Читалка",
+                                        text = book?.title ?: strings.appName,
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold,
                                         maxLines = 1,
@@ -293,15 +334,11 @@ fun ReaderScreen(
                                 IconButton(onClick = onNavigateBack) {
                                     Icon(
                                         imageVector = Icons.Default.ArrowBack,
-                                        contentDescription = "Назад"
+                                        contentDescription = strings.back
                                     )
                                 }
                             },
                             actions = {
-                                // Search Icon
-                                IconButton(onClick = { isSearchActive = true }) {
-                                    Icon(Icons.Default.Search, contentDescription = "Поиск в книге")
-                                }
                                 // Bookmark Toggle Icon
                                 IconButton(onClick = {
                                     val preview = currentChapter?.content?.take(100) ?: ""
@@ -309,21 +346,65 @@ fun ReaderScreen(
                                 }) {
                                     Icon(
                                         imageVector = if (isCurrentChapterBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                        contentDescription = "Закладка",
+                                        contentDescription = strings.bookmarks,
                                         tint = if (isCurrentChapterBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                     )
                                 }
-                                // Bookmarks and Quotes List
-                                IconButton(onClick = { showBookmarksQuotesSheet = true }) {
-                                    Icon(Icons.Default.CollectionsBookmark, contentDescription = "Закладки и цитаты")
-                                }
-                                // Table of Contents
-                                IconButton(onClick = { showChaptersSheet = true }) {
-                                    Icon(Icons.Default.List, contentDescription = "Оглавление")
-                                }
-                                // Reader Settings
-                                IconButton(onClick = { showSettingsSheet = true }) {
-                                    Icon(Icons.Default.FormatSize, contentDescription = "Настройки")
+
+                                // Three-dots Overflow Menu
+                                Box {
+                                    IconButton(onClick = { showReaderMenu = true }) {
+                                        Icon(
+                                            imageVector = Icons.Default.MoreVert,
+                                            contentDescription = strings.moreOptions
+                                        )
+                                    }
+
+                                    DropdownMenu(
+                                        expanded = showReaderMenu,
+                                        onDismissRequest = { showReaderMenu = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text(strings.searchInBook) },
+                                            leadingIcon = {
+                                                Icon(Icons.Default.Search, contentDescription = null)
+                                            },
+                                            onClick = {
+                                                showReaderMenu = false
+                                                isSearchActive = true
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(strings.contents) },
+                                            leadingIcon = {
+                                                Icon(Icons.Default.List, contentDescription = null)
+                                            },
+                                            onClick = {
+                                                showReaderMenu = false
+                                                showChaptersSheet = true
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(strings.bookmarksAndQuotes) },
+                                            leadingIcon = {
+                                                Icon(Icons.Default.CollectionsBookmark, contentDescription = null)
+                                            },
+                                            onClick = {
+                                                showReaderMenu = false
+                                                showBookmarksQuotesSheet = true
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(strings.fontAndTheme) },
+                                            leadingIcon = {
+                                                Icon(Icons.Default.FormatSize, contentDescription = null)
+                                            },
+                                            onClick = {
+                                                showReaderMenu = false
+                                                showSettingsSheet = true
+                                            }
+                                        )
+                                    }
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
@@ -441,7 +522,7 @@ fun ReaderScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Загрузка книги...",
+                            text = strings.loadingBook,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onBackground
                         )
@@ -487,7 +568,7 @@ fun ReaderScreen(
                                             enabled = currentChapterIndex > 0,
                                             modifier = Modifier.size(36.dp)
                                         ) {
-                                            Icon(Icons.Default.SkipPrevious, contentDescription = "Предыдущая глава")
+                                            Icon(Icons.Default.SkipPrevious, contentDescription = strings.prevChapter)
                                         }
 
                                         Column(
@@ -495,7 +576,7 @@ fun ReaderScreen(
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Text(
-                                                text = "Глава ${currentChapterIndex + 1} из ${chapters.size}",
+                                                text = "${strings.chapter} ${currentChapterIndex + 1} ${strings.ofChapters} ${chapters.size}",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.primary,
                                                 fontWeight = FontWeight.Bold
@@ -515,7 +596,7 @@ fun ReaderScreen(
                                             enabled = currentChapterIndex < chapters.size - 1,
                                             modifier = Modifier.size(36.dp)
                                         ) {
-                                            Icon(Icons.Default.SkipNext, contentDescription = "Следующая глава")
+                                            Icon(Icons.Default.SkipNext, contentDescription = strings.nextChapter)
                                         }
                                     }
 
@@ -535,7 +616,7 @@ fun ReaderScreen(
                                             enabled = currentPagingPage > 0,
                                             modifier = Modifier.size(36.dp)
                                         ) {
-                                            Icon(Icons.Default.ChevronLeft, contentDescription = "Предыдущая страница")
+                                            Icon(Icons.Default.ChevronLeft, contentDescription = strings.prevPage)
                                         }
 
                                         Slider(
@@ -559,7 +640,7 @@ fun ReaderScreen(
                                             enabled = currentPagingPage < totalPagingPages - 1,
                                             modifier = Modifier.size(36.dp)
                                         ) {
-                                            Icon(Icons.Default.ChevronRight, contentDescription = "Следующая страница")
+                                            Icon(Icons.Default.ChevronRight, contentDescription = strings.nextPage)
                                         }
                                     }
 
@@ -618,7 +699,7 @@ fun ReaderScreen(
                                             enabled = currentChapterIndex > 0,
                                             modifier = Modifier.size(36.dp)
                                         ) {
-                                            Icon(Icons.Default.ChevronLeft, contentDescription = "Предыдущая глава")
+                                            Icon(Icons.Default.ChevronLeft, contentDescription = strings.prevChapter)
                                         }
 
                                         Slider(
@@ -638,12 +719,12 @@ fun ReaderScreen(
                                             enabled = currentChapterIndex < chapters.size - 1,
                                             modifier = Modifier.size(36.dp)
                                         ) {
-                                            Icon(Icons.Default.ChevronRight, contentDescription = "Следующая глава")
+                                            Icon(Icons.Default.ChevronRight, contentDescription = strings.nextChapter)
                                         }
                                     }
 
                                     Text(
-                                        text = "Перемещение по главам (или свайп влево/вправо)",
+                                        text = strings.chaptersNavigationHint,
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.outline,
                                         modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -700,6 +781,53 @@ fun ReaderScreen(
                 )
             }
 
+            // Floating pill to save selected text as quote
+            AnimatedVisibility(
+                visible = selectedQuoteCopyAction != null,
+                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = if (showControls) 130.dp else 48.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shadowElevation = 8.dp,
+                    tonalElevation = 6.dp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .clickable {
+                                val action = selectedQuoteCopyAction
+                                action?.invoke()
+                                val clip = clipboardManager.getText()?.text
+                                if (!clip.isNullOrBlank()) {
+                                    quoteToSave = clip.trim()
+                                }
+                                customTextToolbar.hide()
+                            }
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FormatQuote,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = strings.saveQuoteAction,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+            }
+
             quoteToSave?.let { quoteText ->
                 SaveQuoteBottomSheet(
                     initialText = quoteText,
@@ -713,6 +841,7 @@ fun ReaderScreen(
                 )
             }
         }
+      }
     }
 }
 
@@ -770,80 +899,83 @@ fun ChapterContentView(
         }
     }
 
-    LazyColumn(
-        state = listState,
-        modifier = Modifier
-            .fillMaxSize()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                onToggleControls()
-            },
-        contentPadding = PaddingValues(
-            start = 22.dp,
-            end = 22.dp,
-            top = 28.dp,
-            bottom = 140.dp
-        )
-    ) {
-        items(blocks) { block ->
-            RenderBlock(
-                block = block,
-                settings = settings,
-                resolvedFontFamily = resolvedFontFamily,
-                searchQuery = searchQuery,
-                footnotes = footnotes,
-                onFootnoteClick = onFootnoteClick,
-                onToggleControls = onToggleControls,
-                onSaveQuote = onSaveQuote
+    val strings = LocalAppStrings.current
+    SelectionContainer {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    onToggleControls()
+                },
+            contentPadding = PaddingValues(
+                start = 22.dp,
+                end = 22.dp,
+                top = 28.dp,
+                bottom = 140.dp
             )
-        }
-
-        // Symmetrical Prev/Next buttons at the bottom of chapter
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onPrevChapter,
-                    enabled = pageIndex > 0,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Icon(
-                        Icons.Default.ChevronLeft,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Предыдущая", maxLines = 1)
-                }
-
-                FilledTonalButton(
-                    onClick = onNextChapter,
-                    enabled = pageIndex < chaptersCount - 1,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text("Следующая", maxLines = 1)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Icon(
-                        Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+        ) {
+            items(blocks) { block ->
+                RenderBlock(
+                    block = block,
+                    settings = settings,
+                    resolvedFontFamily = resolvedFontFamily,
+                    searchQuery = searchQuery,
+                    footnotes = footnotes,
+                    onFootnoteClick = onFootnoteClick,
+                    onToggleControls = onToggleControls,
+                    onSaveQuote = onSaveQuote
+                )
             }
-            Spacer(modifier = Modifier.height(64.dp))
+
+            // Symmetrical Prev/Next buttons at the bottom of chapter
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onPrevChapter,
+                        enabled = pageIndex > 0,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.ChevronLeft,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(strings.previous, maxLines = 1)
+                    }
+
+                    FilledTonalButton(
+                        onClick = onNextChapter,
+                        enabled = pageIndex < chaptersCount - 1,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text(strings.next, maxLines = 1)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(64.dp))
+            }
         }
     }
 }
@@ -936,78 +1068,78 @@ fun ChapterPagingView(
         ) { pageIdx ->
             val pageBlocks = pages.getOrNull(pageIdx) ?: emptyList()
 
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 4.dp)
-                    .padding(bottom = 32.dp),
-                verticalArrangement = Arrangement.Top
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onToggleControls() }
             ) {
-                for ((_, block) in pageBlocks) {
-                    RenderBlock(
-                        block = block,
-                        settings = settings,
-                        resolvedFontFamily = resolvedFontFamily,
-                        searchQuery = searchQuery,
-                        footnotes = footnotes,
-                        onFootnoteClick = onFootnoteClick,
-                        onToggleControls = onToggleControls,
-                        onSaveQuote = onSaveQuote
-                    )
+                SelectionContainer {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp, vertical = 4.dp)
+                            .padding(bottom = 32.dp),
+                        verticalArrangement = Arrangement.Top
+                    ) {
+                        for ((_, block) in pageBlocks) {
+                            RenderBlock(
+                                block = block,
+                                settings = settings,
+                                resolvedFontFamily = resolvedFontFamily,
+                                searchQuery = searchQuery,
+                                footnotes = footnotes,
+                                onFootnoteClick = onFootnoteClick,
+                                onToggleControls = onToggleControls,
+                                onSaveQuote = onSaveQuote
+                            )
+                        }
+                    }
                 }
             }
         }
 
-        // Tap Navigation Overlays: Left 25% = Prev, Right 25% = Next, Center 50% = Controls
-        Row(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(0.25f)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        if (pagerState.currentPage > 0) {
-                            coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
-                        } else {
-                            onPrevChapter()
-                        }
+        // Thin margin tap zones for fast page flipping (outer padding area only)
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(28.dp)
+                .align(Alignment.CenterStart)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    if (pagerState.currentPage > 0) {
+                        coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                    } else {
+                        onPrevChapter()
                     }
-            )
+                }
+        )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(0.5f)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        onToggleControls()
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(28.dp)
+                .align(Alignment.CenterEnd)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    if (pagerState.currentPage < pages.size - 1) {
+                        coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                    } else {
+                        onNextChapter()
                     }
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(0.25f)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        if (pagerState.currentPage < pages.size - 1) {
-                            coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
-                        } else {
-                            onNextChapter()
-                        }
-                    }
-            )
-        }
+                }
+        )
 
         // Bottom Page Counter
+        val strings = LocalAppStrings.current
         Text(
-            text = "Стр. ${pagerState.currentPage + 1} из ${pages.size}  •  Гл. ${chapterIndex + 1} из $totalChapters",
+            text = "${strings.page} ${pagerState.currentPage + 1} ${strings.ofPages} ${pages.size}  •  ${strings.chapter} ${chapterIndex + 1} ${strings.ofChapters} $totalChapters",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier
@@ -1210,13 +1342,7 @@ fun RenderBlock(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 36.dp, end = 8.dp, top = 4.dp, bottom = 12.dp)
-                    .pointerInput(block.text) {
-                        detectTapGestures(
-                            onTap = { onToggleControls() },
-                            onLongPress = { onSaveQuote(block.text) }
-                        )
-                    },
+                    .padding(start = 36.dp, end = 8.dp, top = 4.dp, bottom = 12.dp),
                 horizontalAlignment = Alignment.End
             ) {
                 Text(
@@ -1245,12 +1371,6 @@ fun RenderBlock(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 28.dp, end = 16.dp, top = 6.dp, bottom = 12.dp)
-                    .pointerInput(block.text) {
-                        detectTapGestures(
-                            onTap = { onToggleControls() },
-                            onLongPress = { onSaveQuote(block.text) }
-                        )
-                    }
             ) {
                 Text(
                     text = block.text,
@@ -1363,6 +1483,7 @@ fun InteractiveText(
     onSaveQuote: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalAppStrings.current
     val annotated = remember(rawText, searchQuery, footnotes) {
         buildAnnotatedString {
             append(rawText)
@@ -1388,7 +1509,7 @@ fun InteractiveText(
             }
 
             // Highlight footnote links e.g. [1], [note], {1}
-            val footnoteRegex = Regex("\\[([a-zA-Z0-9а-яА-ЯёЁ_\\s-]{1,20})\\]|\\{([0-9]+)\\}")
+            val footnoteRegex = Regex("\[([a-zA-Z0-9а-яА-ЯёЁ_\\s-]{1,20})\]|\{([0-9]+)\}")
             for (match in footnoteRegex.findAll(rawText)) {
                 val ref = match.value
                 val resolved = resolveFootnoteText(ref, footnotes)
@@ -1401,44 +1522,23 @@ fun InteractiveText(
                         start = match.range.first,
                         end = match.range.last + 1
                     )
-                    addStringAnnotation(
-                        tag = "FOOTNOTE",
-                        annotation = ref,
-                        start = match.range.first,
-                        end = match.range.last + 1
+                    val link = LinkAnnotation.Clickable(
+                        tag = ref,
+                        linkInteractionListener = {
+                            val content = resolveFootnoteText(ref, footnotes) ?: footnotes[ref] ?: "${strings.footnoteTitle}: $ref"
+                            onFootnoteClick(ref, content)
+                        }
                     )
+                    addLink(link, match.range.first, match.range.last + 1)
                 }
             }
         }
     }
 
-    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
-
     Text(
         text = annotated,
         style = style,
-        onTextLayout = { textLayoutResult = it },
-        modifier = modifier.pointerInput(annotated) {
-            detectTapGestures(
-                onLongPress = {
-                    onSaveQuote(rawText)
-                },
-                onTap = { pos ->
-                    val layout = textLayoutResult
-                    if (layout != null) {
-                        val offset = layout.getOffsetForPosition(pos)
-                        val annotations = annotated.getStringAnnotations(tag = "FOOTNOTE", start = offset, end = offset)
-                        if (annotations.isNotEmpty()) {
-                            val ref = annotations.first().item
-                            val content = resolveFootnoteText(ref, footnotes) ?: footnotes[ref] ?: "Примечание: $ref"
-                            onFootnoteClick(ref, content)
-                            return@detectTapGestures
-                        }
-                    }
-                    onToggleControls()
-                }
-            )
-        }
+        modifier = modifier
     )
 }
 

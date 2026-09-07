@@ -3,11 +3,11 @@ package com.aura.reader.ui.theme
 import androidx.compose.runtime.staticCompositionLocalOf
 
 enum class AppLanguage(val code: String, val title: String) {
-    RU("ru", "Русский"),
-    EN("en", "English"),
-    UK("uk", "Українська"),
-    BE("be", "Беларуская"),
-    PL("pl", "Polski");
+    RU("ru", "🇷🇺 Русский"),
+    EN("en", "🇬🇧 English"),
+    UK("uk", "🇺🇦 Українська"),
+    BE("be", "🇧🇾 Беларуская"),
+    PL("pl", "🇵🇱 Polski");
 
     companion object {
         fun fromCode(code: String): AppLanguage =
@@ -23,6 +23,12 @@ interface Strings {
     val copy: String
     val close: String
     val done: String
+    val back: String
+    val clear: String
+    val previous: String
+    val next: String
+    val update: String
+    val later: String
 
     val libraryTitle: String
     val addBooks: String
@@ -37,6 +43,17 @@ interface Strings {
     fun deleteBookMessage(title: String): String
     val todayReadingTime: String
     fun minutesRead(minutes: Int): String
+    val readingStatsToggle: String
+    val readingStatsSubtitle: String
+    val readingStatsEmpty: String
+    val progressRead: String
+    fun searchResultsCount(count: Int): String
+    fun noSearchResultsFound(query: String): String
+
+    val donate: String
+    val moreOptions: String
+    val fontAndTheme: String
+    val bookmarksAndQuotes: String
 
     val settingsTitle: String
     val themeSectionTitle: String
@@ -53,6 +70,9 @@ interface Strings {
     val checkingUpdates: String
     val upToDate: String
     fun currentVersion(version: String): String
+    fun updateAvailableTitle(version: String): String
+    val updateBannerSubtitle: String
+    val downloadingUpdate: String
     val aboutSectionTitle: String
     val githubRepository: String
 
@@ -72,6 +92,9 @@ interface Strings {
     val noMatchesFound: String
     val footnoteTitle: String
     val pagingHint: String
+    val loadingBook: String
+    val closeSearch: String
+    val chaptersNavigationHint: String
 
     val saveQuoteTitle: String
     val saveQuoteAction: String
@@ -90,6 +113,12 @@ class RuStrings : Strings {
     override val copy = "Скопировать"
     override val close = "Закрыть"
     override val done = "Готово"
+    override val back = "Назад"
+    override val clear = "Очистить"
+    override val previous = "Предыдущее"
+    override val next = "Следующее"
+    override val update = "Обновить"
+    override val later = "Позже"
 
     override val libraryTitle = "Aura Reader"
     override val addBooks = "Добавить книги"
@@ -104,6 +133,17 @@ class RuStrings : Strings {
     override fun deleteBookMessage(title: String) = "Книга «$title» будет удалена из библиотеки и списка недавних."
     override val todayReadingTime = "Сегодня прочитано"
     override fun minutesRead(minutes: Int) = "$minutes мин"
+    override val readingStatsToggle = "Учитывать время чтения"
+    override val readingStatsSubtitle = "Отображать карточку прочитанных минут на главном экране"
+    override val readingStatsEmpty = "Время для чтения! Начните сегодня"
+    override val progressRead = "Прочитано"
+    override fun searchResultsCount(count: Int) = "Результаты поиска ($count)"
+    override fun noSearchResultsFound(query: String) = "Ничего не найдено по запросу «$query»"
+
+    override val donate = "Поддержать автора"
+    override val moreOptions = "Дополнительно"
+    override val fontAndTheme = "Шрифт и тема"
+    override val bookmarksAndQuotes = "Закладки и цитаты"
 
     override val settingsTitle = "Настройки"
     override val themeSectionTitle = "Тема оформления"
@@ -120,6 +160,9 @@ class RuStrings : Strings {
     override val checkingUpdates = "Проверка обновлений..."
     override val upToDate = "У вас установлена последняя версия"
     override fun currentVersion(version: String) = "Версия $version"
+    override fun updateAvailableTitle(version: String) = "Доступно обновление $version"
+    override val updateBannerSubtitle = "Нажмите для быстрой установки"
+    override val downloadingUpdate = "Загрузка обновления"
     override val aboutSectionTitle = "О приложении"
     override val githubRepository = "Репозиторий на GitHub"
 
@@ -139,6 +182,9 @@ class RuStrings : Strings {
     override val noMatchesFound = "Совпадений не найдено"
     override val footnoteTitle = "Примечание"
     override val pagingHint = "Листание тапом по краям"
+    override val loadingBook = "Загрузка книги..."
+    override val closeSearch = "Закрыть поиск"
+    override val chaptersNavigationHint = "Перемещение по главам (или свайп влево/вправо)"
 
     override val saveQuoteTitle = "Сохранить цитату"
     override val saveQuoteAction = "Сохранить цитату"
@@ -157,6 +203,12 @@ class EnStrings : Strings {
     override val copy = "Copy"
     override val close = "Close"
     override val done = "Done"
+    override val back = "Back"
+    override val clear = "Clear"
+    override val previous = "Previous"
+    override val next = "Next"
+    override val update = "Update"
+    override val later = "Later"
 
     override val libraryTitle = "Aura Reader"
     override val addBooks = "Add Books"
@@ -168,9 +220,20 @@ class EnStrings : Strings {
     override val searchHint = "Search books and authors..."
     override val noBooksFound = "No books found"
     override val deleteBookTitle = "Delete book?"
-    override fun deleteBookMessage(title: String) = "Book \"$title\" will be removed from library."
+    override fun deleteBookMessage(title: String) = "Book "$title" will be removed from library."
     override val todayReadingTime = "Read today"
     override fun minutesRead(minutes: Int) = "$minutes min"
+    override val readingStatsToggle = "Track reading time"
+    override val readingStatsSubtitle = "Display read minutes card on the main screen"
+    override val readingStatsEmpty = "Time to read! Start today"
+    override val progressRead = "Read"
+    override fun searchResultsCount(count: Int) = "Search results ($count)"
+    override fun noSearchResultsFound(query: String) = "No results found for \"$query\""
+
+    override val donate = "Support Author"
+    override val moreOptions = "More options"
+    override val fontAndTheme = "Font & Theme"
+    override val bookmarksAndQuotes = "Bookmarks & Quotes"
 
     override val settingsTitle = "Settings"
     override val themeSectionTitle = "Theme"
@@ -187,6 +250,9 @@ class EnStrings : Strings {
     override val checkingUpdates = "Checking for updates..."
     override val upToDate = "You have the latest version"
     override fun currentVersion(version: String) = "Version $version"
+    override fun updateAvailableTitle(version: String) = "Update available $version"
+    override val updateBannerSubtitle = "Tap for fast installation"
+    override val downloadingUpdate = "Downloading update"
     override val aboutSectionTitle = "About"
     override val githubRepository = "GitHub Repository"
 
@@ -206,6 +272,9 @@ class EnStrings : Strings {
     override val noMatchesFound = "No matches found"
     override val footnoteTitle = "Footnote"
     override val pagingHint = "Tap edges to turn pages"
+    override val loadingBook = "Loading book..."
+    override val closeSearch = "Close search"
+    override val chaptersNavigationHint = "Navigate chapters (or swipe left/right)"
 
     override val saveQuoteTitle = "Save Quote"
     override val saveQuoteAction = "Save Quote"
@@ -224,6 +293,12 @@ class UkStrings : Strings {
     override val copy = "Скопіювати"
     override val close = "Закрити"
     override val done = "Готово"
+    override val back = "Назад"
+    override val clear = "Очистити"
+    override val previous = "Попереднє"
+    override val next = "Наступне"
+    override val update = "Оновити"
+    override val later = "Пізніше"
 
     override val libraryTitle = "Aura Reader"
     override val addBooks = "Додати книги"
@@ -238,6 +313,17 @@ class UkStrings : Strings {
     override fun deleteBookMessage(title: String) = "Книгу «$title» буде видалено з бібліотеки."
     override val todayReadingTime = "Сьогодні прочитано"
     override fun minutesRead(minutes: Int) = "$minutes хв"
+    override val readingStatsToggle = "Враховувати час читання"
+    override val readingStatsSubtitle = "Відображати картку прочитаних хвилин на головному екрані"
+    override val readingStatsEmpty = "Час читати! Почніть сьогодні"
+    override val progressRead = "Прочитано"
+    override fun searchResultsCount(count: Int) = "Результати пошуку ($count)"
+    override fun noSearchResultsFound(query: String) = "Нічого не знайдено за запитом «$query»"
+
+    override val donate = "Підтримати автора"
+    override val moreOptions = "Додатково"
+    override val fontAndTheme = "Шрифт і тема"
+    override val bookmarksAndQuotes = "Закладки та цитати"
 
     override val settingsTitle = "Налаштування"
     override val themeSectionTitle = "Тема оформлення"
@@ -254,6 +340,9 @@ class UkStrings : Strings {
     override val checkingUpdates = "Перевірка оновлень..."
     override val upToDate = "У вас встановлено найновішу версію"
     override fun currentVersion(version: String) = "Версія $version"
+    override fun updateAvailableTitle(version: String) = "Доступне оновлення $version"
+    override val updateBannerSubtitle = "Натисніть для швидкого встановлення"
+    override val downloadingUpdate = "Завантаження оновлення"
     override val aboutSectionTitle = "Про додаток"
     override val githubRepository = "Репозиторій на GitHub"
 
@@ -273,6 +362,9 @@ class UkStrings : Strings {
     override val noMatchesFound = "Збігів не знайдено"
     override val footnoteTitle = "Примітка"
     override val pagingHint = "Гортання тапом по краях"
+    override val loadingBook = "Завантаження книги..."
+    override val closeSearch = "Закрити пошук"
+    override val chaptersNavigationHint = "Переміщення по розділах (або свайп ліворуч/праворуч)"
 
     override val saveQuoteTitle = "Зберегти цитату"
     override val saveQuoteAction = "Зберегти цитату"
@@ -291,6 +383,12 @@ class BeStrings : Strings {
     override val copy = "Скапіяваць"
     override val close = "Закрыць"
     override val done = "Гатова"
+    override val back = "Назад"
+    override val clear = "Ачысціць"
+    override val previous = "Папярэдняе"
+    override val next = "Наступнае"
+    override val update = "Абнавіць"
+    override val later = "Пазней"
 
     override val libraryTitle = "Aura Reader"
     override val addBooks = "Дадаць кнігі"
@@ -305,6 +403,17 @@ class BeStrings : Strings {
     override fun deleteBookMessage(title: String) = "Кніга «$title» будзе выдалена з бібліятэкі."
     override val todayReadingTime = "Сёння прачытана"
     override fun minutesRead(minutes: Int) = "$minutes хв"
+    override val readingStatsToggle = "Улічваць час чытання"
+    override val readingStatsSubtitle = "Паказваць картку прачытаных хвілін на галоўным экране"
+    override val readingStatsEmpty = "Час для чытання! Пачніце сёння"
+    override val progressRead = "Прачытана"
+    override fun searchResultsCount(count: Int) = "Вынікі пошуку ($count)"
+    override fun noSearchResultsFound(query: String) = "Нічога не знойдзена па запыце «$query»"
+
+    override val donate = "Падтрымаць аўтара"
+    override val moreOptions = "Дадаткова"
+    override val fontAndTheme = "Шрыфт і тэма"
+    override val bookmarksAndQuotes = "Закладкі і цытаты"
 
     override val settingsTitle = "Налады"
     override val themeSectionTitle = "Тэма афармлення"
@@ -321,6 +430,9 @@ class BeStrings : Strings {
     override val checkingUpdates = "Праверка абнаўленняў..."
     override val upToDate = "У вас усталявана апошняя версія"
     override fun currentVersion(version: String) = "Версія $version"
+    override fun updateAvailableTitle(version: String) = "Даступна абнаўленне $version"
+    override val updateBannerSubtitle = "Націсніце для хуткай устаноўкі"
+    override val downloadingUpdate = "Спампоўванне абнаўлення"
     override val aboutSectionTitle = "Пра праграму"
     override val githubRepository = "Рэпазіторый на GitHub"
 
@@ -340,6 +452,9 @@ class BeStrings : Strings {
     override val noMatchesFound = "Супадзенняў не знойдзена"
     override val footnoteTitle = "Заўвага"
     override val pagingHint = "Гартанне тапам па краях"
+    override val loadingBook = "Загрузка кнігі..."
+    override val closeSearch = "Закрыць пошук"
+    override val chaptersNavigationHint = "Перасоўванне па раздзелах (або свайп улева/управа)"
 
     override val saveQuoteTitle = "Захаваць цытату"
     override val saveQuoteAction = "Захаваць цытату"
@@ -358,6 +473,12 @@ class PlStrings : Strings {
     override val copy = "Kopiuj"
     override val close = "Zamknij"
     override val done = "Gotowe"
+    override val back = "Wstecz"
+    override val clear = "Wyczyść"
+    override val previous = "Poprzednie"
+    override val next = "Następne"
+    override val update = "Aktualizuj"
+    override val later = "Później"
 
     override val libraryTitle = "Aura Reader"
     override val addBooks = "Dodaj książki"
@@ -372,6 +493,17 @@ class PlStrings : Strings {
     override fun deleteBookMessage(title: String) = "Książka „$title” zostanie usunięta z biblioteki."
     override val todayReadingTime = "Przeczytano dzisiaj"
     override fun minutesRead(minutes: Int) = "$minutes min"
+    override val readingStatsToggle = "Śledź czas czytania"
+    override val readingStatsSubtitle = "Pokaż przeczytane minuty na ekranie głównym"
+    override val readingStatsEmpty = "Czas na czytanie! Zacznij dzisiaj"
+    override val progressRead = "Przeczytano"
+    override fun searchResultsCount(count: Int) = "Wyniki wyszukiwania ($count)"
+    override fun noSearchResultsFound(query: String) = "Nie znaleziono wyników dla „$query”"
+
+    override val donate = "Wesprzyj autora"
+    override val moreOptions = "Więcej opcji"
+    override val fontAndTheme = "Czcionka i motyw"
+    override val bookmarksAndQuotes = "Zakładki i cytaty"
 
     override val settingsTitle = "Ustawienia"
     override val themeSectionTitle = "Motyw"
@@ -388,6 +520,9 @@ class PlStrings : Strings {
     override val checkingUpdates = "Sprawdzanie aktualizacji..."
     override val upToDate = "Masz najnowszą wersję"
     override fun currentVersion(version: String) = "Wersja $version"
+    override fun updateAvailableTitle(version: String) = "Dostępna aktualizacja $version"
+    override val updateBannerSubtitle = "Dotknij, aby szybko zainstalować"
+    override val downloadingUpdate = "Pobieranie aktualizacji"
     override val aboutSectionTitle = "O aplikacji"
     override val githubRepository = "Repozytorium GitHub"
 
@@ -407,6 +542,9 @@ class PlStrings : Strings {
     override val noMatchesFound = "Nie znaleziono wyników"
     override val footnoteTitle = "Przypis"
     override val pagingHint = "Dotknij krawędzi, aby zmienić stronę"
+    override val loadingBook = "Ładowanie książki..."
+    override val closeSearch = "Zamknij szukanie"
+    override val chaptersNavigationHint = "Nawigacja po rozdziałach (lub przesunięcie w lewo/prawo)"
 
     override val saveQuoteTitle = "Zapisz cytat"
     override val saveQuoteAction = "Zapisz cytat"

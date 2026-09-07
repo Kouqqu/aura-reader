@@ -8,7 +8,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +41,7 @@ import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.ManageSearch
 import androidx.compose.material.icons.filled.Refresh
@@ -121,6 +124,7 @@ fun LibraryScreen(
     val readerSettings by viewModel.readerSettings.collectAsState()
     val appLanguage by viewModel.appLanguage.collectAsState()
     val updateNotificationsEnabled by viewModel.updateNotificationsEnabled.collectAsState()
+    val readingStatsEnabled by viewModel.readingStatsEnabled.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -232,11 +236,18 @@ fun LibraryScreen(
                         )
                     }
 
-                    // Check for updates
-                    IconButton(onClick = { viewModel.checkForUpdates(manual = true, context = context) }) {
+                    // Donate to author
+                    IconButton(onClick = {
+                        val intent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://dalink.to/koukku")
+                        )
+                        context.startActivity(intent)
+                    }) {
                         Icon(
-                            imageVector = Icons.Default.SystemUpdate,
-                            contentDescription = strings.checkUpdatesNow
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = strings.donate,
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
 
@@ -315,13 +326,13 @@ fun LibraryScreen(
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = "Доступно обновление ${updateInfo!!.latestVersion}",
+                                            text = strings.updateAvailableTitle(updateInfo!!.latestVersion),
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onPrimaryContainer
                                         )
                                         Text(
-                                            text = "Нажмите для быстрой установки",
+                                            text = strings.updateBannerSubtitle,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                                         )
@@ -336,37 +347,39 @@ fun LibraryScreen(
                                             containerColor = MaterialTheme.colorScheme.primary
                                         )
                                     ) {
-                                        Text("Обновить")
+                                        Text(strings.update)
                                     }
                                 }
                             }
                         }
                     }
 
-                    // Daily Reading Stats
-                    item {
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                    // Daily Reading Stats (Toggleable in Settings)
+                    if (readingStatsEnabled) {
+                        item {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Timer,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    text = if (todayMinutes > 0) "Сегодня прочитано: $todayMinutes мин" else "Время для чтения! Начните сегодня",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Timer,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = if (todayMinutes > 0) "${strings.todayReadingTime}: ${strings.minutesRead(todayMinutes)}" else strings.readingStatsEmpty,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
                             }
                         }
                     }
@@ -376,14 +389,14 @@ fun LibraryScreen(
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { viewModel.setSearchQuery(it) },
-                            placeholder = { Text("Поиск по книгам и авторам...") },
+                            placeholder = { Text(strings.searchHint) },
                             leadingIcon = {
                                 Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
                             },
                             trailingIcon = {
                                 if (searchQuery.isNotEmpty()) {
                                     IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Очистить")
+                                        Icon(Icons.Default.Close, contentDescription = strings.clear)
                                     }
                                 }
                             },
@@ -395,7 +408,7 @@ fun LibraryScreen(
 
                     item {
                         Text(
-                            text = if (searchQuery.isBlank()) "Недавние книги" else "Результаты поиска (${filteredRecentBooks.size})",
+                            text = if (searchQuery.isBlank()) strings.recentBooks else strings.searchResultsCount(filteredRecentBooks.size),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
@@ -405,7 +418,7 @@ fun LibraryScreen(
                     if (filteredRecentBooks.isEmpty() && searchQuery.isNotBlank()) {
                         item {
                             Text(
-                                text = "Ничего не найдено по запросу «$searchQuery»",
+                                text = strings.noSearchResultsFound(searchQuery),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.outline,
                                 modifier = Modifier.padding(vertical = 16.dp)
@@ -458,7 +471,7 @@ fun LibraryScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "Загрузка обновления",
+                                text = strings.downloadingUpdate,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -502,7 +515,7 @@ fun LibraryScreen(
             onDismissRequest = { viewModel.dismissUpdateDialog() },
             title = {
                 Text(
-                    text = "Доступно обновление ${info.latestVersion}",
+                    text = strings.updateAvailableTitle(info.latestVersion),
                     fontWeight = FontWeight.Bold
                 )
             },
@@ -525,12 +538,12 @@ fun LibraryScreen(
                     viewModel.dismissUpdateDialog()
                     viewModel.startUpdateDownload(context, info.downloadUrl)
                 }) {
-                    Text("Обновить")
+                    Text(strings.update)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissUpdateDialog() }) {
-                    Text("Позже")
+                    Text(strings.later)
                 }
             }
         )
@@ -562,10 +575,12 @@ fun LibraryScreen(
             currentTheme = readerSettings.themeMode,
             currentLanguage = appLanguage,
             updateNotificationsEnabled = updateNotificationsEnabled,
+            readingStatsEnabled = readingStatsEnabled,
             onDismiss = { showSettingsSheet = false },
             onThemeChange = { viewModel.setThemeMode(it) },
             onLanguageChange = { viewModel.setAppLanguage(it) },
             onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
+            onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
             onCheckUpdates = {
                 showSettingsSheet = false
                 viewModel.checkForUpdates(manual = true, context = context)
@@ -710,17 +725,22 @@ fun OpenBookBottomSheet(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BookCard(
     book: Book,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() },
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onDelete
+            ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -757,31 +777,16 @@ fun BookCard(
                         modifier = Modifier.weight(1f)
                     )
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(start = 4.dp)
-                    ) {
-                        SuggestionChip(
-                            onClick = {},
-                            label = {
-                                Text(
-                                    text = book.format.name,
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
-                        )
-                        IconButton(
-                            onClick = onDelete,
-                            modifier = Modifier.size(32.dp).padding(start = 2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Удалить книгу",
-                                tint = MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.size(18.dp)
+                    SuggestionChip(
+                        onClick = {},
+                        label = {
+                            Text(
+                                text = book.format.name,
+                                style = MaterialTheme.typography.labelSmall
                             )
-                        }
-                    }
+                        },
+                        modifier = Modifier.padding(start = 6.dp)
+                    )
                 }
 
                 if (book.author.isNotBlank()) {
@@ -803,7 +808,7 @@ fun BookCard(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Прочитано",
+                            text = strings.progressRead,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -904,7 +909,7 @@ fun EmptyLibraryView(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Библиотека пуста",
+            text = strings.emptyLibraryTitle,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
@@ -912,7 +917,7 @@ fun EmptyLibraryView(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Откройте книги в формате FB2 или EPUB из памяти смартфона или попробуйте демо-книгу",
+            text = strings.emptyLibrarySubtitle,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -926,7 +931,7 @@ fun EmptyLibraryView(
         ) {
             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Открыть книгу")
+            Text(strings.openFile)
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -937,7 +942,7 @@ fun EmptyLibraryView(
         ) {
             Icon(Icons.Default.AutoStories, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Открыть пример книги")
+            Text(strings.openSampleBook)
         }
     }
 }

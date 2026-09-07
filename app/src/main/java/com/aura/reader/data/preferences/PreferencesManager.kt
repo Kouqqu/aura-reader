@@ -37,6 +37,17 @@ class PreferencesManager(private val context: Context) {
         val QUOTES_KEY = stringPreferencesKey("quotes_json")
         val APP_LANGUAGE_KEY = stringPreferencesKey("app_language")
         val UPDATE_NOTIFICATIONS_KEY = booleanPreferencesKey("update_notifications_enabled")
+        val READING_STATS_ENABLED_KEY = booleanPreferencesKey("reading_stats_enabled")
+    }
+
+    val readingStatsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[READING_STATS_ENABLED_KEY] ?: true
+    }
+
+    suspend fun setReadingStatsEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[READING_STATS_ENABLED_KEY] = enabled
+        }
     }
 
     val appLanguage: Flow<com.aura.reader.ui.theme.AppLanguage> = context.dataStore.data.map { prefs ->
@@ -149,6 +160,7 @@ class PreferencesManager(private val context: Context) {
         if (seconds <= 0) return
         val today = getTodayDateString()
         context.dataStore.edit { prefs ->
+            if (prefs[READING_STATS_ENABLED_KEY] == false) return@edit
             val json = prefs[READING_STATS_KEY] ?: "{}"
             val obj = try { JSONObject(json) } catch (e: Exception) { JSONObject() }
             val current = obj.optLong(today, 0L)
