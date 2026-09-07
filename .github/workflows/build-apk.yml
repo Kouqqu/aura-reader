@@ -29,14 +29,17 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
+        run: ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee gradle-build.log
 
-      - name: Upload Build Reports on Failure
+      - name: Publish Error Details to Release if failed
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: softprops/action-gh-release@v2
         with:
-          name: build-failure-reports
-          path: app/build/reports/
+          tag_name: "build-failure-log"
+          name: "Build Failure Log"
+          body_path: gradle-build.log
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare APK file
         run: cp app/build/outputs/apk/debug/*.apk AuraReader.apk
