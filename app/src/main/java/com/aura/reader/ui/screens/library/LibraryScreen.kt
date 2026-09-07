@@ -1,5 +1,6 @@
 package com.aura.reader.ui.screens.library
 
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
@@ -27,41 +28,58 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.ManageSearch
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aura.reader.data.model.Book
 import kotlinx.coroutines.launch
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,13 +87,27 @@ fun LibraryScreen(
     viewModel: LibraryViewModel,
     onBookSelected: (Book) -> Unit
 ) {
+    val context = LocalContext.current
     val recentBooks by viewModel.recentBooks.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val updateInfo by viewModel.updateInfo.collectAsState()
+    val downloadProgress by viewModel.downloadProgress.collectAsState()
+    val foundFiles by viewModel.foundDeviceFiles.collectAsState()
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var showOpenOptionsSheet by remember { mutableStateOf(false) }
 
-    val filePickerLauncher = rememberLauncherForActivityResult(
+    // SAF OpenDocument picker
+    val openDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.openBookFromUri(it) }
+    }
+
+    // Standard GetContent chooser
+    val getContentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { viewModel.openBookFromUri(it) }
     }
@@ -110,6 +142,29 @@ fun LibraryScreen(
                         fontWeight = FontWeight.Bold
                     )
                 },
+                actions = {
+                    // Check for updates
+                    IconButton(onClick = { viewModel.checkForUpdates(manual = true) }) {
+                        Icon(
+                            imageVector = Icons.Default.SystemUpdate,
+                            contentDescription = "Проверить обновления"
+                        )
+                    }
+
+                    // Open GitHub repo in browser
+                    IconButton(onClick = {
+                        val intent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://github.com/Kouqqu/aura-reader")
+                        )
+                        context.startActivity(intent)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Code,
+                            contentDescription = "GitHub репозиторий"
+                        )
+                    }
+                },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -119,9 +174,7 @@ fun LibraryScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = {
-                    filePickerLauncher.launch(arrayOf("*/*"))
-                },
+                onClick = { showOpenOptionsSheet = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Открыть книгу") },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -137,9 +190,7 @@ fun LibraryScreen(
         ) {
             if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
                 EmptyLibraryView(
-                    onOpenFile = {
-                        filePickerLauncher.launch(arrayOf("*/*"))
-                    },
+                    onOpenFile = { showOpenOptionsSheet = true },
                     onOpenSample = { viewModel.openSampleBook() }
                 )
             } else {
@@ -172,15 +223,215 @@ fun LibraryScreen(
                 }
             }
 
-            if (uiState is LibraryUiState.Loading) {
+            if (uiState is LibraryUiState.Loading || downloadProgress != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background.copy(alpha = 0.6f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator()
+                        if (downloadProgress != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("Загрузка обновления: ${(downloadProgress!! * 100).toInt()}%")
+                        }
+                    }
                 }
+            }
+        }
+    }
+
+    // In-App Update Dialog
+    updateInfo?.let { info ->
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissUpdateDialog() },
+            title = {
+                Text(
+                    text = "Доступно обновление ${info.latestVersion}",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(text = info.changelog, style = MaterialTheme.typography.bodyMedium)
+                    if (downloadProgress != null) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        LinearProgressIndicator(
+                            progress = { downloadProgress ?: 0f },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.startUpdateDownload(context, info.downloadUrl)
+                }) {
+                    Text("Обновить")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissUpdateDialog() }) {
+                    Text("Позже")
+                }
+            }
+        )
+    }
+
+    // Open Book Options Bottom Sheet
+    if (showOpenOptionsSheet) {
+        OpenBookBottomSheet(
+            foundFiles = foundFiles,
+            onDismiss = { showOpenOptionsSheet = false },
+            onSelectOpenDocument = {
+                showOpenOptionsSheet = false
+                openDocumentLauncher.launch(arrayOf("*/*"))
+            },
+            onSelectGetContent = {
+                showOpenOptionsSheet = false
+                getContentLauncher.launch("*/*")
+            },
+            onSelectFile = { file ->
+                showOpenOptionsSheet = false
+                viewModel.openBookFromFile(file)
+            },
+            onRescan = { viewModel.scanDeviceForBooks() }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OpenBookBottomSheet(
+    foundFiles: List<File>,
+    onDismiss: () -> Unit,
+    onSelectOpenDocument: () -> Unit,
+    onSelectGetContent: () -> Unit,
+    onSelectFile: (File) -> Unit,
+    onRescan: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = "Открыть книгу",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // Option 1: System Storage Access Framework (OpenDocument)
+            ListItem(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onSelectOpenDocument() },
+                headlineContent = { Text("Системный проводник", fontWeight = FontWeight.Medium) },
+                supportingContent = { Text("Стандартный диалог выбора файлов Android") },
+                leadingContent = {
+                    Icon(Icons.Default.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                }
+            )
+
+            // Option 2: GetContent (Opens Xiaomi/Samsung/Files app chooser)
+            ListItem(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onSelectGetContent() },
+                headlineContent = { Text("Файловый менеджер (GetContent)", fontWeight = FontWeight.Medium) },
+                supportingContent = { Text("Выбор через сторонний проводник или Google Files") },
+                leadingContent = {
+                    Icon(Icons.Default.ManageSearch, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Option 3: Local device storage scan results
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Книги в папке Загрузки (${foundFiles.size})",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                IconButton(onClick = onRescan, modifier = Modifier.size(28.dp)) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Обновить список", modifier = Modifier.size(18.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (foundFiles.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(260.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(foundFiles) { file ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onSelectFile(file) },
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Book,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = file.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "${file.parentFile?.name ?: ""} • ${file.length() / 1024} КБ",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                Text(
+                    text = "В папках Загрузки и Документы файлов не найдено. Воспользуйтесь системным проводником выше.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
             }
         }
     }
@@ -207,7 +458,6 @@ fun BookCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Book cover or placeholder
             BookCoverView(
                 coverBase64 = book.coverBase64,
                 title = book.title,
@@ -218,9 +468,7 @@ fun BookCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -260,7 +508,6 @@ fun BookCard(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Reading Progress
                 Column {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -384,13 +631,24 @@ fun EmptyLibraryView(
 
         Spacer(modifier = Modifier.height(28.dp))
 
+        Button(
+            onClick = onOpenFile,
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Открыть книгу")
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         OutlinedButton(
             onClick = onOpenSample,
             shape = RoundedCornerShape(12.dp)
         ) {
             Icon(Icons.Default.AutoStories, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Открыть демо-книгу")
+            Text("Открыть пример книги")
         }
     }
 }

@@ -1,10 +1,11 @@
 package com.aura.reader.data.parser
 
-import android.util.Base64
 import android.util.Xml
+import com.aura.reader.data.model.BlockType
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.BookFormat
 import com.aura.reader.data.model.Chapter
+import com.aura.reader.data.model.FormattedBlock
 import org.xmlpull.v1.XmlPullParser
 import java.io.InputStream
 import java.util.UUID
@@ -40,44 +41,65 @@ object Fb2Parser {
         var currentBinaryId: String? = null
         val binaryContent = StringBuilder()
 
-        // Section parsing tracking
-        var sectionDepth = 0
-        var currentSectionTitleLines = mutableListOf<String>()
-        var currentSectionText = StringBuilder()
-        var currentTitleLine = StringBuilder()
+        // Context state
         var inTitle = false
+        var inSubtitle = false
+        var inEpigraph = false
+        var inTextAuthor = false
+        var inPoem = false
         var inParagraph = false
 
+        var sectionDepth = 0
+        val currentBlocks = mutableListOf<FormattedBlock>()
+        var currentSectionTitleLines = mutableListOf<String>()
+        val currentText = StringBuilder()
+        val currentEpigraphLines = mutableListOf<String>()
+        var currentEpigraphAuthor = ""
+        val currentPoemLines = mutableListOf<String>()
+
         fun flushChapter() {
-            val text = currentSectionText.toString().trim()
-            if (text.isNotBlank()) {
+            if (currentBlocks.isNotEmpty()) {
                 val fullTitle = currentSectionTitleLines
                     .filter { it.isNotBlank() }
                     .joinToString(": ")
 
-                // If no explicit title was in <title>, check first line
-                val (resolvedTitle, resolvedText) = if (fullTitle.isBlank()) {
-                    val firstLine = text.substringBefore("\n\n").trim()
-                    if (isLikelyHeading(firstLine)) {
-                        val remaining = text.substringAfter("\n\n", "").trim()
-                        Pair(firstLine, remaining.ifBlank { text })
-                    } else {
-                        Pair("Глава ${chapters.size + 1}", text)
-                    }
+                val resolvedTitle = if (fullTitle.isNotBlank()) {
+                    fullTitle
                 } else {
-                    Pair(fullTitle, text)
+                    // Try to find a TITLE block
+                    val titleBlock = currentBlocks.firstOrNull { it.type == BlockType.TITLE }
+                    if (titleBlock != null) {
+                        titleBlock.text
+                    } else {
+                        val firstP = currentBlocks.firstOrNull { it.type == BlockType.PARAGRAPH }?.text ?: ""
+                        if (isLikelyHeading(firstP)) {
+                            firstP
+                        } else {
+                            "Глава ${chapters.size + 1}"
+                        }
+                    }
+                }
+
+                // Build plain text fallback for backward compatibility
+                val plainText = currentBlocks.joinToString("\n\n") { block ->
+                    when (block.type) {
+                        BlockType.EPIGRAPH -> if (block.subText != null) "${block.text}\n— ${block.subText}" else block.text
+                        else -> block.text
+                    }
                 }
 
                 chapters.add(
                     Chapter(
                         id = UUID.randomUUID().toString(),
                         title = resolvedTitle,
-                        content = resolvedText,
+                        content = plainText,
+                        blocks = ArrayList(currentBlocks),
                         order = chapters.size
                     )
                 )
-                currentSectionText = StringBuilder()
-                currentSectionTitleLines = mutableListOf()
+
+                currentBlocks.clear()
+                currentSectionTitleLines.clear()
             }
         }
 
@@ -120,30 +142,39 @@ object Fb2Parser {
                                 }
                             }
                         }
-                        "body" -> {
-                            inBody = true
-                        }
+                        "body" -> inBody = true
                         "section" -> {
                             if (inBody) {
-                                // If a nested or sibling section starts and we already have chapter content, flush it
                                 flushChapter()
                                 sectionDepth++
                             }
                         }
                         "title" -> {
-                            if (sectionDepth > 0 || inBody) {
+                            if (inBody) {
                                 inTitle = true
                             }
                         }
-                        "p" -> {
+                        "subtitle" -> inSubtitle = true
+                        "epigraph", "cite" -> {
+                            inEpigraph = true
+                            currentEpigraphLines.clear()
+                            currentEpigraphAuthor = ""
+                        }
+                        "text-author" -> {
+                            if (inEpigraph) inTextAuthor = true
+                            currentText.setLength(0)
+                        }
+                        "poem" -> {
+                            inPoem = true
+                            currentPoemLines.clear()
+                        }
+                        "p", "v" -> {
                             inParagraph = true
-                            if (inTitle) {
-                                currentTitleLine = StringBuilder()
-                            }
+                            currentText.setLength(0)
                         }
                         "empty-line" -> {
-                            if (!inTitle) {
-                                currentSectionText.append("\n\n")
+                            if (!inTitle && !inEpigraph) {
+                                currentBlocks.add(FormattedBlock(BlockType.DIVIDER, ""))
                             }
                         }
                         "binary" -> {
@@ -158,12 +189,8 @@ object Fb2Parser {
                     val binId = currentBinaryId
                     if (binId != null) {
                         binaryContent.append(text)
-                    } else if (inTitle) {
-                        if (text != null && text.isNotBlank()) {
-                            currentTitleLine.append(text)
-                        }
-                    } else if (inParagraph && text != null) {
-                        currentSectionText.append(text)
+                    } else if (text != null && text.isNotBlank()) {
+                        currentText.append(text)
                     }
                 }
 
@@ -174,17 +201,67 @@ object Fb2Parser {
                         "title" -> {
                             inTitle = false
                         }
-                        "p" -> {
-                            inParagraph = false
-                            if (inTitle) {
-                                val line = currentTitleLine.toString().trim()
-                                if (line.isNotEmpty()) {
-                                    currentSectionTitleLines.add(line)
-                                }
-                                currentTitleLine = StringBuilder()
-                            } else {
-                                currentSectionText.append("\n\n")
+                        "subtitle" -> inSubtitle = false
+                        "text-author" -> {
+                            if (inEpigraph) {
+                                currentEpigraphAuthor = currentText.toString().trim()
+                                inTextAuthor = false
                             }
+                            currentText.setLength(0)
+                        }
+                        "epigraph", "cite" -> {
+                            inEpigraph = false
+                            val quoteText = currentEpigraphLines.joinToString("\n")
+                            if (quoteText.isNotBlank()) {
+                                currentBlocks.add(
+                                    FormattedBlock(
+                                        type = BlockType.EPIGRAPH,
+                                        text = quoteText,
+                                        subText = currentEpigraphAuthor.ifBlank { null }
+                                    )
+                                )
+                            }
+                            currentEpigraphLines.clear()
+                            currentEpigraphAuthor = ""
+                        }
+                        "poem" -> {
+                            inPoem = false
+                            if (currentPoemLines.isNotEmpty()) {
+                                currentBlocks.add(
+                                    FormattedBlock(
+                                        type = BlockType.VERSE,
+                                        text = currentPoemLines.joinToString("\n")
+                                    )
+                                )
+                                currentPoemLines.clear()
+                            }
+                        }
+                        "p", "v" -> {
+                            inParagraph = false
+                            val paragraphText = currentText.toString().trim()
+                            if (paragraphText.isNotEmpty()) {
+                                when {
+                                    inTitle -> {
+                                        currentSectionTitleLines.add(paragraphText)
+                                        currentBlocks.add(FormattedBlock(BlockType.TITLE, paragraphText))
+                                    }
+                                    inSubtitle -> {
+                                        currentBlocks.add(FormattedBlock(BlockType.SUBTITLE, paragraphText))
+                                    }
+                                    inEpigraph -> {
+                                        if (!inTextAuthor) {
+                                            currentEpigraphLines.add(paragraphText)
+                                        }
+                                    }
+                                    inPoem -> {
+                                        currentPoemLines.add(paragraphText)
+                                    }
+                                    else -> {
+                                        currentBlocks.add(FormattedBlock(BlockType.PARAGRAPH, paragraphText))
+                                    }
+                                }
+                            }
+                            currentText.setLength(0)
                         }
                         "binary" -> {
                             val binId = currentBinaryId
@@ -236,9 +313,12 @@ object Fb2Parser {
                 lower.startsWith("часть") ||
                 lower.startsWith("пролог") ||
                 lower.startsWith("эпилог") ||
+                lower.startsWith("введение") ||
+                lower.startsWith("предисловие") ||
+                lower.startsWith("послесловие") ||
                 lower.startsWith("chapter") ||
                 lower.startsWith("act") ||
-                line.matches(Regex("^[IVXLCDM]+\\.?.*")) || // Roman numerals
-                line.matches(Regex("^\\d+\\.?.*")) // Numbers: "1. Beginning"
+                line.matches(Regex("^[IVXLCDM]+\\.?.*")) ||
+                line.matches(Regex("^\\d+\\.?.*"))
     }
 }

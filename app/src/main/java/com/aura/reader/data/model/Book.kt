@@ -6,10 +6,26 @@ enum class BookFormat {
     TXT
 }
 
+enum class BlockType {
+    TITLE,          // Main chapter/section title (centered, bold, prominent)
+    SUBTITLE,       // Subtitle / section heading (centered, semi-bold)
+    EPIGRAPH,       // Epigraph / quote (italic, indented/right-aligned, optional author)
+    PARAGRAPH,      // Standard body paragraph (with book-style text indent)
+    VERSE,          // Poem verse lines
+    DIVIDER         // Section break / asterisks
+}
+
+data class FormattedBlock(
+    val type: BlockType,
+    val text: String,
+    val subText: String? = null // Author of epigraph / quote
+)
+
 data class Chapter(
     val id: String,
     val title: String,
     val content: String,
+    val blocks: List<FormattedBlock> = emptyList(),
     val order: Int
 )
 

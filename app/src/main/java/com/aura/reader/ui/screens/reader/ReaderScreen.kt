@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -56,12 +57,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aura.reader.data.model.BlockType
+import com.aura.reader.data.model.FormattedBlock
 import com.aura.reader.data.model.ReaderFontFamily
 import com.aura.reader.ui.theme.AuraReaderTheme
 
@@ -80,10 +86,10 @@ fun ReaderScreen(
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showChaptersSheet by remember { mutableStateOf(false) }
 
-    // Restore last read paragraph index
+    // Restore saved scroll position (paragraph index)
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = savedOffset)
 
-    // Only scroll to top when chapter explicitly changed to a different one
+    // Only reset scroll when chapter is explicitly changed
     var lastChapterIndex by remember { mutableIntStateOf(currentChapterIndex) }
     LaunchedEffect(currentChapterIndex) {
         if (lastChapterIndex != currentChapterIndex) {
@@ -121,8 +127,14 @@ fun ReaderScreen(
         ) {
             // Reading content area
             if (currentChapter != null) {
-                val paragraphs = remember(currentChapter.content) {
-                    currentChapter.content.split("\n\n").filter { it.isNotBlank() }
+                val blocks = remember(currentChapter) {
+                    if (currentChapter.blocks.isNotEmpty()) {
+                        currentChapter.blocks
+                    } else {
+                        currentChapter.content.split("\n\n")
+                            .filter { it.isNotBlank() }
+                            .map { FormattedBlock(BlockType.PARAGRAPH, it.trim()) }
+                    }
                 }
 
                 LazyColumn(
@@ -138,33 +150,103 @@ fun ReaderScreen(
                     contentPadding = PaddingValues(
                         start = 22.dp,
                         end = 22.dp,
-                        top = if (showControls) 80.dp else 40.dp,
-                        bottom = if (showControls) 140.dp else 70.dp
+                        top = if (showControls) 80.dp else 36.dp,
+                        bottom = if (showControls) 140.dp else 60.dp
                     )
                 ) {
-                    item {
-                        Text(
-                            text = currentChapter.title,
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontFamily = resolvedFontFamily
-                            ),
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.padding(bottom = 24.dp)
-                        )
-                    }
-
-                    items(paragraphs.size) { idx ->
-                        val paragraph = paragraphs[idx]
-                        Text(
-                            text = paragraph,
-                            fontSize = settings.fontSizeSp.sp,
-                            lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
-                            fontFamily = resolvedFontFamily,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            textAlign = TextAlign.Start,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
+                    items(blocks) { block ->
+                        when (block.type) {
+                            BlockType.TITLE -> {
+                                Text(
+                                    text = block.text,
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontFamily = resolvedFontFamily,
+                                        textAlign = TextAlign.Center
+                                    ),
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 16.dp, bottom = 12.dp)
+                                )
+                            }
+                            BlockType.SUBTITLE -> {
+                                Text(
+                                    text = block.text,
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = resolvedFontFamily,
+                                        textAlign = TextAlign.Center
+                                    ),
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 20.dp)
+                                )
+                            }
+                            BlockType.EPIGRAPH -> {
+                                // Epigraph: right-aligned/indented italic quote with author
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 48.dp, end = 8.dp, top = 8.dp, bottom = 24.dp),
+                                    horizontalAlignment = Alignment.End
+                                ) {
+                                    Text(
+                                        text = block.text,
+                                        fontSize = (settings.fontSizeSp * 0.92f).sp,
+                                        lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
+                                        fontFamily = resolvedFontFamily,
+                                        fontStyle = FontStyle.Italic,
+                                        textAlign = TextAlign.End,
+                                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
+                                    )
+                                    if (!block.subText.isNullOrBlank()) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = block.subText,
+                                            fontSize = (settings.fontSizeSp * 0.82f).sp,
+                                            fontFamily = resolvedFontFamily,
+                                            textAlign = TextAlign.End,
+                                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f)
+                                        )
+                                    }
+                                }
+                            }
+                            BlockType.VERSE -> {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 32.dp, end = 16.dp, top = 8.dp, bottom = 16.dp)
+                                ) {
+                                    Text(
+                                        text = block.text,
+                                        fontSize = (settings.fontSizeSp * 0.95f).sp,
+                                        lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 0.95f).sp,
+                                        fontFamily = resolvedFontFamily,
+                                        fontStyle = FontStyle.Italic,
+                                        color = MaterialTheme.colorScheme.onBackground
+                                    )
+                                }
+                            }
+                            BlockType.DIVIDER -> {
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                            BlockType.PARAGRAPH -> {
+                                Text(
+                                    text = block.text,
+                                    fontSize = settings.fontSizeSp.sp,
+                                    lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
+                                    fontFamily = resolvedFontFamily,
+                                    textAlign = TextAlign.Start,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    style = TextStyle(
+                                        textIndent = TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp)
+                                    ),
+                                    modifier = Modifier.padding(bottom = 12.dp)
+                                )
+                            }
+                        }
                     }
 
                     // Symmetrical Prev/Next buttons at the bottom of chapter
@@ -303,7 +385,7 @@ fun ReaderScreen(
                             .padding(horizontal = 16.dp, vertical = 14.dp)
                     ) {
                         if (chapters.isNotEmpty()) {
-                            // Clear title and progress header
+                            // Header in bottom card: Chapter title and indicator
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -341,7 +423,7 @@ fun ReaderScreen(
 
                             Spacer(modifier = Modifier.height(6.dp))
 
-                            // Chapter Slider with explicit Prev/Next icons
+                            // Chapter Slider
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically

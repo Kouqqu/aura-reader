@@ -1,9 +1,11 @@
 package com.aura.reader.data.parser
 
 import android.util.Base64
+import com.aura.reader.data.model.BlockType
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.BookFormat
 import com.aura.reader.data.model.Chapter
+import com.aura.reader.data.model.FormattedBlock
 import org.jsoup.Jsoup
 import org.w3c.dom.Element
 import java.io.ByteArrayInputStream
@@ -82,7 +84,8 @@ object EpubParser {
             }
         }
 
-        // Parse TOC (Table of Contents) from NCX if available
+        // Parse TOC (Table of Contents) from NCX
+        // IMPORTANT: do not overwrite parent titles with sub-chapter anchors!
         val tocTitles = mutableMapOf<String, String>()
         if (ncxHref != null) {
             val resolvedNcxPath = resolvePath(opfDir, ncxHref)
@@ -95,15 +98,21 @@ object EpubParser {
                         val np = navPoints.item(i) as Element
                         val text = np.getElementsByTagName("text").item(0)?.textContent?.trim() ?: continue
                         val contentEl = np.getElementsByTagName("content").item(0) as? Element ?: continue
-                        val src = contentEl.getAttribute("src").substringBefore("#")
-                        if (src.isNotBlank() && text.isNotBlank()) {
-                            tocTitles[src] = text
-                            // Also map clean filename
-                            tocTitles[src.substringAfterLast("/")] = text
+                        val fullSrc = contentEl.getAttribute("src")
+                        val cleanSrc = fullSrc.substringBefore("#")
+                        if (cleanSrc.isNotBlank() && text.isNotBlank()) {
+                            // Only put if absent so the parent/primary title is preserved!
+                            if (!tocTitles.containsKey(cleanSrc)) {
+                                tocTitles[cleanSrc] = text
+                            }
+                            val fileOnly = cleanSrc.substringAfterLast("/")
+                            if (!tocTitles.containsKey(fileOnly)) {
+                                tocTitles[fileOnly] = text
+                            }
                         }
                     }
                 } catch (e: Exception) {
-                    // Ignore NCX parsing failure, fall back to HTML headings
+                    // Ignore NCX parsing failure
                 }
             }
         }
@@ -127,7 +136,7 @@ object EpubParser {
             }
         }
 
-        // 3. Parse chapters
+        // 3. Parse chapters & blocks
         val chapters = mutableListOf<Chapter>()
         var order = 0
 
@@ -137,45 +146,108 @@ object EpubParser {
 
             val htmlString = String(chBytes, Charsets.UTF_8)
             val jsoupDoc = Jsoup.parse(htmlString)
+            val body = jsoupDoc.body()
 
-            // 1) Check TOC title first
+            // 1) Determine title:
             val cleanHref = chHref.substringAfterLast("/")
             var chapterTitle = tocTitles[chHref] ?: tocTitles[cleanHref]
 
-            // 2) If not in TOC, look for headings inside <body> (avoiding <head><title>)
+            // If not in TOC, check <body> headings (avoiding <head><title>)
             if (chapterTitle == null) {
-                val body = jsoupDoc.body()
-                val headingEl = body.select("h1, h2, h3, h4, [class*='chapter'], [class*='title']").firstOrNull { el ->
+                val headingEl = body.select("h1, h2, h3, [class*='chapter'], [class*='title']").firstOrNull { el ->
                     val txt = el.text().trim()
                     txt.isNotBlank() && !txt.equals(title, ignoreCase = true) && !txt.equals(author, ignoreCase = true)
                 }
                 chapterTitle = headingEl?.text()?.trim()
             }
 
-            // 3) If still none, check first short line of body
-            val paragraphs = jsoupDoc.select("p, h1, h2, h3, h4, h5, h6, blockquote, li")
-            val rawParagraphs = if (paragraphs.isNotEmpty()) {
-                paragraphs.map { it.text().trim() }.filter { it.isNotBlank() }
-            } else {
-                listOf(jsoupDoc.body().text().trim()).filter { it.isNotBlank() }
-            }
+            // Detect special preliminary/intro pages instead of naming them "Глава X"
+            val rawText = body.text().trim()
+            val hasOnlyImage = body.select("img, svg, image").isNotEmpty() && rawText.length < 50
+            val isIntroOrCopyright = rawText.length < 250 && (
+                    cleanHref.contains("cover", ignoreCase = true) ||
+                    cleanHref.contains("title", ignoreCase = true) ||
+                    cleanHref.contains("copy", ignoreCase = true) ||
+                    cleanHref.contains("annot", ignoreCase = true) ||
+                    cleanHref.contains("info", ignoreCase = true)
+            )
 
             if (chapterTitle == null) {
-                val firstP = rawParagraphs.firstOrNull() ?: ""
-                if (isLikelyHeading(firstP)) {
-                    chapterTitle = firstP
+                chapterTitle = when {
+                    hasOnlyImage || cleanHref.contains("cover", ignoreCase = true) -> "Обложка"
+                    cleanHref.contains("title", ignoreCase = true) -> "Титул"
+                    cleanHref.contains("copy", ignoreCase = true) -> "Информация об издании"
+                    cleanHref.contains("annot", ignoreCase = true) -> "Аннотация"
+                    else -> {
+                        // Check first short paragraph
+                        val firstP = body.select("p").firstOrNull()?.text()?.trim() ?: ""
+                        if (isLikelyHeading(firstP)) firstP else "Глава ${order + 1}"
+                    }
                 }
             }
 
-            val finalTitle = chapterTitle?.ifBlank { null } ?: "Глава ${order + 1}"
-            val bodyText = rawParagraphs.joinToString("\n\n")
+            // 2) Parse blocks from HTML (Headings, Subtitles, Epigraphs, Paragraphs)
+            val blocks = mutableListOf<FormattedBlock>()
 
-            if (bodyText.isNotBlank()) {
+            // Traverse direct children of body or top-level containers
+            val elements = body.select("h1, h2, h3, h4, h5, h6, blockquote, div.epigraph, div.cite, p, pre")
+            for (el in elements) {
+                val tagName = el.tagName().lowercase()
+                val text = el.text().trim()
+                if (text.isBlank()) continue
+
+                // Check if element is inside an already processed blockquote/epigraph
+                if (el.parents().any { it.tagName() == "blockquote" || it.hasClass("epigraph") || it.hasClass("cite") }) {
+                    continue
+                }
+
+                when {
+                    tagName in listOf("h1", "h2") -> {
+                        blocks.add(FormattedBlock(BlockType.TITLE, text))
+                    }
+                    tagName in listOf("h3", "h4", "h5", "h6") || el.hasClass("subtitle") -> {
+                        blocks.add(FormattedBlock(BlockType.SUBTITLE, text))
+                    }
+                    tagName == "blockquote" || el.hasClass("epigraph") || el.hasClass("cite") -> {
+                        val authorEl = el.select("cite, p.author, .author, span.author").firstOrNull()
+                        val quoteAuthor = authorEl?.text()?.trim()
+                        val quoteBody = if (authorEl != null) {
+                            val copy = el.clone()
+                            copy.select("cite, p.author, .author, span.author").remove()
+                            copy.text().trim()
+                        } else {
+                            text
+                        }
+                        blocks.add(FormattedBlock(BlockType.EPIGRAPH, quoteBody, quoteAuthor))
+                    }
+                    tagName == "pre" || el.hasClass("poem") -> {
+                        blocks.add(FormattedBlock(BlockType.VERSE, text))
+                    }
+                    else -> {
+                        // Check if paragraph is an epigraph by class
+                        if (el.className().contains("epigraph", ignoreCase = true) || el.className().contains("quote", ignoreCase = true)) {
+                            blocks.add(FormattedBlock(BlockType.EPIGRAPH, text))
+                        } else {
+                            blocks.add(FormattedBlock(BlockType.PARAGRAPH, text))
+                        }
+                    }
+                }
+            }
+
+            // Fallback if no structured blocks found
+            if (blocks.isEmpty() && rawText.isNotBlank()) {
+                rawText.split("\n\n").filter { it.isNotBlank() }.forEach {
+                    blocks.add(FormattedBlock(BlockType.PARAGRAPH, it.trim()))
+                }
+            }
+
+            if (blocks.isNotEmpty()) {
                 chapters.add(
                     Chapter(
                         id = UUID.randomUUID().toString(),
-                        title = finalTitle,
-                        content = bodyText,
+                        title = chapterTitle,
+                        content = rawText,
+                        blocks = blocks,
                         order = order++
                     )
                 )
@@ -208,6 +280,8 @@ object EpubParser {
                 lower.startsWith("часть") ||
                 lower.startsWith("пролог") ||
                 lower.startsWith("эпилог") ||
+                lower.startsWith("введение") ||
+                lower.startsWith("предисловие") ||
                 lower.startsWith("chapter") ||
                 lower.startsWith("act") ||
                 line.matches(Regex("^[IVXLCDM]+\\.?.*")) ||
