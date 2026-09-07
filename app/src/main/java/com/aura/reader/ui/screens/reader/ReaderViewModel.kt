@@ -118,4 +118,10 @@ class ReaderViewModel(
             preferencesManager.updateFontFamily(family)
         }
     }
+
+    fun setLightImageBackground(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesManager.updateLightImageBackground(enabled)
+        }
+    }
 }

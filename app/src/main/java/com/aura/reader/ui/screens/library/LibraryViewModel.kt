@@ -129,6 +129,41 @@ class LibraryViewModel(
         }
     }
 
+    fun openBooksFromUris(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        if (uris.size == 1) {
+            openBookFromUri(uris.first())
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = LibraryUiState.Loading
+            var addedCount = 0
+            val errors = mutableListOf<String>()
+
+            for (uri in uris) {
+                val result = bookRepository.openBookFromUri(uri)
+                result.onSuccess {
+                    addedCount++
+                }.onFailure { e ->
+                    errors.add(e.localizedMessage ?: "Неизвестная ошибка")
+                }
+            }
+
+            if (addedCount > 0) {
+                if (errors.isEmpty()) {
+                    _uiState.value = LibraryUiState.Error("Добавлено книг в библиотеку: $addedCount")
+                } else {
+                    val firstErr = errors.first()
+                    _uiState.value = LibraryUiState.Error("Добавлено книг: $addedCount. $firstErr")
+                }
+            } else {
+                val firstErr = errors.firstOrNull() ?: "Не удалось добавить выбранные файлы"
+                _uiState.value = LibraryUiState.Error(firstErr)
+            }
+        }
+    }
+
     fun openBookFromFile(file: File) {
         openBookFromUri(Uri.fromFile(file))
     }

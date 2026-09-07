@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -51,7 +52,8 @@ fun ReaderSettingsBottomSheet(
     onFontSizeChange: (Float) -> Unit,
     onLineHeightChange: (Float) -> Unit,
     onThemeModeChange: (ReaderThemeMode) -> Unit,
-    onFontFamilyChange: (ReaderFontFamily) -> Unit
+    onFontFamilyChange: (ReaderFontFamily) -> Unit,
+    onLightImageBackgroundChange: (Boolean) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -232,6 +234,36 @@ fun ReaderSettingsBottomSheet(
                     selected = settings.lineHeightMultiplier == 1.8f,
                     onClick = { onLineHeightChange(1.8f) },
                     label = { Text("Просторный") }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // --- Light Background for Illustrations in Dark Themes ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onLightImageBackgroundChange(!settings.lightImageBackground) }
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text(
+                        text = "Светлая подложка картинок",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "Оптимизация для прозрачных рисунков и формул в тёмных темах",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = settings.lightImageBackground,
+                    onCheckedChange = onLightImageBackgroundChange
                 )
             }
         }

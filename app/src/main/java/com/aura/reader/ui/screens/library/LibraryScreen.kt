@@ -100,11 +100,13 @@ fun LibraryScreen(
     val scope = rememberCoroutineScope()
     var showOpenOptionsSheet by remember { mutableStateOf(false) }
 
-    // SAF OpenDocument picker
-    val openDocumentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        uri?.let { viewModel.openBookFromUri(it) }
+    // SAF OpenMultipleDocuments picker supporting ANY file (*/*)
+    val openMultipleDocumentsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            viewModel.openBooksFromUris(uris)
+        }
     }
 
     // Standard GetContent chooser
@@ -139,12 +141,42 @@ fun LibraryScreen(
         topBar = {
             LargeTopAppBar(
                 title = {
-                    Text(
-                        text = "Aura Reader",
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                        Text(
+                            text = "Aura Reader",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 },
                 actions = {
+                    // Scan device books
+                    IconButton(onClick = {
+                        viewModel.scanDeviceForBooks()
+                        showOpenOptionsSheet = true
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.FolderOpen,
+                            contentDescription = "Файлы на устройстве"
+                        )
+                    }
+
                     // Check for updates
                     IconButton(onClick = { viewModel.checkForUpdates(manual = true) }) {
                         Icon(
@@ -177,9 +209,9 @@ fun LibraryScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { showOpenOptionsSheet = true },
+                onClick = { openMultipleDocumentsLauncher.launch(arrayOf("*/*")) },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Открыть книгу") },
+                text = { Text("Добавить книги") },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -193,7 +225,7 @@ fun LibraryScreen(
         ) {
             if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
                 EmptyLibraryView(
-                    onOpenFile = { showOpenOptionsSheet = true },
+                    onOpenFile = { openMultipleDocumentsLauncher.launch(arrayOf("*/*")) },
                     onOpenSample = { viewModel.openSampleBook() }
                 )
             } else {
@@ -289,7 +321,7 @@ fun LibraryScreen(
             onDismiss = { showOpenOptionsSheet = false },
             onSelectOpenDocument = {
                 showOpenOptionsSheet = false
-                openDocumentLauncher.launch(arrayOf("*/*"))
+                openMultipleDocumentsLauncher.launch(arrayOf("*/*"))
             },
             onSelectGetContent = {
                 showOpenOptionsSheet = false

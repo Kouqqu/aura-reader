@@ -106,34 +106,36 @@ class BookRepository(
                     Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                 }
                 isZip -> {
-                    // Check if it's EPUB or FB2.ZIP
-                    val isEpub = try {
+                    // Check if zip contains EPUB (META-INF) or FB2 (*.fb2)
+                    var hasMetaInf = false
+                    var hasFb2 = false
+                    try {
                         val zis = java.util.zip.ZipInputStream(java.io.ByteArrayInputStream(bytes))
-                        var hasMetaInf = false
                         var e = zis.nextEntry
                         while (e != null) {
-                            if (e.name.contains("META-INF/container.xml", ignoreCase = true)) {
+                            val lower = e.name.lowercase()
+                            if (lower.contains("meta-inf/container.xml")) {
                                 hasMetaInf = true
                                 break
                             }
+                            if (lower.endsWith(".fb2")) {
+                                hasFb2 = true
+                            }
                             e = zis.nextEntry
                         }
-                        hasMetaInf
-                    } catch (e: Exception) {
-                        false
-                    }
+                    } catch (e: Exception) {}
 
-                    if (isEpub) {
-                        EpubParser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
-                    } else {
-                        Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
+                    when {
+                        hasMetaInf -> EpubParser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
+                        hasFb2 -> Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
+                        else -> throw IllegalArgumentException("Файл «$fileName» не содержит книги в формате FB2 или EPUB.")
                     }
                 }
                 else -> {
                     val sampleHeader = String(bytes.take(2048).toByteArray(), Charsets.UTF_8)
                     if (sampleHeader.contains("<FictionBook", ignoreCase = true)) {
                         Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
-                    } else {
+                    } else if (fileName.endsWith(".txt", ignoreCase = true)) {
                         val content = String(bytes, Charsets.UTF_8)
                         Book(
                             id = UUID.randomUUID().toString(),
@@ -150,6 +152,8 @@ class BookRepository(
                                 )
                             )
                         )
+                    } else {
+                        throw IllegalArgumentException("Формат «$fileName» не поддерживается. Aura Reader предназначен для книг FB2, FB2.ZIP и EPUB.")
                     }
                 }
             }

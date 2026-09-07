@@ -22,6 +22,7 @@ class PreferencesManager(private val context: Context) {
         val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         val FONT_FAMILY_KEY = stringPreferencesKey("font_family")
         val KEEP_SCREEN_ON_KEY = booleanPreferencesKey("keep_screen_on")
+        val LIGHT_IMAGE_BG_KEY = booleanPreferencesKey("light_image_background")
         val RECENT_BOOKS_KEY = stringPreferencesKey("recent_books_json")
     }
 
@@ -31,6 +32,7 @@ class PreferencesManager(private val context: Context) {
         val themeModeStr = prefs[THEME_MODE_KEY] ?: ReaderThemeMode.SYSTEM_DYNAMIC.name
         val fontFamilyStr = prefs[FONT_FAMILY_KEY] ?: ReaderFontFamily.SERIF.name
         val keepScreenOn = prefs[KEEP_SCREEN_ON_KEY] ?: true
+        val lightImageBackground = prefs[LIGHT_IMAGE_BG_KEY] ?: true
 
         val themeMode = try {
             ReaderThemeMode.valueOf(themeModeStr)
@@ -49,7 +51,8 @@ class PreferencesManager(private val context: Context) {
             lineHeightMultiplier = lineHeight,
             themeMode = themeMode,
             fontFamily = fontFamily,
-            keepScreenOn = keepScreenOn
+            keepScreenOn = keepScreenOn,
+            lightImageBackground = lightImageBackground
         )
     }
 
@@ -74,6 +77,12 @@ class PreferencesManager(private val context: Context) {
     suspend fun updateFontFamily(fontFamily: ReaderFontFamily) {
         context.dataStore.edit { prefs ->
             prefs[FONT_FAMILY_KEY] = fontFamily.name
+        }
+    }
+
+    suspend fun updateLightImageBackground(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[LIGHT_IMAGE_BG_KEY] = enabled
         }
     }
 

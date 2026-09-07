@@ -356,7 +356,8 @@ fun ReaderScreen(
                     onFontSizeChange = { viewModel.setFontSize(it) },
                     onLineHeightChange = { viewModel.setLineHeight(it) },
                     onThemeModeChange = { viewModel.setThemeMode(it) },
-                    onFontFamilyChange = { viewModel.setFontFamily(it) }
+                    onFontFamilyChange = { viewModel.setFontFamily(it) },
+                    onLightImageBackgroundChange = { viewModel.setLightImageBackground(it) }
                 )
             }
 
@@ -508,6 +509,15 @@ fun ChapterContentView(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
                 BlockType.IMAGE -> {
+                    val isDark = settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.AMOLED ||
+                            settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.SYSTEM_DYNAMIC
+                    val shouldApplyLightCard = settings.lightImageBackground && isDark
+                    val imageCardBg = if (shouldApplyLightCard) {
+                        Color(0xFFF5F4F0)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerLow
+                    }
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -517,22 +527,29 @@ fun ChapterContentView(
                         Card(
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                containerColor = imageCardBg
                             ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = if (shouldApplyLightCard) 3.dp else 2.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(File(block.text))
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = block.subText,
-                                contentScale = ContentScale.FillWidth,
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                            )
+                                    .padding(if (shouldApplyLightCard) 12.dp else 0.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(File(block.text))
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = block.subText,
+                                    contentScale = ContentScale.FillWidth,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(if (shouldApplyLightCard) 8.dp else 16.dp))
+                                )
+                            }
                         }
                         if (!block.subText.isNullOrBlank()) {
                             Spacer(modifier = Modifier.height(8.dp))

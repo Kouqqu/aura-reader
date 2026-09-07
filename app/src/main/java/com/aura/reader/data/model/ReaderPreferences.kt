@@ -19,5 +19,6 @@ data class ReaderSettings(
     val lineHeightMultiplier: Float = 1.5f,
     val themeMode: ReaderThemeMode = ReaderThemeMode.SYSTEM_DYNAMIC,
     val fontFamily: ReaderFontFamily = ReaderFontFamily.SERIF,
-    val keepScreenOn: Boolean = true
+    val keepScreenOn: Boolean = true,
+    val lightImageBackground: Boolean = true
 )
