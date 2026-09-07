@@ -26,20 +26,31 @@ class MainActivity : ComponentActivity() {
 
         preferencesManager = PreferencesManager(applicationContext)
         bookRepository = BookRepository(applicationContext, preferencesManager)
-        libraryViewModel = LibraryViewModel(bookRepository)
+        libraryViewModel = LibraryViewModel(bookRepository, preferencesManager)
         readerViewModel = ReaderViewModel(bookRepository, preferencesManager)
 
         // Handle opening a book from external intent (e.g. file manager)
         handleIncomingIntent(intent)
 
         setContent {
-            AuraReaderTheme {
-                val navController = rememberNavController()
-                AuraNavGraph(
-                    navController = navController,
-                    libraryViewModel = libraryViewModel,
-                    readerViewModel = readerViewModel
-                )
+            val settings by preferencesManager.readerSettings.androidx.compose.runtime.collectAsState(
+                initial = com.aura.reader.data.model.ReaderSettings()
+            )
+            val appLanguage by preferencesManager.appLanguage.androidx.compose.runtime.collectAsState(
+                initial = com.aura.reader.ui.theme.AppLanguage.RU
+            )
+
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.aura.reader.ui.theme.LocalAppStrings provides com.aura.reader.ui.theme.getStrings(appLanguage)
+            ) {
+                AuraReaderTheme(themeMode = settings.themeMode) {
+                    val navController = rememberNavController()
+                    AuraNavGraph(
+                        navController = navController,
+                        libraryViewModel = libraryViewModel,
+                        readerViewModel = readerViewModel
+                    )
+                }
             }
         }
     }

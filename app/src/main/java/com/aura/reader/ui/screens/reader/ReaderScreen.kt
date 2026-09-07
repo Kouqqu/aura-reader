@@ -9,6 +9,11 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextLayoutResult
+import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -146,6 +151,8 @@ fun ReaderScreen(
     var showChaptersSheet by remember { mutableStateOf(false) }
     var showBookmarksQuotesSheet by remember { mutableStateOf(false) }
     var selectedFootnote by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var quoteToSave by remember { mutableStateOf<String?>(null) }
+    val strings = LocalAppStrings.current
     var currentPagingPage by remember { mutableIntStateOf(0) }
     var totalPagingPages by remember { mutableIntStateOf(1) }
     var requestPagingPage by remember { mutableStateOf<Int?>(null) }
@@ -360,6 +367,7 @@ fun ReaderScreen(
                             onPrevChapter = { viewModel.prevChapter() },
                             onNextChapter = { viewModel.nextChapter() },
                             onFootnoteClick = { ref, content -> selectedFootnote = ref to content },
+                            onSaveQuote = { quoteToSave = it },
                             onPageChange = { page, total ->
                                 currentPagingPage = page
                                 totalPagingPages = total
@@ -407,6 +415,7 @@ fun ReaderScreen(
                                     footnotes = footnotes,
                                     onToggleControls = { showControls = !showControls },
                                     onFootnoteClick = { ref, content -> selectedFootnote = ref to content },
+                                    onSaveQuote = { quoteToSave = it },
                                     onPrevChapter = {
                                         if (pageIndex > 0) {
                                             coroutineScope.launch { pagerState.animateScrollToPage(pageIndex - 1) }
@@ -454,7 +463,8 @@ fun ReaderScreen(
                     Card(
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f)
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
+                            contentColor = MaterialTheme.colorScheme.onSurface
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                         modifier = Modifier.fillMaxWidth()
@@ -494,6 +504,7 @@ fun ReaderScreen(
                                                 text = currentChapter?.title ?: "",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurface,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
                                             )
@@ -553,9 +564,9 @@ fun ReaderScreen(
                                     }
 
                                     Text(
-                                        text = "Страница ${currentPagingPage + 1} из $totalPagingPages  •  Листание тапом по краям",
+                                        text = "${strings.page} ${currentPagingPage + 1} ${strings.ofPages} $totalPagingPages  •  ${strings.pagingHint}",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.align(Alignment.CenterHorizontally)
                                     )
                                 } else {
@@ -577,9 +588,10 @@ fun ReaderScreen(
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
-                                                text = "Глава ${currentChapterIndex + 1} из ${chapters.size}: ${currentChapter?.title ?: ""}",
+                                                text = "${strings.chapter} ${currentChapterIndex + 1} ${strings.ofChapters} ${chapters.size}: ${currentChapter?.title ?: ""}",
                                                 style = MaterialTheme.typography.labelMedium,
                                                 fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurface,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
                                             )
@@ -687,6 +699,19 @@ fun ReaderScreen(
                     onDismiss = { selectedFootnote = null }
                 )
             }
+
+            quoteToSave?.let { quoteText ->
+                SaveQuoteBottomSheet(
+                    initialText = quoteText,
+                    bookTitle = book?.title ?: "",
+                    chapterTitle = currentChapter?.title ?: "",
+                    onDismiss = { quoteToSave = null },
+                    onSaveQuote = {
+                        viewModel.addQuote(it)
+                        quoteToSave = null
+                    }
+                )
+            }
         }
     }
 }
@@ -711,6 +736,7 @@ fun ChapterContentView(
     footnotes: Map<String, String>,
     onToggleControls: () -> Unit,
     onFootnoteClick: (ref: String, content: String) -> Unit,
+    onSaveQuote: (String) -> Unit,
     onPrevChapter: () -> Unit,
     onNextChapter: () -> Unit,
     onUpdateProgress: (Int, Int) -> Unit
@@ -769,7 +795,8 @@ fun ChapterContentView(
                 searchQuery = searchQuery,
                 footnotes = footnotes,
                 onFootnoteClick = onFootnoteClick,
-                onToggleControls = onToggleControls
+                onToggleControls = onToggleControls,
+                onSaveQuote = onSaveQuote
             )
         }
 
@@ -843,6 +870,7 @@ fun ChapterPagingView(
     onPrevChapter: () -> Unit,
     onNextChapter: () -> Unit,
     onFootnoteClick: (ref: String, content: String) -> Unit,
+    onSaveQuote: (String) -> Unit,
     onPageChange: (Int, Int) -> Unit,
     onUpdateProgress: (Int, Int) -> Unit
 ) {
@@ -856,14 +884,10 @@ fun ChapterPagingView(
         }
     }
 
-    // Paginate blocks based on font size and line height multiplier
-    val pages = remember(blocks, settings.fontSizeSp, settings.lineHeightMultiplier) {
-        paginateBlocks(blocks, settings.fontSizeSp, settings.lineHeightMultiplier)
-    }
-
+    var pagesCount by remember { mutableIntStateOf(1) }
     val pagerState = rememberPagerState(
         initialPage = 0,
-        pageCount = { pages.size.coerceAtLeast(1) }
+        pageCount = { pagesCount.coerceAtLeast(1) }
     )
     val coroutineScope = rememberCoroutineScope()
 
@@ -899,7 +923,17 @@ fun ChapterPagingView(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val screenHeightDp = maxHeight.value
+        val screenWidthDp = maxWidth.value
+
+        val pages = remember(blocks, settings.fontSizeSp, settings.lineHeightMultiplier, screenHeightDp, screenWidthDp) {
+            paginateBlocks(blocks, settings.fontSizeSp, settings.lineHeightMultiplier, screenHeightDp, screenWidthDp)
+        }
+        LaunchedEffect(pages.size) {
+            pagesCount = pages.size
+        }
+
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
@@ -909,7 +943,7 @@ fun ChapterPagingView(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 22.dp, vertical = 8.dp)
+                    .padding(horizontal = 20.dp, vertical = 4.dp)
                     .padding(bottom = 32.dp),
                 verticalArrangement = Arrangement.Top
             ) {
@@ -921,7 +955,8 @@ fun ChapterPagingView(
                         searchQuery = searchQuery,
                         footnotes = footnotes,
                         onFootnoteClick = onFootnoteClick,
-                        onToggleControls = onToggleControls
+                        onToggleControls = onToggleControls,
+                        onSaveQuote = onSaveQuote
                     )
                 }
             }
@@ -990,50 +1025,58 @@ fun ChapterPagingView(
 // PAGINATION HELPER
 // ------------------------------------------------------------------------------------------------
 
-private fun calculatePageCapacity(fontSizeSp: Float, lineHeightMultiplier: Float): Int {
+private fun calculatePageCapacity(
+    fontSizeSp: Float,
+    lineHeightMultiplier: Float,
+    screenHeightDp: Float = 800f,
+    screenWidthDp: Float = 380f
+): Int {
     val fs = fontSizeSp.coerceIn(12f, 36f)
     val lh = lineHeightMultiplier.coerceIn(1.0f, 2.2f)
     val effectiveLineHeight = fs * lh
-    // Average lines per page based on ~660dp usable text height
-    val linesPerPage = (660f / effectiveLineHeight).coerceIn(10f, 40f)
-    // Average characters per line based on ~330dp usable text width
-    val charsPerLine = (330f / (fs * 0.53f)).coerceIn(18f, 55f)
-    return (linesPerPage * charsPerLine).toInt().coerceIn(400, 1800)
+    val usableHeightDp = (screenHeightDp - 54f).coerceAtLeast(350f)
+    val linesPerPage = (usableHeightDp / effectiveLineHeight).coerceIn(12f, 50f)
+    val usableWidthDp = (screenWidthDp - 40f).coerceAtLeast(260f)
+    val charsPerLine = (usableWidthDp / (fs * 0.46f)).coerceIn(24f, 65f)
+    return (linesPerPage * charsPerLine).toInt().coerceIn(600, 3500)
 }
 
 private fun findBestBreak(text: String, targetLen: Int): Int {
     if (text.length <= targetLen) return text.length
-    // Look for sentence endings (., !, ?) within [targetLen * 0.65 .. targetLen]
-    val minSearch = (targetLen * 0.65f).toInt().coerceAtLeast(0)
+    // Look for sentence endings strictly within bottom 12% [targetLen * 0.88 .. targetLen]
+    // so pages are evenly and tightly filled
+    val minSearchSentence = (targetLen * 0.88f).toInt().coerceAtLeast(0)
     val window = text.substring(0, targetLen.coerceAtMost(text.length))
 
     for (del in listOf(". ", "! ", "? ", ".\n", "!\n", "?\n")) {
         val idx = window.lastIndexOf(del)
-        if (idx >= minSearch) {
+        if (idx >= minSearchSentence) {
             return idx + del.length
         }
     }
     for (del in listOf("; ", ": ", ", ")) {
         val idx = window.lastIndexOf(del)
-        if (idx >= minSearch) {
+        if (idx >= (targetLen * 0.90f).toInt()) {
             return idx + del.length
         }
     }
     val spaceIdx = window.lastIndexOf(' ')
-    if (spaceIdx >= minSearch) {
+    if (spaceIdx >= (targetLen * 0.92f).toInt()) {
         return spaceIdx + 1
     }
-    return targetLen
+    return if (spaceIdx > 0) spaceIdx + 1 else targetLen
 }
 
 private fun paginateBlocks(
     blocks: List<FormattedBlock>,
     fontSizeSp: Float,
-    lineHeightMultiplier: Float
+    lineHeightMultiplier: Float,
+    screenHeightDp: Float = 800f,
+    screenWidthDp: Float = 380f
 ): List<List<Pair<Int, FormattedBlock>>> {
     if (blocks.isEmpty()) return listOf(emptyList())
 
-    val targetChars = calculatePageCapacity(fontSizeSp, lineHeightMultiplier)
+    val targetChars = calculatePageCapacity(fontSizeSp, lineHeightMultiplier, screenHeightDp, screenWidthDp)
     val pages = mutableListOf<List<Pair<Int, FormattedBlock>>>()
     var currentPage = mutableListOf<Pair<Int, FormattedBlock>>()
     var currentChars = 0
@@ -1052,23 +1095,30 @@ private fun paginateBlocks(
                 flushPage()
                 pages.add(listOf(originalIndex to block))
             }
-            BlockType.TITLE, BlockType.SUBTITLE -> {
-                if (currentChars > targetChars * 0.3f) {
+            BlockType.TITLE -> {
+                if (currentChars > targetChars * 0.5f) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
-                currentChars += (block.text.length + 120)
+                currentChars += (block.text.length + (targetChars * 0.07f).toInt())
+            }
+            BlockType.SUBTITLE -> {
+                if (currentChars > targetChars * 0.6f) {
+                    flushPage()
+                }
+                currentPage.add(originalIndex to block)
+                currentChars += (block.text.length + (targetChars * 0.05f).toInt())
             }
             BlockType.DIVIDER -> {
-                if (currentChars + 50 > targetChars) {
+                if (currentChars + 30 > targetChars) {
                     flushPage()
                 } else {
                     currentPage.add(originalIndex to block)
-                    currentChars += 50
+                    currentChars += 30
                 }
             }
             BlockType.EPIGRAPH, BlockType.VERSE -> {
-                val weight = block.text.length + (if (block.type == BlockType.EPIGRAPH) 100 else 50)
+                val weight = block.text.length + 30
                 if (currentChars + weight > targetChars && currentPage.isNotEmpty()) {
                     flushPage()
                 }
@@ -1080,15 +1130,15 @@ private fun paginateBlocks(
                 var loopGuard = 0
                 while (remainingText.isNotEmpty() && loopGuard++ < 1000) {
                     val availableChars = targetChars - currentChars
-                    if (availableChars < 160 && currentPage.isNotEmpty()) {
+                    if (availableChars < 120 && currentPage.isNotEmpty()) {
                         flushPage()
                         continue
                     }
 
-                    val effectiveAvailable = availableChars.coerceAtLeast(160)
+                    val effectiveAvailable = availableChars.coerceAtLeast(120)
                     if (remainingText.length <= effectiveAvailable) {
                         currentPage.add(originalIndex to block.copy(text = remainingText))
-                        currentChars += remainingText.length + 40
+                        currentChars += remainingText.length + 20
                         remainingText = ""
                     } else {
                         val splitIndex = findBestBreak(remainingText, effectiveAvailable).coerceIn(1, remainingText.length)
@@ -1120,7 +1170,8 @@ fun RenderBlock(
     searchQuery: String,
     footnotes: Map<String, String>,
     onFootnoteClick: (ref: String, content: String) -> Unit,
-    onToggleControls: () -> Unit
+    onToggleControls: () -> Unit,
+    onSaveQuote: (String) -> Unit
 ) {
     when (block.type) {
         BlockType.TITLE -> {
@@ -1163,11 +1214,13 @@ fun RenderBlock(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 48.dp, end = 8.dp, top = 8.dp, bottom = 24.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onToggleControls() },
+                    .padding(start = 36.dp, end = 8.dp, top = 4.dp, bottom = 12.dp)
+                    .pointerInput(block.text) {
+                        detectTapGestures(
+                            onTap = { onToggleControls() },
+                            onLongPress = { onSaveQuote(block.text) }
+                        )
+                    },
                 horizontalAlignment = Alignment.End
             ) {
                 Text(
@@ -1195,11 +1248,13 @@ fun RenderBlock(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 32.dp, end = 16.dp, top = 8.dp, bottom = 16.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onToggleControls() }
+                    .padding(start = 28.dp, end = 16.dp, top = 6.dp, bottom = 12.dp)
+                    .pointerInput(block.text) {
+                        detectTapGestures(
+                            onTap = { onToggleControls() },
+                            onLongPress = { onSaveQuote(block.text) }
+                        )
+                    }
             ) {
                 Text(
                     text = block.text,
@@ -1290,7 +1345,8 @@ fun RenderBlock(
                 footnotes = footnotes,
                 onFootnoteClick = onFootnoteClick,
                 onToggleControls = onToggleControls,
-                modifier = Modifier.padding(bottom = 12.dp)
+                onSaveQuote = onSaveQuote,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
         }
     }

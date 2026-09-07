@@ -43,9 +43,12 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.ManageSearch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.outlined.MenuBook
+import com.aura.reader.ui.screens.settings.SettingsBottomSheet
+import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -106,6 +109,7 @@ fun LibraryScreen(
     onBookSelected: (Book) -> Unit
 ) {
     val context = LocalContext.current
+    val strings = LocalAppStrings.current
     val recentBooks by viewModel.recentBooks.collectAsState()
     val filteredRecentBooks by viewModel.filteredRecentBooks.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -114,10 +118,14 @@ fun LibraryScreen(
     val updateInfo by viewModel.updateInfo.collectAsState()
     val downloadProgress by viewModel.downloadProgress.collectAsState()
     val foundFiles by viewModel.foundDeviceFiles.collectAsState()
+    val readerSettings by viewModel.readerSettings.collectAsState()
+    val appLanguage by viewModel.appLanguage.collectAsState()
+    val updateNotificationsEnabled by viewModel.updateNotificationsEnabled.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var showOpenOptionsSheet by remember { mutableStateOf(false) }
+    var showSettingsSheet by remember { mutableStateOf(false) }
     var bookToDelete by remember { mutableStateOf<Book?>(null) }
 
     LaunchedEffect(Unit) {
@@ -128,8 +136,8 @@ fun LibraryScreen(
     bookToDelete?.let { book ->
         AlertDialog(
             onDismissRequest = { bookToDelete = null },
-            title = { Text("Удалить книгу?", fontWeight = FontWeight.Bold) },
-            text = { Text("Книга «${book.title}» будет удалена из библиотеки и списка недавних.") },
+            title = { Text(strings.deleteBookTitle, fontWeight = FontWeight.Bold) },
+            text = { Text(strings.deleteBookMessage(book.title)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -138,12 +146,12 @@ fun LibraryScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Удалить", color = MaterialTheme.colorScheme.onError)
+                    Text(strings.delete, color = MaterialTheme.colorScheme.onError)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { bookToDelete = null }) {
-                    Text("Отмена")
+                    Text(strings.cancel)
                 }
             }
         )
@@ -210,17 +218,25 @@ fun LibraryScreen(
                             }
                         }
                         Text(
-                            text = "Aura Reader",
+                            text = strings.appName,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 },
                 actions = {
+                    // Settings Sheet
+                    IconButton(onClick = { showSettingsSheet = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = strings.settingsTitle
+                        )
+                    }
+
                     // Check for updates
                     IconButton(onClick = { viewModel.checkForUpdates(manual = true, context = context) }) {
                         Icon(
                             imageVector = Icons.Default.SystemUpdate,
-                            contentDescription = "Проверить обновления"
+                            contentDescription = strings.checkUpdatesNow
                         )
                     }
 
@@ -234,7 +250,7 @@ fun LibraryScreen(
                     }) {
                         Icon(
                             painter = painterResource(R.drawable.ic_github),
-                            contentDescription = "GitHub репозиторий",
+                            contentDescription = strings.githubRepository,
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -250,7 +266,7 @@ fun LibraryScreen(
             ExtendedFloatingActionButton(
                 onClick = { getMultipleContentsLauncher.launch("*/*") },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Добавить книги") },
+                text = { Text(strings.addBooks) },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -274,7 +290,7 @@ fun LibraryScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // Instant Update Notification Banner
-                    if (updateInfo != null && updateInfo!!.isAvailable) {
+                    if (updateInfo != null && updateInfo!!.isAvailable && updateNotificationsEnabled) {
                         item {
                             Card(
                                 shape = RoundedCornerShape(20.dp),
@@ -538,6 +554,22 @@ fun LibraryScreen(
                 viewModel.openBookFromFile(file)
             },
             onRescan = { viewModel.scanDeviceForBooks() }
+        )
+    }
+
+    if (showSettingsSheet) {
+        SettingsBottomSheet(
+            currentTheme = readerSettings.themeMode,
+            currentLanguage = appLanguage,
+            updateNotificationsEnabled = updateNotificationsEnabled,
+            onDismiss = { showSettingsSheet = false },
+            onThemeChange = { viewModel.setThemeMode(it) },
+            onLanguageChange = { viewModel.setAppLanguage(it) },
+            onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
+            onCheckUpdates = {
+                showSettingsSheet = false
+                viewModel.checkForUpdates(manual = true, context = context)
+            }
         )
     }
 }

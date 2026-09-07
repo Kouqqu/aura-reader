@@ -23,7 +23,9 @@ private val LightColorScheme = lightColorScheme(
     surface = md_theme_light_surface,
     onSurface = md_theme_light_onSurface,
     surfaceVariant = md_theme_light_surfaceVariant,
-    onSurfaceVariant = md_theme_light_onSurfaceVariant
+    onSurfaceVariant = md_theme_light_onSurfaceVariant,
+    surfaceContainer = androidx.compose.ui.graphics.Color(0xFFF3EDF7),
+    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFFECE6F0)
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -38,7 +40,9 @@ private val DarkColorScheme = darkColorScheme(
     surface = md_theme_dark_surface,
     onSurface = md_theme_dark_onSurface,
     surfaceVariant = md_theme_dark_surfaceVariant,
-    onSurfaceVariant = md_theme_dark_onSurfaceVariant
+    onSurfaceVariant = md_theme_dark_onSurfaceVariant,
+    surfaceContainer = androidx.compose.ui.graphics.Color(0xFF1E2125),
+    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF282C32)
 )
 
 private val SepiaColorScheme = lightColorScheme(
@@ -53,7 +57,9 @@ private val SepiaColorScheme = lightColorScheme(
     surface = SepiaSurface,
     onSurface = SepiaText,
     surfaceVariant = SepiaSurface,
-    onSurfaceVariant = SepiaSecondaryText
+    onSurfaceVariant = SepiaSecondaryText,
+    surfaceContainer = androidx.compose.ui.graphics.Color(0xFFEBE3D3),
+    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFFE3DAC8)
 )
 
 private val AmoledColorScheme = darkColorScheme(
@@ -68,7 +74,9 @@ private val AmoledColorScheme = darkColorScheme(
     surface = AmoledSurface,
     onSurface = AmoledText,
     surfaceVariant = AmoledSurface,
-    onSurfaceVariant = AmoledSecondaryText
+    onSurfaceVariant = AmoledSecondaryText,
+    surfaceContainer = androidx.compose.ui.graphics.Color(0xFF121212),
+    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF1C1C1C)
 )
 
 @Composable

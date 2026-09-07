@@ -18,6 +18,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
 
+import com.aura.reader.data.model.ReaderSettings
+import com.aura.reader.data.model.ReaderThemeMode
+import com.aura.reader.data.preferences.PreferencesManager
+import com.aura.reader.ui.theme.AppLanguage
+import kotlinx.coroutines.flow.first
+
 sealed interface LibraryUiState {
     data object Idle : LibraryUiState
     data object Loading : LibraryUiState
@@ -26,8 +32,30 @@ sealed interface LibraryUiState {
 }
 
 class LibraryViewModel(
-    private val bookRepository: BookRepository
+    private val bookRepository: BookRepository,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
+
+    val readerSettings: StateFlow<ReaderSettings> = preferencesManager.readerSettings
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReaderSettings())
+
+    val appLanguage: StateFlow<AppLanguage> = preferencesManager.appLanguage
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppLanguage.RU)
+
+    val updateNotificationsEnabled: StateFlow<Boolean> = preferencesManager.updateNotificationsEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun setAppLanguage(language: AppLanguage) {
+        viewModelScope.launch { preferencesManager.updateAppLanguage(language) }
+    }
+
+    fun setThemeMode(themeMode: ReaderThemeMode) {
+        viewModelScope.launch { preferencesManager.updateThemeMode(themeMode) }
+    }
+
+    fun setUpdateNotificationsEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setUpdateNotificationsEnabled(enabled) }
+    }
 
     val recentBooks: StateFlow<List<Book>> = bookRepository.recentBooks
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -78,19 +106,28 @@ class LibraryViewModel(
         viewModelScope.launch {
             bookRepository.loadRecentBooks()
         }
-        // Scan for books and check updates
+        // Scan for books and check updates if notifications are enabled
         scanDeviceForBooks()
-        checkForUpdates(manual = false)
+        viewModelScope.launch {
+            if (preferencesManager.updateNotificationsEnabled.first()) {
+                checkForUpdates(manual = false)
+            }
+        }
     }
 
     fun checkForUpdates(manual: Boolean = true, context: Context? = null) {
         viewModelScope.launch {
+            if (!manual && !preferencesManager.updateNotificationsEnabled.first()) {
+                return@launch
+            }
             val currentVersion = "v${com.aura.reader.BuildConfig.VERSION_NAME}"
             val result = AppUpdateManager.checkForUpdates(currentVersion)
             result.onSuccess { info ->
                 if (info != null && info.isAvailable) {
                     _updateInfo.value = info
-                    context?.let { AppUpdateManager.showUpdateNotification(it, info.latestVersion) }
+                    if (preferencesManager.updateNotificationsEnabled.first()) {
+                        context?.let { AppUpdateManager.showUpdateNotification(it, info.latestVersion) }
+                    }
                 } else if (manual) {
                     _uiState.value = LibraryUiState.Error("У вас установлена последняя версия!")
                 }

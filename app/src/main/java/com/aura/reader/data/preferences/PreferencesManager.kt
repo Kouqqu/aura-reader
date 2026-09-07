@@ -35,6 +35,29 @@ class PreferencesManager(private val context: Context) {
         val READING_STATS_KEY = stringPreferencesKey("reading_stats_json")
         val BOOKMARKS_KEY = stringPreferencesKey("bookmarks_json")
         val QUOTES_KEY = stringPreferencesKey("quotes_json")
+        val APP_LANGUAGE_KEY = stringPreferencesKey("app_language")
+        val UPDATE_NOTIFICATIONS_KEY = booleanPreferencesKey("update_notifications_enabled")
+    }
+
+    val appLanguage: Flow<com.aura.reader.ui.theme.AppLanguage> = context.dataStore.data.map { prefs ->
+        val code = prefs[APP_LANGUAGE_KEY] ?: com.aura.reader.ui.theme.AppLanguage.RU.code
+        com.aura.reader.ui.theme.AppLanguage.fromCode(code)
+    }
+
+    suspend fun updateAppLanguage(language: com.aura.reader.ui.theme.AppLanguage) {
+        context.dataStore.edit { prefs ->
+            prefs[APP_LANGUAGE_KEY] = language.code
+        }
+    }
+
+    val updateNotificationsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[UPDATE_NOTIFICATIONS_KEY] ?: true
+    }
+
+    suspend fun setUpdateNotificationsEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[UPDATE_NOTIFICATIONS_KEY] = enabled
+        }
     }
 
     val readerSettings: Flow<ReaderSettings> = context.dataStore.data.map { prefs ->
