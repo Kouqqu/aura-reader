@@ -18,11 +18,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FormatSize
@@ -30,6 +33,7 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +49,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -69,12 +74,23 @@ fun ReaderScreen(
     val book by viewModel.currentBook.collectAsState()
     val settings by viewModel.readerSettings.collectAsState()
     val currentChapterIndex by viewModel.currentChapterIndex.collectAsState()
+    val savedOffset by viewModel.savedScrollOffset.collectAsState()
 
     var showControls by remember { mutableStateOf(true) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showChaptersSheet by remember { mutableStateOf(false) }
 
-    val listState = rememberLazyListState()
+    // Restore last read paragraph index
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = savedOffset)
+
+    // Only scroll to top when chapter explicitly changed to a different one
+    var lastChapterIndex by remember { mutableIntStateOf(currentChapterIndex) }
+    LaunchedEffect(currentChapterIndex) {
+        if (lastChapterIndex != currentChapterIndex) {
+            listState.scrollToItem(0)
+            lastChapterIndex = currentChapterIndex
+        }
+    }
 
     // Wrap reader in selected theme mode (Dynamic M3, Light, Sepia, AMOLED)
     AuraReaderTheme(themeMode = settings.themeMode) {
@@ -87,11 +103,6 @@ fun ReaderScreen(
 
         val chapters = book?.chapters ?: emptyList()
         val currentChapter = chapters.getOrNull(currentChapterIndex)
-
-        // Scroll to top when chapter changes
-        LaunchedEffect(currentChapterIndex) {
-            listState.scrollToItem(0)
-        }
 
         // Track progress when scrolling
         val firstVisibleIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }
@@ -128,7 +139,7 @@ fun ReaderScreen(
                         start = 22.dp,
                         end = 22.dp,
                         top = if (showControls) 80.dp else 40.dp,
-                        bottom = if (showControls) 120.dp else 60.dp
+                        bottom = if (showControls) 140.dp else 70.dp
                     )
                 ) {
                     item {
@@ -156,31 +167,50 @@ fun ReaderScreen(
                         )
                     }
 
+                    // Symmetrical Prev/Next buttons at the bottom of chapter
                     item {
-                        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             OutlinedButton(
                                 onClick = { viewModel.prevChapter() },
                                 enabled = currentChapterIndex > 0,
-                                shape = RoundedCornerShape(12.dp)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(14.dp)
                             ) {
-                                Icon(Icons.Default.ChevronLeft, contentDescription = null)
-                                Text("Предыдущая глава")
+                                Icon(
+                                    Icons.Default.ChevronLeft,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Предыдущая", maxLines = 1)
                             }
 
-                            OutlinedButton(
+                            FilledTonalButton(
                                 onClick = { viewModel.nextChapter() },
                                 enabled = currentChapterIndex < chapters.size - 1,
-                                shape = RoundedCornerShape(12.dp)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(14.dp)
                             ) {
-                                Text("Следующая глава")
-                                Icon(Icons.Default.ChevronRight, contentDescription = null)
+                                Text("Следующая", maxLines = 1)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Icon(
+                                    Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                         }
-                        Spacer(modifier = Modifier.height(48.dp))
+                        Spacer(modifier = Modifier.height(64.dp))
                     }
                 }
             } else {
@@ -270,19 +300,58 @@ fun ReaderScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .padding(horizontal = 16.dp, vertical = 14.dp)
                     ) {
-                        // Slider for fast chapter progression
                         if (chapters.isNotEmpty()) {
+                            // Clear title and progress header
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoStories,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Глава ${currentChapterIndex + 1} из ${chapters.size}: ${currentChapter?.title ?: ""}",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+
+                                val progress = (((currentChapterIndex + 1).toFloat() / chapters.size) * 100).toInt()
+                                Text(
+                                    text = "$progress%",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Chapter Slider with explicit Prev/Next icons
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 IconButton(
                                     onClick = { viewModel.prevChapter() },
-                                    enabled = currentChapterIndex > 0
+                                    enabled = currentChapterIndex > 0,
+                                    modifier = Modifier.size(36.dp)
                                 ) {
-                                    Icon(Icons.Default.ChevronLeft, contentDescription = null)
+                                    Icon(Icons.Default.ChevronLeft, contentDescription = "Предыдущая глава")
                                 }
 
                                 Slider(
@@ -299,32 +368,19 @@ fun ReaderScreen(
 
                                 IconButton(
                                     onClick = { viewModel.nextChapter() },
-                                    enabled = currentChapterIndex < chapters.size - 1
+                                    enabled = currentChapterIndex < chapters.size - 1,
+                                    modifier = Modifier.size(36.dp)
                                 ) {
-                                    Icon(Icons.Default.ChevronRight, contentDescription = null)
+                                    Icon(Icons.Default.ChevronRight, contentDescription = "Следующая глава")
                                 }
                             }
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "Глава ${currentChapterIndex + 1} из ${chapters.size}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-
-                                val progress = (((currentChapterIndex + 1).toFloat() / chapters.size) * 100).toInt()
-                                Text(
-                                    text = "$progress%",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                            Text(
+                                text = "Перемещение по главам книги",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            )
                         }
                     }
                 }

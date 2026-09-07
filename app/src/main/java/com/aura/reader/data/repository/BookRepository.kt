@@ -87,19 +87,50 @@ class BookRepository(
             val inputStream: InputStream = context.contentResolver.openInputStream(uri)
                 ?: return@withContext Result.failure(Exception("Не удалось открыть файл"))
 
+            val bytes = inputStream.use { it.readBytes() }
+            val isZip = bytes.size >= 4 &&
+                    bytes[0] == 0x50.toByte() &&
+                    bytes[1] == 0x4B.toByte() &&
+                    bytes[2] == 0x03.toByte() &&
+                    bytes[3] == 0x04.toByte()
+
             val book = when {
                 fileName.endsWith(".epub", ignoreCase = true) -> {
-                    EpubParser.parse(inputStream, uri.toString(), fileName)
+                    EpubParser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName)
                 }
                 fileName.endsWith(".fb2", ignoreCase = true) || fileName.endsWith(".fb2.zip", ignoreCase = true) -> {
-                    Fb2Parser.parse(inputStream, uri.toString(), fileName)
+                    Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName)
+                }
+                isZip -> {
+                    // Check if it's EPUB or FB2.ZIP
+                    val isEpub = try {
+                        val zis = java.util.zip.ZipInputStream(java.io.ByteArrayInputStream(bytes))
+                        var hasMetaInf = false
+                        var e = zis.nextEntry
+                        while (e != null) {
+                            if (e.name.contains("META-INF/container.xml", ignoreCase = true)) {
+                                hasMetaInf = true
+                                break
+                            }
+                            e = zis.nextEntry
+                        }
+                        hasMetaInf
+                    } catch (e: Exception) {
+                        false
+                    }
+
+                    if (isEpub) {
+                        EpubParser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName)
+                    } else {
+                        Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName)
+                    }
                 }
                 else -> {
-                    // Fallback to plain text or check content
-                    val content = inputStream.bufferedReader().use { it.readText() }
-                    if (content.trimStart().startsWith("<?xml") && content.contains("<FictionBook", ignoreCase = true)) {
-                        Fb2Parser.parse(content.byteInputStream(), uri.toString(), fileName)
+                    val sampleHeader = String(bytes.take(2048).toByteArray(), Charsets.UTF_8)
+                    if (sampleHeader.contains("<FictionBook", ignoreCase = true)) {
+                        Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName)
                     } else {
+                        val content = String(bytes, Charsets.UTF_8)
                         Book(
                             id = UUID.randomUUID().toString(),
                             title = fileName.substringBeforeLast("."),

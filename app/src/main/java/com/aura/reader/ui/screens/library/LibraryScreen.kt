@@ -120,15 +120,7 @@ fun LibraryScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
-                    filePickerLauncher.launch(
-                        arrayOf(
-                            "application/epub+zip",
-                            "application/x-fictionbook+xml",
-                            "text/xml",
-                            "text/plain",
-                            "*/*"
-                        )
-                    )
+                    filePickerLauncher.launch(arrayOf("*/*"))
                 },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Открыть книгу") },
@@ -146,15 +138,7 @@ fun LibraryScreen(
             if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
                 EmptyLibraryView(
                     onOpenFile = {
-                        filePickerLauncher.launch(
-                            arrayOf(
-                                "application/epub+zip",
-                                "application/x-fictionbook+xml",
-                                "text/xml",
-                                "text/plain",
-                                "*/*"
-                            )
-                        )
+                        filePickerLauncher.launch(arrayOf("*/*"))
                     },
                     onOpenSample = { viewModel.openSampleBook() }
                 )

@@ -23,7 +23,6 @@ object EpubParser {
 
         while (entry != null) {
             if (!entry.isDirectory) {
-                // Normalize path separators
                 val normalizedName = entry.name.replace("\\", "/")
                 files[normalizedName] = zis.readBytes()
             }
@@ -54,11 +53,12 @@ object EpubParser {
             ?: fileName.removeSuffix(".epub")
         val author = opfDoc.getElementsByTagName("dc:creator").item(0)?.textContent?.trim() ?: ""
 
-        // Manifest: id -> href
+        // Manifest: id -> href & mediaType
         val manifestItems = opfDoc.getElementsByTagName("item")
         val idToHref = mutableMapOf<String, String>()
         val idToMediaType = mutableMapOf<String, String>()
         var coverHref: String? = null
+        var ncxHref: String? = null
 
         for (i in 0 until manifestItems.length) {
             val item = manifestItems.item(i) as Element
@@ -75,6 +75,36 @@ object EpubParser {
                 id.equals("cover-image", ignoreCase = true)
             ) {
                 coverHref = href
+            }
+
+            if (mediaType.equals("application/x-dtbncx+xml", ignoreCase = true) || id.equals("ncx", ignoreCase = true)) {
+                ncxHref = href
+            }
+        }
+
+        // Parse TOC (Table of Contents) from NCX if available
+        val tocTitles = mutableMapOf<String, String>()
+        if (ncxHref != null) {
+            val resolvedNcxPath = resolvePath(opfDir, ncxHref)
+            val ncxBytes = files[resolvedNcxPath]
+            if (ncxBytes != null) {
+                try {
+                    val ncxDoc = docBuilder.parse(ByteArrayInputStream(ncxBytes))
+                    val navPoints = ncxDoc.getElementsByTagName("navPoint")
+                    for (i in 0 until navPoints.length) {
+                        val np = navPoints.item(i) as Element
+                        val text = np.getElementsByTagName("text").item(0)?.textContent?.trim() ?: continue
+                        val contentEl = np.getElementsByTagName("content").item(0) as? Element ?: continue
+                        val src = contentEl.getAttribute("src").substringBefore("#")
+                        if (src.isNotBlank() && text.isNotBlank()) {
+                            tocTitles[src] = text
+                            // Also map clean filename
+                            tocTitles[src.substringAfterLast("/")] = text
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Ignore NCX parsing failure, fall back to HTML headings
+                }
             }
         }
 
@@ -108,23 +138,43 @@ object EpubParser {
             val htmlString = String(chBytes, Charsets.UTF_8)
             val jsoupDoc = Jsoup.parse(htmlString)
 
-            // Extract title
-            val chapterTitle = jsoupDoc.select("h1, h2, h3, title").firstOrNull()?.text()?.trim()
-                ?: "Глава ${order + 1}"
+            // 1) Check TOC title first
+            val cleanHref = chHref.substringAfterLast("/")
+            var chapterTitle = tocTitles[chHref] ?: tocTitles[cleanHref]
 
-            // Extract clean readable text with paragraph breaks
-            val paragraphs = jsoupDoc.select("p, h1, h2, h3, h4, h5, h6, blockquote, li")
-            val bodyText = if (paragraphs.isNotEmpty()) {
-                paragraphs.map { it.text().trim() }.filter { it.isNotBlank() }.joinToString("\n\n")
-            } else {
-                jsoupDoc.body().text().trim()
+            // 2) If not in TOC, look for headings inside <body> (avoiding <head><title>)
+            if (chapterTitle == null) {
+                val body = jsoupDoc.body()
+                val headingEl = body.select("h1, h2, h3, h4, [class*='chapter'], [class*='title']").firstOrNull { el ->
+                    val txt = el.text().trim()
+                    txt.isNotBlank() && !txt.equals(title, ignoreCase = true) && !txt.equals(author, ignoreCase = true)
+                }
+                chapterTitle = headingEl?.text()?.trim()
             }
+
+            // 3) If still none, check first short line of body
+            val paragraphs = jsoupDoc.select("p, h1, h2, h3, h4, h5, h6, blockquote, li")
+            val rawParagraphs = if (paragraphs.isNotEmpty()) {
+                paragraphs.map { it.text().trim() }.filter { it.isNotBlank() }
+            } else {
+                listOf(jsoupDoc.body().text().trim()).filter { it.isNotBlank() }
+            }
+
+            if (chapterTitle == null) {
+                val firstP = rawParagraphs.firstOrNull() ?: ""
+                if (isLikelyHeading(firstP)) {
+                    chapterTitle = firstP
+                }
+            }
+
+            val finalTitle = chapterTitle?.ifBlank { null } ?: "Глава ${order + 1}"
+            val bodyText = rawParagraphs.joinToString("\n\n")
 
             if (bodyText.isNotBlank()) {
                 chapters.add(
                     Chapter(
                         id = UUID.randomUUID().toString(),
-                        title = chapterTitle,
+                        title = finalTitle,
                         content = bodyText,
                         order = order++
                     )
@@ -149,6 +199,19 @@ object EpubParser {
             ),
             progressPercent = 0
         )
+    }
+
+    private fun isLikelyHeading(line: String): Boolean {
+        if (line.length > 80 || line.isBlank()) return false
+        val lower = line.lowercase()
+        return lower.startsWith("глава") ||
+                lower.startsWith("часть") ||
+                lower.startsWith("пролог") ||
+                lower.startsWith("эпилог") ||
+                lower.startsWith("chapter") ||
+                lower.startsWith("act") ||
+                line.matches(Regex("^[IVXLCDM]+\\.?.*")) ||
+                line.matches(Regex("^\\d+\\.?.*"))
     }
 
     private fun resolvePath(baseDir: String, relativePath: String): String {

@@ -29,31 +29,28 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Debug APK
-        run: |
-          set -o pipefail
-          ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee gradle_output.txt
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
 
-      - name: Save Log to Branch on Failure
-        if: failure()
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git checkout -B build-logs
-          git add gradle_output.txt
-          git commit -m "build log [skip ci]" || true
-          git push origin build-logs -f
+      - name: Prepare APK file
+        run: cp app/build/outputs/apk/debug/*.apk AuraReader.apk
 
-      - name: Print Gradle Errors as Annotations
-        if: failure()
-        run: |
-          grep -i -C 2 -E "e: |FAILURE:|BUILD FAILED" gradle_output.txt | head -n 40 | while IFS= read -r line; do
-            echo "::error::$line"
-          done
-
-      - name: Upload Debug APK
-        if: success()
+      - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: AuraReader-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: AuraReader.apk
           if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v1.0.0"
+          name: "Aura Reader v1.0.0"
+          body: |
+            Простая читалка для Android с поддержкой FB2 и EPUB в стиле Material You.
+            
+            Скачайте **AuraReader.apk** ниже и установите на телефон.
+          files: AuraReader.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

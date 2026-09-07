@@ -29,16 +29,26 @@ class ReaderViewModel(
     private val _currentChapterIndex = MutableStateFlow(0)
     val currentChapterIndex: StateFlow<Int> = _currentChapterIndex.asStateFlow()
 
+    private val _savedScrollOffset = MutableStateFlow(0)
+    val savedScrollOffset: StateFlow<Int> = _savedScrollOffset.asStateFlow()
+
     init {
         currentBook.value?.let {
             _currentChapterIndex.value = it.currentChapterIndex
+            _savedScrollOffset.value = it.currentScrollOffset
         }
+    }
+
+    fun openBook(book: Book) {
+        _currentChapterIndex.value = book.currentChapterIndex
+        _savedScrollOffset.value = book.currentScrollOffset
     }
 
     fun setChapter(index: Int) {
         val book = currentBook.value ?: return
         if (index in book.chapters.indices) {
             _currentChapterIndex.value = index
+            _savedScrollOffset.value = 0
             saveProgress(index, 0)
         }
     }
@@ -58,17 +68,21 @@ class ReaderViewModel(
         }
     }
 
-    fun updateScrollProgress(scrollOffset: Int, totalHeight: Int) {
+    fun updateScrollProgress(scrollItemIndex: Int, totalItems: Int) {
         val book = currentBook.value ?: return
         val chapterIdx = _currentChapterIndex.value
         val totalChapters = book.chapters.size.coerceAtLeast(1)
 
-        val chapterRatio = 1f / totalChapters
-        val intraChapterProgress = if (totalHeight > 0) (scrollOffset.toFloat() / totalHeight).coerceIn(0f, 1f) else 0f
+        val intraChapterProgress = if (totalItems > 1) {
+            (scrollItemIndex.toFloat() / (totalItems - 1)).coerceIn(0f, 1f)
+        } else 0f
+
         val overallPercent = (((chapterIdx + intraChapterProgress) / totalChapters) * 100).toInt().coerceIn(0, 100)
 
+        _savedScrollOffset.value = scrollItemIndex
+
         viewModelScope.launch {
-            bookRepository.updateReadingProgress(chapterIdx, scrollOffset, overallPercent)
+            bookRepository.updateReadingProgress(chapterIdx, scrollItemIndex, overallPercent)
         }
     }
 

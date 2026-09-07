@@ -29,7 +29,7 @@ fun AuraNavGraph(
             LibraryScreen(
                 viewModel = libraryViewModel,
                 onBookSelected = { book ->
-                    readerViewModel.setChapter(book.currentChapterIndex)
+                    readerViewModel.openBook(book)
                     navController.navigate(NavRoutes.READER)
                 }
             )

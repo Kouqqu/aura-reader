@@ -6,7 +6,6 @@ import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.BookFormat
 import com.aura.reader.data.model.Chapter
 import org.xmlpull.v1.XmlPullParser
-import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.util.UUID
 import java.util.zip.ZipInputStream
@@ -32,21 +31,55 @@ object Fb2Parser {
         val chapters = mutableListOf<Chapter>()
 
         val parser = Xml.newPullParser()
-        parser.setInput(stream, null) // null allows XML encoding declaration auto-detection
+        parser.setInput(stream, null)
 
         var eventType = parser.eventType
-        var currentSectionTitle = ""
-        var currentSectionText = StringBuilder()
         var inTitleInfo = false
         var inCoverpage = false
         var inBody = false
-        var inSection = false
+        var currentBinaryId: String? = null
+        val binaryContent = StringBuilder()
+
+        // Section parsing tracking
+        var sectionDepth = 0
+        var currentSectionTitleLines = mutableListOf<String>()
+        var currentSectionText = StringBuilder()
+        var currentTitleLine = StringBuilder()
         var inTitle = false
         var inParagraph = false
-        var currentBinaryId: String? = null
-        var binaryContent = StringBuilder()
 
-        var chapterOrder = 0
+        fun flushChapter() {
+            val text = currentSectionText.toString().trim()
+            if (text.isNotBlank()) {
+                val fullTitle = currentSectionTitleLines
+                    .filter { it.isNotBlank() }
+                    .joinToString(": ")
+
+                // If no explicit title was in <title>, check first line
+                val (resolvedTitle, resolvedText) = if (fullTitle.isBlank()) {
+                    val firstLine = text.substringBefore("\n\n").trim()
+                    if (isLikelyHeading(firstLine)) {
+                        val remaining = text.substringAfter("\n\n", "").trim()
+                        Pair(firstLine, remaining.ifBlank { text })
+                    } else {
+                        Pair("Глава ${chapters.size + 1}", text)
+                    }
+                } else {
+                    Pair(fullTitle, text)
+                }
+
+                chapters.add(
+                    Chapter(
+                        id = UUID.randomUUID().toString(),
+                        title = resolvedTitle,
+                        content = resolvedText,
+                        order = chapters.size
+                    )
+                )
+                currentSectionText = StringBuilder()
+                currentSectionTitleLines = mutableListOf()
+            }
+        }
 
         while (eventType != XmlPullParser.END_DOCUMENT) {
             val tagName = parser.name?.lowercase() ?: ""
@@ -87,60 +120,71 @@ object Fb2Parser {
                                 }
                             }
                         }
-                        "body" -> inBody = true
+                        "body" -> {
+                            inBody = true
+                        }
                         "section" -> {
                             if (inBody) {
-                                if (currentSectionText.isNotBlank()) {
-                                    chapters.add(
-                                        Chapter(
-                                            id = UUID.randomUUID().toString(),
-                                            title = currentSectionTitle.ifBlank { "Глава ${chapterOrder + 1}" },
-                                            content = currentSectionText.toString().trim(),
-                                            order = chapterOrder++
-                                        )
-                                    )
-                                    currentSectionText = StringBuilder()
-                                    currentSectionTitle = ""
-                                }
-                                inSection = true
+                                // If a nested or sibling section starts and we already have chapter content, flush it
+                                flushChapter()
+                                sectionDepth++
                             }
                         }
                         "title" -> {
-                            if (inSection || inBody) inTitle = true
+                            if (sectionDepth > 0 || inBody) {
+                                inTitle = true
+                            }
                         }
                         "p" -> {
                             inParagraph = true
+                            if (inTitle) {
+                                currentTitleLine = StringBuilder()
+                            }
                         }
                         "empty-line" -> {
-                            currentSectionText.append("\n\n")
+                            if (!inTitle) {
+                                currentSectionText.append("\n\n")
+                            }
                         }
                         "binary" -> {
                             currentBinaryId = parser.getAttributeValue(null, "id")
-                            binaryContent = StringBuilder()
+                            binaryContent.setLength(0)
                         }
                     }
                 }
+
                 XmlPullParser.TEXT -> {
                     val text = parser.text
-                    if (currentBinaryId != null) {
+                    val binId = currentBinaryId
+                    if (binId != null) {
                         binaryContent.append(text)
                     } else if (inTitle) {
                         if (text != null && text.isNotBlank()) {
-                            if (currentSectionTitle.isNotEmpty()) currentSectionTitle += " "
-                            currentSectionTitle += text.trim()
+                            currentTitleLine.append(text)
                         }
                     } else if (inParagraph && text != null) {
-                        currentSectionText.append(text.trim())
+                        currentSectionText.append(text)
                     }
                 }
+
                 XmlPullParser.END_TAG -> {
                     when (tagName) {
                         "title-info" -> inTitleInfo = false
                         "coverpage" -> inCoverpage = false
-                        "title" -> inTitle = false
+                        "title" -> {
+                            inTitle = false
+                        }
                         "p" -> {
                             inParagraph = false
-                            currentSectionText.append("\n\n")
+                            if (inTitle) {
+                                val line = currentTitleLine.toString().trim()
+                                if (line.isNotEmpty()) {
+                                    currentSectionTitleLines.add(line)
+                                }
+                                currentTitleLine = StringBuilder()
+                            } else {
+                                currentSectionText.append("\n\n")
+                            }
                         }
                         "binary" -> {
                             val binId = currentBinaryId
@@ -150,19 +194,10 @@ object Fb2Parser {
                             }
                         }
                         "section" -> {
-                            if (currentSectionText.isNotBlank()) {
-                                chapters.add(
-                                    Chapter(
-                                        id = UUID.randomUUID().toString(),
-                                        title = currentSectionTitle.ifBlank { "Глава ${chapterOrder + 1}" },
-                                        content = currentSectionText.toString().trim(),
-                                        order = chapterOrder++
-                                    )
-                                )
-                                currentSectionText = StringBuilder()
-                                currentSectionTitle = ""
+                            if (inBody) {
+                                flushChapter()
+                                if (sectionDepth > 0) sectionDepth--
                             }
-                            inSection = false
                         }
                         "body" -> inBody = false
                     }
@@ -171,16 +206,7 @@ object Fb2Parser {
             eventType = parser.next()
         }
 
-        if (currentSectionText.isNotBlank()) {
-            chapters.add(
-                Chapter(
-                    id = UUID.randomUUID().toString(),
-                    title = currentSectionTitle.ifBlank { "Глава ${chapterOrder + 1}" },
-                    content = currentSectionText.toString().trim(),
-                    order = chapterOrder
-                )
-            )
-        }
+        flushChapter()
 
         val coverData = coverId?.let { binaries[it] } ?: binaries.values.firstOrNull()
 
@@ -201,5 +227,18 @@ object Fb2Parser {
             ),
             progressPercent = 0
         )
+    }
+
+    private fun isLikelyHeading(line: String): Boolean {
+        if (line.length > 80 || line.isBlank()) return false
+        val lower = line.lowercase()
+        return lower.startsWith("глава") ||
+                lower.startsWith("часть") ||
+                lower.startsWith("пролог") ||
+                lower.startsWith("эпилог") ||
+                lower.startsWith("chapter") ||
+                lower.startsWith("act") ||
+                line.matches(Regex("^[IVXLCDM]+\\.?.*")) || // Roman numerals
+                line.matches(Regex("^\\d+\\.?.*")) // Numbers: "1. Beginning"
     }
 }
