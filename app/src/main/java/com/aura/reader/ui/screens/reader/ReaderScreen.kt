@@ -1,4 +1,4 @@
-﻿package com.aura.reader.ui.screens.reader
+package com.aura.reader.ui.screens.reader
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -85,7 +85,10 @@ import com.aura.reader.ui.theme.AuraReaderTheme
 import kotlinx.coroutines.launch
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.ExperimentalFoundationApi::class
+)
 @Composable
 fun ReaderScreen(
     viewModel: ReaderViewModel,
@@ -369,6 +372,10 @@ fun ReaderScreen(
     }
 }
 
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.ExperimentalFoundationApi::class
+)
 @Composable
 fun ChapterContentView(
     chapter: Chapter,

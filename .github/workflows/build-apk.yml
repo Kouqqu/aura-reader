@@ -31,6 +31,13 @@ jobs:
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace --no-daemon
 
+      - name: Upload Build Reports on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-failure-reports
+          path: app/build/reports/
+
       - name: Prepare APK file
         run: cp app/build/outputs/apk/debug/*.apk AuraReader.apk
 
