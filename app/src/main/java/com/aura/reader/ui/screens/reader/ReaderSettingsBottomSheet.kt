@@ -53,7 +53,8 @@ fun ReaderSettingsBottomSheet(
     onLineHeightChange: (Float) -> Unit,
     onThemeModeChange: (ReaderThemeMode) -> Unit,
     onFontFamilyChange: (ReaderFontFamily) -> Unit,
-    onLightImageBackgroundChange: (Boolean) -> Unit
+    onLightImageBackgroundChange: (Boolean) -> Unit,
+    onPagingModeChange: (Boolean) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -237,7 +238,35 @@ fun ReaderSettingsBottomSheet(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            // --- Reading Mode (Continuous / Paging) ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onPagingModeChange(!settings.pagingMode) }
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text(
+                        text = "Постраничный режим",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = if (settings.pagingMode) "Листание страниц тапом по краям / свайпом" else "Непрерывная вертикальная лента",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = settings.pagingMode,
+                    onCheckedChange = onPagingModeChange
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // --- Light Background for Illustrations in Dark Themes ---
             Row(

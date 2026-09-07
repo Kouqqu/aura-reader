@@ -37,6 +37,10 @@ object Fb2Parser {
         var coverId: String? = null
         val binaries = mutableMapOf<String, String>()
         val chapters = mutableListOf<Chapter>()
+        val footnotes = mutableMapOf<String, String>()
+        var currentNoteId: String? = null
+        var currentNoteTitle = ""
+        val currentNoteText = StringBuilder()
 
         val parser = Xml.newPullParser()
         parser.setInput(stream, null)
@@ -161,13 +165,32 @@ object Fb2Parser {
                                 )
                             }
                         }
+                        "a" -> {
+                            val href = parser.getAttributeValue(null, "href")
+                                ?: parser.getAttributeValue("http://www.w3.org/1999/xlink", "href")
+                            val type = parser.getAttributeValue(null, "type")
+                            if (href != null && (type == "note" || href.startsWith("#"))) {
+                                val targetId = href.removePrefix("#")
+                                val linkText = try { parser.nextText() } catch (e: Exception) { "" }
+                                val rawText = linkText.trim()
+                                val display = if (rawText.isNotBlank()) rawText else targetId
+                                val bracketed = if (display.startsWith("[") && display.endsWith("]")) display else "[$display]"
+                                currentText.append(" $bracketed ")
+                                footnotes[bracketed] = targetId
+                                footnotes[display] = targetId
+                            }
+                        }
                         "body" -> {
                             inBody = true
                             val bodyName = parser.getAttributeValue(null, "name")?.lowercase() ?: ""
                             inNotesBody = bodyName.contains("notes") || bodyName.contains("comments")
                         }
                         "section" -> {
-                            if (inBody) {
+                            if (inNotesBody) {
+                                currentNoteId = parser.getAttributeValue(null, "id") ?: UUID.randomUUID().toString()
+                                currentNoteTitle = ""
+                                currentNoteText.setLength(0)
+                            } else if (inBody) {
                                 flushChapter()
                                 sectionDepth++
                             }
@@ -263,24 +286,33 @@ object Fb2Parser {
                             inParagraph = false
                             val paragraphText = currentText.toString().trim()
                             if (paragraphText.isNotEmpty()) {
-                                when {
-                                    inTitle -> {
-                                        currentSectionTitleLines.add(paragraphText)
-                                        currentBlocks.add(FormattedBlock(BlockType.TITLE, paragraphText))
+                                if (inNotesBody) {
+                                    if (inTitle) {
+                                        currentNoteTitle = paragraphText
+                                    } else {
+                                        if (currentNoteText.isNotEmpty()) currentNoteText.append("\n\n")
+                                        currentNoteText.append(paragraphText)
                                     }
-                                    inSubtitle -> {
-                                        currentBlocks.add(FormattedBlock(BlockType.SUBTITLE, paragraphText))
-                                    }
-                                    inEpigraph -> {
-                                        if (!inTextAuthor) {
-                                            currentEpigraphLines.add(paragraphText)
+                                } else {
+                                    when {
+                                        inTitle -> {
+                                            currentSectionTitleLines.add(paragraphText)
+                                            currentBlocks.add(FormattedBlock(BlockType.TITLE, paragraphText))
                                         }
-                                    }
-                                    inPoem -> {
-                                        currentPoemLines.add(paragraphText)
-                                    }
-                                    else -> {
-                                        currentBlocks.add(FormattedBlock(BlockType.PARAGRAPH, paragraphText))
+                                        inSubtitle -> {
+                                            currentBlocks.add(FormattedBlock(BlockType.SUBTITLE, paragraphText))
+                                        }
+                                        inEpigraph -> {
+                                            if (!inTextAuthor) {
+                                                currentEpigraphLines.add(paragraphText)
+                                            }
+                                        }
+                                        inPoem -> {
+                                            currentPoemLines.add(paragraphText)
+                                        }
+                                        else -> {
+                                            currentBlocks.add(FormattedBlock(BlockType.PARAGRAPH, paragraphText))
+                                        }
                                     }
                                 }
                             }
@@ -294,7 +326,18 @@ object Fb2Parser {
                             }
                         }
                         "section" -> {
-                            if (inBody) {
+                            if (inNotesBody) {
+                                val noteContent = currentNoteText.toString().trim()
+                                val noteId = currentNoteId
+                                if (noteId != null && noteContent.isNotEmpty()) {
+                                    footnotes[noteId] = noteContent
+                                    footnotes[noteId.removePrefix("#")] = noteContent
+                                    if (currentNoteTitle.isNotEmpty()) {
+                                        footnotes[currentNoteTitle] = noteContent
+                                        footnotes["[$currentNoteTitle]"] = noteContent
+                                    }
+                                }
+                            } else if (inBody) {
                                 flushChapter()
                                 if (sectionDepth > 0) sectionDepth--
                             }
@@ -307,6 +350,14 @@ object Fb2Parser {
         }
 
         flushChapter()
+
+        // Resolve footnote pointers (where value is targetId referencing another entry)
+        for ((key, value) in footnotes.toMap()) {
+            val resolved = footnotes[value]
+            if (resolved != null && resolved != value) {
+                footnotes[key] = resolved
+            }
+        }
 
         // Extract binaries to imagesDir if provided
         val extractedImages = mutableMapOf<String, String>()
@@ -355,6 +406,7 @@ object Fb2Parser {
                     order = 0
                 )
             ),
+            footnotes = footnotes,
             progressPercent = 0
         )
     }

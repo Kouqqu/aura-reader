@@ -413,4 +413,34 @@ class BookRepository(
             raw
         }
     }
+
+    suspend fun removeBook(bookId: String) = withContext(Dispatchers.IO) {
+        val currentList = _recentBooks.value.toMutableList()
+        val bookToRemove = currentList.find { it.id == bookId }
+        currentList.removeAll { it.id == bookId }
+        saveRecentBooks(currentList)
+
+        if (bookToRemove != null) {
+            try {
+                val localBookDir = java.io.File(context.filesDir, "saved_books")
+                val files = localBookDir.listFiles() ?: emptyArray()
+                for (f in files) {
+                    if (f.name.startsWith(bookId)) {
+                        f.delete()
+                    }
+                }
+            } catch (e: Exception) {}
+        }
+    }
+
+    val bookmarks = preferencesManager.bookmarks
+    suspend fun addBookmark(bookmark: com.aura.reader.data.model.Bookmark) = preferencesManager.addBookmark(bookmark)
+    suspend fun removeBookmark(id: String) = preferencesManager.removeBookmark(id)
+
+    val quotes = preferencesManager.quotes
+    suspend fun addQuote(quote: com.aura.reader.data.model.Quote) = preferencesManager.addQuote(quote)
+    suspend fun removeQuote(id: String) = preferencesManager.removeQuote(id)
+
+    val todayReadingMinutes = preferencesManager.todayReadingMinutes
+    suspend fun addReadingSeconds(seconds: Long) = preferencesManager.addReadingSeconds(seconds)
 }

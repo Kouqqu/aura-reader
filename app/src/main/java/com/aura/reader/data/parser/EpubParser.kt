@@ -164,6 +164,7 @@ object EpubParser {
 
         // 3. Parse chapters & blocks
         val chapters = mutableListOf<Chapter>()
+        val footnotes = mutableMapOf<String, String>()
         var order = 0
 
         for (chHref in chapterHrefs) {
@@ -172,6 +173,17 @@ object EpubParser {
 
             val htmlString = String(chBytes, Charsets.UTF_8)
             val jsoupDoc = Jsoup.parse(htmlString)
+
+            // Extract footnotes / aside notes
+            jsoupDoc.select("aside, [epub\\:type~=footnote], [epub\\:type~=note], .footnote, .note").forEach { noteEl ->
+                val id = noteEl.id()
+                val text = noteEl.text().trim()
+                if (id.isNotBlank() && text.isNotBlank()) {
+                    footnotes[id] = text
+                    footnotes["[$id]"] = text
+                }
+            }
+
             val body = jsoupDoc.body()
 
             // 1) Determine title:
@@ -327,6 +339,7 @@ object EpubParser {
                     order = 0
                 )
             ),
+            footnotes = footnotes,
             progressPercent = 0
         )
     }

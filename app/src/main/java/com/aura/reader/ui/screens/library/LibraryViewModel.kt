@@ -32,6 +32,36 @@ class LibraryViewModel(
     val recentBooks: StateFlow<List<Book>> = bookRepository.recentBooks
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    val todayReadingMinutes: StateFlow<Int> = bookRepository.todayReadingMinutes
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val filteredRecentBooks: StateFlow<List<Book>> = kotlinx.coroutines.flow.combine(
+        recentBooks,
+        _searchQuery
+    ) { books, query ->
+        val q = query.trim()
+        if (q.isEmpty()) {
+            books
+        } else {
+            books.filter {
+                it.title.contains(q, ignoreCase = true) || it.author.contains(q, ignoreCase = true)
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun removeBook(bookId: String) {
+        viewModelScope.launch {
+            bookRepository.removeBook(bookId)
+        }
+    }
+
     private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Idle)
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 

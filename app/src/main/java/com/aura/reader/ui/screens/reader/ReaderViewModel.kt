@@ -124,4 +124,167 @@ class ReaderViewModel(
             preferencesManager.updateLightImageBackground(enabled)
         }
     }
+
+    fun setPagingMode(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesManager.updatePagingMode(enabled)
+        }
+    }
+
+    // --- Active Reading Timer ---
+    private var readingStartTime: Long = 0L
+
+    fun onResumeReading() {
+        readingStartTime = System.currentTimeMillis()
+    }
+
+    fun onPauseReading() {
+        if (readingStartTime > 0L) {
+            val elapsedSeconds = (System.currentTimeMillis() - readingStartTime) / 1000
+            if (elapsedSeconds in 1..7200) {
+                viewModelScope.launch {
+                    bookRepository.addReadingSeconds(elapsedSeconds)
+                }
+            }
+            readingStartTime = 0L
+        }
+    }
+
+    // --- In-Book Search ---
+    data class SearchMatch(
+        val chapterIndex: Int,
+        val chapterTitle: String,
+        val blockIndex: Int,
+        val snippet: String
+    )
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _searchResults = MutableStateFlow<List<SearchMatch>>(emptyList())
+    val searchResults: StateFlow<List<SearchMatch>> = _searchResults.asStateFlow()
+
+    private val _currentSearchIndex = MutableStateFlow(0)
+    val currentSearchIndex: StateFlow<Int> = _currentSearchIndex.asStateFlow()
+
+    private val _targetScrollOffset = MutableStateFlow<Int?>(null)
+    val targetScrollOffset: StateFlow<Int?> = _targetScrollOffset.asStateFlow()
+
+    fun performSearch(query: String) {
+        _searchQuery.value = query
+        val q = query.trim()
+        if (q.length < 2) {
+            _searchResults.value = emptyList()
+            _currentSearchIndex.value = 0
+            return
+        }
+
+        val book = currentBook.value ?: return
+        val results = mutableListOf<SearchMatch>()
+        for ((chIdx, chapter) in book.chapters.withIndex()) {
+            for ((bIdx, block) in chapter.blocks.withIndex()) {
+                if (block.text.contains(q, ignoreCase = true)) {
+                    val idx = block.text.indexOf(q, ignoreCase = true)
+                    val start = (idx - 25).coerceAtLeast(0)
+                    val end = (idx + q.length + 35).coerceAtMost(block.text.length)
+                    val snippet = "…" + block.text.substring(start, end).replace("\n", " ") + "…"
+                    results.add(SearchMatch(chIdx, chapter.title, bIdx, snippet))
+                }
+            }
+        }
+        _searchResults.value = results
+        _currentSearchIndex.value = 0
+        if (results.isNotEmpty()) {
+            jumpToMatch(results[0])
+        }
+    }
+
+    fun nextSearchResult() {
+        val list = _searchResults.value
+        if (list.isEmpty()) return
+        val next = (_currentSearchIndex.value + 1) % list.size
+        _currentSearchIndex.value = next
+        jumpToMatch(list[next])
+    }
+
+    fun prevSearchResult() {
+        val list = _searchResults.value
+        if (list.isEmpty()) return
+        val prev = if (_currentSearchIndex.value - 1 < 0) list.size - 1 else _currentSearchIndex.value - 1
+        _currentSearchIndex.value = prev
+        jumpToMatch(list[prev])
+    }
+
+    fun clearSearch() {
+        _searchQuery.value = ""
+        _searchResults.value = emptyList()
+        _currentSearchIndex.value = 0
+        _targetScrollOffset.value = null
+    }
+
+    private fun jumpToMatch(match: SearchMatch) {
+        if (match.chapterIndex != _currentChapterIndex.value) {
+            setChapter(match.chapterIndex)
+        }
+        _targetScrollOffset.value = match.blockIndex
+    }
+
+    fun consumeTargetScrollOffset() {
+        _targetScrollOffset.value = null
+    }
+
+    // --- Bookmarks and Quotes ---
+    val bookmarks = bookRepository.bookmarks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val quotes = bookRepository.quotes
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun toggleBookmark(previewText: String) {
+        val book = currentBook.value ?: return
+        val chapterIdx = _currentChapterIndex.value
+        val existing = bookmarks.value.find { it.bookId == book.id && it.chapterIndex == chapterIdx }
+        viewModelScope.launch {
+            if (existing != null) {
+                bookRepository.removeBookmark(existing.id)
+            } else {
+                val chapter = book.chapters.getOrNull(chapterIdx)
+                bookRepository.addBookmark(
+                    com.aura.reader.data.model.Bookmark(
+                        bookId = book.id,
+                        chapterIndex = chapterIdx,
+                        scrollOffset = _savedScrollOffset.value,
+                        chapterTitle = chapter?.title ?: "Глава ${chapterIdx + 1}",
+                        previewText = previewText.take(120)
+                    )
+                )
+            }
+        }
+    }
+
+    fun removeBookmark(id: String) {
+        viewModelScope.launch {
+            bookRepository.removeBookmark(id)
+        }
+    }
+
+    fun addQuote(text: String) {
+        val book = currentBook.value ?: return
+        viewModelScope.launch {
+            bookRepository.addQuote(
+                com.aura.reader.data.model.Quote(
+                    bookId = book.id,
+                    bookTitle = book.title,
+                    chapterIndex = _currentChapterIndex.value,
+                    text = text.trim()
+                )
+            )
+        }
+    }
+
+    fun removeQuote(id: String) {
+        viewModelScope.launch {
+            bookRepository.removeQuote(id)
+        }
+    }
 }

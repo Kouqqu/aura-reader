@@ -38,8 +38,29 @@ data class Book(
     val format: BookFormat,
     val uriString: String,
     val chapters: List<Chapter> = emptyList(),
+    val footnotes: Map<String, String> = emptyMap(),
     val currentChapterIndex: Int = 0,
     val currentScrollOffset: Int = 0,
     val progressPercent: Int = 0,
     val lastReadTimestamp: Long = System.currentTimeMillis()
 )
+
+data class Bookmark(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val bookId: String,
+    val chapterIndex: Int,
+    val scrollOffset: Int,
+    val chapterTitle: String,
+    val previewText: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+data class Quote(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val bookId: String,
+    val bookTitle: String,
+    val chapterIndex: Int,
+    val text: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
+

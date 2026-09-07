@@ -36,14 +36,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.ManageSearch
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -58,6 +63,8 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHost
@@ -100,6 +107,9 @@ fun LibraryScreen(
 ) {
     val context = LocalContext.current
     val recentBooks by viewModel.recentBooks.collectAsState()
+    val filteredRecentBooks by viewModel.filteredRecentBooks.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val todayMinutes by viewModel.todayReadingMinutes.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val updateInfo by viewModel.updateInfo.collectAsState()
     val downloadProgress by viewModel.downloadProgress.collectAsState()
@@ -108,6 +118,32 @@ fun LibraryScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var showOpenOptionsSheet by remember { mutableStateOf(false) }
+    var bookToDelete by remember { mutableStateOf<Book?>(null) }
+
+    // Delete Book Confirmation Dialog
+    bookToDelete?.let { book ->
+        AlertDialog(
+            onDismissRequest = { bookToDelete = null },
+            title = { Text("Удалить книгу?", fontWeight = FontWeight.Bold) },
+            text = { Text("Книга «${book.title}» будет удалена из библиотеки и списка недавних.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.removeBook(book.id)
+                        bookToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Удалить", color = MaterialTheme.colorScheme.onError)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { bookToDelete = null }) {
+                    Text("Отмена")
+                }
+            }
+        )
+    }
 
     // Samsung My Files / System chooser with MULTI-SELECTION support (shows all FB2 and EPUB files on Samsung)
     val getMultipleContentsLauncher = rememberLauncherForActivityResult(
@@ -233,20 +269,84 @@ fun LibraryScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // Daily Reading Stats
                     item {
-                        Text(
-                            text = "Недавние книги",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 4.dp)
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Timer,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = if (todayMinutes > 0) "Сегодня прочитано: $todayMinutes мин" else "Время для чтения! Начните сегодня",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
+                    }
+
+                    // Search Field
+                    item {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { viewModel.setSearchQuery(it) },
+                            placeholder = { Text("Поиск по книгам и авторам...") },
+                            leadingIcon = {
+                                Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Очистить")
+                                    }
+                                }
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
 
-                    items(recentBooks, key = { it.id }) { book ->
+                    item {
+                        Text(
+                            text = if (searchQuery.isBlank()) "Недавние книги" else "Результаты поиска (${filteredRecentBooks.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+                        )
+                    }
+
+                    if (filteredRecentBooks.isEmpty() && searchQuery.isNotBlank()) {
+                        item {
+                            Text(
+                                text = "Ничего не найдено по запросу «$searchQuery»",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        }
+                    }
+
+                    items(filteredRecentBooks, key = { it.id }) { book ->
                         BookCard(
                             book = book,
                             onClick = {
                                 viewModel.openBook(book)
+                            },
+                            onDelete = {
+                                bookToDelete = book
                             }
                         )
                     }
@@ -523,7 +623,8 @@ fun OpenBookBottomSheet(
 @Composable
 fun BookCard(
     book: Book,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -566,16 +667,31 @@ fun BookCard(
                         modifier = Modifier.weight(1f)
                     )
 
-                    SuggestionChip(
-                        onClick = {},
-                        label = {
-                            Text(
-                                text = book.format.name,
-                                style = MaterialTheme.typography.labelSmall
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 4.dp)
+                    ) {
+                        SuggestionChip(
+                            onClick = {},
+                            label = {
+                                Text(
+                                    text = book.format.name,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        )
+                        IconButton(
+                            onClick = onDelete,
+                            modifier = Modifier.size(32.dp).padding(start = 2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Удалить книгу",
+                                tint = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(18.dp)
                             )
-                        },
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
+                        }
+                    }
                 }
 
                 if (book.author.isNotBlank()) {
