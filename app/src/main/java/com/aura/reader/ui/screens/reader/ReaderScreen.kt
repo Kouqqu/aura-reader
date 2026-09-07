@@ -415,7 +415,7 @@ fun ReaderScreen(
                 }
 
                 // Bottom Controls Bar with Material 3 Expressive Floating Card
-                AnimatedVisibility(
+                androidx.compose.animation.AnimatedVisibility(
                     visible = showControls,
                     enter = fadeIn() + slideInVertically { it },
                     exit = fadeOut() + slideOutVertically { it },
