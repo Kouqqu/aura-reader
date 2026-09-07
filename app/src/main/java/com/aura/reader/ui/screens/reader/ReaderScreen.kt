@@ -327,11 +327,18 @@ fun ReaderScreen(
                 }
             }
 
+            AnimatedVisibility(
+                visible = !showControls,
+                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
+            ) {
+                Spacer(modifier = Modifier.statusBarsPadding().height(10.dp))
+            }
+
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .then(if (!showControls) Modifier.statusBarsPadding().padding(top = 10.dp) else Modifier)
                     .navigationBarsPadding()
             ) {
                 if (chapters.isNotEmpty()) {
@@ -712,8 +719,7 @@ fun ChapterContentView(
 
     if (isCurrentChapter) {
         val firstVisibleIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }
-        val firstVisibleOffset by remember { derivedStateOf { listState.firstVisibleItemScrollOffset } }
-        LaunchedEffect(firstVisibleIndex, firstVisibleOffset) {
+        LaunchedEffect(firstVisibleIndex) {
             val totalItems = listState.layoutInfo.totalItemsCount
             if (totalItems > 0) {
                 onUpdateProgress(firstVisibleIndex, totalItems)
@@ -872,8 +878,10 @@ fun ChapterPagingView(
 
     // React to requested page from page slider
     LaunchedEffect(targetPage) {
-        if (targetPage != null && targetPage in pages.indices && targetPage != pagerState.currentPage) {
-            pagerState.scrollToPage(targetPage)
+        if (targetPage != null) {
+            if (targetPage in pages.indices && targetPage != pagerState.currentPage) {
+                pagerState.scrollToPage(targetPage)
+            }
             onConsumeTargetPage()
         }
     }
@@ -1069,19 +1077,21 @@ private fun paginateBlocks(
             }
             BlockType.PARAGRAPH -> {
                 var remainingText = block.text.trim()
-                while (remainingText.isNotEmpty()) {
+                var loopGuard = 0
+                while (remainingText.isNotEmpty() && loopGuard++ < 1000) {
                     val availableChars = targetChars - currentChars
                     if (availableChars < 160 && currentPage.isNotEmpty()) {
                         flushPage()
                         continue
                     }
 
-                    if (remainingText.length <= availableChars) {
+                    val effectiveAvailable = availableChars.coerceAtLeast(160)
+                    if (remainingText.length <= effectiveAvailable) {
                         currentPage.add(originalIndex to block.copy(text = remainingText))
                         currentChars += remainingText.length + 40
                         remainingText = ""
                     } else {
-                        val splitIndex = findBestBreak(remainingText, availableChars)
+                        val splitIndex = findBestBreak(remainingText, effectiveAvailable).coerceIn(1, remainingText.length)
                         val chunk = remainingText.substring(0, splitIndex).trim()
                         if (chunk.isNotEmpty()) {
                             currentPage.add(originalIndex to block.copy(text = chunk))

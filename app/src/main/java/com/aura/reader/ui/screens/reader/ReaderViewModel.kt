@@ -79,6 +79,13 @@ class ReaderViewModel(
 
         val overallPercent = (((chapterIdx + intraChapterProgress) / totalChapters) * 100).toInt().coerceIn(0, 100)
 
+        if (_savedScrollOffset.value == scrollItemIndex &&
+            book.currentScrollOffset == scrollItemIndex &&
+            book.currentChapterIndex == chapterIdx &&
+            book.progressPercent == overallPercent) {
+            return
+        }
+
         _savedScrollOffset.value = scrollItemIndex
 
         viewModelScope.launch {

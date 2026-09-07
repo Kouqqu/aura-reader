@@ -368,6 +368,11 @@ class BookRepository(
 
     suspend fun updateReadingProgress(chapterIndex: Int, scrollOffset: Int, progressPercent: Int) {
         val current = _currentBook.value ?: return
+        if (current.currentChapterIndex == chapterIndex &&
+            current.currentScrollOffset == scrollOffset &&
+            current.progressPercent == progressPercent) {
+            return
+        }
         val updated = current.copy(
             currentChapterIndex = chapterIndex,
             currentScrollOffset = scrollOffset,
