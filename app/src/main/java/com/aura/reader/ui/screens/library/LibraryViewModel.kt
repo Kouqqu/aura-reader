@@ -117,6 +117,18 @@ class LibraryViewModel(
         }
     }
 
+    fun openBook(book: Book) {
+        viewModelScope.launch {
+            _uiState.value = LibraryUiState.Loading
+            val result = bookRepository.openBook(book)
+            result.onSuccess { openedBook ->
+                _uiState.value = LibraryUiState.Success(openedBook)
+            }.onFailure { error ->
+                _uiState.value = LibraryUiState.Error(error.localizedMessage ?: "Не удалось открыть книгу")
+            }
+        }
+    }
+
     fun openBookFromUri(uri: Uri) {
         viewModelScope.launch {
             _uiState.value = LibraryUiState.Loading

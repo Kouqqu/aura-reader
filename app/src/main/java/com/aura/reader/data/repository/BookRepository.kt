@@ -81,20 +81,77 @@ class BookRepository(
         _recentBooks.value = books
     }
 
-    suspend fun openBookFromUri(uri: Uri): Result<Book> = withContext(Dispatchers.IO) {
-        try {
-            val fileName = getFileName(uri) ?: "Книга"
-            val inputStream: InputStream = context.contentResolver.openInputStream(uri)
-                ?: return@withContext Result.failure(Exception("Не удалось открыть файл"))
+    suspend fun openBook(bookToOpen: Book): Result<Book> = withContext(Dispatchers.IO) {
+        val uri = Uri.parse(bookToOpen.uriString)
+        val fileName = getFileName(uri) ?: "${bookToOpen.title}.${bookToOpen.format.name.lowercase()}"
+        val inputStream = getInputStreamForUri(uri, fileName, bookToOpen.title)
+            ?: return@withContext Result.failure(Exception("Файл книги «${bookToOpen.title}» не найден на устройстве"))
 
+        val result = parseAndResolveBook(inputStream, uri, fileName, bookToOpen)
+        result.onSuccess { book ->
+            val resolved = book.copy(
+                id = bookToOpen.id,
+                title = if (bookToOpen.title.isNotBlank()) bookToOpen.title else book.title,
+                author = if (bookToOpen.author.isNotBlank()) bookToOpen.author else book.author,
+                currentChapterIndex = bookToOpen.currentChapterIndex,
+                currentScrollOffset = bookToOpen.currentScrollOffset,
+                progressPercent = bookToOpen.progressPercent
+            )
+            _currentBook.value = resolved
+            addOrUpdateRecentBook(resolved)
+            return@withContext Result.success(resolved)
+        }
+        result
+    }
+
+    suspend fun openBookFromUri(uri: Uri): Result<Book> = withContext(Dispatchers.IO) {
+        val fileName = getFileName(uri) ?: "Книга"
+        val inputStream = getInputStreamForUri(uri, fileName, null)
+            ?: return@withContext Result.failure(Exception("Не удалось прочитать файл «$fileName»"))
+
+        val result = parseAndResolveBook(inputStream, uri, fileName, null)
+        result.onSuccess { book ->
+            val cleanTitle = book.title.trim()
+            val existing = _recentBooks.value.find {
+                it.id == book.id || it.uriString == book.uriString || it.uriString == uri.toString() ||
+                (cleanTitle.isNotBlank() && it.title.trim().equals(cleanTitle, ignoreCase = true)) ||
+                (fileName.isNotBlank() && it.title.trim().equals(fileName.substringBeforeLast(".").trim(), ignoreCase = true))
+            }
+            val resolvedBook = if (existing != null) {
+                book.copy(
+                    id = existing.id,
+                    currentChapterIndex = existing.currentChapterIndex,
+                    currentScrollOffset = existing.currentScrollOffset,
+                    progressPercent = existing.progressPercent
+                )
+            } else {
+                book
+            }
+            _currentBook.value = resolvedBook
+            addOrUpdateRecentBook(resolvedBook)
+            return@withContext Result.success(resolvedBook)
+        }
+        result
+    }
+
+    private fun parseAndResolveBook(
+        inputStream: InputStream,
+        uri: Uri,
+        fileName: String,
+        savedBook: Book?
+    ): Result<Book> {
+        try {
             val bytes = inputStream.use { it.readBytes() }
+            if (bytes.isEmpty()) {
+                return Result.failure(Exception("Файл книги пуст"))
+            }
+
             val isZip = bytes.size >= 4 &&
                     bytes[0] == 0x50.toByte() &&
                     bytes[1] == 0x4B.toByte() &&
                     bytes[2] == 0x03.toByte() &&
                     bytes[3] == 0x04.toByte()
 
-            // Prepare book images cache directory
             val bookCacheKey = UUID.nameUUIDFromBytes("${uri}_${fileName}".toByteArray()).toString()
             val imagesDir = java.io.File(context.cacheDir, "book_images/$bookCacheKey").apply { mkdirs() }
 
@@ -106,7 +163,6 @@ class BookRepository(
                     Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                 }
                 isZip -> {
-                    // Check if zip contains EPUB (META-INF) or FB2 (*.fb2)
                     var hasMetaInf = false
                     var hasFb2 = false
                     try {
@@ -158,10 +214,7 @@ class BookRepository(
                 }
             }
 
-            // Ensure unique ID per URI + format so different formats never collide
-            val uniqueId = UUID.nameUUIDFromBytes("${uri}_${parsedBook.format.name}".toByteArray()).toString()
-
-            // Save local persistent copy in app's internal filesDir
+            val uniqueId = savedBook?.id ?: UUID.nameUUIDFromBytes("${uri}_${parsedBook.format.name}".toByteArray()).toString()
             val safeName = fileName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
             val localBookDir = java.io.File(context.filesDir, "saved_books").apply { mkdirs() }
             val localBookFile = java.io.File(localBookDir, "${uniqueId}_$safeName")
@@ -170,36 +223,113 @@ class BookRepository(
                     localBookFile.writeBytes(bytes)
                 } catch (e: Exception) {}
             }
+
             val persistentUriString = if (localBookFile.exists()) {
                 Uri.fromFile(localBookFile).toString()
             } else {
                 uri.toString()
             }
 
-            val book = parsedBook.copy(id = uniqueId, uriString = persistentUriString)
-
-            // Restore saved progress if exact book was opened before (same URI or same title AND format)
-            val existing = _recentBooks.value.find {
-                it.id == book.id || it.uriString == persistentUriString || it.uriString == uri.toString() ||
-                (it.format == book.format && it.title.equals(book.title, ignoreCase = true) && it.author.equals(book.author, ignoreCase = true))
-            }
-            val resolvedBook = if (existing != null) {
-                book.copy(
-                    id = existing.id,
-                    currentChapterIndex = existing.currentChapterIndex,
-                    currentScrollOffset = existing.currentScrollOffset,
-                    progressPercent = existing.progressPercent
-                )
-            } else {
-                book
-            }
-
-            _currentBook.value = resolvedBook
-            addOrUpdateRecentBook(resolvedBook)
-            Result.success(resolvedBook)
+            val resolved = parsedBook.copy(
+                id = uniqueId,
+                uriString = persistentUriString,
+                currentChapterIndex = savedBook?.currentChapterIndex ?: 0,
+                currentScrollOffset = savedBook?.currentScrollOffset ?: 0,
+                progressPercent = savedBook?.progressPercent ?: 0
+            )
+            return Result.success(resolved)
         } catch (e: Exception) {
-            Result.failure(e)
+            return Result.failure(e)
         }
+    }
+
+    private fun getInputStreamForUri(uri: Uri, fileName: String?, bookTitle: String?): InputStream? {
+        // 1. Direct file:// check
+        if (uri.scheme == "file" || uri.scheme == null) {
+            val path = uri.path ?: uri.toString().removePrefix("file://")
+            val file = java.io.File(path)
+            if (file.exists() && file.canRead()) {
+                try {
+                    return java.io.FileInputStream(file)
+                } catch (e: Exception) {}
+            }
+        }
+
+        // 2. Persistent internal cache (saved_books)
+        val localBookDir = java.io.File(context.filesDir, "saved_books")
+        if (localBookDir.exists()) {
+            val cachedFiles = localBookDir.listFiles() ?: emptyArray()
+            if (!fileName.isNullOrBlank()) {
+                val cleanName = fileName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+                val found = cachedFiles.find { it.name.endsWith(cleanName, ignoreCase = true) || it.name.contains(cleanName, ignoreCase = true) }
+                if (found != null && found.canRead()) {
+                    try {
+                        return java.io.FileInputStream(found)
+                    } catch (e: Exception) {}
+                }
+            }
+            val uriEnd = uri.lastPathSegment
+            if (!uriEnd.isNullOrBlank()) {
+                val found = cachedFiles.find { it.name.endsWith(uriEnd, ignoreCase = true) }
+                if (found != null && found.canRead()) {
+                    try {
+                        return java.io.FileInputStream(found)
+                    } catch (e: Exception) {}
+                }
+            }
+        }
+
+        // 3. ContentResolver
+        if (uri.scheme == "content") {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {}
+            try {
+                val stream = context.contentResolver.openInputStream(uri)
+                if (stream != null) return stream
+            } catch (e: Exception) {}
+        }
+
+        // 4. Device storage search (Downloads, Documents, Books)
+        val candidateDirs = listOf(
+            android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS),
+            android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS),
+            java.io.File(android.os.Environment.getExternalStorageDirectory(), "Download"),
+            java.io.File(android.os.Environment.getExternalStorageDirectory(), "Documents"),
+            java.io.File(android.os.Environment.getExternalStorageDirectory(), "Books")
+        )
+
+        val targetNames = mutableListOf<String>()
+        if (!fileName.isNullOrBlank()) targetNames.add(fileName)
+        if (!bookTitle.isNullOrBlank()) {
+            targetNames.add("$bookTitle.fb2")
+            targetNames.add("$bookTitle.epub")
+            targetNames.add("$bookTitle.fb2.zip")
+        }
+
+        for (dir in candidateDirs) {
+            if (dir.exists() && dir.isDirectory) {
+                for (target in targetNames) {
+                    val direct = java.io.File(dir, target)
+                    if (direct.exists() && direct.canRead()) {
+                        try {
+                            return java.io.FileInputStream(direct)
+                        } catch (e: Exception) {}
+                    }
+                    try {
+                        val match = dir.walkTopDown().maxDepth(2).find { it.isFile && it.name.equals(target, ignoreCase = true) }
+                        if (match != null && match.canRead()) {
+                            return java.io.FileInputStream(match)
+                        }
+                    } catch (e: Exception) {}
+                }
+            }
+        }
+
+        return null
     }
 
     fun loadSampleBook(): Book {
@@ -258,18 +388,29 @@ class BookRepository(
 
     private fun getFileName(uri: Uri): String? {
         if (uri.scheme == "content") {
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (nameIndex >= 0) {
-                        return cursor.getString(nameIndex)
+            try {
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex >= 0) {
+                            val name = cursor.getString(nameIndex)
+                            if (!name.isNullOrBlank()) return name
+                        }
                     }
                 }
-            }
+            } catch (e: Exception) {}
         }
-        return uri.path?.let { path ->
+        val raw = uri.lastPathSegment?.let { path ->
             val cut = path.lastIndexOf('/')
             if (cut != -1) path.substring(cut + 1) else path
+        } ?: uri.path?.let { path ->
+            val cut = path.lastIndexOf('/')
+            if (cut != -1) path.substring(cut + 1) else path
+        }
+        return if (raw != null && raw.length > 37 && raw[36] == '_') {
+            raw.substring(37)
+        } else {
+            raw
         }
     }
 }

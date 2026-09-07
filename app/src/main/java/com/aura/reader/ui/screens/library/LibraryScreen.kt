@@ -12,16 +12,24 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -154,11 +162,10 @@ fun LibraryScreen(
                             modifier = Modifier.size(38.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.AutoStories,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(22.dp)
+                                AuraLogoIcon(
+                                    modifier = Modifier.size(width = 20.dp, height = 24.dp),
+                                    bookColor = MaterialTheme.colorScheme.primary,
+                                    lineColor = MaterialTheme.colorScheme.primaryContainer
                                 )
                             }
                         }
@@ -169,17 +176,6 @@ fun LibraryScreen(
                     }
                 },
                 actions = {
-                    // Scan device books
-                    IconButton(onClick = {
-                        viewModel.scanDeviceForBooks()
-                        showOpenOptionsSheet = true
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.FolderOpen,
-                            contentDescription = "Файлы на устройстве"
-                        )
-                    }
-
                     // Check for updates
                     IconButton(onClick = { viewModel.checkForUpdates(manual = true) }) {
                         Icon(
@@ -250,7 +246,7 @@ fun LibraryScreen(
                         BookCard(
                             book = book,
                             onClick = {
-                                viewModel.openBookFromUri(Uri.parse(book.uriString))
+                                viewModel.openBook(book)
                             }
                         )
                     }
@@ -261,20 +257,66 @@ fun LibraryScreen(
                 }
             }
 
-            if (uiState is LibraryUiState.Loading || downloadProgress != null) {
+            if (downloadProgress != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        tonalElevation = 6.dp,
+                        modifier = Modifier
+                            .fillMaxWidth(0.85f)
+                            .padding(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SystemUpdate,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Загрузка обновления",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            val percent = ((downloadProgress ?: 0f) * 100).toInt().coerceIn(0, 100)
+                            Text(
+                                text = "$percent%",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            LinearProgressIndicator(
+                                progress = { downloadProgress ?: 0f },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                            )
+                        }
+                    }
+                }
+            } else if (uiState is LibraryUiState.Loading) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background.copy(alpha = 0.6f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator()
-                        if (downloadProgress != null) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text("Загрузка обновления: ${(downloadProgress!! * 100).toInt()}%")
-                        }
-                    }
+                    CircularProgressIndicator()
                 }
             }
         }
@@ -291,19 +333,22 @@ fun LibraryScreen(
                 )
             },
             text = {
-                Column {
-                    Text(text = info.changelog, style = MaterialTheme.typography.bodyMedium)
-                    if (downloadProgress != null) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        LinearProgressIndicator(
-                            progress = { downloadProgress ?: 0f },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 280.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = info.changelog,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             },
             confirmButton = {
                 Button(onClick = {
+                    viewModel.dismissUpdateDialog()
                     viewModel.startUpdateDownload(context, info.downloadUrl)
                 }) {
                     Text("Обновить")
@@ -690,3 +735,53 @@ fun EmptyLibraryView(
         }
     }
 }
+
+@Composable
+fun AuraLogoIcon(
+    modifier: Modifier = Modifier.size(width = 20.dp, height = 24.dp),
+    bookColor: Color = MaterialTheme.colorScheme.primary,
+    lineColor: Color = MaterialTheme.colorScheme.primaryContainer
+) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+
+        // Book body with rounded corners
+        drawRoundRect(
+            color = bookColor,
+            topLeft = Offset(0f, 0f),
+            size = Size(w, h),
+            cornerRadius = CornerRadius(w * 0.16f, w * 0.16f)
+        )
+
+        // 3 lines representing lines of text on the book
+        val left = w * 0.20f
+        val rightLong = w * 0.80f
+        val rightShort = w * 0.58f
+        val lineH = h * 0.085f
+        val lineR = CornerRadius(lineH / 2, lineH / 2)
+
+        // Line 1 (top)
+        drawRoundRect(
+            color = lineColor,
+            topLeft = Offset(left, h * 0.26f),
+            size = Size(rightLong - left, lineH),
+            cornerRadius = lineR
+        )
+        // Line 2 (middle)
+        drawRoundRect(
+            color = lineColor,
+            topLeft = Offset(left, h * 0.46f),
+            size = Size(rightLong - left, lineH),
+            cornerRadius = lineR
+        )
+        // Line 3 (bottom - short)
+        drawRoundRect(
+            color = lineColor,
+            topLeft = Offset(left, h * 0.66f),
+            size = Size(rightShort - left, lineH),
+            cornerRadius = lineR
+        )
+    }
+}
+
