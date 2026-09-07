@@ -74,9 +74,11 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.aura.reader.R
 import com.aura.reader.data.model.Book
 import kotlinx.coroutines.launch
 import java.io.File
@@ -160,8 +162,9 @@ fun LibraryScreen(
                         context.startActivity(intent)
                     }) {
                         Icon(
-                            imageVector = Icons.Default.Code,
-                            contentDescription = "GitHub репозиторий"
+                            painter = painterResource(R.drawable.ic_github),
+                            contentDescription = "GitHub репозиторий",
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 },

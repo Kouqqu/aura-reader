@@ -94,12 +94,16 @@ class BookRepository(
                     bytes[2] == 0x03.toByte() &&
                     bytes[3] == 0x04.toByte()
 
-            val book = when {
+            // Prepare book images cache directory
+            val bookCacheKey = UUID.nameUUIDFromBytes("${uri}_${fileName}".toByteArray()).toString()
+            val imagesDir = java.io.File(context.cacheDir, "book_images/$bookCacheKey").apply { mkdirs() }
+
+            val parsedBook = when {
                 fileName.endsWith(".epub", ignoreCase = true) -> {
-                    EpubParser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName)
+                    EpubParser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                 }
                 fileName.endsWith(".fb2", ignoreCase = true) || fileName.endsWith(".fb2.zip", ignoreCase = true) -> {
-                    Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName)
+                    Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                 }
                 isZip -> {
                     // Check if it's EPUB or FB2.ZIP
@@ -120,15 +124,15 @@ class BookRepository(
                     }
 
                     if (isEpub) {
-                        EpubParser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName)
+                        EpubParser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                     } else {
-                        Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName)
+                        Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                     }
                 }
                 else -> {
                     val sampleHeader = String(bytes.take(2048).toByteArray(), Charsets.UTF_8)
                     if (sampleHeader.contains("<FictionBook", ignoreCase = true)) {
-                        Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName)
+                        Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                     } else {
                         val content = String(bytes, Charsets.UTF_8)
                         Book(
@@ -150,8 +154,15 @@ class BookRepository(
                 }
             }
 
-            // Restore saved progress if book was opened before
-            val existing = _recentBooks.value.find { it.uriString == uri.toString() || it.title == book.title }
+            // Ensure unique ID per URI + format so different formats never collide
+            val uniqueId = UUID.nameUUIDFromBytes("${uri}_${parsedBook.format.name}".toByteArray()).toString()
+            val book = parsedBook.copy(id = uniqueId)
+
+            // Restore saved progress if exact book was opened before (same URI or same title AND format)
+            val existing = _recentBooks.value.find {
+                it.id == book.id || it.uriString == uri.toString() ||
+                (it.format == book.format && it.title.equals(book.title, ignoreCase = true) && it.author.equals(book.author, ignoreCase = true))
+            }
             val resolvedBook = if (existing != null) {
                 book.copy(
                     id = existing.id,

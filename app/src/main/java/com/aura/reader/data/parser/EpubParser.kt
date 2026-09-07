@@ -9,6 +9,7 @@ import com.aura.reader.data.model.FormattedBlock
 import org.jsoup.Jsoup
 import org.w3c.dom.Element
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.io.InputStream
 import java.net.URLDecoder
 import java.util.UUID
@@ -18,7 +19,12 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 object EpubParser {
 
-    fun parse(inputStream: InputStream, uriString: String, fileName: String): Book {
+    fun parse(
+        inputStream: InputStream,
+        uriString: String,
+        fileName: String,
+        imagesDir: File? = null
+    ): Book {
         val files = mutableMapOf<String, ByteArray>()
         val zis = ZipInputStream(inputStream)
         var entry: ZipEntry? = zis.nextEntry
@@ -30,6 +36,26 @@ object EpubParser {
             }
             zis.closeEntry()
             entry = zis.nextEntry
+        }
+
+        // Extract image files to imagesDir if provided
+        val extractedImages = mutableMapOf<String, String>()
+        if (imagesDir != null) {
+            for ((path, bytes) in files) {
+                val lower = path.lowercase()
+                if (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") ||
+                    lower.endsWith(".webp") || lower.endsWith(".gif") || lower.endsWith(".svg")
+                ) {
+                    try {
+                        val safeName = path.replace("/", "_").replace("\\", "_")
+                        val imgFile = File(imagesDir, safeName)
+                        imgFile.writeBytes(bytes)
+                        extractedImages[path] = imgFile.absolutePath
+                        val fileOnly = path.substringAfterLast("/")
+                        extractedImages[fileOnly] = imgFile.absolutePath
+                    } catch (e: Exception) {}
+                }
+            }
         }
 
         // 1. Locate rootfile from META-INF/container.xml
@@ -190,9 +216,41 @@ object EpubParser {
             val blocks = mutableListOf<FormattedBlock>()
 
             // Traverse direct children of body or top-level containers
-            val elements = body.select("h1, h2, h3, h4, h5, h6, blockquote, div.epigraph, div.cite, p, pre")
+            val elements = body.select("h1, h2, h3, h4, h5, h6, blockquote, div.epigraph, div.cite, p, pre, img, figure")
+            val chDir = if (resolvedChPath.contains("/")) resolvedChPath.substringBeforeLast("/") else ""
+
             for (el in elements) {
                 val tagName = el.tagName().lowercase()
+
+                // 1) Handle figures
+                if (tagName == "figure") {
+                    val imgEl = el.select("img, image").firstOrNull()
+                    if (imgEl != null) {
+                        val src = (imgEl.attr("src").ifBlank { imgEl.attr("xlink:href") }).trim()
+                        val caption = el.select("figcaption").firstOrNull()?.text()?.trim()
+                            ?: imgEl.attr("alt").ifBlank { imgEl.attr("title") }
+                        val resolvedImgPath = resolvePath(chDir, src)
+                        val local = extractedImages[resolvedImgPath] ?: extractedImages[src.substringAfterLast("/")]
+                        if (local != null) {
+                            blocks.add(FormattedBlock(BlockType.IMAGE, text = local, subText = caption.ifBlank { null }))
+                        }
+                    }
+                    continue
+                }
+
+                // 2) Handle standalone img / image
+                if (tagName == "img" || tagName == "image") {
+                    if (el.parents().any { it.tagName() == "figure" }) continue
+                    val src = (el.attr("src").ifBlank { el.attr("xlink:href") }).trim()
+                    val alt = el.attr("alt").ifBlank { el.attr("title") }.trim()
+                    val resolvedImgPath = resolvePath(chDir, src)
+                    val local = extractedImages[resolvedImgPath] ?: extractedImages[src.substringAfterLast("/")]
+                    if (local != null) {
+                        blocks.add(FormattedBlock(BlockType.IMAGE, text = local, subText = alt.ifBlank { null }))
+                    }
+                    continue
+                }
+
                 val text = el.text().trim()
                 if (text.isBlank()) continue
 

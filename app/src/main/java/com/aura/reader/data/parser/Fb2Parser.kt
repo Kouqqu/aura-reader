@@ -1,5 +1,6 @@
 package com.aura.reader.data.parser
 
+import android.util.Base64
 import android.util.Xml
 import com.aura.reader.data.model.BlockType
 import com.aura.reader.data.model.Book
@@ -7,13 +8,19 @@ import com.aura.reader.data.model.BookFormat
 import com.aura.reader.data.model.Chapter
 import com.aura.reader.data.model.FormattedBlock
 import org.xmlpull.v1.XmlPullParser
+import java.io.File
 import java.io.InputStream
 import java.util.UUID
 import java.util.zip.ZipInputStream
 
 object Fb2Parser {
 
-    fun parse(inputStream: InputStream, uriString: String, fileName: String): Book {
+    fun parse(
+        inputStream: InputStream,
+        uriString: String,
+        fileName: String,
+        imagesDir: File? = null
+    ): Book {
         val stream = if (fileName.endsWith(".zip", ignoreCase = true)) {
             val zis = ZipInputStream(inputStream)
             var entry = zis.nextEntry
@@ -38,6 +45,7 @@ object Fb2Parser {
         var inTitleInfo = false
         var inCoverpage = false
         var inBody = false
+        var inNotesBody = false
         var currentBinaryId: String? = null
         val binaryContent = StringBuilder()
 
@@ -70,6 +78,8 @@ object Fb2Parser {
                     val titleBlock = currentBlocks.firstOrNull { it.type == BlockType.TITLE }
                     if (titleBlock != null) {
                         titleBlock.text
+                    } else if (inNotesBody) {
+                        "Примечания и комментарии"
                     } else {
                         val firstP = currentBlocks.firstOrNull { it.type == BlockType.PARAGRAPH }?.text ?: ""
                         if (isLikelyHeading(firstP)) {
@@ -134,15 +144,28 @@ object Fb2Parser {
                         }
                         "coverpage" -> inCoverpage = true
                         "image" -> {
+                            val href = parser.getAttributeValue(null, "href")
+                                ?: parser.getAttributeValue("http://www.w3.org/1999/xlink", "href")
+                            val titleAttr = parser.getAttributeValue(null, "title")
+                                ?: parser.getAttributeValue(null, "alt")
+                            val imgId = href?.removePrefix("#")
                             if (inCoverpage) {
-                                val href = parser.getAttributeValue(null, "href")
-                                    ?: parser.getAttributeValue("http://www.w3.org/1999/xlink", "href")
-                                if (href != null) {
-                                    coverId = href.removePrefix("#")
-                                }
+                                if (imgId != null) coverId = imgId
+                            } else if (inBody && imgId != null) {
+                                currentBlocks.add(
+                                    FormattedBlock(
+                                        type = BlockType.IMAGE,
+                                        text = imgId,
+                                        subText = titleAttr
+                                    )
+                                )
                             }
                         }
-                        "body" -> inBody = true
+                        "body" -> {
+                            inBody = true
+                            val bodyName = parser.getAttributeValue(null, "name")?.lowercase() ?: ""
+                            inNotesBody = bodyName.contains("notes") || bodyName.contains("comments")
+                        }
                         "section" -> {
                             if (inBody) {
                                 flushChapter()
@@ -285,6 +308,36 @@ object Fb2Parser {
 
         flushChapter()
 
+        // Extract binaries to imagesDir if provided
+        val extractedImages = mutableMapOf<String, String>()
+        if (imagesDir != null && binaries.isNotEmpty()) {
+            for ((bId, bContent) in binaries) {
+                try {
+                    val cleanId = bId.removePrefix("#").replace(Regex("[^a-zA-Z0-9._-]"), "_")
+                    val fileName = if (cleanId.contains(".")) cleanId else "$cleanId.jpg"
+                    val targetFile = File(imagesDir, fileName)
+                    val decoded = Base64.decode(bContent, Base64.DEFAULT)
+                    targetFile.writeBytes(decoded)
+                    extractedImages[bId] = targetFile.absolutePath
+                    extractedImages[bId.removePrefix("#")] = targetFile.absolutePath
+                    extractedImages[cleanId] = targetFile.absolutePath
+                } catch (e: Exception) {}
+            }
+        }
+
+        // Map chapters with resolved image file paths
+        val finalizedChapters = chapters.map { ch ->
+            val updatedBlocks = ch.blocks.map { block ->
+                if (block.type == BlockType.IMAGE) {
+                    val local = extractedImages[block.text] ?: extractedImages[block.text.removePrefix("#")]
+                    if (local != null) block.copy(text = local) else block
+                } else {
+                    block
+                }
+            }
+            ch.copy(blocks = updatedBlocks)
+        }
+
         val coverData = coverId?.let { binaries[it] } ?: binaries.values.firstOrNull()
 
         return Book(
@@ -294,7 +347,7 @@ object Fb2Parser {
             coverBase64 = coverData,
             format = BookFormat.FB2,
             uriString = uriString,
-            chapters = if (chapters.isNotEmpty()) chapters else listOf(
+            chapters = if (finalizedChapters.isNotEmpty()) finalizedChapters else listOf(
                 Chapter(
                     id = UUID.randomUUID().toString(),
                     title = title,

@@ -12,7 +12,8 @@ enum class BlockType {
     EPIGRAPH,       // Epigraph / quote (italic, indented/right-aligned, optional author)
     PARAGRAPH,      // Standard body paragraph (with book-style text indent)
     VERSE,          // Poem verse lines
-    DIVIDER         // Section break / asterisks
+    DIVIDER,        // Section break / asterisks
+    IMAGE           // Illustration / picture: text = local file path / URI, subText = caption
 }
 
 data class FormattedBlock(
