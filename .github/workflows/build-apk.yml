@@ -7,6 +7,9 @@ on:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,11 +33,22 @@ jobs:
           set -o pipefail
           ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee gradle_output.txt
 
-      - name: Print Gradle Errors
+      - name: Save Log to Branch on Failure
         if: failure()
         run: |
-          echo "=== GRADLE FAILURE LOG SUMMARY ==="
-          grep -i -C 3 -E "e: |error:|exception:|failed" gradle_output.txt || tail -n 100 gradle_output.txt
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git checkout -B build-logs
+          git add gradle_output.txt
+          git commit -m "build log [skip ci]" || true
+          git push origin build-logs -f
+
+      - name: Print Gradle Errors as Annotations
+        if: failure()
+        run: |
+          grep -i -C 2 -E "e: |FAILURE:|BUILD FAILED" gradle_output.txt | head -n 40 | while IFS= read -r line; do
+            echo "::error::$line"
+          done
 
       - name: Upload Debug APK
         if: success()
@@ -43,10 +57,3 @@ jobs:
           name: AuraReader-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
-
-      - name: Upload Build Log on Failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gradle-build-log
-          path: gradle_output.txt
