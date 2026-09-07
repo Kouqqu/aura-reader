@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Aura Reader</string>
+    <string name="library_title">Библиотека</string>
+    <string name="open_book">Открыть книгу</string>
+    <string name="open_file_description">Поддерживаются форматы FB2 и EPUB</string>
+    <string name="recent_books">Недавние книги</string>
+    <string name="no_books_yet">Книг пока нет</string>
+    <string name="tap_to_add">Нажмите +, чтобы открыть FB2 или EPUB файл</string>
+    <string name="reading_progress">%d%% прочитано</string>
+    <string name="font_size">Размер шрифта</string>
+    <string name="line_height">Межстрочный интервал</string>
+    <string name="font_family">Шрифт</string>
+    <string name="theme_mode">Тема оформления</string>
+    <string name="chapters">Оглавление</string>
+    <string name="settings">Настройки</string>
+</resources>

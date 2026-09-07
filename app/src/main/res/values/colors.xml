@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_primary">#6750A4</color>
+    <color name="purple_on_primary">#FFFFFF</color>
+    <color name="sepia_background">#F8F1E5</color>
+    <color name="sepia_text">#3E2723</color>
+    <color name="amoled_background">#000000</color>
+    <color name="amoled_text">#E0E0E0</color>
+</resources>
