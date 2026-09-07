@@ -110,6 +110,10 @@ fun ReaderScreen(
         ) {
             // Reading content area
             if (currentChapter != null) {
+                val paragraphs = remember(currentChapter.content) {
+                    currentChapter.content.split("\n\n").filter { it.isNotBlank() }
+                }
+
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
@@ -137,11 +141,6 @@ fun ReaderScreen(
                             color = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier.padding(bottom = 24.dp)
                         )
-                    }
-
-                    // Split paragraphs
-                    val paragraphs = remember(currentChapter.content) {
-                        currentChapter.content.split("\n\n").filter { it.isNotBlank() }
                     }
 
                     items(paragraphs.size) { idx ->

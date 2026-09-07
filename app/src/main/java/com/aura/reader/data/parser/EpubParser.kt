@@ -115,7 +115,7 @@ object EpubParser {
             // Extract clean readable text with paragraph breaks
             val paragraphs = jsoupDoc.select("p, h1, h2, h3, h4, h5, h6, blockquote, li")
             val bodyText = if (paragraphs.isNotEmpty()) {
-                paragraphs.joinToString("\n\n") { it.text().trim() }.filter { it.isNotBlank() }
+                paragraphs.map { it.text().trim() }.filter { it.isNotBlank() }.joinToString("\n\n")
             } else {
                 jsoupDoc.body().text().trim()
             }
