@@ -163,11 +163,14 @@ fun ReaderScreen(
         val currentChapter = chapters.getOrNull(currentChapterIndex)
         val footnotes = book?.footnotes ?: emptyMap()
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
             // Top Bar with expandVertically / shrinkVertically so text naturally shifts below it
             AnimatedVisibility(
                 visible = showControls,
@@ -428,16 +431,19 @@ fun ReaderScreen(
                         )
                     }
                 }
+            }
+        }
 
-                // Bottom Controls Bar with Material 3 Expressive Floating Card
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = showControls,
-                    enter = fadeIn() + slideInVertically { it },
-                    exit = fadeOut() + slideOutVertically { it },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(horizontal = 16.dp, vertical = 20.dp)
-                ) {
+        // Bottom Controls Bar with Material 3 Expressive Floating Card
+        AnimatedVisibility(
+            visible = showControls,
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 20.dp)
+        ) {
                     Card(
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
@@ -628,7 +634,6 @@ fun ReaderScreen(
                         }
                     }
                 }
-            }
 
             // Bottom Sheets
             if (showSettingsSheet) {
