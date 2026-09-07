@@ -54,7 +54,7 @@ class BookRepository(
                     )
                 }
                 _recentBooks.value = list
-            } catch (_: Exception) {
+            } catch (e: Exception) {
                 _recentBooks.value = emptyList()
             }
         }

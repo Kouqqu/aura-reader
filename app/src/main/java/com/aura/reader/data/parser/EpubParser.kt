@@ -70,7 +70,7 @@ object EpubParser {
             idToHref[id] = href
             idToMediaType[id] = mediaType
 
-            if (properties.contains("cover-image") ||
+            if (properties?.contains("cover-image") == true ||
                 id.equals("cover", ignoreCase = true) ||
                 id.equals("cover-image", ignoreCase = true)
             ) {
@@ -154,7 +154,7 @@ object EpubParser {
     private fun resolvePath(baseDir: String, relativePath: String): String {
         val decoded = try {
             URLDecoder.decode(relativePath, "UTF-8")
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             relativePath
         }
 

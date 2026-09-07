@@ -143,8 +143,9 @@ object Fb2Parser {
                             currentSectionText.append("\n\n")
                         }
                         "binary" -> {
-                            if (currentBinaryId != null) {
-                                binaries[currentBinaryId] = binaryContent.toString().replace("\n", "").replace("\r", "")
+                            val binId = currentBinaryId
+                            if (binId != null) {
+                                binaries[binId] = binaryContent.toString().replace("\n", "").replace("\r", "")
                                 currentBinaryId = null
                             }
                         }

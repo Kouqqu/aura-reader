@@ -323,7 +323,7 @@ fun BookCoverView(
             try {
                 val decoded = Base64.decode(coverBase64, Base64.DEFAULT)
                 BitmapFactory.decodeByteArray(decoded, 0, decoded.size)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
                 null
             }
         } else null

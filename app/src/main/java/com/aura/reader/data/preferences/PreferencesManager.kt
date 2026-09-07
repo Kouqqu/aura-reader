@@ -34,13 +34,13 @@ class PreferencesManager(private val context: Context) {
 
         val themeMode = try {
             ReaderThemeMode.valueOf(themeModeStr)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             ReaderThemeMode.SYSTEM_DYNAMIC
         }
 
         val fontFamily = try {
             ReaderFontFamily.valueOf(fontFamilyStr)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             ReaderFontFamily.SERIF
         }
 
