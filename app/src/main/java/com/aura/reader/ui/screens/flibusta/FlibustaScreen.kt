@@ -39,7 +39,6 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -114,7 +113,6 @@ fun FlibustaScreen(
     val downloadedBooks by viewModel.downloadedBooks.collectAsState()
     val selectedBookForDetails by viewModel.selectedBookForDetails.collectAsState()
     val sortOption by viewModel.sortOption.collectAsState()
-    val selectedLanguage by viewModel.selectedLanguage.collectAsState()
     val canGoBack by viewModel.canGoBack.collectAsState()
     var isSearchFocused by remember { mutableStateOf(false) }
 
@@ -237,7 +235,7 @@ fun FlibustaScreen(
                 onValueChange = { newQuery ->
                     viewModel.setSearchQuery(newQuery)
                     if (newQuery.isEmpty()) {
-                        viewModel.clearSearchAndReturnHome(strings.catNew)
+                        viewModel.clearSearchAndReturnHome()
                     }
                 },
                 placeholder = {
@@ -259,7 +257,7 @@ fun FlibustaScreen(
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = {
                             focusManager.clearFocus()
-                            viewModel.clearSearchAndReturnHome(strings.catNew)
+                            viewModel.clearSearchAndReturnHome()
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Clear,
@@ -322,34 +320,6 @@ fun FlibustaScreen(
                 }
             }
 
-            // Catalog Home Welcome Banner
-            if (searchQuery.isEmpty() && !canGoBack) {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                        Text(
-                            text = strings.catalogHomeTitle,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = strings.catalogHomeSubtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                        )
-                    }
-                }
-            }
-
             // Quick Category Filter Chips
             Row(
                 modifier = Modifier
@@ -380,40 +350,26 @@ fun FlibustaScreen(
                 )
             }
 
-            // Sorting & Language Selector Row
-            var showSortDropdown by remember { mutableStateOf(false) }
-            var showLangDropdown by remember { mutableStateOf(false) }
-            val currentSortLabel = when (sortOption) {
-                CatalogSortOption.DEFAULT -> strings.sortByDefault
-                CatalogSortOption.POPULAR_DESC -> strings.sortByPopularDesc
-                CatalogSortOption.POPULAR_ASC -> strings.sortByPopularAsc
-                CatalogSortOption.TITLE_ASC -> strings.sortByTitleAsc
-                CatalogSortOption.TITLE_DESC -> strings.sortByTitleDesc
-                CatalogSortOption.AUTHOR_ASC -> strings.sortByAuthorAsc
-                CatalogSortOption.AUTHOR_DESC -> strings.sortByAuthorDesc
-                CatalogSortOption.YEAR_DESC -> strings.sortByYearDesc
-                CatalogSortOption.YEAR_ASC -> strings.sortByYearAsc
-            }
-            val currentLangLabel = when (selectedLanguage?.lowercase()) {
-                "ru" -> strings.langRussian
-                "en" -> strings.langEnglish
-                "uk" -> strings.langUkrainian
-                "be" -> strings.langBelarusian
-                "pl" -> strings.langPolish
-                "other" -> strings.langOther
-                else -> strings.allLanguages
-            }
+            // Sorting Selector Row (only shown when browsing categories or search results)
+            if (uiState is FlibustaUiState.Success) {
+                var showSortDropdown by remember { mutableStateOf(false) }
+                val currentSortLabel = when (sortOption) {
+                    CatalogSortOption.DEFAULT -> strings.sortByDefault
+                    CatalogSortOption.POPULAR_DESC -> strings.sortByPopularDesc
+                    CatalogSortOption.POPULAR_ASC -> strings.sortByPopularAsc
+                    CatalogSortOption.TITLE_ASC -> strings.sortByTitleAsc
+                    CatalogSortOption.TITLE_DESC -> strings.sortByTitleDesc
+                    CatalogSortOption.AUTHOR_ASC -> strings.sortByAuthorAsc
+                    CatalogSortOption.AUTHOR_DESC -> strings.sortByAuthorDesc
+                    CatalogSortOption.YEAR_DESC -> strings.sortByYearDesc
+                    CatalogSortOption.YEAR_ASC -> strings.sortByYearAsc
+                }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 2.dp)
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Sort Dropdown
-                Box {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 2.dp)
+                ) {
                     FilterChip(
                         selected = sortOption != CatalogSortOption.DEFAULT,
                         onClick = { showSortDropdown = true },
@@ -501,82 +457,6 @@ fun FlibustaScreen(
                         )
                     }
                 }
-
-                // Language Filter Dropdown
-                Box {
-                    FilterChip(
-                        selected = selectedLanguage != null,
-                        onClick = { showLangDropdown = true },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Language,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = "${strings.filterLanguage}: $currentLangLabel ▾",
-                                maxLines = 1
-                            )
-                        }
-                    )
-
-                    DropdownMenu(
-                        expanded = showLangDropdown,
-                        onDismissRequest = { showLangDropdown = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(strings.allLanguages) },
-                            onClick = {
-                                viewModel.setSelectedLanguage(null)
-                                showLangDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.langRussian) },
-                            onClick = {
-                                viewModel.setSelectedLanguage("ru")
-                                showLangDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.langEnglish) },
-                            onClick = {
-                                viewModel.setSelectedLanguage("en")
-                                showLangDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.langUkrainian) },
-                            onClick = {
-                                viewModel.setSelectedLanguage("uk")
-                                showLangDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.langBelarusian) },
-                            onClick = {
-                                viewModel.setSelectedLanguage("be")
-                                showLangDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.langPolish) },
-                            onClick = {
-                                viewModel.setSelectedLanguage("pl")
-                                showLangDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.langOther) },
-                            onClick = {
-                                viewModel.setSelectedLanguage("other")
-                                showLangDropdown = false
-                            }
-                        )
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -635,8 +515,8 @@ fun FlibustaScreen(
                                 )
                             }
                         } else {
-                            val sortedBooks = remember(state.books, sortOption, selectedLanguage) {
-                                viewModel.getSortedBooks(state.books, sortOption, selectedLanguage)
+                            val sortedBooks = remember(state.books, sortOption) {
+                                viewModel.getSortedBooks(state.books, sortOption)
                             }
 
                             LazyColumn(
@@ -683,7 +563,11 @@ fun FlibustaScreen(
                         }
                     }
                     FlibustaUiState.Idle -> {
-                        // Empty idle state
+                        FlibustaHomeView(
+                            onSelectCategory = { path, title ->
+                                viewModel.loadCategory(path, title)
+                            }
+                        )
                     }
                 }
             }
@@ -1282,6 +1166,162 @@ fun FlibustaBookDetailsBottomSheet(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+fun FlibustaHomeView(
+    onSelectCategory: (path: String, title: String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val strings = LocalAppStrings.current
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Hero Welcome Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.AutoStories,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = strings.catalogHomeTitle,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = strings.catalogHomeSubtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // Category Cards Section
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            FlibustaHomeCategoryCard(
+                emoji = "🔥",
+                title = strings.catNew,
+                subtitle = strings.catNewSubtitle,
+                onClick = { onSelectCategory("/opds/new", strings.catNew) }
+            )
+
+            FlibustaHomeCategoryCard(
+                emoji = "⭐",
+                title = strings.catPopular,
+                subtitle = strings.catPopularSubtitle,
+                onClick = { onSelectCategory("/opds/pop", strings.catPopular) }
+            )
+
+            FlibustaHomeCategoryCard(
+                emoji = "👤",
+                title = strings.catAuthors,
+                subtitle = strings.catAuthorsSubtitle,
+                onClick = { onSelectCategory("/opds/authorsindex", strings.catAuthors) }
+            )
+
+            FlibustaHomeCategoryCard(
+                emoji = "🏷️",
+                title = strings.catGenres,
+                subtitle = strings.catGenresSubtitle,
+                onClick = { onSelectCategory("/opds/genres", strings.catGenres) }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun FlibustaHomeCategoryCard(
+    emoji: String,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = emoji,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(end = 14.dp)
+            )
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
