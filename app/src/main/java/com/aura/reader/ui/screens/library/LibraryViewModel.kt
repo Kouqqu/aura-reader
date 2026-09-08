@@ -50,12 +50,19 @@ class LibraryViewModel(
     val readingStatsEnabled: StateFlow<Boolean> = preferencesManager.readingStatsEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val materialYouEnabled: StateFlow<Boolean> = preferencesManager.materialYouEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     fun setAppLanguage(language: AppLanguage) {
         viewModelScope.launch { preferencesManager.updateAppLanguage(language) }
     }
 
     fun setThemeMode(themeMode: ReaderThemeMode) {
         viewModelScope.launch { preferencesManager.updateThemeMode(themeMode) }
+    }
+
+    fun setMaterialYouEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setMaterialYouEnabled(enabled) }
     }
 
     fun setUpdateNotificationsEnabled(enabled: Boolean) {

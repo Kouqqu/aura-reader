@@ -76,6 +76,17 @@ interface Strings {
     val fontAndTheme: String
     val bookmarksAndQuotes: String
 
+    val selectThirdParty: String
+    val selectThirdPartySubtitle: String
+    val materialYouToggle: String
+    val materialYouSubtitle: String
+    val sortByDefault: String
+    val sortByPopularity: String
+    val sortByTitle: String
+    val sortByAuthor: String
+    fun downloadsCount(count: Int): String
+    fun yearLabel(year: String): String
+
     val settingsTitle: String
     val themeSectionTitle: String
     val themeSystem: String
@@ -132,11 +143,21 @@ class RuStrings : Strings {
     override val selectFilesSubtitle = "Системный проводник (.fb2, .fb2.zip, .epub)"
     override val scanFolder = "Сканировать папку"
     override val scanFolderSubtitle = "Рекурсивный поиск всех книг в папке устройства"
-    override val flibustaCatalog = "Каталог Флибуста"
+    override val selectThirdParty = "Сторонний проводник"
+    override val selectThirdPartySubtitle = "Samsung «Мои файлы», Xiaomi, проводники"
+    override val materialYouToggle = "Цвета Material You"
+    override val materialYouSubtitle = "Адаптировать акцентные цвета под обои устройства"
+    override val sortByDefault = "По умолчанию"
+    override val sortByPopularity = "По популярности"
+    override val sortByTitle = "По названию"
+    override val sortByAuthor = "По автору"
+    override fun downloadsCount(count: Int) = "$count скачиваний"
+    override fun yearLabel(year: String) = "$year г."
+    override val flibustaCatalog = "Онлайн-каталог"
     override val flibustaCatalogSubtitle = "Поиск и скачивание книг онлайн через OPDS"
     override val flibustaSearchHint = "Поиск по автору или названию..."
-    override val flibustaMirrorTitle = "Зеркало OPDS"
-    override val flibustaMirrorSubtitle = "Адрес каталога Flibusta. При блокировках можно указать рабочее зеркало."
+    override val flibustaMirrorTitle = "Настройки OPDS"
+    override val flibustaMirrorSubtitle = "Адрес OPDS-сервера. При блокировках можно указать рабочее зеркало."
     override val flibustaConnectionErrorTitle = "Не удалось связаться с сервером"
     override val flibustaConnectionErrorSubtitle = "Возможно, с IP-адресов других стран всё заработает."
     override val downloadFb2 = "Скачать FB2"
@@ -243,11 +264,21 @@ class EnStrings : Strings {
     override val selectFilesSubtitle = "System file manager (.fb2, .fb2.zip, .epub)"
     override val scanFolder = "Scan folder"
     override val scanFolderSubtitle = "Recursive search for books in device folder"
-    override val flibustaCatalog = "Flibusta Catalog"
+    override val selectThirdParty = "Third-party file manager"
+    override val selectThirdPartySubtitle = "Samsung My Files, Xiaomi, file managers"
+    override val materialYouToggle = "Material You colors"
+    override val materialYouSubtitle = "Adapt accent colors to device wallpaper"
+    override val sortByDefault = "Default"
+    override val sortByPopularity = "Popularity"
+    override val sortByTitle = "By Title"
+    override val sortByAuthor = "By Author"
+    override fun downloadsCount(count: Int) = "$count downloads"
+    override fun yearLabel(year: String) = "Year $year"
+    override val flibustaCatalog = "Online Catalog"
     override val flibustaCatalogSubtitle = "Search and download books online via OPDS"
     override val flibustaSearchHint = "Search by author or title..."
-    override val flibustaMirrorTitle = "OPDS Mirror"
-    override val flibustaMirrorSubtitle = "Flibusta catalog URL. You can specify a working mirror if blocked."
+    override val flibustaMirrorTitle = "OPDS Settings"
+    override val flibustaMirrorSubtitle = "OPDS server address. You can specify a working mirror if blocked."
     override val flibustaConnectionErrorTitle = "Could not connect to server"
     override val flibustaConnectionErrorSubtitle = "It might work when connecting from other countries."
     override val downloadFb2 = "Download FB2"
@@ -576,11 +607,21 @@ class PlStrings : Strings {
     override val selectFilesSubtitle = "Menedżer plików (.fb2, .fb2.zip, .epub)"
     override val scanFolder = "Skanuj folder"
     override val scanFolderSubtitle = "Rekurencyjne wyszukiwanie książek w folderze urządzenia"
-    override val flibustaCatalog = "Katalog Flibusta"
+    override val selectThirdParty = "Menedżer plików innej firmy"
+    override val selectThirdPartySubtitle = "Samsung Moje pliki, Xiaomi, menedżery"
+    override val materialYouToggle = "Kolory Material You"
+    override val materialYouSubtitle = "Dostosuj kolory akcentów do tapety urządzenia"
+    override val sortByDefault = "Domyślnie"
+    override val sortByPopularity = "Według popularności"
+    override val sortByTitle = "Według tytułu"
+    override val sortByAuthor = "Według autora"
+    override fun downloadsCount(count: Int) = "$count pobrań"
+    override fun yearLabel(year: String) = "Rok $year"
+    override val flibustaCatalog = "Katalog online"
     override val flibustaCatalogSubtitle = "Wyszukiwanie i pobieranie książek online przez OPDS"
     override val flibustaSearchHint = "Szukaj według autora lub tytułu..."
-    override val flibustaMirrorTitle = "Lustro OPDS"
-    override val flibustaMirrorSubtitle = "Adres katalogu Flibusta. W przypadku blokad można podać działające lustro."
+    override val flibustaMirrorTitle = "Ustawienia OPDS"
+    override val flibustaMirrorSubtitle = "Adres serwera OPDS. W przypadku blokad można podać działające lustro."
     override val flibustaConnectionErrorTitle = "Nie udało się połączyć z serwerem"
     override val flibustaConnectionErrorSubtitle = "Być może połączenie zadziała z adresów IP innych krajów."
     override val downloadFb2 = "Pobierz FB2"

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -56,23 +57,28 @@ fun SettingsBottomSheet(
     currentLanguage: AppLanguage,
     updateNotificationsEnabled: Boolean,
     readingStatsEnabled: Boolean,
+    materialYouEnabled: Boolean,
     onDismiss: () -> Unit,
     onThemeChange: (ReaderThemeMode) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     onToggleUpdateNotifications: (Boolean) -> Unit,
     onToggleReadingStats: (Boolean) -> Unit,
+    onToggleMaterialYou: (Boolean) -> Unit,
     onCheckUpdates: () -> Unit
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier
+            .statusBarsPadding()
+            .padding(top = 24.dp)
     ) {
         Column(
             modifier = Modifier
@@ -118,13 +124,13 @@ fun SettingsBottomSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val themes: List<Pair<ReaderThemeMode, String>> = listOf(
-                    ReaderThemeMode.SYSTEM_DYNAMIC to strings.themeSystem,
                     ReaderThemeMode.LIGHT to strings.themeLight,
+                    ReaderThemeMode.DARK to strings.themeDark,
                     ReaderThemeMode.AMOLED to strings.themeAmoled,
                     ReaderThemeMode.SEPIA to strings.themeSepia
                 )
                 themes.forEach { (mode, label) ->
-                    val selected = currentTheme == mode
+                    val selected = currentTheme == mode || (currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC && mode == ReaderThemeMode.DARK)
                     FilterChip(
                         selected = selected,
                         onClick = { onThemeChange(mode) },
@@ -136,6 +142,55 @@ fun SettingsBottomSheet(
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                             selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Material You Switch Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onToggleMaterialYou(!materialYouEnabled) },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 12.dp)
+                    ) {
+                        Text(
+                            text = strings.materialYouToggle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = strings.materialYouSubtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Switch(
+                        checked = materialYouEnabled,
+                        onCheckedChange = onToggleMaterialYou,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
                         )
                     )
                 }

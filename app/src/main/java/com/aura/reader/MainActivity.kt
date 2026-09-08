@@ -49,11 +49,17 @@ class MainActivity : ComponentActivity() {
             val appLanguage by preferencesManager.appLanguage.collectAsState(
                 initial = AppLanguage.RU
             )
+            val materialYouEnabled by preferencesManager.materialYouEnabled.collectAsState(
+                initial = false
+            )
 
             CompositionLocalProvider(
                 LocalAppStrings provides getStrings(appLanguage)
             ) {
-                AuraReaderTheme(themeMode = settings.themeMode) {
+                AuraReaderTheme(
+                    themeMode = settings.themeMode,
+                    materialYou = materialYouEnabled
+                ) {
                     val navController = rememberNavController()
                     AuraNavGraph(
                         navController = navController,

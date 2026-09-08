@@ -91,21 +91,21 @@ fun ReaderSettingsBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 ThemeOptionButton(
-                    label = "Material",
-                    bgColor = MaterialTheme.colorScheme.primaryContainer,
-                    textColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    isSelected = settings.themeMode == ReaderThemeMode.SYSTEM_DYNAMIC,
-                    modifier = Modifier.weight(1f),
-                    onClick = { onThemeModeChange(ReaderThemeMode.SYSTEM_DYNAMIC) }
-                )
-
-                ThemeOptionButton(
                     label = "Светлая",
                     bgColor = Color(0xFFFFFFFF),
                     textColor = Color(0xFF1D1B20),
                     isSelected = settings.themeMode == ReaderThemeMode.LIGHT,
                     modifier = Modifier.weight(1f),
                     onClick = { onThemeModeChange(ReaderThemeMode.LIGHT) }
+                )
+
+                ThemeOptionButton(
+                    label = "Тёмная",
+                    bgColor = Color(0xFF1E2125),
+                    textColor = Color(0xFFE2E2E6),
+                    isSelected = settings.themeMode == ReaderThemeMode.DARK || settings.themeMode == ReaderThemeMode.SYSTEM_DYNAMIC,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onThemeModeChange(ReaderThemeMode.DARK) }
                 )
 
                 ThemeOptionButton(

@@ -127,6 +127,7 @@ fun LibraryScreen(
     val appLanguage by viewModel.appLanguage.collectAsState()
     val updateNotificationsEnabled by viewModel.updateNotificationsEnabled.collectAsState()
     val readingStatsEnabled by viewModel.readingStatsEnabled.collectAsState()
+    val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -170,6 +171,31 @@ fun LibraryScreen(
         if (uris.isNotEmpty()) {
             viewModel.importBooksWithValidation(context, uris)
         }
+    }
+
+    // Third-party file managers via Intent.createChooser(ACTION_GET_CONTENT)
+    val thirdPartyPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val uris = mutableListOf<Uri>()
+        result.data?.clipData?.let { clipData ->
+            for (i in 0 until clipData.itemCount) {
+                uris.add(clipData.getItemAt(i).uri)
+            }
+        } ?: result.data?.data?.let { uris.add(it) }
+
+        if (uris.isNotEmpty()) {
+            viewModel.importBooksWithValidation(context, uris)
+        }
+    }
+
+    val launchThirdPartyPicker = {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "*/*"
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            addCategory(Intent.CATEGORY_OPENABLE)
+        }
+        thirdPartyPickerLauncher.launch(Intent.createChooser(intent, strings.selectThirdParty))
     }
 
     // SAF OpenDocumentTree folder scanning
@@ -244,50 +270,11 @@ fun LibraryScreen(
                     }
                 },
                 actions = {
-                    // Flibusta OPDS Catalog
-                    IconButton(onClick = onOpenFlibusta) {
-                        Icon(
-                            imageVector = Icons.Default.CloudDownload,
-                            contentDescription = strings.flibustaCatalog,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
                     // Settings Sheet
                     IconButton(onClick = { showSettingsSheet = true }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = strings.settingsTitle
-                        )
-                    }
-
-                    // Donate to author
-                    IconButton(onClick = {
-                        val intent = Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://dalink.to/koukku")
-                        )
-                        context.startActivity(intent)
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = strings.donate,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    // Open GitHub repo in browser
-                    IconButton(onClick = {
-                        val intent = Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://github.com/Kouqqu/aura-reader")
-                        )
-                        context.startActivity(intent)
-                    }) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_github),
-                            contentDescription = strings.githubRepository,
-                            modifier = Modifier.size(22.dp)
                         )
                     }
                 },
@@ -313,6 +300,7 @@ fun LibraryScreen(
             AddBooksBottomSheet(
                 onDismiss = { showAddBooksSheet = false },
                 onSelectFiles = { launchFilePicker() },
+                onSelectThirdParty = { launchThirdPartyPicker() },
                 onScanFolder = { openFolderLauncher.launch(null) },
                 onOpenFlibusta = onOpenFlibusta
             )
@@ -589,11 +577,13 @@ fun LibraryScreen(
             currentLanguage = appLanguage,
             updateNotificationsEnabled = updateNotificationsEnabled,
             readingStatsEnabled = readingStatsEnabled,
+            materialYouEnabled = materialYouEnabled,
             onDismiss = { showSettingsSheet = false },
             onThemeChange = { viewModel.setThemeMode(it) },
             onLanguageChange = { viewModel.setAppLanguage(it) },
             onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
             onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
+            onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
             onCheckUpdates = {
                 showSettingsSheet = false
                 viewModel.checkForUpdates(manual = true, context = context)

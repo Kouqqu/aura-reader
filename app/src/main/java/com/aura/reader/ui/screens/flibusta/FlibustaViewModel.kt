@@ -17,6 +17,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+enum class CatalogSortOption {
+    DEFAULT,
+    POPULARITY,
+    TITLE_AZ,
+    AUTHOR_AZ
+}
+
 sealed interface FlibustaUiState {
     object Idle : FlibustaUiState
     object Loading : FlibustaUiState
@@ -28,6 +35,28 @@ class FlibustaViewModel(
     private val bookRepository: BookRepository,
     private val preferencesManager: PreferencesManager
 ) : ViewModel() {
+
+    private val _sortOption = MutableStateFlow(CatalogSortOption.DEFAULT)
+    val sortOption: StateFlow<CatalogSortOption> = _sortOption.asStateFlow()
+
+    fun setSortOption(option: CatalogSortOption) {
+        _sortOption.value = option
+    }
+
+    fun getSortedBooks(books: List<FlibustaBook>, option: CatalogSortOption): List<FlibustaBook> {
+        val nonCats = books.filter { !it.isCategory }
+        val cats = books.filter { it.isCategory }
+        val sortedNonCats = when (option) {
+            CatalogSortOption.DEFAULT -> nonCats
+            CatalogSortOption.POPULARITY -> nonCats.sortedWith(
+                compareByDescending<FlibustaBook> { it.downloadsCount }
+                    .thenBy { it.title.lowercase() }
+            )
+            CatalogSortOption.TITLE_AZ -> nonCats.sortedBy { it.title.lowercase() }
+            CatalogSortOption.AUTHOR_AZ -> nonCats.sortedBy { it.author.lowercase() }
+        }
+        return cats + sortedNonCats
+    }
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
