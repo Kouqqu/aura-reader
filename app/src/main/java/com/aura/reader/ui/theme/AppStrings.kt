@@ -102,6 +102,34 @@ interface Strings {
     val catAuthorsSubtitle: String
     val catGenresSubtitle: String
     val catalogHomeTitle: String
+    val collectionsTitle: String
+    val colAll: String
+    val colReading: String
+    val colFavorites: String
+    val colUnread: String
+    val colFinished: String
+    val newCollection: String
+    val createCollectionDialogTitle: String
+    val collectionNamePlaceholder: String
+    val addToCollection: String
+    val markAsFinished: String
+    val resetProgress: String
+    fun deleteCollectionConfirm(name: String): String
+
+    val searchInLibrary: String
+    val searchLibraryPlaceholder: String
+
+    val backupSectionTitle: String
+    val createBackupTitle: String
+    val createBackupSubtitle: String
+    val sendToGoogleDriveTitle: String
+    val sendToGoogleDriveSubtitle: String
+    val restoreBackupTitle: String
+    val restoreBackupSubtitle: String
+    fun backupCreatedSuccess(count: Int): String
+    fun restoreCompletedSuccess(count: Int): String
+    val backupError: String
+    val shareBackupTitle: String
     val catalogHomeSubtitle: String
     fun downloadsCount(count: Int): String
     fun yearLabel(year: String): String
@@ -188,6 +216,34 @@ class RuStrings : Strings {
     override val catAuthorsSubtitle = "Алфавитный указатель писателей"
     override val catGenresSubtitle = "Книги по жанрам и темам"
     override val catalogHomeTitle = "Найдётся всё"
+    override val collectionsTitle = "Коллекции"
+    override val colAll = "Все"
+    override val colReading = "Читаю"
+    override val colFavorites = "Избранное"
+    override val colUnread = "К прочтению"
+    override val colFinished = "Прочитано"
+    override val newCollection = "+ Полка"
+    override val createCollectionDialogTitle = "Новая коллекция"
+    override val collectionNamePlaceholder = "Название полки"
+    override val addToCollection = "В коллекцию"
+    override val markAsFinished = "Отметить прочитанной"
+    override val resetProgress = "Сбросить прогресс"
+    override fun deleteCollectionConfirm(name: String) = "Удалить коллекцию «$name»? Книги останутся в библиотеке."
+
+    override val searchInLibrary = "Поиск по библиотеке"
+    override val searchLibraryPlaceholder = "Название, автор или формат..."
+
+    override val backupSectionTitle = "Резервное копирование и синхронизация"
+    override val createBackupTitle = "Сохранить резервную копию"
+    override val createBackupSubtitle = "Экспорт книг, цитат, закладок и настроек в файл"
+    override val sendToGoogleDriveTitle = "Отправить на Google Диск"
+    override val sendToGoogleDriveSubtitle = "Быстрое сохранение через Google Диск или другие приложения"
+    override val restoreBackupTitle = "Восстановить из резервной копии"
+    override val restoreBackupSubtitle = "Восстановление библиотеки и прогресса из файла бэкапа"
+    override fun backupCreatedSuccess(count: Int) = "Резервная копия успешно создана ($count книг)"
+    override fun restoreCompletedSuccess(count: Int) = "Данные успешно восстановлены ($count книг)"
+    override val backupError = "Ошибка при работе с резервной копией"
+    override val shareBackupTitle = "Резервная копия Aura Reader" 
     override val catalogHomeSubtitle = "Тысячи книг в свободном доступе"
     override fun downloadsCount(count: Int) = "$count скачиваний"
     override fun yearLabel(year: String) = "$year г."
@@ -328,6 +384,34 @@ class EnStrings : Strings {
     override val catAuthorsSubtitle = "Alphabetical author index"
     override val catGenresSubtitle = "Books by genre and subject"
     override val catalogHomeTitle = "Find any book"
+    override val collectionsTitle = "Collections"
+    override val colAll = "All"
+    override val colReading = "Reading"
+    override val colFavorites = "Favorites"
+    override val colUnread = "To Read"
+    override val colFinished = "Completed"
+    override val newCollection = "+ Shelf"
+    override val createCollectionDialogTitle = "New Collection"
+    override val collectionNamePlaceholder = "Shelf name"
+    override val addToCollection = "Add to collection"
+    override val markAsFinished = "Mark as completed"
+    override val resetProgress = "Reset progress"
+    override fun deleteCollectionConfirm(name: String) = "Delete collection \"$name\"? Books will remain in library."
+
+    override val searchInLibrary = "Search library"
+    override val searchLibraryPlaceholder = "Title, author or format..."
+
+    override val backupSectionTitle = "Backup & Synchronization"
+    override val createBackupTitle = "Export backup file"
+    override val createBackupSubtitle = "Export books, quotes, bookmarks and settings to a file"
+    override val sendToGoogleDriveTitle = "Send to Google Drive"
+    override val sendToGoogleDriveSubtitle = "Quick save via Google Drive or other apps"
+    override val restoreBackupTitle = "Restore from backup"
+    override val restoreBackupSubtitle = "Restore library and progress from a backup file"
+    override fun backupCreatedSuccess(count: Int) = "Backup created successfully ($count books)"
+    override fun restoreCompletedSuccess(count: Int) = "Data restored successfully ($count books)"
+    override val backupError = "Error processing backup file"
+    override val shareBackupTitle = "Aura Reader Backup" 
     override val catalogHomeSubtitle = "Thousands of books freely available"
     override fun downloadsCount(count: Int) = "$count downloads"
     override fun yearLabel(year: String) = "Year $year"
@@ -468,6 +552,34 @@ class UkStrings : Strings {
     override val catAuthorsSubtitle = "Алфавітний покажчик авторів"
     override val catGenresSubtitle = "Книги за жанрами та тематиками"
     override val catalogHomeTitle = "Знайдеться все"
+    override val collectionsTitle = "Колекції"
+    override val colAll = "Усі"
+    override val colReading = "Читаю"
+    override val colFavorites = "Обране"
+    override val colUnread = "До читання"
+    override val colFinished = "Прочитано"
+    override val newCollection = "+ Полиця"
+    override val createCollectionDialogTitle = "Нова колекція"
+    override val collectionNamePlaceholder = "Назва полиці"
+    override val addToCollection = "До колекції"
+    override val markAsFinished = "Позначити прочитаною"
+    override val resetProgress = "Скинути прогрес"
+    override fun deleteCollectionConfirm(name: String) = "Видалити колекцію «$name»? Книги залишаться в бібліотеці."
+
+    override val searchInLibrary = "Пошук у бібліотеці"
+    override val searchLibraryPlaceholder = "Назва, автор або формат..."
+
+    override val backupSectionTitle = "Резервне копіювання та синхронізація"
+    override val createBackupTitle = "Зберегти резервну копію"
+    override val createBackupSubtitle = "Експорт книг, цитат, закладок і налаштувань у файл"
+    override val sendToGoogleDriveTitle = "Надіслати на Google Диск"
+    override val sendToGoogleDriveSubtitle = "Швидке збереження через Google Диск або інші додатки"
+    override val restoreBackupTitle = "Відновити з резервної копії"
+    override val restoreBackupSubtitle = "Відновлення бібліотеки та прогресу з файлу бекапу"
+    override fun backupCreatedSuccess(count: Int) = "Резервну копію успішно створено ($count книг)"
+    override fun restoreCompletedSuccess(count: Int) = "Дані успішно відновлено ($count книг)"
+    override val backupError = "Помилка при роботі з резервною копією"
+    override val shareBackupTitle = "Резервна копія Aura Reader" 
     override val catalogHomeSubtitle = "Тисячі книг у вільному доступі"
     override fun downloadsCount(count: Int) = "$count завантажень"
     override fun yearLabel(year: String) = "$year р."
@@ -608,6 +720,34 @@ class BeStrings : Strings {
     override val catAuthorsSubtitle = "Алфавітны паказальнік пісьменнікаў"
     override val catGenresSubtitle = "Кнігі па жанрах і тэмах"
     override val catalogHomeTitle = "Знойдзецца ўсё"
+    override val collectionsTitle = "Калекцыі"
+    override val colAll = "Усе"
+    override val colReading = "Чытаю"
+    override val colFavorites = "Выбранае"
+    override val colUnread = "Да чытання"
+    override val colFinished = "Прачытана"
+    override val newCollection = "+ Паліца"
+    override val createCollectionDialogTitle = "Новая калекцыя"
+    override val collectionNamePlaceholder = "Назва паліцы"
+    override val addToCollection = "У калекцыю"
+    override val markAsFinished = "Адзначыць як прачытанае"
+    override val resetProgress = "Скінуць прагрэс"
+    override fun deleteCollectionConfirm(name: String) = "Выдаліць калекцыю «$name»? Кнігі застануцца ў бібліятэцы."
+
+    override val searchInLibrary = "Пошук у бібліятэцы"
+    override val searchLibraryPlaceholder = "Назва, аўтар ці фармат..."
+
+    override val backupSectionTitle = "Рэзервовае капіраванне і сінхранізацыя"
+    override val createBackupTitle = "Захаваць рэзервовую копію"
+    override val createBackupSubtitle = "Экспарт кніг, цытат, закладак і налад у файл"
+    override val sendToGoogleDriveTitle = "Адправіць на Google Дыск"
+    override val sendToGoogleDriveSubtitle = "Хуткае захаванне праз Google Дыск або іншыя праграмы"
+    override val restoreBackupTitle = "Аднавіць з рэзервовай копіі"
+    override val restoreBackupSubtitle = "Аднаўленне бібліятэкі і прагрэсу з файла бэкапу"
+    override fun backupCreatedSuccess(count: Int) = "Рэзервовая копія паспяхова створана ($count кніг)"
+    override fun restoreCompletedSuccess(count: Int) = "Даныя паспяхова адноўлены ($count кніг)"
+    override val backupError = "Памылка пры працы з рэзервовай копіяй"
+    override val shareBackupTitle = "Рэзервовая копія Aura Reader" 
     override val catalogHomeSubtitle = "Тысячы кніг у вольным доступе"
     override fun downloadsCount(count: Int) = "$count спампоўванняў"
     override fun yearLabel(year: String) = "$year г."
@@ -748,6 +888,34 @@ class PlStrings : Strings {
     override val catAuthorsSubtitle = "Indeks alfabetyczny autorów"
     override val catGenresSubtitle = "Książki według gatunków i tematów"
     override val catalogHomeTitle = "Znajdziesz wszystko"
+    override val collectionsTitle = "Kolekcje"
+    override val colAll = "Wszystkie"
+    override val colReading = "Czytam"
+    override val colFavorites = "Ulubione"
+    override val colUnread = "Do przeczytania"
+    override val colFinished = "Przeczytane"
+    override val newCollection = "+ Półka"
+    override val createCollectionDialogTitle = "Nowa kolekcja"
+    override val collectionNamePlaceholder = "Nazwa półki"
+    override val addToCollection = "Do kolekcji"
+    override val markAsFinished = "Oznacz jako przeczytane"
+    override val resetProgress = "Zresetuj postęp"
+    override fun deleteCollectionConfirm(name: String) = "Usunąć kolekcję „$name”? Książki pozostaną w bibliotece."
+
+    override val searchInLibrary = "Szukaj w bibliotece"
+    override val searchLibraryPlaceholder = "Tytuł, autor lub format..."
+
+    override val backupSectionTitle = "Kopia zapasowa i synchronizacja"
+    override val createBackupTitle = "Zapisz kopię zapasową"
+    override val createBackupSubtitle = "Eksport książek, cytatów, zakładek i ustawień do pliku"
+    override val sendToGoogleDriveTitle = "Wyślij na Dysk Google"
+    override val sendToGoogleDriveSubtitle = "Szybkie zapisywanie na Dysku Google lub w innych aplikacjach"
+    override val restoreBackupTitle = "Przywróć z kopii zapasowej"
+    override val restoreBackupSubtitle = "Przywracanie biblioteki i postępów z pliku kopii"
+    override fun backupCreatedSuccess(count: Int) = "Kopia zapasowa utworzona pomyślnie ($count książek)"
+    override fun restoreCompletedSuccess(count: Int) = "Dane przywrócone pomyślnie ($count książek)"
+    override val backupError = "Błąd podczas przetwarzania kopii zapasowej"
+    override val shareBackupTitle = "Kopia zapasowa Aura Reader" 
     override val catalogHomeSubtitle = "Tysiące książek w wolnym dostępie"
     override fun downloadsCount(count: Int) = "$count pobrań"
     override fun yearLabel(year: String) = "Rok $year"

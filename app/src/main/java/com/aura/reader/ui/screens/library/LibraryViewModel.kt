@@ -19,12 +19,28 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
 
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.ui.theme.AppLanguage
 import kotlinx.coroutines.flow.first
+
+enum class CollectionFilterType {
+    ALL,
+    READING,
+    FAVORITES,
+    UNREAD,
+    FINISHED,
+    CUSTOM
+}
+
+data class ActiveCollectionFilter(
+    val type: CollectionFilterType,
+    val customName: String? = null
+)
 
 sealed interface LibraryUiState {
     data object Idle : LibraryUiState
@@ -86,16 +102,100 @@ class LibraryViewModel(
     val todayReadingMinutes: StateFlow<Int> = bookRepository.todayReadingMinutes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    val userCollections: StateFlow<List<String>> = bookRepository.userCollections
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _activeCollectionFilter = MutableStateFlow(ActiveCollectionFilter(CollectionFilterType.ALL))
+    val activeCollectionFilter: StateFlow<ActiveCollectionFilter> = _activeCollectionFilter.asStateFlow()
+
+    fun setCollectionFilter(filter: ActiveCollectionFilter) {
+        _activeCollectionFilter.value = filter
+    }
+
+    fun addUserCollection(name: String) {
+        viewModelScope.launch { bookRepository.addUserCollection(name) }
+    }
+
+    fun removeUserCollection(name: String) {
+        viewModelScope.launch {
+            bookRepository.removeUserCollection(name)
+            if (_activeCollectionFilter.value.customName == name) {
+                _activeCollectionFilter.value = ActiveCollectionFilter(CollectionFilterType.ALL)
+            }
+        }
+    }
+
+    fun toggleFavorite(bookId: String) {
+        viewModelScope.launch { bookRepository.toggleFavorite(bookId) }
+    }
+
+    fun updateBookCollections(bookId: String, collections: List<String>) {
+        viewModelScope.launch { bookRepository.updateBookCollections(bookId, collections) }
+    }
+
+    fun setBookReadingProgress(bookId: String, progress: Int) {
+        viewModelScope.launch { bookRepository.setBookReadingProgress(bookId, progress) }
+    }
+
+    fun exportBackup(outputStream: OutputStream, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            val res = bookRepository.backupManager.exportBackup(outputStream)
+            res.onSuccess { count ->
+                onSuccess(count)
+            }.onFailure { e ->
+                onError(e.localizedMessage ?: "Ошибка экспорта")
+            }
+        }
+    }
+
+    fun exportBackupToTempFile(onSuccess: (File, Int) -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            val res = bookRepository.backupManager.exportBackupToTempFile()
+            res.onSuccess { pair ->
+                onSuccess(pair.first, pair.second)
+            }.onFailure { e ->
+                onError(e.localizedMessage ?: "Ошибка создания файла")
+            }
+        }
+    }
+
+    fun importBackup(inputStream: InputStream, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            val res = bookRepository.backupManager.importBackup(inputStream)
+            res.onSuccess { count ->
+                bookRepository.loadRecentBooks()
+                onSuccess(count)
+            }.onFailure { e ->
+                onError(e.localizedMessage ?: "Ошибка импорта")
+            }
+        }
+    }
+
     val filteredRecentBooks: StateFlow<List<Book>> = kotlinx.coroutines.flow.combine(
         recentBooks,
-        _searchQuery
-    ) { books, query ->
+        _searchQuery,
+        _activeCollectionFilter
+    ) { books, query, filter ->
         val q = query.trim()
-        if (q.isEmpty()) {
+        val searchFiltered = if (q.isEmpty()) {
             books
         } else {
             books.filter {
-                it.title.contains(q, ignoreCase = true) || it.author.contains(q, ignoreCase = true)
+                it.title.contains(q, ignoreCase = true) ||
+                it.author.contains(q, ignoreCase = true) ||
+                it.format.name.equals(q, ignoreCase = true)
+            }
+        }
+
+        when (filter.type) {
+            CollectionFilterType.ALL -> searchFiltered
+            CollectionFilterType.READING -> searchFiltered.filter { it.progressPercent in 1..99 }
+            CollectionFilterType.FAVORITES -> searchFiltered.filter { it.isFavorite }
+            CollectionFilterType.UNREAD -> searchFiltered.filter { it.progressPercent == 0 }
+            CollectionFilterType.FINISHED -> searchFiltered.filter { it.progressPercent == 100 }
+            CollectionFilterType.CUSTOM -> {
+                val custom = filter.customName ?: ""
+                searchFiltered.filter { it.collections.contains(custom) }
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -188,7 +288,7 @@ class LibraryViewModel(
                     try {
                         dir.walkTopDown().maxDepth(3).forEach { file ->
                             val name = file.name.lowercase()
-                            if (file.isFile && (name.endsWith(".fb2") || name.endsWith(".fb2.zip") || name.endsWith(".epub") || name.endsWith(".txt"))) {
+                            if (file.isFile && (name.endsWith(".fb2") || name.endsWith(".fb2.zip") || name.endsWith(".epub") || name.endsWith(".txt") || name.endsWith(".pdf"))) {
                                 if (!list.any { it.absolutePath == file.absolutePath }) {
                                     list.add(file)
                                 }
@@ -337,7 +437,7 @@ class LibraryViewModel(
                 scanFolderRecursive(file, result, maxDepth - 1)
             } else if (file.isFile) {
                 val name = file.name?.lowercase() ?: ""
-                if (name.endsWith(".fb2") || name.endsWith(".fb2.zip") || name.endsWith(".epub")) {
+                if (name.endsWith(".fb2") || name.endsWith(".fb2.zip") || name.endsWith(".epub") || name.endsWith(".txt") || name.endsWith(".pdf")) {
                     result.add(file.uri)
                 }
             }

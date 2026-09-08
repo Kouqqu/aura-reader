@@ -41,6 +41,7 @@ class PreferencesManager(private val context: Context) {
         val MATERIAL_YOU_ENABLED_KEY = booleanPreferencesKey("material_you_enabled")
         val FLIBUSTA_HISTORY_KEY = stringPreferencesKey("flibusta_search_history")
         val FLIBUSTA_BASE_URL_KEY = stringPreferencesKey("flibusta_base_url")
+        val USER_COLLECTIONS_KEY = stringPreferencesKey("user_collections_json")
     }
 
     val readingStatsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -373,6 +374,57 @@ class PreferencesManager(private val context: Context) {
     suspend fun setFlibustaBaseUrl(url: String) {
         context.dataStore.edit { prefs ->
             prefs[FLIBUSTA_BASE_URL_KEY] = url.trim()
+        }
+    }
+
+    // --- User Collections ---
+    val userCollections: Flow<List<String>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[USER_COLLECTIONS_KEY] ?: return@map emptyList()
+        try {
+            val arr = JSONArray(raw)
+            val list = mutableListOf<String>()
+            for (i in 0 until arr.length()) list.add(arr.getString(i))
+            list
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun saveUserCollections(collections: List<String>) {
+        context.dataStore.edit { prefs ->
+            val arr = JSONArray()
+            for (c in collections) arr.put(c)
+            prefs[USER_COLLECTIONS_KEY] = arr.toString()
+        }
+    }
+
+    suspend fun addUserCollection(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        context.dataStore.edit { prefs ->
+            val raw = prefs[USER_COLLECTIONS_KEY] ?: "[]"
+            val arr = try { JSONArray(raw) } catch (e: Exception) { JSONArray() }
+            val list = mutableListOf<String>()
+            for (i in 0 until arr.length()) list.add(arr.getString(i))
+            if (!list.contains(trimmed)) {
+                list.add(trimmed)
+                val newArr = JSONArray()
+                for (item in list) newArr.put(item)
+                prefs[USER_COLLECTIONS_KEY] = newArr.toString()
+            }
+        }
+    }
+
+    suspend fun removeUserCollection(name: String) {
+        context.dataStore.edit { prefs ->
+            val raw = prefs[USER_COLLECTIONS_KEY] ?: "[]"
+            val arr = try { JSONArray(raw) } catch (e: Exception) { JSONArray() }
+            val newArr = JSONArray()
+            for (i in 0 until arr.length()) {
+                val item = arr.getString(i)
+                if (item != name) newArr.put(item)
+            }
+            prefs[USER_COLLECTIONS_KEY] = newArr.toString()
         }
     }
 }
