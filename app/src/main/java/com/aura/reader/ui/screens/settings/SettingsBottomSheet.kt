@@ -68,6 +68,11 @@ fun SettingsBottomSheet(
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
+    val currentAppVersion = remember(context) {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull() ?: "1.1.9"
+    }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     ModalBottomSheet(
@@ -340,7 +345,7 @@ fun SettingsBottomSheet(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = strings.currentVersion("1.1.4"),
+                            text = strings.currentVersion(currentAppVersion),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.outline
                         )
