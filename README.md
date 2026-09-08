@@ -1,5 +1,31 @@
 # Aura Reader
 
+## 🇬🇧English
+
+A simple, lightweight Android e-reader featuring Material 3 design.
+
+Built for comfortable reading without clutter, ads, or bloated settings menus.
+
+### Features:
+- Supports **FB2**, **FB2.ZIP**, and **EPUB** formats (plus plain TXT files).
+- Two reading modes: **paginated** and **continuous scroll**.
+- **Popup footnotes**: opens notes instantly in a bottom sheet without losing your place in the text.
+- **Full-text search**: in-book keyword search with text highlighting and navigation, as well as library-wide search.
+- **Bookmarks & quotes**: one-tap bookmarking and easy saving of favorite passages.
+- **Reading stats**: tracks minutes read today directly on the home screen.
+- Book typography: centered chapter titles, italicized epigraphs/quotes with author attribution, and proper paragraph indents.
+- Dynamic Material 3 theming, plus a classic light theme, soft sepia, and pure black mode for AMOLED screens.
+- Remembers your exact reading progress (chapter and position).
+- Table of contents with quick chapter jumping.
+- Built-in storage scanner alongside system file picker support.
+- In-app automatic update checks and installation.
+- In-reader text adjustments: font size, line spacing, and font family selection (serif, sans-serif, monospace).
+
+### How to install:
+Head over to the [Releases](https://github.com/Kouqqu/aura-reader/releases) section, download the **`AuraReader.apk`** file, and install it on your device. Future updates can be handled directly within the app.
+
+## 🇷🇺Русский
+
 Простая и лёгкая читалка для Android с дизайном Material 3
 
 Делалась для удобного чтения книг без лишней мишуры, рекламы и тяжеловесных настроек.
