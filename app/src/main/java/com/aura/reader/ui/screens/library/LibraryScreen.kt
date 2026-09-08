@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
@@ -109,7 +110,8 @@ import java.io.File
 @Composable
 fun LibraryScreen(
     viewModel: LibraryViewModel,
-    onBookSelected: (Book) -> Unit
+    onBookSelected: (Book) -> Unit,
+    onOpenFlibusta: () -> Unit
 ) {
     val context = LocalContext.current
     val strings = LocalAppStrings.current
@@ -128,7 +130,7 @@ fun LibraryScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    var showOpenOptionsSheet by remember { mutableStateOf(false) }
+    var showAddBooksSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var bookToDelete by remember { mutableStateOf<Book?>(null) }
 
@@ -161,22 +163,36 @@ fun LibraryScreen(
         )
     }
 
-    // Samsung My Files / System chooser with MULTI-SELECTION support (shows all FB2 and EPUB files on Samsung)
-    val getMultipleContentsLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetMultipleContents()
-    ) { uris: List<Uri> ->
-        if (uris.isNotEmpty()) {
-            viewModel.openBooksFromUris(uris)
-        }
-    }
-
-    // SAF OpenMultipleDocuments picker supporting ANY file (*/*)
+    // SAF OpenMultipleDocuments picker with extended MIME types and validation
     val openMultipleDocumentsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments()
     ) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
-            viewModel.openBooksFromUris(uris)
+            viewModel.importBooksWithValidation(context, uris)
         }
+    }
+
+    // SAF OpenDocumentTree folder scanning
+    val openFolderLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { treeUri: Uri? ->
+        if (treeUri != null) {
+            viewModel.scanAndImportFolder(context, treeUri)
+        }
+    }
+
+    val launchFilePicker = {
+        openMultipleDocumentsLauncher.launch(
+            arrayOf(
+                "*/*",
+                "application/x-fictionbook+xml",
+                "application/x-fictionbook",
+                "application/octet-stream",
+                "application/zip",
+                "text/xml",
+                "application/epub+zip"
+            )
+        )
     }
 
     LaunchedEffect(uiState) {
@@ -228,6 +244,15 @@ fun LibraryScreen(
                     }
                 },
                 actions = {
+                    // Flibusta OPDS Catalog
+                    IconButton(onClick = onOpenFlibusta) {
+                        Icon(
+                            imageVector = Icons.Default.CloudDownload,
+                            contentDescription = strings.flibustaCatalog,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
                     // Settings Sheet
                     IconButton(onClick = { showSettingsSheet = true }) {
                         Icon(
@@ -275,7 +300,7 @@ fun LibraryScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { getMultipleContentsLauncher.launch("*/*") },
+                onClick = { showAddBooksSheet = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text(strings.addBooks) },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -284,6 +309,15 @@ fun LibraryScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
+        if (showAddBooksSheet) {
+            AddBooksBottomSheet(
+                onDismiss = { showAddBooksSheet = false },
+                onSelectFiles = { launchFilePicker() },
+                onScanFolder = { openFolderLauncher.launch(null) },
+                onOpenFlibusta = onOpenFlibusta
+            )
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -291,7 +325,7 @@ fun LibraryScreen(
         ) {
             if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
                 EmptyLibraryView(
-                    onOpenFile = { getMultipleContentsLauncher.launch("*/*") },
+                    onAddBooks = { showAddBooksSheet = true },
                     onOpenSample = { viewModel.openSampleBook() }
                 )
             } else {
@@ -879,7 +913,7 @@ fun BookCoverView(
 
 @Composable
 fun EmptyLibraryView(
-    onOpenFile: () -> Unit,
+    onAddBooks: () -> Unit,
     onOpenSample: () -> Unit
 ) {
     val strings = LocalAppStrings.current
@@ -927,12 +961,12 @@ fun EmptyLibraryView(
         Spacer(modifier = Modifier.height(28.dp))
 
         Button(
-            onClick = onOpenFile,
+            onClick = onAddBooks,
             shape = RoundedCornerShape(12.dp)
         ) {
             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text(strings.openFile)
+            Text(strings.addBooks)
         }
 
         Spacer(modifier = Modifier.height(12.dp))

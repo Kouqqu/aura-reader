@@ -423,6 +423,16 @@ class BookRepository(
         }
     }
 
+    fun getDisplayName(uri: Uri): String? = getFileName(uri)
+
+    fun isSupportedBookUri(uri: Uri): Boolean {
+        val name = (getFileName(uri) ?: uri.lastPathSegment ?: "").lowercase()
+        return name.endsWith(".fb2") ||
+                name.endsWith(".fb2.zip") ||
+                name.endsWith(".epub") ||
+                name.endsWith(".txt")
+    }
+
     suspend fun removeBook(bookId: String) = withContext(Dispatchers.IO) {
         val currentList = _recentBooks.value.toMutableList()
         val bookToRemove = currentList.find { it.id == bookId }
