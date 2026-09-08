@@ -1,10 +1,11 @@
 package com.aura.reader.data.model
 
 enum class ReaderThemeMode {
-    SYSTEM_DYNAMIC, // Material You Dynamic Colors
     LIGHT,          // Crisp Clean White
+    DARK,           // Modern Dark Slate
+    AMOLED,         // Pure Pitch Black
     SEPIA,          // Soft Warm Paper
-    AMOLED          // Pure Pitch Black
+    SYSTEM_DYNAMIC  // Legacy fallback
 }
 
 enum class ReaderFontFamily {

@@ -10,5 +10,9 @@ data class FlibustaBook(
     val epubUrl: String? = null,
     val downloadSize: String? = null,
     val isCategory: Boolean = false,
-    val categoryPath: String? = null
+    val categoryPath: String? = null,
+    val year: String? = null,
+    val language: String? = null,
+    val formatInfo: String? = null,
+    val downloadsCount: Int = 0
 )

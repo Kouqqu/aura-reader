@@ -48,6 +48,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
@@ -1080,8 +1081,9 @@ fun ChapterPagingView(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 24.dp, vertical = 4.dp)
-                            .padding(bottom = 32.dp),
+                            .padding(horizontal = 24.dp)
+                            .padding(top = 4.dp, bottom = 44.dp)
+                            .clipToBounds(),
                         verticalArrangement = Arrangement.Top
                     ) {
                         for ((_, block) in pageBlocks) {
@@ -1136,12 +1138,17 @@ fun ChapterPagingView(
                 }
         )
 
-        // Bottom Page Counter
-        val strings = LocalAppStrings.current
+        // Bottom Overall Reading Progress Indicator
+        val intraChapterProgress = if (pages.size > 1) {
+            (pagerState.currentPage.toFloat() / (pages.size - 1)).coerceIn(0f, 1f)
+        } else 0f
+        val overallPercent = (((chapterIndex + intraChapterProgress) / totalChapters.coerceAtLeast(1)) * 100).toInt().coerceIn(0, 100)
+
         Text(
-            text = "${strings.page} ${pagerState.currentPage + 1} ${strings.ofPages} ${pages.size}  •  ${strings.chapter} ${chapterIndex + 1} ${strings.ofChapters} $totalChapters",
+            text = "$overallPercent%",
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 12.dp)
@@ -1162,11 +1169,11 @@ private fun calculatePageCapacity(
     val fs = fontSizeSp.coerceIn(12f, 36f)
     val lh = lineHeightMultiplier.coerceIn(1.0f, 2.2f)
     val effectiveLineHeight = fs * lh
-    val usableHeightDp = (screenHeightDp - 54f).coerceAtLeast(350f)
-    val linesPerPage = (usableHeightDp / effectiveLineHeight).coerceIn(12f, 50f)
-    val usableWidthDp = (screenWidthDp - 40f).coerceAtLeast(260f)
-    val charsPerLine = (usableWidthDp / (fs * 0.46f)).coerceIn(24f, 65f)
-    return (linesPerPage * charsPerLine).toInt().coerceIn(600, 3500)
+    val usableHeightDp = (screenHeightDp - 96f).coerceAtLeast(300f)
+    val linesPerPage = (usableHeightDp / effectiveLineHeight).coerceIn(10f, 45f)
+    val usableWidthDp = (screenWidthDp - 48f).coerceAtLeast(260f)
+    val charsPerLine = (usableWidthDp / (fs * 0.48f)).coerceIn(22f, 65f)
+    return (linesPerPage * charsPerLine).toInt().coerceIn(500, 3200)
 }
 
 private fun findBestBreak(text: String, targetLen: Int): Int {

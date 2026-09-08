@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.InsertDriveFile
@@ -35,6 +36,7 @@ import com.aura.reader.ui.theme.LocalAppStrings
 fun AddBooksBottomSheet(
     onDismiss: () -> Unit,
     onSelectFiles: () -> Unit,
+    onSelectThirdParty: () -> Unit,
     onScanFolder: () -> Unit,
     onOpenFlibusta: () -> Unit
 ) {
@@ -68,6 +70,16 @@ fun AddBooksBottomSheet(
                 onClick = {
                     onDismiss()
                     onSelectFiles()
+                }
+            )
+
+            AddMethodItem(
+                icon = Icons.Default.Apps,
+                title = strings.selectThirdParty,
+                subtitle = strings.selectThirdPartySubtitle,
+                onClick = {
+                    onDismiss()
+                    onSelectThirdParty()
                 }
             )
 

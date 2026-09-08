@@ -38,6 +38,7 @@ class PreferencesManager(private val context: Context) {
         val APP_LANGUAGE_KEY = stringPreferencesKey("app_language")
         val UPDATE_NOTIFICATIONS_KEY = booleanPreferencesKey("update_notifications_enabled")
         val READING_STATS_ENABLED_KEY = booleanPreferencesKey("reading_stats_enabled")
+        val MATERIAL_YOU_ENABLED_KEY = booleanPreferencesKey("material_you_enabled")
         val FLIBUSTA_HISTORY_KEY = stringPreferencesKey("flibusta_search_history")
         val FLIBUSTA_BASE_URL_KEY = stringPreferencesKey("flibusta_base_url")
     }
@@ -49,6 +50,16 @@ class PreferencesManager(private val context: Context) {
     suspend fun setReadingStatsEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[READING_STATS_ENABLED_KEY] = enabled
+        }
+    }
+
+    val materialYouEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[MATERIAL_YOU_ENABLED_KEY] ?: false
+    }
+
+    suspend fun setMaterialYouEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[MATERIAL_YOU_ENABLED_KEY] = enabled
         }
     }
 

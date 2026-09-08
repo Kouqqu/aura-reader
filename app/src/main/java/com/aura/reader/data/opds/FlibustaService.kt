@@ -29,14 +29,25 @@ object FlibustaService {
         .followSslRedirects(true)
         .build()
 
+    private val YEAR_REGEX = Regex("""Год(?:\s+издания)?:\s*(\d{4})""", RegexOption.IGNORE_CASE)
+    private val FORMAT_REGEX = Regex("""Формат:\s*([a-zA-Z0-9]+)""", RegexOption.IGNORE_CASE)
+    private val LANG_REGEX = Regex("""Язык:\s*([a-zA-Zа-яА-Я]+)""", RegexOption.IGNORE_CASE)
+    private val SIZE_REGEX = Regex("""Размер:\s*([\d\s]+(?:Kb|Mb|Gb|Кб|Мб|Гб|bytes|байт))""", RegexOption.IGNORE_CASE)
+    private val DOWNLOADS_REGEX = Regex("""Скачиваний:\s*(\d+)""", RegexOption.IGNORE_CASE)
+    private val META_CLEAN_REGEX = Regex("""(?:Год(?:\s+издания)?:\s*\d{4}|Формат:\s*[a-zA-Z0-9]+|Язык:\s*[a-zA-Zа-яА-Я]+|Размер:\s*[\d\s]+(?:Kb|Mb|Gb|Кб|Мб|Гб|bytes|байт)|Скачиваний:\s*\d+)\s*""", RegexOption.IGNORE_CASE)
+
     fun resolveUrl(baseUrl: String, href: String): String {
         val trimmed = href.trim()
         if (trimmed.startsWith("http://", ignoreCase = true) || trimmed.startsWith("https://", ignoreCase = true)) {
             return trimmed
         }
         return try {
-            val baseUri = URI(baseUrl)
-            baseUri.resolve(trimmed).toString()
+            val baseHttpUrl = okhttp3.HttpUrl.parse(baseUrl)
+            val resolved = baseHttpUrl?.resolve(trimmed)
+            resolved?.toString() ?: run {
+                val baseUri = URI(baseUrl)
+                baseUri.resolve(trimmed).toString()
+            }
         } catch (e: Exception) {
             val root = baseUrl.substringBefore("/opds").trimEnd('/')
             val rel = trimmed.trimStart('/')
@@ -49,9 +60,11 @@ object FlibustaService {
             val cleanBase = baseUrl.trimEnd('/')
             val encodedQuery = URLEncoder.encode(query.trim(), "UTF-8")
             val searchUrl = "$cleanBase/search?searchTerm=$encodedQuery"
+            val httpUrl = okhttp3.HttpUrl.parse(searchUrl)
+                ?: return@withContext Result.failure(Exception("Некорректный адрес поиска"))
 
             val request = Request.Builder()
-                .url(searchUrl)
+                .url(httpUrl)
                 .header("User-Agent", USER_AGENT)
                 .build()
 
@@ -77,8 +90,11 @@ object FlibustaService {
                 resolveUrl(cleanBase, path)
             }
 
+            val httpUrl = okhttp3.HttpUrl.parse(targetUrl)
+                ?: return@withContext Result.failure(Exception("Некорректный адрес ссылки"))
+
             val request = Request.Builder()
-                .url(targetUrl)
+                .url(httpUrl)
                 .header("User-Agent", USER_AGENT)
                 .build()
 
@@ -213,18 +229,30 @@ object FlibustaService {
                             val id = if (currentId.isNotBlank()) currentId else currentTitle.hashCode().toString()
                             val isCat = currentFb2Url == null && currentEpubUrl == null && currentCategoryPath != null
                             if (currentTitle.isNotBlank()) {
+                                val parsedYear = YEAR_REGEX.find(currentAnnotation)?.groupValues?.get(1)
+                                val parsedFormat = FORMAT_REGEX.find(currentAnnotation)?.groupValues?.get(1)
+                                val parsedLang = LANG_REGEX.find(currentAnnotation)?.groupValues?.get(1)?.uppercase(Locale.ROOT)
+                                val parsedSize = SIZE_REGEX.find(currentAnnotation)?.groupValues?.get(1)
+                                val parsedDownloads = DOWNLOADS_REGEX.find(currentAnnotation)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+                                val cleanedAnnotation = currentAnnotation.replace(META_CLEAN_REGEX, "").trim()
+                                val finalDownloadSize = currentDownloadSize ?: parsedSize
+
                                 results.add(
                                     FlibustaBook(
                                         id = id,
                                         title = currentTitle,
                                         author = currentAuthor,
-                                        annotation = currentAnnotation,
+                                        annotation = cleanedAnnotation,
                                         coverUrl = currentCoverUrl,
                                         fb2Url = currentFb2Url,
                                         epubUrl = currentEpubUrl,
-                                        downloadSize = currentDownloadSize,
+                                        downloadSize = finalDownloadSize,
                                         isCategory = isCat,
-                                        categoryPath = currentCategoryPath
+                                        categoryPath = currentCategoryPath,
+                                        year = parsedYear,
+                                        language = parsedLang,
+                                        formatInfo = parsedFormat,
+                                        downloadsCount = parsedDownloads
                                     )
                                 )
                             }

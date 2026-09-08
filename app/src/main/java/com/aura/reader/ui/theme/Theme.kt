@@ -81,23 +81,57 @@ private val AmoledColorScheme = darkColorScheme(
 
 @Composable
 fun AuraReaderTheme(
-    themeMode: ReaderThemeMode = ReaderThemeMode.SYSTEM_DYNAMIC,
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    themeMode: ReaderThemeMode = ReaderThemeMode.DARK,
+    materialYou: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
+    val hasDynamic = materialYou && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     val colorScheme = when (themeMode) {
-        ReaderThemeMode.SEPIA -> SepiaColorScheme
-        ReaderThemeMode.AMOLED -> AmoledColorScheme
-        ReaderThemeMode.LIGHT -> LightColorScheme
-        ReaderThemeMode.SYSTEM_DYNAMIC -> {
-            if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        ReaderThemeMode.LIGHT -> {
+            if (hasDynamic) {
+                dynamicLightColorScheme(context)
             } else {
-                if (darkTheme) DarkColorScheme else LightColorScheme
+                LightColorScheme
             }
+        }
+        ReaderThemeMode.DARK -> {
+            if (hasDynamic) {
+                dynamicDarkColorScheme(context)
+            } else {
+                DarkColorScheme
+            }
+        }
+        ReaderThemeMode.AMOLED -> {
+            if (hasDynamic) {
+                val dyn = dynamicDarkColorScheme(context)
+                dyn.copy(
+                    background = androidx.compose.ui.graphics.Color.Black,
+                    surface = androidx.compose.ui.graphics.Color.Black,
+                    surfaceContainer = androidx.compose.ui.graphics.Color(0xFF101010),
+                    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF181818)
+                )
+            } else {
+                AmoledColorScheme
+            }
+        }
+        ReaderThemeMode.SEPIA -> {
+            if (hasDynamic) {
+                val dyn = dynamicLightColorScheme(context)
+                SepiaColorScheme.copy(
+                    primary = dyn.primary,
+                    onPrimary = dyn.onPrimary,
+                    primaryContainer = dyn.primaryContainer,
+                    onPrimaryContainer = dyn.onPrimaryContainer,
+                    secondary = dyn.secondary
+                )
+            } else {
+                SepiaColorScheme
+            }
+        }
+        ReaderThemeMode.SYSTEM_DYNAMIC -> {
+            if (hasDynamic) dynamicDarkColorScheme(context) else DarkColorScheme
         }
     }
 
