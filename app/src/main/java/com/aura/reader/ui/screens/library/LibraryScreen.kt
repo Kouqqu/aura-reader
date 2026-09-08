@@ -1,3 +1,5 @@
+package com.aura.reader.ui.screens.library
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
@@ -10,7 +12,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.toMutableStateList
-package com.aura.reader.ui.screens.library
 
 import android.content.Intent
 import android.graphics.BitmapFactory
