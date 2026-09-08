@@ -79,7 +79,7 @@ class BackupManager(
                 put("quotes", quotesArr)
 
                 put("settings", JSONObject().apply {
-                    put("fontSize", readerSettings.fontSize)
+                    put("fontSize", readerSettings.fontSizeSp)
                     put("lineHeight", readerSettings.lineHeightMultiplier)
                     put("themeMode", readerSettings.themeMode.name)
                     put("fontFamily", readerSettings.fontFamily.name)

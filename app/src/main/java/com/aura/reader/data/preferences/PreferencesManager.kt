@@ -147,6 +147,12 @@ class PreferencesManager(private val context: Context) {
         }
     }
 
+    suspend fun updateKeepScreenOn(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEEP_SCREEN_ON_KEY] = enabled
+        }
+    }
+
     suspend fun updatePagingMode(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PAGING_MODE_KEY] = enabled
