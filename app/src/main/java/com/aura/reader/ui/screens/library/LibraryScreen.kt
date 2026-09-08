@@ -187,7 +187,7 @@ fun LibraryScreen(
             putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             addCategory(Intent.CATEGORY_OPENABLE)
         }
-        filePickerLauncher.launch(Intent.createChooser(intent, strings.selectFiles))
+        filePickerLauncher.launch(intent)
     }
 
     // SAF OpenDocumentTree folder scanning
