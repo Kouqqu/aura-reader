@@ -182,6 +182,12 @@ interface Strings {
     val addQuotePlaceholder: String
     val noQuotesYet: String
     val noBookmarksYet: String
+
+    val onlineCatalogSectionTitle: String
+    val customOpdsToggle: String
+    val customOpdsSubtitle: String
+    val customOpdsUrl: String
+    val customOpdsOpenRoot: String
 }
 
 class RuStrings : Strings {
@@ -350,6 +356,12 @@ class RuStrings : Strings {
     override val addQuotePlaceholder = "Введите текст цитаты..."
     override val noQuotesYet = "Пока нет сохранённых цитат"
     override val noBookmarksYet = "Пока нет закладок"
+
+    override val onlineCatalogSectionTitle = "Онлайн-каталог"
+    override val customOpdsToggle = "Свой OPDS-каталог"
+    override val customOpdsSubtitle = "Ввод своего адреса и отключение подборок Флибусты"
+    override val customOpdsUrl = "Адрес OPDS"
+    override val customOpdsOpenRoot = "Открыть каталог"
 }
 
 class EnStrings : Strings {
@@ -518,6 +530,12 @@ class EnStrings : Strings {
     override val addQuotePlaceholder = "Enter quote text..."
     override val noQuotesYet = "No quotes saved yet"
     override val noBookmarksYet = "No bookmarks yet"
+
+    override val onlineCatalogSectionTitle = "Online catalog"
+    override val customOpdsToggle = "Custom OPDS catalog"
+    override val customOpdsSubtitle = "Enter custom address and hide Flibusta feeds"
+    override val customOpdsUrl = "OPDS URL"
+    override val customOpdsOpenRoot = "Open catalog"
 }
 
 class UkStrings : Strings {
@@ -686,6 +704,12 @@ class UkStrings : Strings {
     override val addQuotePlaceholder = "Введіть текст цитати..."
     override val noQuotesYet = "Поки немає збережених цитат"
     override val noBookmarksYet = "Поки немає закладок"
+
+    override val onlineCatalogSectionTitle = "Онлайн-каталог"
+    override val customOpdsToggle = "Власний OPDS-каталог"
+    override val customOpdsSubtitle = "Введення власної адреси та вимкнення добірок Флібусти"
+    override val customOpdsUrl = "Адреса OPDS"
+    override val customOpdsOpenRoot = "Відкрити каталог"
 }
 
 class BeStrings : Strings {
@@ -854,6 +878,12 @@ class BeStrings : Strings {
     override val addQuotePlaceholder = "Увядзіце тэкст цытаты..."
     override val noQuotesYet = "Пакуль няма захаваных цытат"
     override val noBookmarksYet = "Пакуль няма закладак"
+
+    override val onlineCatalogSectionTitle = "Анлайн-каталог"
+    override val customOpdsToggle = "Уласны OPDS-каталог"
+    override val customOpdsSubtitle = "Увод свайго адраса і адключэнне падборак Флібусты"
+    override val customOpdsUrl = "Адрас OPDS"
+    override val customOpdsOpenRoot = "Адкрыць каталог"
 }
 
 class PlStrings : Strings {
@@ -1022,6 +1052,12 @@ class PlStrings : Strings {
     override val addQuotePlaceholder = "Wpisz tekst cytatu..."
     override val noQuotesYet = "Brak zapisanych cytatów"
     override val noBookmarksYet = "Brak zakładek"
+
+    override val onlineCatalogSectionTitle = "Katalog online"
+    override val customOpdsToggle = "Własny katalog OPDS"
+    override val customOpdsSubtitle = "Wprowadzanie własnego adresu i wyłączenie kolekcji Flibusty"
+    override val customOpdsUrl = "Adres OPDS"
+    override val customOpdsOpenRoot = "Otwórz katalog"
 }
 
 fun getStrings(language: AppLanguage): Strings = when (language) {
