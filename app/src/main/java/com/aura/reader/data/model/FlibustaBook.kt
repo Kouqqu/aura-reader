@@ -11,4 +11,4 @@ data class FlibustaBook(
     val downloadSize: String? = null,
     val isCategory: Boolean = false,
     val categoryPath: String? = null
-)\n
+)

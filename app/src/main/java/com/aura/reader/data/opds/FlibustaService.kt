@@ -348,4 +348,4 @@ object FlibustaService {
                 e.message?.contains("failed to connect", ignoreCase = true) == true ||
                 e.message?.contains("Unable to resolve host", ignoreCase = true) == true
     }
-}\n
+}

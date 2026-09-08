@@ -68,6 +68,9 @@ interface Strings {
     val openBookAction: String
     val annotation: String
     val reset: String
+    val retry: String
+    val download: String
+    val loading: String
     val donate: String
     val moreOptions: String
     val fontAndTheme: String
@@ -176,6 +179,9 @@ class RuStrings : Strings {
     override fun searchResultsCount(count: Int) = "Результаты поиска ($count)"
     override fun noSearchResultsFound(query: String) = "Ничего не найдено по запросу «$query»"
 
+    override val retry = "Повторить"
+    override val download = "Скачать"
+    override val loading = "Загрузка..."
     override val donate = "Поддержать автора"
     override val moreOptions = "Дополнительно"
     override val fontAndTheme = "Шрифт и тема"
@@ -284,6 +290,9 @@ class EnStrings : Strings {
     override fun searchResultsCount(count: Int) = "Search results ($count)"
     override fun noSearchResultsFound(query: String) = "No results found for \"$query\""
 
+    override val retry = "Retry"
+    override val download = "Download"
+    override val loading = "Loading..."
     override val donate = "Support Author"
     override val moreOptions = "More options"
     override val fontAndTheme = "Font & Theme"
@@ -392,6 +401,9 @@ class UkStrings : Strings {
     override fun searchResultsCount(count: Int) = "Результати пошуку ($count)"
     override fun noSearchResultsFound(query: String) = "Нічого не знайдено за запитом «$query»"
 
+    override val retry = "Повторити"
+    override val download = "Завантажити"
+    override val loading = "Завантаження..."
     override val donate = "Підтримати автора"
     override val moreOptions = "Додатково"
     override val fontAndTheme = "Шрифт і тема"
@@ -500,6 +512,9 @@ class BeStrings : Strings {
     override fun searchResultsCount(count: Int) = "Вынікі пошуку ($count)"
     override fun noSearchResultsFound(query: String) = "Нічога не знойдзена па запыце «$query»"
 
+    override val retry = "Паўтарыць"
+    override val download = "Спампаваць"
+    override val loading = "Загрузка..."
     override val donate = "Падтрымаць аўтара"
     override val moreOptions = "Дадаткова"
     override val fontAndTheme = "Шрыфт і тэма"
@@ -608,6 +623,9 @@ class PlStrings : Strings {
     override fun searchResultsCount(count: Int) = "Wyniki wyszukiwania ($count)"
     override fun noSearchResultsFound(query: String) = "Nie znaleziono wyników dla „$query”"
 
+    override val retry = "Ponów"
+    override val download = "Pobierz"
+    override val loading = "Ładowanie..."
     override val donate = "Wesprzyj autora"
     override val moreOptions = "Więcej opcji"
     override val fontAndTheme = "Czcionka i motyw"
