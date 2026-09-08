@@ -3,7 +3,8 @@ package com.aura.reader.data.model
 enum class BookFormat {
     FB2,
     EPUB,
-    TXT
+    TXT,
+    PDF
 }
 
 enum class BlockType {
@@ -42,7 +43,9 @@ data class Book(
     val currentChapterIndex: Int = 0,
     val currentScrollOffset: Int = 0,
     val progressPercent: Int = 0,
-    val lastReadTimestamp: Long = System.currentTimeMillis()
+    val lastReadTimestamp: Long = System.currentTimeMillis(),
+    val isFavorite: Boolean = false,
+    val collections: List<String> = emptyList()
 )
 
 data class Bookmark(

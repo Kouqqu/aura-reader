@@ -1,3 +1,15 @@
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.toMutableStateList
 package com.aura.reader.ui.screens.library
 
 import android.content.Intent
@@ -128,12 +140,89 @@ fun LibraryScreen(
     val updateNotificationsEnabled by viewModel.updateNotificationsEnabled.collectAsState()
     val readingStatsEnabled by viewModel.readingStatsEnabled.collectAsState()
     val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
+    val userCollections by viewModel.userCollections.collectAsState()
+    val activeCollectionFilter by viewModel.activeCollectionFilter.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var showAddBooksSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var bookToDelete by remember { mutableStateOf<Book?>(null) }
+    var isSearchExpanded by remember { mutableStateOf(false) }
+    var showNewCollectionDialog by remember { mutableStateOf(false) }
+    var bookForCollections by remember { mutableStateOf<Book?>(null) }
+    var collectionToDelete by remember { mutableStateOf<String?>(null) }
+
+    // Backup & Restore Launchers
+    val exportBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                context.contentResolver.openOutputStream(uri)?.use { out ->
+                    viewModel.exportBackup(
+                        out,
+                        onSuccess = { count ->
+                            scope.launch { snackbarHostState.showSnackbar(strings.backupCreatedSuccess(count)) }
+                        },
+                        onError = { err ->
+                            scope.launch { snackbarHostState.showSnackbar("${strings.backupError}: $err") }
+                        }
+                    )
+                }
+            } catch (e: Exception) {
+                scope.launch { snackbarHostState.showSnackbar("${strings.backupError}: ${e.localizedMessage}") }
+            }
+        }
+    }
+
+    val restoreBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                context.contentResolver.openInputStream(uri)?.use { inStream ->
+                    viewModel.importBackup(
+                        inStream,
+                        onSuccess = { count ->
+                            scope.launch { snackbarHostState.showSnackbar(strings.restoreCompletedSuccess(count)) }
+                        },
+                        onError = { err ->
+                            scope.launch { snackbarHostState.showSnackbar("${strings.backupError}: $err") }
+                        }
+                    )
+                }
+            } catch (e: Exception) {
+                scope.launch { snackbarHostState.showSnackbar("${strings.backupError}: ${e.localizedMessage}") }
+            }
+        }
+    }
+
+    val sendToGoogleDriveAction = {
+        viewModel.exportBackupToTempFile(
+            onSuccess = { file, count ->
+                try {
+                    val fileUri = androidx.core.content.FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        file
+                    )
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/zip"
+                        putExtra(Intent.EXTRA_STREAM, fileUri)
+                        putExtra(Intent.EXTRA_SUBJECT, strings.shareBackupTitle)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, strings.sendToGoogleDriveTitle))
+                } catch (e: Exception) {
+                    scope.launch { snackbarHostState.showSnackbar("${strings.backupError}: ${e.localizedMessage}") }
+                }
+            },
+            onError = { err ->
+                scope.launch { snackbarHostState.showSnackbar("${strings.backupError}: $err") }
+            }
+        )
+    }
 
     LaunchedEffect(Unit) {
         viewModel.checkForUpdates(manual = false, context = context)
@@ -222,46 +311,86 @@ fun LibraryScreen(
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(38.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                AuraLogoIcon(
-                                    modifier = Modifier.size(width = 20.dp, height = 24.dp),
-                                    bookColor = MaterialTheme.colorScheme.primary,
-                                    lineColor = MaterialTheme.colorScheme.primaryContainer
-                                )
+            if (isSearchExpanded) {
+                TopAppBar(
+                    title = {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { viewModel.setSearchQuery(it) },
+                            placeholder = { Text(strings.searchLibraryPlaceholder) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            isSearchExpanded = false
+                            viewModel.setSearchQuery("")
+                        }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = strings.cancel)
+                        }
+                    },
+                    actions = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                Icon(Icons.Default.Close, contentDescription = strings.clear)
                             }
                         }
-                        Text(
-                            text = strings.appName,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                },
-                actions = {
-                    // Settings Sheet
-                    IconButton(onClick = { showSettingsSheet = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = strings.settingsTitle
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
                 )
-            )
+            } else {
+                LargeTopAppBar(
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.size(38.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    AuraLogoIcon(
+                                        modifier = Modifier.size(width = 20.dp, height = 24.dp),
+                                        bookColor = MaterialTheme.colorScheme.primary,
+                                        lineColor = MaterialTheme.colorScheme.primaryContainer
+                                    )
+                                }
+                            }
+                            Text(
+                                text = strings.appName,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    },
+                    actions = {
+                        // Search Button
+                        IconButton(onClick = { isSearchExpanded = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = strings.searchInLibrary
+                            )
+                        }
+                        // Settings Sheet
+                        IconButton(onClick = { showSettingsSheet = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = strings.settingsTitle
+                            )
+                        }
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                )
+            }
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
@@ -383,26 +512,71 @@ fun LibraryScreen(
                         }
                     }
 
-                    // Search Field
+                    // Collections Filter Chips Row
                     item {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { viewModel.setSearchQuery(it) },
-                            placeholder = { Text(strings.searchHint) },
-                            leadingIcon = {
-                                Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
-                            },
-                            trailingIcon = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                        Icon(Icons.Default.Close, contentDescription = strings.clear)
-                                    }
-                                }
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            FilterChip(
+                                selected = activeCollectionFilter.type == CollectionFilterType.ALL,
+                                onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.ALL)) },
+                                label = { Text(strings.colAll) }
+                            )
+                            FilterChip(
+                                selected = activeCollectionFilter.type == CollectionFilterType.READING,
+                                onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.READING)) },
+                                label = { Text(strings.colReading) }
+                            )
+                            FilterChip(
+                                selected = activeCollectionFilter.type == CollectionFilterType.FAVORITES,
+                                onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FAVORITES)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Favorite,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                label = { Text(strings.colFavorites) }
+                            )
+                            FilterChip(
+                                selected = activeCollectionFilter.type == CollectionFilterType.UNREAD,
+                                onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.UNREAD)) },
+                                label = { Text(strings.colUnread) }
+                            )
+                            FilterChip(
+                                selected = activeCollectionFilter.type == CollectionFilterType.FINISHED,
+                                onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FINISHED)) },
+                                label = { Text(strings.colFinished) }
+                            )
+                            for (colName in userCollections) {
+                                val isSelected = activeCollectionFilter.type == CollectionFilterType.CUSTOM && activeCollectionFilter.customName == colName
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.CUSTOM, colName)) },
+                                    trailingIcon = {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = strings.delete,
+                                            modifier = Modifier
+                                                .size(14.dp)
+                                                .clickable { collectionToDelete = colName }
+                                        )
+                                    },
+                                    label = { Text(colName) }
+                                )
+                            }
+                            AssistChip(
+                                onClick = { showNewCollectionDialog = true },
+                                leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                                label = { Text(strings.newCollection) }
+                            )
+                        }
                     }
 
                     item {
@@ -433,6 +607,15 @@ fun LibraryScreen(
                             },
                             onDelete = {
                                 bookToDelete = book
+                            },
+                            onToggleFavorite = {
+                                viewModel.toggleFavorite(book.id)
+                            },
+                            onAddToCollection = {
+                                bookForCollections = book
+                            },
+                            onSetProgress = { prog ->
+                                viewModel.setBookReadingProgress(book.id, prog)
                             }
                         )
                     }
@@ -548,6 +731,133 @@ fun LibraryScreen(
         )
     }
 
+    // Dialog: Create New Collection
+    if (showNewCollectionDialog) {
+        var newColName by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showNewCollectionDialog = false },
+            title = { Text(strings.createCollectionDialogTitle, fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = newColName,
+                    onValueChange = { newColName = it },
+                    placeholder = { Text(strings.collectionNamePlaceholder) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newColName.isNotBlank()) {
+                            viewModel.addUserCollection(newColName.trim())
+                        }
+                        showNewCollectionDialog = false
+                    },
+                    enabled = newColName.isNotBlank()
+                ) {
+                    Text(strings.save)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNewCollectionDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
+    // Dialog: Delete Custom Collection
+    collectionToDelete?.let { colName ->
+        AlertDialog(
+            onDismissRequest = { collectionToDelete = null },
+            title = { Text(strings.delete, fontWeight = FontWeight.Bold) },
+            text = { Text(strings.deleteCollectionConfirm(colName)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.removeUserCollection(colName)
+                        collectionToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(strings.delete)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { collectionToDelete = null }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
+    // Dialog: Add/Remove Book Collections
+    bookForCollections?.let { b ->
+        val currentSelected = remember(b.collections) { b.collections.toMutableStateList() }
+        AlertDialog(
+            onDismissRequest = { bookForCollections = null },
+            title = { Text(strings.addToCollection, fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 320.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    if (userCollections.isEmpty()) {
+                        Text(
+                            text = "Пока нет созданных полок",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    } else {
+                        for (col in userCollections) {
+                            val isChecked = currentSelected.contains(col)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        if (isChecked) currentSelected.remove(col) else currentSelected.add(col)
+                                    }
+                                    .padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = isChecked,
+                                    onCheckedChange = { chk ->
+                                        if (chk) currentSelected.add(col) else currentSelected.remove(col)
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(col, style = MaterialTheme.typography.bodyLarge)
+                            }
+                        }
+                    }
+                    TextButton(onClick = { showNewCollectionDialog = true }) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(strings.newCollection)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.updateBookCollections(b.id, currentSelected.toList())
+                    bookForCollections = null
+                }) {
+                    Text(strings.save)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { bookForCollections = null }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
     if (showSettingsSheet) {
         SettingsBottomSheet(
             currentTheme = readerSettings.themeMode,
@@ -564,6 +874,18 @@ fun LibraryScreen(
             onCheckUpdates = {
                 showSettingsSheet = false
                 viewModel.checkForUpdates(manual = true, context = context)
+            },
+            onExportBackup = {
+                showSettingsSheet = false
+                exportBackupLauncher.launch("AuraReader_Backup_${System.currentTimeMillis()}.aurabackup")
+            },
+            onSendToGoogleDrive = {
+                showSettingsSheet = false
+                sendToGoogleDriveAction()
+            },
+            onRestoreBackup = {
+                showSettingsSheet = false
+                restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
             }
         )
     }
@@ -574,8 +896,12 @@ fun LibraryScreen(
 fun BookCard(
     book: Book,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onToggleFavorite: () -> Unit = {},
+    onAddToCollection: () -> Unit = {},
+    onSetProgress: (Int) -> Unit = {}
 ) {
+    var showMenu by remember { mutableStateOf(false) }
     val strings = LocalAppStrings.current
     Card(
         modifier = Modifier
@@ -621,16 +947,78 @@ fun BookCard(
                         modifier = Modifier.weight(1f)
                     )
 
-                    SuggestionChip(
-                        onClick = {},
-                        label = {
-                            Text(
-                                text = book.format.name,
-                                style = MaterialTheme.typography.labelSmall
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        SuggestionChip(
+                            onClick = {},
+                            label = {
+                                Text(
+                                    text = book.format.name,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            },
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                        IconButton(
+                            onClick = onToggleFavorite,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (book.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = strings.colFavorites,
+                                tint = if (book.isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(18.dp)
                             )
-                        },
-                        modifier = Modifier.padding(start = 6.dp)
-                    )
+                        }
+                        Box {
+                            IconButton(
+                                onClick = { showMenu = true },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(strings.addToCollection) },
+                                    onClick = {
+                                        showMenu = false
+                                        onAddToCollection()
+                                    }
+                                )
+                                if (book.progressPercent < 100) {
+                                    DropdownMenuItem(
+                                        text = { Text(strings.markAsFinished) },
+                                        onClick = {
+                                            showMenu = false
+                                            onSetProgress(100)
+                                        }
+                                    )
+                                }
+                                if (book.progressPercent > 0) {
+                                    DropdownMenuItem(
+                                        text = { Text(strings.resetProgress) },
+                                        onClick = {
+                                            showMenu = false
+                                            onSetProgress(0)
+                                        }
+                                    )
+                                }
+                                DropdownMenuItem(
+                                    text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
+                                    onClick = {
+                                        showMenu = false
+                                        onDelete()
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
 
                 if (book.author.isNotBlank()) {

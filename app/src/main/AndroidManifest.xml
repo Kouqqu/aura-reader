@@ -42,9 +42,10 @@
                 <data android:mimeType="application/octet-stream" />
                 <data android:mimeType="text/xml" />
                 <data android:mimeType="text/plain" />
+                <data android:mimeType="application/pdf" />
             </intent-filter>
 
-            <!-- Support opening FB2, FB2.ZIP and EPUB by file extension with wildcard MIME -->
+            <!-- Support opening FB2, FB2.ZIP, EPUB, PDF and TXT by file extension with wildcard MIME -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -56,9 +57,11 @@
                 <data android:pathPattern=".*\\.fb2" />
                 <data android:pathPattern=".*\\.fb2\\.zip" />
                 <data android:pathPattern=".*\\.epub" />
+                <data android:pathPattern=".*\\.pdf" />
+                <data android:pathPattern=".*\\.txt" />
             </intent-filter>
 
-            <!-- Support opening FB2 and EPUB without explicit MIME type -->
+            <!-- Support opening books without explicit MIME type -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -68,6 +71,8 @@
                 <data android:pathPattern=".*\\.fb2" />
                 <data android:pathPattern=".*\\.fb2\\.zip" />
                 <data android:pathPattern=".*\\.epub" />
+                <data android:pathPattern=".*\\.pdf" />
+                <data android:pathPattern=".*\\.txt" />
             </intent-filter>
         </activity>
 

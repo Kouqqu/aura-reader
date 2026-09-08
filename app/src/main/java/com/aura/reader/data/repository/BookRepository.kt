@@ -38,18 +38,25 @@ class BookRepository(
                 val list = mutableListOf<Book>()
                 for (i in 0 until array.length()) {
                     val obj = array.getJSONObject(i)
+                    val collectionsList = mutableListOf<String>()
+                    if (obj.has("collections")) {
+                        val cArr = obj.getJSONArray("collections")
+                        for (j in 0 until cArr.length()) collectionsList.add(cArr.getString(j))
+                    }
                     list.add(
                         Book(
                             id = obj.getString("id"),
                             title = obj.getString("title"),
                             author = obj.optString("author", ""),
                             coverBase64 = if (obj.has("coverBase64") && !obj.isNull("coverBase64")) obj.getString("coverBase64") else null,
-                            format = BookFormat.valueOf(obj.getString("format")),
+                            format = try { BookFormat.valueOf(obj.getString("format")) } catch (e: Exception) { BookFormat.FB2 },
                             uriString = obj.getString("uriString"),
                             currentChapterIndex = obj.optInt("currentChapterIndex", 0),
                             currentScrollOffset = obj.optInt("currentScrollOffset", 0),
                             progressPercent = obj.optInt("progressPercent", 0),
-                            lastReadTimestamp = obj.optLong("lastReadTimestamp", System.currentTimeMillis())
+                            lastReadTimestamp = obj.optLong("lastReadTimestamp", System.currentTimeMillis()),
+                            isFavorite = obj.optBoolean("isFavorite", false),
+                            collections = collectionsList
                         )
                     )
                 }
@@ -74,6 +81,10 @@ class BookRepository(
                 put("currentScrollOffset", b.currentScrollOffset)
                 put("progressPercent", b.progressPercent)
                 put("lastReadTimestamp", b.lastReadTimestamp)
+                put("isFavorite", b.isFavorite)
+                val cArr = JSONArray()
+                for (c in b.collections) cArr.put(c)
+                put("collections", cArr)
             }
             array.put(obj)
         }
@@ -157,16 +168,38 @@ class BookRepository(
             val bookCacheKey = UUID.nameUUIDFromBytes("${uri}_${fileName}".toByteArray()).toString()
             val imagesDir = java.io.File(context.cacheDir, "book_images/$bookCacheKey").apply { mkdirs() }
 
+            val isPdf = fileName.endsWith(".pdf", ignoreCase = true) ||
+                    (bytes.size >= 4 && bytes[0] == '%'.code.toByte() && bytes[1] == 'P'.code.toByte() && bytes[2] == 'D'.code.toByte() && bytes[3] == 'F'.code.toByte())
+
             val parsedBook = when {
+                isPdf -> {
+                    val pdfTempFile = java.io.File(context.cacheDir, "temp_pdf_${UUID.randomUUID()}.pdf")
+                    com.aura.reader.data.parser.PdfParser.parse(
+                        java.io.ByteArrayInputStream(bytes),
+                        uri.toString(),
+                        fileName,
+                        imagesDir,
+                        pdfTempFile
+                    )
+                }
                 fileName.endsWith(".epub", ignoreCase = true) -> {
                     EpubParser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                 }
                 fileName.endsWith(".fb2", ignoreCase = true) || fileName.endsWith(".fb2.zip", ignoreCase = true) -> {
                     Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                 }
+                fileName.endsWith(".txt", ignoreCase = true) -> {
+                    com.aura.reader.data.parser.TxtParser.parse(
+                        java.io.ByteArrayInputStream(bytes),
+                        uri.toString(),
+                        fileName
+                    )
+                }
                 isZip -> {
                     var hasMetaInf = false
                     var hasFb2 = false
+                    var hasTxt = false
+                    var entryName = ""
                     try {
                         val zis = java.util.zip.ZipInputStream(java.io.ByteArrayInputStream(bytes))
                         var e = zis.nextEntry
@@ -178,6 +211,11 @@ class BookRepository(
                             }
                             if (lower.endsWith(".fb2")) {
                                 hasFb2 = true
+                                entryName = e.name
+                            }
+                            if (lower.endsWith(".txt")) {
+                                hasTxt = true
+                                entryName = e.name
                             }
                             e = zis.nextEntry
                         }
@@ -186,32 +224,40 @@ class BookRepository(
                     when {
                         hasMetaInf -> EpubParser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                         hasFb2 -> Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
-                        else -> throw IllegalArgumentException("Файл «$fileName» не содержит книги в формате FB2 или EPUB.")
+                        hasTxt -> {
+                            val zis = java.util.zip.ZipInputStream(java.io.ByteArrayInputStream(bytes))
+                            var e = zis.nextEntry
+                            var txtBytes = ByteArray(0)
+                            while (e != null) {
+                                if (e.name == entryName) {
+                                    txtBytes = zis.readBytes()
+                                    break
+                                }
+                                e = zis.nextEntry
+                            }
+                            com.aura.reader.data.parser.TxtParser.parse(
+                                java.io.ByteArrayInputStream(txtBytes),
+                                uri.toString(),
+                                entryName
+                            )
+                        }
+                        else -> throw IllegalArgumentException("Архив «$fileName» не содержит поддерживаемых книг (FB2, EPUB, TXT).")
                     }
                 }
                 else -> {
                     val sampleHeader = String(bytes.take(2048).toByteArray(), Charsets.UTF_8)
                     if (sampleHeader.contains("<FictionBook", ignoreCase = true)) {
                         Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
-                    } else if (fileName.endsWith(".txt", ignoreCase = true)) {
-                        val content = String(bytes, Charsets.UTF_8)
-                        Book(
-                            id = UUID.randomUUID().toString(),
-                            title = fileName.substringBeforeLast("."),
-                            author = "",
-                            format = BookFormat.TXT,
-                            uriString = uri.toString(),
-                            chapters = listOf(
-                                Chapter(
-                                    id = UUID.randomUUID().toString(),
-                                    title = fileName,
-                                    content = content,
-                                    order = 0
-                                )
-                            )
-                        )
                     } else {
-                        throw IllegalArgumentException("Формат «$fileName» не поддерживается. Aura Reader предназначен для книг FB2, FB2.ZIP и EPUB.")
+                        try {
+                            com.aura.reader.data.parser.TxtParser.parse(
+                                java.io.ByteArrayInputStream(bytes),
+                                uri.toString(),
+                                fileName
+                            )
+                        } catch (e: Exception) {
+                            throw IllegalArgumentException("Формат «$fileName» не поддерживается. Aura Reader поддерживает FB2, EPUB, PDF и TXT.")
+                        }
                     }
                 }
             }
@@ -237,7 +283,9 @@ class BookRepository(
                 uriString = persistentUriString,
                 currentChapterIndex = savedBook?.currentChapterIndex ?: 0,
                 currentScrollOffset = savedBook?.currentScrollOffset ?: 0,
-                progressPercent = savedBook?.progressPercent ?: 0
+                progressPercent = savedBook?.progressPercent ?: 0,
+                isFavorite = savedBook?.isFavorite ?: false,
+                collections = savedBook?.collections ?: emptyList()
             )
             return Result.success(resolved)
         } catch (e: Exception) {
@@ -310,6 +358,8 @@ class BookRepository(
             targetNames.add("$bookTitle.fb2")
             targetNames.add("$bookTitle.epub")
             targetNames.add("$bookTitle.fb2.zip")
+            targetNames.add("$bookTitle.pdf")
+            targetNames.add("$bookTitle.txt")
         }
 
         for (dir in candidateDirs) {
@@ -430,7 +480,8 @@ class BookRepository(
         return name.endsWith(".fb2") ||
                 name.endsWith(".fb2.zip") ||
                 name.endsWith(".epub") ||
-                name.endsWith(".txt")
+                name.endsWith(".txt") ||
+                name.endsWith(".pdf")
     }
 
     suspend fun removeBook(bookId: String) = withContext(Dispatchers.IO) {
@@ -462,4 +513,55 @@ class BookRepository(
 
     val todayReadingMinutes = preferencesManager.todayReadingMinutes
     suspend fun addReadingSeconds(seconds: Long) = preferencesManager.addReadingSeconds(seconds)
+
+    val backupManager = com.aura.reader.data.backup.BackupManager(context, preferencesManager)
+
+    val userCollections = preferencesManager.userCollections
+    suspend fun addUserCollection(name: String) = preferencesManager.addUserCollection(name)
+    suspend fun removeUserCollection(name: String) = preferencesManager.removeUserCollection(name)
+
+    suspend fun toggleFavorite(bookId: String) = withContext(Dispatchers.IO) {
+        val currentList = _recentBooks.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == bookId }
+        if (index >= 0) {
+            val old = currentList[index]
+            val updated = old.copy(isFavorite = !old.isFavorite)
+            currentList[index] = updated
+            saveRecentBooks(currentList)
+            if (_currentBook.value?.id == bookId) {
+                _currentBook.value = updated
+            }
+        }
+    }
+
+    suspend fun updateBookCollections(bookId: String, collections: List<String>) = withContext(Dispatchers.IO) {
+        val currentList = _recentBooks.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == bookId }
+        if (index >= 0) {
+            val old = currentList[index]
+            val updated = old.copy(collections = collections)
+            currentList[index] = updated
+            saveRecentBooks(currentList)
+            if (_currentBook.value?.id == bookId) {
+                _currentBook.value = updated
+            }
+        }
+    }
+
+    suspend fun setBookReadingProgress(bookId: String, progress: Int) = withContext(Dispatchers.IO) {
+        val currentList = _recentBooks.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == bookId }
+        if (index >= 0) {
+            val old = currentList[index]
+            val updated = old.copy(
+                progressPercent = progress.coerceIn(0, 100),
+                lastReadTimestamp = System.currentTimeMillis()
+            )
+            currentList[index] = updated
+            saveRecentBooks(currentList)
+            if (_currentBook.value?.id == bookId) {
+                _currentBook.value = updated
+            }
+        }
+    }
 }
