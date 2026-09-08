@@ -38,6 +38,8 @@ class PreferencesManager(private val context: Context) {
         val APP_LANGUAGE_KEY = stringPreferencesKey("app_language")
         val UPDATE_NOTIFICATIONS_KEY = booleanPreferencesKey("update_notifications_enabled")
         val READING_STATS_ENABLED_KEY = booleanPreferencesKey("reading_stats_enabled")
+        val FLIBUSTA_HISTORY_KEY = stringPreferencesKey("flibusta_search_history")
+        val FLIBUSTA_BASE_URL_KEY = stringPreferencesKey("flibusta_base_url")
     }
 
     val readingStatsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -293,6 +295,73 @@ class PreferencesManager(private val context: Context) {
     suspend fun saveRecentBooksJson(json: String) {
         context.dataStore.edit { prefs ->
             prefs[RECENT_BOOKS_KEY] = json
+        }
+    }
+
+    // --- Flibusta OPDS Integration ---
+    val flibustaSearchHistory: Flow<List<String>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[FLIBUSTA_HISTORY_KEY] ?: return@map emptyList()
+        try {
+            val arr = JSONArray(raw)
+            val list = mutableListOf<String>()
+            for (i in 0 until arr.length()) list.add(arr.getString(i))
+            list
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun saveFlibustaSearchQuery(query: String) {
+        context.dataStore.edit { prefs ->
+            val raw = prefs[FLIBUSTA_HISTORY_KEY] ?: "[]"
+            val current = try {
+                val arr = JSONArray(raw)
+                val list = mutableListOf<String>()
+                for (i in 0 until arr.length()) list.add(arr.getString(i))
+                list
+            } catch (e: Exception) {
+                mutableListOf<String>()
+            }
+            current.remove(query)
+            current.add(0, query)
+            val trimmed = current.take(10)
+            val newArr = JSONArray()
+            for (item in trimmed) newArr.put(item)
+            prefs[FLIBUSTA_HISTORY_KEY] = newArr.toString()
+        }
+    }
+
+    suspend fun removeFlibustaSearchQuery(query: String) {
+        context.dataStore.edit { prefs ->
+            val raw = prefs[FLIBUSTA_HISTORY_KEY] ?: "[]"
+            val current = try {
+                val arr = JSONArray(raw)
+                val list = mutableListOf<String>()
+                for (i in 0 until arr.length()) list.add(arr.getString(i))
+                list
+            } catch (e: Exception) {
+                mutableListOf<String>()
+            }
+            current.remove(query)
+            val newArr = JSONArray()
+            for (item in current) newArr.put(item)
+            prefs[FLIBUSTA_HISTORY_KEY] = newArr.toString()
+        }
+    }
+
+    suspend fun clearFlibustaSearchHistory() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(FLIBUSTA_HISTORY_KEY)
+        }
+    }
+
+    val flibustaBaseUrl: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[FLIBUSTA_BASE_URL_KEY] ?: "http://flibusta.is/opds"
+    }
+
+    suspend fun setFlibustaBaseUrl(url: String) {
+        context.dataStore.edit { prefs ->
+            prefs[FLIBUSTA_BASE_URL_KEY] = url.trim()
         }
     }
 }

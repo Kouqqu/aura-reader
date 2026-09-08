@@ -1,8 +1,10 @@
 package com.aura.reader.ui.screens.library
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Environment
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aura.reader.data.model.Book
@@ -247,6 +249,90 @@ class LibraryViewModel(
             } else {
                 val firstErr = errors.firstOrNull() ?: "Не удалось добавить выбранные файлы"
                 _uiState.value = LibraryUiState.Error(firstErr)
+            }
+        }
+    }
+
+    fun importBooksWithValidation(context: Context, uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        val validUris = mutableListOf<Uri>()
+        val invalidNames = mutableListOf<String>()
+
+        for (uri in uris) {
+            val name = bookRepository.getDisplayName(uri) ?: uri.lastPathSegment ?: "файл"
+            if (bookRepository.isSupportedBookUri(uri)) {
+                validUris.add(uri)
+            } else {
+                invalidNames.add(name)
+            }
+        }
+
+        if (invalidNames.isNotEmpty() && validUris.isEmpty()) {
+            val namesStr = invalidNames.take(2).joinToString(", ")
+            _uiState.value = LibraryUiState.Error("Формат «$namesStr» не поддерживается. Aura Reader предназначен для FB2, FB2.ZIP и EPUB.")
+            return
+        }
+
+        if (validUris.isNotEmpty()) {
+            openBooksFromUris(validUris)
+        }
+
+        if (invalidNames.isNotEmpty()) {
+            val namesStr = invalidNames.take(2).joinToString(", ")
+            _uiState.value = LibraryUiState.Error("Пропущены неподдерживаемые файлы: $namesStr")
+        }
+    }
+
+    fun scanAndImportFolder(context: Context, treeUri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    treeUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {}
+
+            _uiState.value = LibraryUiState.Loading
+
+            val rootDoc = DocumentFile.fromTreeUri(context, treeUri)
+            if (rootDoc == null || !rootDoc.isDirectory) {
+                _uiState.value = LibraryUiState.Error("Не удалось получить доступ к папке")
+                return@launch
+            }
+
+            val foundUris = mutableListOf<Uri>()
+            scanFolderRecursive(rootDoc, foundUris, maxDepth = 4)
+
+            if (foundUris.isEmpty()) {
+                _uiState.value = LibraryUiState.Error("В выбранной папке не найдено книг FB2 или EPUB")
+                return@launch
+            }
+
+            var addedCount = 0
+            for (uri in foundUris) {
+                val res = bookRepository.openBookFromUri(uri)
+                if (res.isSuccess) addedCount++
+            }
+
+            if (addedCount > 0) {
+                _uiState.value = LibraryUiState.Error("Найдено и добавлено книг в библиотеку: $addedCount")
+            } else {
+                _uiState.value = LibraryUiState.Error("Книги из папки уже есть в библиотеке")
+            }
+        }
+    }
+
+    private fun scanFolderRecursive(dir: DocumentFile, result: MutableList<Uri>, maxDepth: Int) {
+        if (maxDepth <= 0) return
+        val files = dir.listFiles()
+        for (file in files) {
+            if (file.isDirectory) {
+                scanFolderRecursive(file, result, maxDepth - 1)
+            } else if (file.isFile) {
+                val name = file.name?.lowercase() ?: ""
+                if (name.endsWith(".fb2") || name.endsWith(".fb2.zip") || name.endsWith(".epub")) {
+                    result.add(file.uri)
+                }
             }
         }
     }

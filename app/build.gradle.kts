@@ -12,8 +12,8 @@ android {
         applicationId = "com.aura.reader"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.1.4"
+        versionCode = 12
+        versionName = "1.1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -84,6 +84,8 @@ dependencies {
 
     implementation(libs.jsoup)
     implementation(libs.coil.compose)
+    implementation(libs.okhttp)
+    implementation(libs.androidx.documentfile)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

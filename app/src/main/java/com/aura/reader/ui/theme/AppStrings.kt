@@ -50,6 +50,24 @@ interface Strings {
     fun searchResultsCount(count: Int): String
     fun noSearchResultsFound(query: String): String
 
+    val chooseAddMethod: String
+    val selectFiles: String
+    val selectFilesSubtitle: String
+    val scanFolder: String
+    val scanFolderSubtitle: String
+    val flibustaCatalog: String
+    val flibustaCatalogSubtitle: String
+    val flibustaSearchHint: String
+    val flibustaMirrorTitle: String
+    val flibustaMirrorSubtitle: String
+    val flibustaConnectionErrorTitle: String
+    val flibustaConnectionErrorSubtitle: String
+    val downloadFb2: String
+    val downloadEpub: String
+    val downloading: String
+    val openBookAction: String
+    val annotation: String
+    val reset: String
     val donate: String
     val moreOptions: String
     val fontAndTheme: String
@@ -106,6 +124,24 @@ interface Strings {
 }
 
 class RuStrings : Strings {
+    override val chooseAddMethod = "Добавить книги в библиотеку"
+    override val selectFiles = "Выбрать файлы"
+    override val selectFilesSubtitle = "Системный проводник (.fb2, .fb2.zip, .epub)"
+    override val scanFolder = "Сканировать папку"
+    override val scanFolderSubtitle = "Рекурсивный поиск всех книг в папке устройства"
+    override val flibustaCatalog = "Каталог Флибуста"
+    override val flibustaCatalogSubtitle = "Поиск и скачивание книг онлайн через OPDS"
+    override val flibustaSearchHint = "Поиск по автору или названию..."
+    override val flibustaMirrorTitle = "Зеркало OPDS"
+    override val flibustaMirrorSubtitle = "Адрес каталога Flibusta. При блокировках можно указать рабочее зеркало."
+    override val flibustaConnectionErrorTitle = "Не удалось связаться с сервером"
+    override val flibustaConnectionErrorSubtitle = "Возможно, с IP-адресов других стран всё заработает."
+    override val downloadFb2 = "Скачать FB2"
+    override val downloadEpub = "Скачать EPUB"
+    override val downloading = "Загрузка..."
+    override val openBookAction = "Читать"
+    override val annotation = "Аннотация"
+    override val reset = "Сброс"
     override val appName = "Aura Reader"
     override val cancel = "Отмена"
     override val delete = "Удалить"
@@ -196,6 +232,24 @@ class RuStrings : Strings {
 }
 
 class EnStrings : Strings {
+    override val chooseAddMethod = "Add books to library"
+    override val selectFiles = "Select files"
+    override val selectFilesSubtitle = "System file manager (.fb2, .fb2.zip, .epub)"
+    override val scanFolder = "Scan folder"
+    override val scanFolderSubtitle = "Recursive search for books in device folder"
+    override val flibustaCatalog = "Flibusta Catalog"
+    override val flibustaCatalogSubtitle = "Search and download books online via OPDS"
+    override val flibustaSearchHint = "Search by author or title..."
+    override val flibustaMirrorTitle = "OPDS Mirror"
+    override val flibustaMirrorSubtitle = "Flibusta catalog URL. You can specify a working mirror if blocked."
+    override val flibustaConnectionErrorTitle = "Could not connect to server"
+    override val flibustaConnectionErrorSubtitle = "It might work when connecting from other countries."
+    override val downloadFb2 = "Download FB2"
+    override val downloadEpub = "Download EPUB"
+    override val downloading = "Downloading..."
+    override val openBookAction = "Read"
+    override val annotation = "Annotation"
+    override val reset = "Reset"
     override val appName = "Aura Reader"
     override val cancel = "Cancel"
     override val delete = "Delete"
@@ -286,6 +340,24 @@ class EnStrings : Strings {
 }
 
 class UkStrings : Strings {
+    override val chooseAddMethod = "Додати книги до бібліотеки"
+    override val selectFiles = "Обрати файли"
+    override val selectFilesSubtitle = "Системний провідник (.fb2, .fb2.zip, .epub)"
+    override val scanFolder = "Сканувати папку"
+    override val scanFolderSubtitle = "Рекурсивний пошук усіх книг у папці пристрою"
+    override val flibustaCatalog = "Каталог Флібуста"
+    override val flibustaCatalogSubtitle = "Пошук та завантаження книг онлайн через OPDS"
+    override val flibustaSearchHint = "Пошук за автором або назвою..."
+    override val flibustaMirrorTitle = "Дзеркало OPDS"
+    override val flibustaMirrorSubtitle = "Адреса каталогу Flibusta. У разі блокувань можна вказати робоче дзеркало."
+    override val flibustaConnectionErrorTitle = "Не вдалося з'єднатися з сервером"
+    override val flibustaConnectionErrorSubtitle = "Можливо, з IP-адрес інших країн усе запрацює."
+    override val downloadFb2 = "Завантажити FB2"
+    override val downloadEpub = "Завантажити EPUB"
+    override val downloading = "Завантаження..."
+    override val openBookAction = "Читати"
+    override val annotation = "Анотація"
+    override val reset = "Скинути"
     override val appName = "Aura Reader"
     override val cancel = "Скасувати"
     override val delete = "Видалити"
@@ -376,6 +448,24 @@ class UkStrings : Strings {
 }
 
 class BeStrings : Strings {
+    override val chooseAddMethod = "Дадаць кнігі ў бібліятэку"
+    override val selectFiles = "Абраць файлы"
+    override val selectFilesSubtitle = "Сістэмны праваднік (.fb2, .fb2.zip, .epub)"
+    override val scanFolder = "Сканаваць папку"
+    override val scanFolderSubtitle = "Рэкурсіўны пошук усіх кніг у папцы прылады"
+    override val flibustaCatalog = "Каталог Флібуста"
+    override val flibustaCatalogSubtitle = "Пошук і спампоўванне кніг анлайн праз OPDS"
+    override val flibustaSearchHint = "Пошук па аўтару або назве..."
+    override val flibustaMirrorTitle = "Люстэрка OPDS"
+    override val flibustaMirrorSubtitle = "Адрас каталога Flibusta. Пры блакіроўках можна ўказаць працоўнае люстэрка."
+    override val flibustaConnectionErrorTitle = "Не ўдалося звязацца з серверам"
+    override val flibustaConnectionErrorSubtitle = "Магчыма, з IP-адрасоў іншых краін усё запрацуе."
+    override val downloadFb2 = "Спампаваць FB2"
+    override val downloadEpub = "Спампаваць EPUB"
+    override val downloading = "Спампоўванне..."
+    override val openBookAction = "Чытаць"
+    override val annotation = "Анатацыя"
+    override val reset = "Скінуць"
     override val appName = "Aura Reader"
     override val cancel = "Адмена"
     override val delete = "Выдаліць"
@@ -466,6 +556,24 @@ class BeStrings : Strings {
 }
 
 class PlStrings : Strings {
+    override val chooseAddMethod = "Dodaj książki do biblioteki"
+    override val selectFiles = "Wybierz pliki"
+    override val selectFilesSubtitle = "Menedżer plików (.fb2, .fb2.zip, .epub)"
+    override val scanFolder = "Skanuj folder"
+    override val scanFolderSubtitle = "Rekurencyjne wyszukiwanie książek w folderze urządzenia"
+    override val flibustaCatalog = "Katalog Flibusta"
+    override val flibustaCatalogSubtitle = "Wyszukiwanie i pobieranie książek online przez OPDS"
+    override val flibustaSearchHint = "Szukaj według autora lub tytułu..."
+    override val flibustaMirrorTitle = "Lustro OPDS"
+    override val flibustaMirrorSubtitle = "Adres katalogu Flibusta. W przypadku blokad można podać działające lustro."
+    override val flibustaConnectionErrorTitle = "Nie udało się połączyć z serwerem"
+    override val flibustaConnectionErrorSubtitle = "Być może połączenie zadziała z adresów IP innych krajów."
+    override val downloadFb2 = "Pobierz FB2"
+    override val downloadEpub = "Pobierz EPUB"
+    override val downloading = "Pobieranie..."
+    override val openBookAction = "Czytaj"
+    override val annotation = "Adnotacja"
+    override val reset = "Resetuj"
     override val appName = "Aura Reader"
     override val cancel = "Anuluj"
     override val delete = "Usuń"
