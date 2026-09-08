@@ -892,4 +892,4 @@ fun FlibustaBookDetailsBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
-}\n
+}

@@ -147,4 +147,4 @@ private fun AddMethodItem(
             }
         }
     }
-}\n
+}

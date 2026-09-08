@@ -169,4 +169,4 @@ class FlibustaViewModel(
     fun retry() {
         lastAction?.invoke() ?: loadCategory("/opds/new", "Новинки")
     }
-}\n
+}
