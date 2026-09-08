@@ -6,6 +6,7 @@ import com.aura.reader.data.model.BookFormat
 import com.aura.reader.data.model.FlibustaBook
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
@@ -42,7 +43,7 @@ object FlibustaService {
             return trimmed
         }
         return try {
-            val baseHttpUrl = okhttp3.HttpUrl.parse(baseUrl)
+            val baseHttpUrl = baseUrl.toHttpUrlOrNull()
             val resolved = baseHttpUrl?.resolve(trimmed)
             resolved?.toString() ?: run {
                 val baseUri = URI(baseUrl)
@@ -60,7 +61,7 @@ object FlibustaService {
             val cleanBase = baseUrl.trimEnd('/')
             val encodedQuery = URLEncoder.encode(query.trim(), "UTF-8")
             val searchUrl = "$cleanBase/search?searchTerm=$encodedQuery"
-            val httpUrl = okhttp3.HttpUrl.parse(searchUrl)
+            val httpUrl = searchUrl.toHttpUrlOrNull()
                 ?: return@withContext Result.failure(Exception("Некорректный адрес поиска"))
 
             val request = Request.Builder()
@@ -90,7 +91,7 @@ object FlibustaService {
                 resolveUrl(cleanBase, path)
             }
 
-            val httpUrl = okhttp3.HttpUrl.parse(targetUrl)
+            val httpUrl = targetUrl.toHttpUrlOrNull()
                 ?: return@withContext Result.failure(Exception("Некорректный адрес ссылки"))
 
             val request = Request.Builder()
