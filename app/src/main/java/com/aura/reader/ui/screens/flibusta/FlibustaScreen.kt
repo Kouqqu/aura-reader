@@ -1,5 +1,6 @@
 package com.aura.reader.ui.screens.flibusta
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,6 +39,7 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -112,7 +114,13 @@ fun FlibustaScreen(
     val downloadedBooks by viewModel.downloadedBooks.collectAsState()
     val selectedBookForDetails by viewModel.selectedBookForDetails.collectAsState()
     val sortOption by viewModel.sortOption.collectAsState()
+    val selectedLanguage by viewModel.selectedLanguage.collectAsState()
+    val canGoBack by viewModel.canGoBack.collectAsState()
     var isSearchFocused by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = canGoBack) {
+        viewModel.navigateBack()
+    }
 
     var showMirrorDialog by remember { mutableStateOf(false) }
     var mirrorInput by remember(baseUrl) { mutableStateOf(baseUrl) }
@@ -190,7 +198,13 @@ fun FlibustaScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = {
+                        if (canGoBack) {
+                            viewModel.navigateBack()
+                        } else {
+                            onNavigateBack()
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = strings.back
@@ -220,7 +234,12 @@ fun FlibustaScreen(
             // Search Input Field (Redesigned Pill Shape)
             OutlinedTextField(
                 value = searchQuery,
-                onValueChange = { viewModel.setSearchQuery(it) },
+                onValueChange = { newQuery ->
+                    viewModel.setSearchQuery(newQuery)
+                    if (newQuery.isEmpty()) {
+                        viewModel.clearSearchAndReturnHome(strings.catNew)
+                    }
+                },
                 placeholder = {
                     Text(
                         text = strings.flibustaSearchHint,
@@ -238,7 +257,10 @@ fun FlibustaScreen(
                 },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                        IconButton(onClick = {
+                            focusManager.clearFocus()
+                            viewModel.clearSearchAndReturnHome(strings.catNew)
+                        }) {
                             Icon(
                                 imageVector = Icons.Default.Clear,
                                 contentDescription = strings.clear,
@@ -300,6 +322,34 @@ fun FlibustaScreen(
                 }
             }
 
+            // Catalog Home Welcome Banner
+            if (searchQuery.isEmpty() && !canGoBack) {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                        Text(
+                            text = strings.catalogHomeTitle,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = strings.catalogHomeSubtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            }
+
             // Quick Category Filter Chips
             Row(
                 modifier = Modifier
@@ -310,28 +360,29 @@ fun FlibustaScreen(
             ) {
                 FilterChip(
                     selected = false,
-                    onClick = { viewModel.loadCategory("/opds/new", "Новинки") },
-                    label = { Text("🔥 Новинки") }
+                    onClick = { viewModel.loadCategory("/opds/new", strings.catNew) },
+                    label = { Text(strings.catNew) }
                 )
                 FilterChip(
                     selected = false,
-                    onClick = { viewModel.loadCategory("/opds/pop", "Популярное") },
-                    label = { Text("⭐ Популярное") }
+                    onClick = { viewModel.loadCategory("/opds/pop", strings.catPopular) },
+                    label = { Text(strings.catPopular) }
                 )
                 FilterChip(
                     selected = false,
-                    onClick = { viewModel.loadCategory("/opds/authorsindex", "По авторам") },
-                    label = { Text("✍️ Авторы") }
+                    onClick = { viewModel.loadCategory("/opds/authorsindex", strings.catAuthors) },
+                    label = { Text(strings.catAuthors) }
                 )
                 FilterChip(
                     selected = false,
-                    onClick = { viewModel.loadCategory("/opds/genres", "По жанрам") },
-                    label = { Text("🏷️ Жанры") }
+                    onClick = { viewModel.loadCategory("/opds/genres", strings.catGenres) },
+                    label = { Text(strings.catGenres) }
                 )
             }
 
-            // Sorting Selector Row
+            // Sorting & Language Selector Row
             var showSortDropdown by remember { mutableStateOf(false) }
+            var showLangDropdown by remember { mutableStateOf(false) }
             val currentSortLabel = when (sortOption) {
                 CatalogSortOption.DEFAULT -> strings.sortByDefault
                 CatalogSortOption.POPULAR_DESC -> strings.sortByPopularDesc
@@ -343,97 +394,188 @@ fun FlibustaScreen(
                 CatalogSortOption.YEAR_DESC -> strings.sortByYearDesc
                 CatalogSortOption.YEAR_ASC -> strings.sortByYearAsc
             }
+            val currentLangLabel = when (selectedLanguage?.lowercase()) {
+                "ru" -> strings.langRussian
+                "en" -> strings.langEnglish
+                "uk" -> strings.langUkrainian
+                "be" -> strings.langBelarusian
+                "pl" -> strings.langPolish
+                "other" -> strings.langOther
+                else -> strings.allLanguages
+            }
 
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 2.dp)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                FilterChip(
-                    selected = sortOption != CatalogSortOption.DEFAULT,
-                    onClick = { showSortDropdown = true },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Sort,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                // Sort Dropdown
+                Box {
+                    FilterChip(
+                        selected = sortOption != CatalogSortOption.DEFAULT,
+                        onClick = { showSortDropdown = true },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Sort,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = "${strings.sortTitle}: $currentSortLabel ▾",
+                                maxLines = 1
+                            )
+                        }
+                    )
+
+                    DropdownMenu(
+                        expanded = showSortDropdown,
+                        onDismissRequest = { showSortDropdown = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByDefault) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.DEFAULT)
+                                showSortDropdown = false
+                            }
                         )
-                    },
-                    label = {
-                        Text(
-                            text = "${strings.sortTitle}: $currentSortLabel ▾",
-                            maxLines = 1
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByPopularDesc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.POPULAR_DESC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByPopularAsc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.POPULAR_ASC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByTitleAsc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.TITLE_ASC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByTitleDesc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.TITLE_DESC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByAuthorAsc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.AUTHOR_ASC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByAuthorDesc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.AUTHOR_DESC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByYearDesc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.YEAR_DESC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByYearAsc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.YEAR_ASC)
+                                showSortDropdown = false
+                            }
                         )
                     }
-                )
+                }
 
-                DropdownMenu(
-                    expanded = showSortDropdown,
-                    onDismissRequest = { showSortDropdown = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(strings.sortByDefault) },
-                        onClick = {
-                            viewModel.setSortOption(CatalogSortOption.DEFAULT)
-                            showSortDropdown = false
+                // Language Filter Dropdown
+                Box {
+                    FilterChip(
+                        selected = selectedLanguage != null,
+                        onClick = { showLangDropdown = true },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Language,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = "${strings.filterLanguage}: $currentLangLabel ▾",
+                                maxLines = 1
+                            )
                         }
                     )
-                    DropdownMenuItem(
-                        text = { Text(strings.sortByPopularDesc) },
-                        onClick = {
-                            viewModel.setSortOption(CatalogSortOption.POPULAR_DESC)
-                            showSortDropdown = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(strings.sortByPopularAsc) },
-                        onClick = {
-                            viewModel.setSortOption(CatalogSortOption.POPULAR_ASC)
-                            showSortDropdown = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(strings.sortByTitleAsc) },
-                        onClick = {
-                            viewModel.setSortOption(CatalogSortOption.TITLE_ASC)
-                            showSortDropdown = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(strings.sortByTitleDesc) },
-                        onClick = {
-                            viewModel.setSortOption(CatalogSortOption.TITLE_DESC)
-                            showSortDropdown = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(strings.sortByAuthorAsc) },
-                        onClick = {
-                            viewModel.setSortOption(CatalogSortOption.AUTHOR_ASC)
-                            showSortDropdown = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(strings.sortByAuthorDesc) },
-                        onClick = {
-                            viewModel.setSortOption(CatalogSortOption.AUTHOR_DESC)
-                            showSortDropdown = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(strings.sortByYearDesc) },
-                        onClick = {
-                            viewModel.setSortOption(CatalogSortOption.YEAR_DESC)
-                            showSortDropdown = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(strings.sortByYearAsc) },
-                        onClick = {
-                            viewModel.setSortOption(CatalogSortOption.YEAR_ASC)
-                            showSortDropdown = false
-                        }
-                    )
+
+                    DropdownMenu(
+                        expanded = showLangDropdown,
+                        onDismissRequest = { showLangDropdown = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(strings.allLanguages) },
+                            onClick = {
+                                viewModel.setSelectedLanguage(null)
+                                showLangDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.langRussian) },
+                            onClick = {
+                                viewModel.setSelectedLanguage("ru")
+                                showLangDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.langEnglish) },
+                            onClick = {
+                                viewModel.setSelectedLanguage("en")
+                                showLangDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.langUkrainian) },
+                            onClick = {
+                                viewModel.setSelectedLanguage("uk")
+                                showLangDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.langBelarusian) },
+                            onClick = {
+                                viewModel.setSelectedLanguage("be")
+                                showLangDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.langPolish) },
+                            onClick = {
+                                viewModel.setSelectedLanguage("pl")
+                                showLangDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.langOther) },
+                            onClick = {
+                                viewModel.setSelectedLanguage("other")
+                                showLangDropdown = false
+                            }
+                        )
+                    }
                 }
             }
 
@@ -493,8 +635,8 @@ fun FlibustaScreen(
                                 )
                             }
                         } else {
-                            val sortedBooks = remember(state.books, sortOption) {
-                                viewModel.getSortedBooks(state.books, sortOption)
+                            val sortedBooks = remember(state.books, sortOption, selectedLanguage) {
+                                viewModel.getSortedBooks(state.books, sortOption, selectedLanguage)
                             }
 
                             LazyColumn(

@@ -1,5 +1,8 @@
 package com.aura.reader.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -27,7 +30,31 @@ fun AuraNavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.LIBRARY
+        startDestination = NavRoutes.LIBRARY,
+        enterTransition = {
+            slideIntoContainer(
+                AnimatedContentTransitionScope.SlideDirection.Start,
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
+        },
+        exitTransition = {
+            slideOutOfContainer(
+                AnimatedContentTransitionScope.SlideDirection.Start,
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
+        },
+        popEnterTransition = {
+            slideIntoContainer(
+                AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
+        },
+        popExitTransition = {
+            slideOutOfContainer(
+                AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
+        }
     ) {
         composable(NavRoutes.LIBRARY) {
             LibraryScreen(
