@@ -80,9 +80,6 @@ interface Strings {
     val selectThirdPartySubtitle: String
     val materialYouToggle: String
     val materialYouSubtitle: String
-    val sortByDefault: String
-    val sortByPopularity: String
-    val sortByTitle: String
     val sortTitle: String
     val sortByDefault: String
     val sortByPopularDesc: String
