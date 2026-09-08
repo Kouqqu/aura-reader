@@ -10,6 +10,7 @@ import com.aura.reader.data.model.FlibustaBook
 import com.aura.reader.data.opds.FlibustaService
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.repository.BookRepository
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -85,8 +86,15 @@ class FlibustaViewModel(
     val searchHistory: StateFlow<List<String>> = preferencesManager.flibustaSearchHistory
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val baseUrl: StateFlow<String> = preferencesManager.flibustaBaseUrl
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FlibustaService.DEFAULT_BASE_URL)
+    val customOpdsEnabled: StateFlow<Boolean> = preferencesManager.customOpdsEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val baseUrl: StateFlow<String> = combine(
+        preferencesManager.customOpdsEnabled,
+        preferencesManager.flibustaBaseUrl
+    ) { customEnabled, url ->
+        if (customEnabled && url.isNotBlank()) url.trim() else FlibustaService.DEFAULT_BASE_URL
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FlibustaService.DEFAULT_BASE_URL)
 
     private val _uiState = MutableStateFlow<FlibustaUiState>(FlibustaUiState.Idle)
     val uiState: StateFlow<FlibustaUiState> = _uiState.asStateFlow()

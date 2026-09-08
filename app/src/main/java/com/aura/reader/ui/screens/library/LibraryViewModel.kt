@@ -89,6 +89,20 @@ class LibraryViewModel(
         viewModelScope.launch { preferencesManager.setReadingStatsEnabled(enabled) }
     }
 
+    val customOpdsEnabled: StateFlow<Boolean> = preferencesManager.customOpdsEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val flibustaBaseUrl: StateFlow<String> = preferencesManager.flibustaBaseUrl
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "http://flibusta.is/opds")
+
+    fun setCustomOpdsEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setCustomOpdsEnabled(enabled) }
+    }
+
+    fun setCustomOpdsUrl(url: String) {
+        viewModelScope.launch { preferencesManager.setFlibustaBaseUrl(url) }
+    }
+
     val recentBooks: StateFlow<List<Book>> = bookRepository.recentBooks
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

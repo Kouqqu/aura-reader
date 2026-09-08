@@ -109,6 +109,7 @@ fun FlibustaScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchHistory by viewModel.searchHistory.collectAsState()
     val baseUrl by viewModel.baseUrl.collectAsState()
+    val customOpdsEnabled by viewModel.customOpdsEnabled.collectAsState()
     val activeDownloads by viewModel.activeDownloads.collectAsState()
     val downloadedBooks by viewModel.downloadedBooks.collectAsState()
     val selectedBookForDetails by viewModel.selectedBookForDetails.collectAsState()
@@ -210,12 +211,14 @@ fun FlibustaScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showMirrorDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Dns,
-                            contentDescription = strings.flibustaMirrorTitle,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    if (customOpdsEnabled) {
+                        IconButton(onClick = { showMirrorDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Dns,
+                                contentDescription = strings.flibustaMirrorTitle,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -320,34 +323,36 @@ fun FlibustaScreen(
                 }
             }
 
-            // Quick Category Filter Chips
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 2.dp)
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = false,
-                    onClick = { viewModel.loadCategory("/opds/new", strings.catNew) },
-                    label = { Text(strings.catNew) }
-                )
-                FilterChip(
-                    selected = false,
-                    onClick = { viewModel.loadCategory("/opds/pop", strings.catPopular) },
-                    label = { Text(strings.catPopular) }
-                )
-                FilterChip(
-                    selected = false,
-                    onClick = { viewModel.loadCategory("/opds/authorsindex", strings.catAuthors) },
-                    label = { Text(strings.catAuthors) }
-                )
-                FilterChip(
-                    selected = false,
-                    onClick = { viewModel.loadCategory("/opds/genres", strings.catGenres) },
-                    label = { Text(strings.catGenres) }
-                )
+            // Quick Category Filter Chips (hidden in custom OPDS mode)
+            if (!customOpdsEnabled) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 2.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = false,
+                        onClick = { viewModel.loadCategory("/opds/new", strings.catNew) },
+                        label = { Text(strings.catNew) }
+                    )
+                    FilterChip(
+                        selected = false,
+                        onClick = { viewModel.loadCategory("/opds/pop", strings.catPopular) },
+                        label = { Text(strings.catPopular) }
+                    )
+                    FilterChip(
+                        selected = false,
+                        onClick = { viewModel.loadCategory("/opds/authorsindex", strings.catAuthors) },
+                        label = { Text(strings.catAuthors) }
+                    )
+                    FilterChip(
+                        selected = false,
+                        onClick = { viewModel.loadCategory("/opds/genres", strings.catGenres) },
+                        label = { Text(strings.catGenres) }
+                    )
+                }
             }
 
             // Sorting Selector Row (only shown when browsing categories or search results)
@@ -487,6 +492,7 @@ fun FlibustaScreen(
                         FlibustaErrorView(
                             isConnectionError = state.isConnectionError,
                             errorMessage = state.message,
+                            showMirrorOption = customOpdsEnabled,
                             onRetry = { viewModel.retry() },
                             onOpenMirrorSettings = { showMirrorDialog = true }
                         )
@@ -564,8 +570,13 @@ fun FlibustaScreen(
                     }
                     FlibustaUiState.Idle -> {
                         FlibustaHomeView(
+                            customOpdsEnabled = customOpdsEnabled,
+                            baseUrl = baseUrl,
                             onSelectCategory = { path, title ->
                                 viewModel.loadCategory(path, title)
+                            },
+                            onOpenRootCatalog = {
+                                viewModel.loadCategory("", strings.customOpdsOpenRoot)
                             }
                         )
                     }
@@ -839,6 +850,7 @@ fun FlibustaBookCard(
 fun FlibustaErrorView(
     isConnectionError: Boolean,
     errorMessage: String,
+    showMirrorOption: Boolean = false,
     onRetry: () -> Unit,
     onOpenMirrorSettings: () -> Unit
 ) {
@@ -897,7 +909,7 @@ fun FlibustaErrorView(
             Text(strings.retry)
         }
 
-        if (isConnectionError) {
+        if (isConnectionError && showMirrorOption) {
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(
                 onClick = onOpenMirrorSettings,
@@ -1172,7 +1184,10 @@ fun FlibustaBookDetailsBottomSheet(
 
 @Composable
 fun FlibustaHomeView(
+    customOpdsEnabled: Boolean,
+    baseUrl: String,
     onSelectCategory: (path: String, title: String) -> Unit,
+    onOpenRootCatalog: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
@@ -1219,7 +1234,7 @@ fun FlibustaHomeView(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = strings.catalogHomeTitle,
+                    text = if (customOpdsEnabled) strings.customOpdsToggle else strings.catalogHomeTitle,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -1228,45 +1243,60 @@ fun FlibustaHomeView(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = strings.catalogHomeSubtitle,
+                    text = if (customOpdsEnabled) baseUrl else strings.catalogHomeSubtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
 
-        // Category Cards Section
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            FlibustaHomeCategoryCard(
-                emoji = "🔥",
-                title = strings.catNew,
-                subtitle = strings.catNewSubtitle,
-                onClick = { onSelectCategory("/opds/new", strings.catNew) }
-            )
+        if (!customOpdsEnabled) {
+            // Category Cards Section (Flibusta curated feeds)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                FlibustaHomeCategoryCard(
+                    emoji = "🔥",
+                    title = strings.catNew,
+                    subtitle = strings.catNewSubtitle,
+                    onClick = { onSelectCategory("/opds/new", strings.catNew) }
+                )
 
-            FlibustaHomeCategoryCard(
-                emoji = "⭐",
-                title = strings.catPopular,
-                subtitle = strings.catPopularSubtitle,
-                onClick = { onSelectCategory("/opds/pop", strings.catPopular) }
-            )
+                FlibustaHomeCategoryCard(
+                    emoji = "⭐",
+                    title = strings.catPopular,
+                    subtitle = strings.catPopularSubtitle,
+                    onClick = { onSelectCategory("/opds/pop", strings.catPopular) }
+                )
 
-            FlibustaHomeCategoryCard(
-                emoji = "👤",
-                title = strings.catAuthors,
-                subtitle = strings.catAuthorsSubtitle,
-                onClick = { onSelectCategory("/opds/authorsindex", strings.catAuthors) }
-            )
+                FlibustaHomeCategoryCard(
+                    emoji = "👤",
+                    title = strings.catAuthors,
+                    subtitle = strings.catAuthorsSubtitle,
+                    onClick = { onSelectCategory("/opds/authorsindex", strings.catAuthors) }
+                )
 
-            FlibustaHomeCategoryCard(
-                emoji = "🏷️",
-                title = strings.catGenres,
-                subtitle = strings.catGenresSubtitle,
-                onClick = { onSelectCategory("/opds/genres", strings.catGenres) }
-            )
+                FlibustaHomeCategoryCard(
+                    emoji = "🏷️",
+                    title = strings.catGenres,
+                    subtitle = strings.catGenresSubtitle,
+                    onClick = { onSelectCategory("/opds/genres", strings.catGenres) }
+                )
+            }
+        } else {
+            // Custom OPDS mode: open root catalog card
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                FlibustaHomeCategoryCard(
+                    emoji = "📚",
+                    title = strings.customOpdsOpenRoot,
+                    subtitle = baseUrl,
+                    onClick = onOpenRootCatalog
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))

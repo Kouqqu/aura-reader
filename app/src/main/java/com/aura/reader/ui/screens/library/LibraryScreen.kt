@@ -143,6 +143,8 @@ fun LibraryScreen(
     val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
     val userCollections by viewModel.userCollections.collectAsState()
     val activeCollectionFilter by viewModel.activeCollectionFilter.collectAsState()
+    val customOpdsEnabled by viewModel.customOpdsEnabled.collectAsState()
+    val flibustaBaseUrl by viewModel.flibustaBaseUrl.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -872,6 +874,10 @@ fun LibraryScreen(
             onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
             onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
             onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
+            customOpdsEnabled = customOpdsEnabled,
+            customOpdsUrl = flibustaBaseUrl,
+            onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
+            onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
             onCheckUpdates = {
                 showSettingsSheet = false
                 viewModel.checkForUpdates(manual = true, context = context)

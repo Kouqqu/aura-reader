@@ -41,6 +41,7 @@ class PreferencesManager(private val context: Context) {
         val MATERIAL_YOU_ENABLED_KEY = booleanPreferencesKey("material_you_enabled")
         val FLIBUSTA_HISTORY_KEY = stringPreferencesKey("flibusta_search_history")
         val FLIBUSTA_BASE_URL_KEY = stringPreferencesKey("flibusta_base_url")
+        val CUSTOM_OPDS_ENABLED_KEY = booleanPreferencesKey("custom_opds_enabled")
         val USER_COLLECTIONS_KEY = stringPreferencesKey("user_collections_json")
     }
 
@@ -380,6 +381,16 @@ class PreferencesManager(private val context: Context) {
     suspend fun setFlibustaBaseUrl(url: String) {
         context.dataStore.edit { prefs ->
             prefs[FLIBUSTA_BASE_URL_KEY] = url.trim()
+        }
+    }
+
+    val customOpdsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[CUSTOM_OPDS_ENABLED_KEY] ?: false
+    }
+
+    suspend fun setCustomOpdsEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[CUSTOM_OPDS_ENABLED_KEY] = enabled
         }
     }
 
