@@ -44,44 +44,16 @@ class FlibustaViewModel(
     private val _sortOption = MutableStateFlow(CatalogSortOption.DEFAULT)
     val sortOption: StateFlow<CatalogSortOption> = _sortOption.asStateFlow()
 
-    private val _selectedLanguage = MutableStateFlow<String?>(null)
-    val selectedLanguage: StateFlow<String?> = _selectedLanguage.asStateFlow()
-
     fun setSortOption(option: CatalogSortOption) {
         _sortOption.value = option
     }
 
-    fun setSelectedLanguage(lang: String?) {
-        _selectedLanguage.value = lang
-    }
-
     fun getSortedBooks(
         books: List<FlibustaBook>,
-        option: CatalogSortOption,
-        langFilter: String? = _selectedLanguage.value
+        option: CatalogSortOption
     ): List<FlibustaBook> {
         val cats = books.filter { it.isCategory }
-        var nonCats = books.filter { !it.isCategory }
-
-        if (!langFilter.isNullOrBlank()) {
-            nonCats = nonCats.filter { book ->
-                val lang = (book.language ?: "").uppercase()
-                when (langFilter.lowercase()) {
-                    "ru" -> lang.contains("RU") || lang.contains("РУС")
-                    "en" -> lang.contains("EN") || lang.contains("ENG") || lang.contains("АНГЛ")
-                    "uk" -> lang.contains("UK") || lang.contains("UA") || lang.contains("УКР")
-                    "be" -> lang.contains("BE") || lang.contains("BY") || lang.contains("БЕЛ")
-                    "pl" -> lang.contains("PL") || lang.contains("ПОЛ")
-                    "other" -> lang.isNotBlank() &&
-                            !lang.contains("RU") && !lang.contains("РУС") &&
-                            !lang.contains("EN") && !lang.contains("ENG") && !lang.contains("АНГЛ") &&
-                            !lang.contains("UK") && !lang.contains("UA") && !lang.contains("УКР") &&
-                            !lang.contains("BE") && !lang.contains("BY") && !lang.contains("БЕЛ") &&
-                            !lang.contains("PL") && !lang.contains("ПОЛ")
-                    else -> true
-                }
-            }
-        }
+        val nonCats = books.filter { !it.isCategory }
 
         val sortedNonCats = when (option) {
             CatalogSortOption.DEFAULT -> nonCats
@@ -136,7 +108,7 @@ class FlibustaViewModel(
     )
 
     private val navStack = mutableListOf<CatalogHistoryEntry>()
-    private var currentEntry = CatalogHistoryEntry(path = "/opds/new", title = "Новинки", isHome = true)
+    private var currentEntry = CatalogHistoryEntry(title = "Главная", isHome = true)
 
     private val _canGoBack = MutableStateFlow(false)
     val canGoBack: StateFlow<Boolean> = _canGoBack.asStateFlow()
@@ -144,8 +116,8 @@ class FlibustaViewModel(
     private var lastAction: (() -> Unit)? = null
 
     init {
-        // Load initial catalog (new books)
-        executeCategory("/opds/new", "Новинки")
+        // Start in clean Home state without forcibly loading anything
+        _uiState.value = FlibustaUiState.Idle
     }
 
     fun selectBookForDetails(book: FlibustaBook?) {
@@ -189,7 +161,11 @@ class FlibustaViewModel(
         val prev = navStack.removeAt(navStack.size - 1)
         currentEntry = prev
         _canGoBack.value = navStack.isNotEmpty()
-        if (prev.query != null) {
+        if (prev.isHome) {
+            _searchQuery.value = ""
+            _uiState.value = FlibustaUiState.Idle
+            lastAction = null
+        } else if (prev.query != null) {
             _searchQuery.value = prev.query
             executeSearch(prev.query)
         } else {
@@ -199,12 +175,13 @@ class FlibustaViewModel(
         return true
     }
 
-    fun clearSearchAndReturnHome(homeTitle: String = "🔥 Новинки") {
+    fun clearSearchAndReturnHome() {
         _searchQuery.value = ""
         navStack.clear()
         _canGoBack.value = false
-        currentEntry = CatalogHistoryEntry(path = "/opds/new", title = homeTitle, isHome = true)
-        executeCategory("/opds/new", homeTitle)
+        currentEntry = CatalogHistoryEntry(title = "Главная", isHome = true)
+        _uiState.value = FlibustaUiState.Idle
+        lastAction = null
     }
 
     private fun executeCategory(path: String, categoryTitle: String) {
@@ -295,6 +272,6 @@ class FlibustaViewModel(
     }
 
     fun retry() {
-        lastAction?.invoke() ?: executeCategory("/opds/new", "Новинки")
+        lastAction?.invoke()
     }
 }

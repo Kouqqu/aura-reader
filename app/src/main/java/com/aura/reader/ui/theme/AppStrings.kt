@@ -97,14 +97,10 @@ interface Strings {
     val catPopular: String
     val catAuthors: String
     val catGenres: String
-    val filterLanguage: String
-    val allLanguages: String
-    val langRussian: String
-    val langEnglish: String
-    val langUkrainian: String
-    val langBelarusian: String
-    val langPolish: String
-    val langOther: String
+    val catNewSubtitle: String
+    val catPopularSubtitle: String
+    val catAuthorsSubtitle: String
+    val catGenresSubtitle: String
     val catalogHomeTitle: String
     val catalogHomeSubtitle: String
     fun downloadsCount(count: Int): String
@@ -187,14 +183,10 @@ class RuStrings : Strings {
     override val catPopular = "⭐ Популярное"
     override val catAuthors = "✍️ Авторы"
     override val catGenres = "🏷️ Жанры"
-    override val filterLanguage = "Язык"
-    override val allLanguages = "Все языки"
-    override val langRussian = "Русский"
-    override val langEnglish = "Английский"
-    override val langUkrainian = "Украинский"
-    override val langBelarusian = "Белорусский"
-    override val langPolish = "Польский"
-    override val langOther = "Другие"
+    override val catNewSubtitle = "Свежие поступления и обновления"
+    override val catPopularSubtitle = "Самые читаемые книги каталога"
+    override val catAuthorsSubtitle = "Алфавитный указатель писателей"
+    override val catGenresSubtitle = "Книги по жанрам и темам"
     override val catalogHomeTitle = "Найдётся всё"
     override val catalogHomeSubtitle = "Тысячи книг в свободном доступе"
     override fun downloadsCount(count: Int) = "$count скачиваний"
@@ -331,14 +323,10 @@ class EnStrings : Strings {
     override val catPopular = "⭐ Popular"
     override val catAuthors = "✍️ Authors"
     override val catGenres = "🏷️ Genres"
-    override val filterLanguage = "Language"
-    override val allLanguages = "All languages"
-    override val langRussian = "Russian"
-    override val langEnglish = "English"
-    override val langUkrainian = "Ukrainian"
-    override val langBelarusian = "Belarusian"
-    override val langPolish = "Polish"
-    override val langOther = "Other"
+    override val catNewSubtitle = "Fresh additions and updates"
+    override val catPopularSubtitle = "Most read books in the catalog"
+    override val catAuthorsSubtitle = "Alphabetical author index"
+    override val catGenresSubtitle = "Books by genre and subject"
     override val catalogHomeTitle = "Find any book"
     override val catalogHomeSubtitle = "Thousands of books freely available"
     override fun downloadsCount(count: Int) = "$count downloads"
@@ -475,14 +463,10 @@ class UkStrings : Strings {
     override val catPopular = "⭐ Популярне"
     override val catAuthors = "✍️ Автори"
     override val catGenres = "🏷️ Жанри"
-    override val filterLanguage = "Мова"
-    override val allLanguages = "Усі мови"
-    override val langRussian = "Російська"
-    override val langEnglish = "Англійська"
-    override val langUkrainian = "Українська"
-    override val langBelarusian = "Білоруська"
-    override val langPolish = "Польська"
-    override val langOther = "Інші"
+    override val catNewSubtitle = "Свіжі надходження та новинки"
+    override val catPopularSubtitle = "Найбільш популярні книги каталогу"
+    override val catAuthorsSubtitle = "Алфавітний покажчик авторів"
+    override val catGenresSubtitle = "Книги за жанрами та тематиками"
     override val catalogHomeTitle = "Знайдеться все"
     override val catalogHomeSubtitle = "Тисячі книг у вільному доступі"
     override fun downloadsCount(count: Int) = "$count завантажень"
@@ -619,14 +603,10 @@ class BeStrings : Strings {
     override val catPopular = "⭐ Папулярнае"
     override val catAuthors = "✍️ Аўтары"
     override val catGenres = "🏷️ Жанры"
-    override val filterLanguage = "Мова"
-    override val allLanguages = "Усе мовы"
-    override val langRussian = "Руская"
-    override val langEnglish = "Англійская"
-    override val langUkrainian = "Украінская"
-    override val langBelarusian = "Беларуская"
-    override val langPolish = "Польская"
-    override val langOther = "Іншыя"
+    override val catNewSubtitle = "Свежыя паступленні і абнаўленні"
+    override val catPopularSubtitle = "Самыя чытаныя кнігі каталога"
+    override val catAuthorsSubtitle = "Алфавітны паказальнік пісьменнікаў"
+    override val catGenresSubtitle = "Кнігі па жанрах і тэмах"
     override val catalogHomeTitle = "Знойдзецца ўсё"
     override val catalogHomeSubtitle = "Тысячы кніг у вольным доступе"
     override fun downloadsCount(count: Int) = "$count спампоўванняў"
@@ -763,14 +743,10 @@ class PlStrings : Strings {
     override val catPopular = "⭐ Popularne"
     override val catAuthors = "✍️ Autorzy"
     override val catGenres = "🏷️ Gatunki"
-    override val filterLanguage = "Język"
-    override val allLanguages = "Wszystkie języki"
-    override val langRussian = "Rosyjski"
-    override val langEnglish = "Angielski"
-    override val langUkrainian = "Ukraiński"
-    override val langBelarusian = "Białoruski"
-    override val langPolish = "Polski"
-    override val langOther = "Inne"
+    override val catNewSubtitle = "Świeże dostawy i aktualizacje"
+    override val catPopularSubtitle = "Najchętniej czytane książki w katalogu"
+    override val catAuthorsSubtitle = "Indeks alfabetyczny autorów"
+    override val catGenresSubtitle = "Książki według gatunków i tematów"
     override val catalogHomeTitle = "Znajdziesz wszystko"
     override val catalogHomeSubtitle = "Tysiące książek w wolnym dostępie"
     override fun downloadsCount(count: Int) = "$count pobrań"
