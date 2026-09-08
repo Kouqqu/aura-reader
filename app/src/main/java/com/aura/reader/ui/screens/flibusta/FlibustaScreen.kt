@@ -77,6 +77,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -111,6 +112,7 @@ fun FlibustaScreen(
     val downloadedBooks by viewModel.downloadedBooks.collectAsState()
     val selectedBookForDetails by viewModel.selectedBookForDetails.collectAsState()
     val sortOption by viewModel.sortOption.collectAsState()
+    var isSearchFocused by remember { mutableStateOf(false) }
 
     var showMirrorDialog by remember { mutableStateOf(false) }
     var mirrorInput by remember(baseUrl) { mutableStateOf(baseUrl) }
@@ -264,10 +266,11 @@ fun FlibustaScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .onFocusChanged { isSearchFocused = it.isFocused }
             )
 
-            // Search History Chips
-            if (searchQuery.isEmpty() && searchHistory.isNotEmpty()) {
+            // Search History Chips (visible only when search bar is focused)
+            AnimatedVisibility(visible = isSearchFocused && searchQuery.isEmpty() && searchHistory.isNotEmpty()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -341,139 +344,97 @@ fun FlibustaScreen(
                 CatalogSortOption.YEAR_ASC -> strings.sortByYearAsc
             }
 
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 2.dp)
-                    .horizontalScroll(rememberScrollState()),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Box {
-                    FilterChip(
-                        selected = sortOption != CatalogSortOption.DEFAULT,
-                        onClick = { showSortDropdown = true },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Sort,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = "${strings.sortTitle}: $currentSortLabel ▾",
-                                maxLines = 1
-                            )
-                        }
-                    )
-
-                    DropdownMenu(
-                        expanded = showSortDropdown,
-                        onDismissRequest = { showSortDropdown = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByDefault) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.DEFAULT)
-                                showSortDropdown = false
-                            }
+                FilterChip(
+                    selected = sortOption != CatalogSortOption.DEFAULT,
+                    onClick = { showSortDropdown = true },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Sort,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
                         )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByPopularDesc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.POPULAR_DESC)
-                                showSortDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByPopularAsc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.POPULAR_ASC)
-                                showSortDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByTitleAsc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.TITLE_ASC)
-                                showSortDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByTitleDesc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.TITLE_DESC)
-                                showSortDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByAuthorAsc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.AUTHOR_ASC)
-                                showSortDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByAuthorDesc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.AUTHOR_DESC)
-                                showSortDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByYearDesc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.YEAR_DESC)
-                                showSortDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByYearAsc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.YEAR_ASC)
-                                showSortDropdown = false
-                            }
+                    },
+                    label = {
+                        Text(
+                            text = "${strings.sortTitle}: $currentSortLabel ▾",
+                            maxLines = 1
                         )
                     }
-                }
+                )
 
-                FilterChip(
-                    selected = sortOption == CatalogSortOption.POPULAR_DESC,
-                    onClick = {
-                        viewModel.setSortOption(
-                            if (sortOption == CatalogSortOption.POPULAR_DESC) CatalogSortOption.DEFAULT else CatalogSortOption.POPULAR_DESC
-                        )
-                    },
-                    label = { Text("🔥 Популярные") }
-                )
-                FilterChip(
-                    selected = sortOption == CatalogSortOption.POPULAR_ASC,
-                    onClick = {
-                        viewModel.setSortOption(
-                            if (sortOption == CatalogSortOption.POPULAR_ASC) CatalogSortOption.DEFAULT else CatalogSortOption.POPULAR_ASC
-                        )
-                    },
-                    label = { Text("📉 Непопулярные") }
-                )
-                FilterChip(
-                    selected = sortOption == CatalogSortOption.TITLE_ASC || sortOption == CatalogSortOption.TITLE_DESC,
-                    onClick = {
-                        viewModel.setSortOption(
-                            if (sortOption == CatalogSortOption.TITLE_ASC) CatalogSortOption.TITLE_DESC else CatalogSortOption.TITLE_ASC
-                        )
-                    },
-                    label = { Text(if (sortOption == CatalogSortOption.TITLE_DESC) "Я → А" else "А → Я") }
-                )
-                FilterChip(
-                    selected = sortOption == CatalogSortOption.YEAR_DESC || sortOption == CatalogSortOption.YEAR_ASC,
-                    onClick = {
-                        viewModel.setSortOption(
-                            if (sortOption == CatalogSortOption.YEAR_DESC) CatalogSortOption.YEAR_ASC else CatalogSortOption.YEAR_DESC
-                        )
-                    },
-                    label = { Text(if (sortOption == CatalogSortOption.YEAR_ASC) "⏳ Старые" else "📅 Новые") }
-                )
+                DropdownMenu(
+                    expanded = showSortDropdown,
+                    onDismissRequest = { showSortDropdown = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(strings.sortByDefault) },
+                        onClick = {
+                            viewModel.setSortOption(CatalogSortOption.DEFAULT)
+                            showSortDropdown = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(strings.sortByPopularDesc) },
+                        onClick = {
+                            viewModel.setSortOption(CatalogSortOption.POPULAR_DESC)
+                            showSortDropdown = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(strings.sortByPopularAsc) },
+                        onClick = {
+                            viewModel.setSortOption(CatalogSortOption.POPULAR_ASC)
+                            showSortDropdown = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(strings.sortByTitleAsc) },
+                        onClick = {
+                            viewModel.setSortOption(CatalogSortOption.TITLE_ASC)
+                            showSortDropdown = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(strings.sortByTitleDesc) },
+                        onClick = {
+                            viewModel.setSortOption(CatalogSortOption.TITLE_DESC)
+                            showSortDropdown = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(strings.sortByAuthorAsc) },
+                        onClick = {
+                            viewModel.setSortOption(CatalogSortOption.AUTHOR_ASC)
+                            showSortDropdown = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(strings.sortByAuthorDesc) },
+                        onClick = {
+                            viewModel.setSortOption(CatalogSortOption.AUTHOR_DESC)
+                            showSortDropdown = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(strings.sortByYearDesc) },
+                        onClick = {
+                            viewModel.setSortOption(CatalogSortOption.YEAR_DESC)
+                            showSortDropdown = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(strings.sortByYearAsc) },
+                        onClick = {
+                            viewModel.setSortOption(CatalogSortOption.YEAR_ASC)
+                            showSortDropdown = false
+                        }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(4.dp))

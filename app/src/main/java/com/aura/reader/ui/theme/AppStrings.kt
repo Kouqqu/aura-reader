@@ -149,7 +149,7 @@ interface Strings {
 class RuStrings : Strings {
     override val chooseAddMethod = "Добавить книги в библиотеку"
     override val selectFiles = "Выбрать файлы"
-    override val selectFilesSubtitle = "Файлы .fb2, .epub, .fb2.zip (любой проводник)"
+    override val selectFilesSubtitle = "Файлы .fb2, .epub, .fb2.zip"
     override val scanFolder = "Сканировать папку"
     override val scanFolderSubtitle = "Рекурсивный поиск всех книг в папке устройства"
     override val selectThirdParty = "Сторонний проводник"
@@ -279,7 +279,7 @@ class RuStrings : Strings {
 class EnStrings : Strings {
     override val chooseAddMethod = "Add books to library"
     override val selectFiles = "Select files"
-    override val selectFilesSubtitle = ".fb2, .epub, .fb2.zip files (any file manager)"
+    override val selectFilesSubtitle = ".fb2, .epub, .fb2.zip files"
     override val scanFolder = "Scan folder"
     override val scanFolderSubtitle = "Recursive search for books in device folder"
     override val selectThirdParty = "Third-party file manager"
@@ -409,7 +409,7 @@ class EnStrings : Strings {
 class UkStrings : Strings {
     override val chooseAddMethod = "Додати книги до бібліотеки"
     override val selectFiles = "Обрати файли"
-    override val selectFilesSubtitle = "Файли .fb2, .epub, .fb2.zip (будь-який провідник)"
+    override val selectFilesSubtitle = "Файли .fb2, .epub, .fb2.zip"
     override val scanFolder = "Сканувати папку"
     override val scanFolderSubtitle = "Рекурсивний пошук усіх книг у папці пристрою"
     override val selectThirdParty = "Сторонній провідник"
@@ -539,7 +539,7 @@ class UkStrings : Strings {
 class BeStrings : Strings {
     override val chooseAddMethod = "Дадаць кнігі ў бібліятэку"
     override val selectFiles = "Абраць файлы"
-    override val selectFilesSubtitle = "Файлы .fb2, .epub, .fb2.zip (любы праваднік)"
+    override val selectFilesSubtitle = "Файлы .fb2, .epub, .fb2.zip"
     override val scanFolder = "Сканаваць папку"
     override val scanFolderSubtitle = "Рэкурсіўны пошук усіх кніг у папцы прылады"
     override val selectThirdParty = "Сторонні праваднік"
@@ -669,7 +669,7 @@ class BeStrings : Strings {
 class PlStrings : Strings {
     override val chooseAddMethod = "Dodaj książki do biblioteki"
     override val selectFiles = "Wybierz pliki"
-    override val selectFilesSubtitle = "Menedżer plików (.fb2, .fb2.zip, .epub)"
+    override val selectFilesSubtitle = "Pliki .fb2, .epub, .fb2.zip"
     override val scanFolder = "Skanuj folder"
     override val scanFolderSubtitle = "Rekurencyjne wyszukiwanie książek w folderze urządzenia"
     override val selectThirdParty = "Menedżer plików innej firmy"
