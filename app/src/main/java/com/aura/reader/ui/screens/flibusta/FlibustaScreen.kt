@@ -41,6 +41,9 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -212,50 +215,56 @@ fun FlibustaScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Search Input Field
-            Surface(
+            // Search Input Field (Redesigned Pill Shape)
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.setSearchQuery(it) },
+                placeholder = {
+                    Text(
+                        text = strings.flibustaSearchHint,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = strings.clear,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(28.dp),
+                textStyle = MaterialTheme.typography.bodyMedium,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        focusManager.clearFocus()
+                        viewModel.search()
+                    }
+                ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-            ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { viewModel.setSearchQuery(it) },
-                    placeholder = { Text(strings.flibustaSearchHint) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = strings.clear
-                                )
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(
-                        onSearch = {
-                            focusManager.clearFocus()
-                            viewModel.search()
-                        }
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = androidx.compose.ui.graphics.Color.Transparent
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+            )
 
             // Search History Chips
             if (searchQuery.isEmpty() && searchHistory.isNotEmpty()) {
@@ -292,7 +301,7 @@ fun FlibustaScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .padding(horizontal = 16.dp, vertical = 2.dp)
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -318,7 +327,156 @@ fun FlibustaScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // Sorting Selector Row
+            var showSortDropdown by remember { mutableStateOf(false) }
+            val currentSortLabel = when (sortOption) {
+                CatalogSortOption.DEFAULT -> strings.sortByDefault
+                CatalogSortOption.POPULAR_DESC -> strings.sortByPopularDesc
+                CatalogSortOption.POPULAR_ASC -> strings.sortByPopularAsc
+                CatalogSortOption.TITLE_ASC -> strings.sortByTitleAsc
+                CatalogSortOption.TITLE_DESC -> strings.sortByTitleDesc
+                CatalogSortOption.AUTHOR_ASC -> strings.sortByAuthorAsc
+                CatalogSortOption.AUTHOR_DESC -> strings.sortByAuthorDesc
+                CatalogSortOption.YEAR_DESC -> strings.sortByYearDesc
+                CatalogSortOption.YEAR_ASC -> strings.sortByYearAsc
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 2.dp)
+                    .horizontalScroll(rememberScrollState()),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box {
+                    FilterChip(
+                        selected = sortOption != CatalogSortOption.DEFAULT,
+                        onClick = { showSortDropdown = true },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Sort,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = "${strings.sortTitle}: $currentSortLabel ▾",
+                                maxLines = 1
+                            )
+                        }
+                    )
+
+                    DropdownMenu(
+                        expanded = showSortDropdown,
+                        onDismissRequest = { showSortDropdown = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByDefault) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.DEFAULT)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByPopularDesc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.POPULAR_DESC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByPopularAsc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.POPULAR_ASC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByTitleAsc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.TITLE_ASC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByTitleDesc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.TITLE_DESC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByAuthorAsc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.AUTHOR_ASC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByAuthorDesc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.AUTHOR_DESC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByYearDesc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.YEAR_DESC)
+                                showSortDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.sortByYearAsc) },
+                            onClick = {
+                                viewModel.setSortOption(CatalogSortOption.YEAR_ASC)
+                                showSortDropdown = false
+                            }
+                        )
+                    }
+                }
+
+                FilterChip(
+                    selected = sortOption == CatalogSortOption.POPULAR_DESC,
+                    onClick = {
+                        viewModel.setSortOption(
+                            if (sortOption == CatalogSortOption.POPULAR_DESC) CatalogSortOption.DEFAULT else CatalogSortOption.POPULAR_DESC
+                        )
+                    },
+                    label = { Text("🔥 Популярные") }
+                )
+                FilterChip(
+                    selected = sortOption == CatalogSortOption.POPULAR_ASC,
+                    onClick = {
+                        viewModel.setSortOption(
+                            if (sortOption == CatalogSortOption.POPULAR_ASC) CatalogSortOption.DEFAULT else CatalogSortOption.POPULAR_ASC
+                        )
+                    },
+                    label = { Text("📉 Непопулярные") }
+                )
+                FilterChip(
+                    selected = sortOption == CatalogSortOption.TITLE_ASC || sortOption == CatalogSortOption.TITLE_DESC,
+                    onClick = {
+                        viewModel.setSortOption(
+                            if (sortOption == CatalogSortOption.TITLE_ASC) CatalogSortOption.TITLE_DESC else CatalogSortOption.TITLE_ASC
+                        )
+                    },
+                    label = { Text(if (sortOption == CatalogSortOption.TITLE_DESC) "Я → А" else "А → Я") }
+                )
+                FilterChip(
+                    selected = sortOption == CatalogSortOption.YEAR_DESC || sortOption == CatalogSortOption.YEAR_ASC,
+                    onClick = {
+                        viewModel.setSortOption(
+                            if (sortOption == CatalogSortOption.YEAR_DESC) CatalogSortOption.YEAR_ASC else CatalogSortOption.YEAR_DESC
+                        )
+                    },
+                    label = { Text(if (sortOption == CatalogSortOption.YEAR_ASC) "⏳ Старые" else "📅 Новые") }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Main Content Area
             Box(
@@ -374,6 +532,10 @@ fun FlibustaScreen(
                                 )
                             }
                         } else {
+                            val sortedBooks = remember(state.books, sortOption) {
+                                viewModel.getSortedBooks(state.books, sortOption)
+                            }
+
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(16.dp),
@@ -391,7 +553,7 @@ fun FlibustaScreen(
                                     }
                                 }
 
-                                items(state.books, key = { it.id }) { book ->
+                                itemsIndexed(sortedBooks, key = { index, book -> "${book.id}_${book.title}_$index" }) { index, book ->
                                     val progress = activeDownloads[book.id]
                                     val downloaded = downloadedBooks[book.id]
 

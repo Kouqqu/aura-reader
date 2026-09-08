@@ -142,6 +142,7 @@ fun ReaderScreen(
     val settings by viewModel.readerSettings.collectAsState()
     val currentChapterIndex by viewModel.currentChapterIndex.collectAsState()
     val savedOffset by viewModel.savedScrollOffset.collectAsState()
+    val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
 
     // Search state
     var isSearchActive by remember { mutableStateOf(false) }
@@ -199,7 +200,10 @@ fun ReaderScreen(
         }
     }
 
-    AuraReaderTheme(themeMode = settings.themeMode) {
+    AuraReaderTheme(
+        themeMode = settings.themeMode,
+        materialYou = materialYouEnabled
+    ) {
       CompositionLocalProvider(LocalTextToolbar provides customTextToolbar) {
         val resolvedFontFamily = when (settings.fontFamily) {
             ReaderFontFamily.SERIF -> FontFamily.Serif
@@ -740,6 +744,8 @@ fun ReaderScreen(
             if (showSettingsSheet) {
                 ReaderSettingsBottomSheet(
                     settings = settings,
+                    materialYouEnabled = materialYouEnabled,
+                    onMaterialYouChange = { viewModel.setMaterialYouEnabled(it) },
                     onDismiss = { showSettingsSheet = false },
                     onFontSizeChange = { viewModel.setFontSize(it) },
                     onLineHeightChange = { viewModel.setLineHeight(it) },
@@ -1082,8 +1088,7 @@ fun ChapterPagingView(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 24.dp)
-                            .padding(top = 4.dp, bottom = 44.dp)
-                            .clipToBounds(),
+                            .padding(top = 4.dp, bottom = 32.dp),
                         verticalArrangement = Arrangement.Top
                     ) {
                         for ((_, block) in pageBlocks) {
@@ -1146,12 +1151,12 @@ fun ChapterPagingView(
 
         Text(
             text = "$overallPercent%",
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+            fontWeight = FontWeight.Normal,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 12.dp)
+                .padding(bottom = 16.dp)
         )
     }
 }
@@ -1169,11 +1174,15 @@ private fun calculatePageCapacity(
     val fs = fontSizeSp.coerceIn(12f, 36f)
     val lh = lineHeightMultiplier.coerceIn(1.0f, 2.2f)
     val effectiveLineHeight = fs * lh
-    val usableHeightDp = (screenHeightDp - 96f).coerceAtLeast(300f)
-    val linesPerPage = (usableHeightDp / effectiveLineHeight).coerceIn(10f, 45f)
-    val usableWidthDp = (screenWidthDp - 48f).coerceAtLeast(260f)
-    val charsPerLine = (usableWidthDp / (fs * 0.48f)).coerceIn(22f, 65f)
-    return (linesPerPage * charsPerLine).toInt().coerceIn(500, 3200)
+    // 120dp safe margin ensures top padding (4dp), bottom padding (32dp), footer percentage (16dp),
+    // and paragraph margins (8dp) never cause the text to push into or overlap the footer.
+    val usableHeightDp = (screenHeightDp - 120f).coerceAtLeast(260f)
+    // Floor to integer full lines to guarantee no partial line overflow
+    val linesPerPage = (usableHeightDp / effectiveLineHeight).toInt().coerceIn(8, 40)
+    val usableWidthDp = (screenWidthDp - 48f).coerceAtLeast(240f)
+    // Cyrillic letters average ~0.53 * fontSize in standard fonts
+    val charsPerLine = (usableWidthDp / (fs * 0.53f)).toInt().coerceIn(20, 60)
+    return (linesPerPage * charsPerLine).coerceIn(400, 2800)
 }
 
 private fun findBestBreak(text: String, targetLen: Int): Int {

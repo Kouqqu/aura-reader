@@ -26,6 +26,9 @@ class ReaderViewModel(
     val readerSettings: StateFlow<ReaderSettings> = preferencesManager.readerSettings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReaderSettings())
 
+    val materialYouEnabled: StateFlow<Boolean> = preferencesManager.materialYouEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     private val _currentChapterIndex = MutableStateFlow(0)
     val currentChapterIndex: StateFlow<Int> = _currentChapterIndex.asStateFlow()
 
@@ -117,6 +120,12 @@ class ReaderViewModel(
     fun setThemeMode(mode: ReaderThemeMode) {
         viewModelScope.launch {
             preferencesManager.updateThemeMode(mode)
+        }
+    }
+
+    fun setMaterialYouEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesManager.setMaterialYouEnabled(enabled)
         }
     }
 

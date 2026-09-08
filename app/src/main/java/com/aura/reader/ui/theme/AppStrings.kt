@@ -83,6 +83,18 @@ interface Strings {
     val sortByDefault: String
     val sortByPopularity: String
     val sortByTitle: String
+    val sortTitle: String
+    val sortByDefault: String
+    val sortByPopularDesc: String
+    val sortByPopularAsc: String
+    val sortByTitleAsc: String
+    val sortByTitleDesc: String
+    val sortByAuthorAsc: String
+    val sortByAuthorDesc: String
+    val sortByYearDesc: String
+    val sortByYearAsc: String
+    val sortByPopularity: String
+    val sortByTitle: String
     val sortByAuthor: String
     fun downloadsCount(count: Int): String
     fun yearLabel(year: String): String
@@ -140,14 +152,23 @@ interface Strings {
 class RuStrings : Strings {
     override val chooseAddMethod = "Добавить книги в библиотеку"
     override val selectFiles = "Выбрать файлы"
-    override val selectFilesSubtitle = "Системный проводник (.fb2, .fb2.zip, .epub)"
+    override val selectFilesSubtitle = "Файлы .fb2, .epub, .fb2.zip (любой проводник)"
     override val scanFolder = "Сканировать папку"
     override val scanFolderSubtitle = "Рекурсивный поиск всех книг в папке устройства"
     override val selectThirdParty = "Сторонний проводник"
     override val selectThirdPartySubtitle = "Samsung «Мои файлы», Xiaomi, проводники"
     override val materialYouToggle = "Цвета Material You"
     override val materialYouSubtitle = "Адаптировать акцентные цвета под обои устройства"
+    override val sortTitle = "Сортировка"
     override val sortByDefault = "По умолчанию"
+    override val sortByPopularDesc = "Самые популярные 🔥"
+    override val sortByPopularAsc = "Менее популярные 📉"
+    override val sortByTitleAsc = "По названию (А → Я)"
+    override val sortByTitleDesc = "По названию (Я → А)"
+    override val sortByAuthorAsc = "По автору (А → Я)"
+    override val sortByAuthorDesc = "По автору (Я → А)"
+    override val sortByYearDesc = "Сначала новые 📅"
+    override val sortByYearAsc = "Сначала старые ⏳"
     override val sortByPopularity = "По популярности"
     override val sortByTitle = "По названию"
     override val sortByAuthor = "По автору"
@@ -261,14 +282,23 @@ class RuStrings : Strings {
 class EnStrings : Strings {
     override val chooseAddMethod = "Add books to library"
     override val selectFiles = "Select files"
-    override val selectFilesSubtitle = "System file manager (.fb2, .fb2.zip, .epub)"
+    override val selectFilesSubtitle = ".fb2, .epub, .fb2.zip files (any file manager)"
     override val scanFolder = "Scan folder"
     override val scanFolderSubtitle = "Recursive search for books in device folder"
     override val selectThirdParty = "Third-party file manager"
     override val selectThirdPartySubtitle = "Samsung My Files, Xiaomi, file managers"
     override val materialYouToggle = "Material You colors"
     override val materialYouSubtitle = "Adapt accent colors to device wallpaper"
+    override val sortTitle = "Sort by"
     override val sortByDefault = "Default"
+    override val sortByPopularDesc = "Most popular 🔥"
+    override val sortByPopularAsc = "Least popular 📉"
+    override val sortByTitleAsc = "Title (A → Z)"
+    override val sortByTitleDesc = "Title (Z → A)"
+    override val sortByAuthorAsc = "Author (A → Z)"
+    override val sortByAuthorDesc = "Author (Z → A)"
+    override val sortByYearDesc = "Newest first 📅"
+    override val sortByYearAsc = "Oldest first ⏳"
     override val sortByPopularity = "Popularity"
     override val sortByTitle = "By Title"
     override val sortByAuthor = "By Author"
@@ -382,14 +412,23 @@ class EnStrings : Strings {
 class UkStrings : Strings {
     override val chooseAddMethod = "Додати книги до бібліотеки"
     override val selectFiles = "Обрати файли"
-    override val selectFilesSubtitle = "Системний провідник (.fb2, .fb2.zip, .epub)"
+    override val selectFilesSubtitle = "Файли .fb2, .epub, .fb2.zip (будь-який провідник)"
     override val scanFolder = "Сканувати папку"
     override val scanFolderSubtitle = "Рекурсивний пошук усіх книг у папці пристрою"
     override val selectThirdParty = "Сторонній провідник"
     override val selectThirdPartySubtitle = "Samsung «Мої файли», Xiaomi, провідники"
     override val materialYouToggle = "Кольори Material You"
     override val materialYouSubtitle = "Адаптувати акцентні кольори під шпалери пристрою"
+    override val sortTitle = "Сортування"
     override val sortByDefault = "За замовчуванням"
+    override val sortByPopularDesc = "Найпопулярніші 🔥"
+    override val sortByPopularAsc = "Менш популярні 📉"
+    override val sortByTitleAsc = "За назвою (А → Я)"
+    override val sortByTitleDesc = "За назвою (Я → А)"
+    override val sortByAuthorAsc = "За автором (А → Я)"
+    override val sortByAuthorDesc = "За автором (Я → А)"
+    override val sortByYearDesc = "Спочатку нові 📅"
+    override val sortByYearAsc = "Спочатку старі ⏳"
     override val sortByPopularity = "За популярністю"
     override val sortByTitle = "За назвою"
     override val sortByAuthor = "За автором"
@@ -503,14 +542,23 @@ class UkStrings : Strings {
 class BeStrings : Strings {
     override val chooseAddMethod = "Дадаць кнігі ў бібліятэку"
     override val selectFiles = "Абраць файлы"
-    override val selectFilesSubtitle = "Сістэмны праваднік (.fb2, .fb2.zip, .epub)"
+    override val selectFilesSubtitle = "Файлы .fb2, .epub, .fb2.zip (любы праваднік)"
     override val scanFolder = "Сканаваць папку"
     override val scanFolderSubtitle = "Рэкурсіўны пошук усіх кніг у папцы прылады"
     override val selectThirdParty = "Сторонні праваднік"
     override val selectThirdPartySubtitle = "Samsung «Мае файлы», Xiaomi, праваднікі"
     override val materialYouToggle = "Колеры Material You"
     override val materialYouSubtitle = "Адаптаваць акцэнтныя колеры пад шпалеры прылады"
+    override val sortTitle = "Сартаванне"
     override val sortByDefault = "Па змаўчанні"
+    override val sortByPopularDesc = "Самыя папулярныя 🔥"
+    override val sortByPopularAsc = "Менш папулярныя 📉"
+    override val sortByTitleAsc = "Па назве (А → Я)"
+    override val sortByTitleDesc = "Па назве (Я → А)"
+    override val sortByAuthorAsc = "Па аўтару (А → Я)"
+    override val sortByAuthorDesc = "Па аўтару (Я → А)"
+    override val sortByYearDesc = "Спачатку новыя 📅"
+    override val sortByYearAsc = "Спачатку старыя ⏳"
     override val sortByPopularity = "Па папулярнасці"
     override val sortByTitle = "Па назве"
     override val sortByAuthor = "Па аўтару"
@@ -631,7 +679,16 @@ class PlStrings : Strings {
     override val selectThirdPartySubtitle = "Samsung Moje pliki, Xiaomi, menedżery"
     override val materialYouToggle = "Kolory Material You"
     override val materialYouSubtitle = "Dostosuj kolory akcentów do tapety urządzenia"
+    override val sortTitle = "Sortowanie"
     override val sortByDefault = "Domyślnie"
+    override val sortByPopularDesc = "Najpopularniejsze 🔥"
+    override val sortByPopularAsc = "Mniej popularne 📉"
+    override val sortByTitleAsc = "Po tytule (A → Z)"
+    override val sortByTitleDesc = "Po tytule (Z → A)"
+    override val sortByAuthorAsc = "Po autorze (A → Z)"
+    override val sortByAuthorDesc = "Po autorze (Z → A)"
+    override val sortByYearDesc = "Najpierw nowe 📅"
+    override val sortByYearAsc = "Najpierw stare ⏳"
     override val sortByPopularity = "Według popularności"
     override val sortByTitle = "Według tytułu"
     override val sortByAuthor = "Według autora"
