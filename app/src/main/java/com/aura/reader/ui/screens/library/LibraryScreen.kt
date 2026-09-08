@@ -164,17 +164,9 @@ fun LibraryScreen(
         )
     }
 
-    // SAF OpenMultipleDocuments picker with extended MIME types and validation
-    val openMultipleDocumentsLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenMultipleDocuments()
-    ) { uris: List<Uri> ->
-        if (uris.isNotEmpty()) {
-            viewModel.importBooksWithValidation(context, uris)
-        }
-    }
-
-    // Third-party file managers via Intent.createChooser(ACTION_GET_CONTENT)
-    val thirdPartyPickerLauncher = rememberLauncherForActivityResult(
+    // Universal file picker: uses Intent.createChooser(ACTION_GET_CONTENT) with */*
+    // This allows picking from system DocumentsUI AND third-party file managers (Samsung, Xiaomi, Total Commander, etc.)
+    val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         val uris = mutableListOf<Uri>()
@@ -189,13 +181,13 @@ fun LibraryScreen(
         }
     }
 
-    val launchThirdPartyPicker = {
+    val launchFilePicker = {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
             type = "*/*"
             putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             addCategory(Intent.CATEGORY_OPENABLE)
         }
-        thirdPartyPickerLauncher.launch(Intent.createChooser(intent, strings.selectThirdParty))
+        filePickerLauncher.launch(Intent.createChooser(intent, strings.selectFiles))
     }
 
     // SAF OpenDocumentTree folder scanning
@@ -205,20 +197,6 @@ fun LibraryScreen(
         if (treeUri != null) {
             viewModel.scanAndImportFolder(context, treeUri)
         }
-    }
-
-    val launchFilePicker = {
-        openMultipleDocumentsLauncher.launch(
-            arrayOf(
-                "*/*",
-                "application/x-fictionbook+xml",
-                "application/x-fictionbook",
-                "application/octet-stream",
-                "application/zip",
-                "text/xml",
-                "application/epub+zip"
-            )
-        )
     }
 
     LaunchedEffect(uiState) {
@@ -300,7 +278,6 @@ fun LibraryScreen(
             AddBooksBottomSheet(
                 onDismiss = { showAddBooksSheet = false },
                 onSelectFiles = { launchFilePicker() },
-                onSelectThirdParty = { launchThirdPartyPicker() },
                 onScanFolder = { openFolderLauncher.launch(null) },
                 onOpenFlibusta = onOpenFlibusta
             )

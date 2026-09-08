@@ -48,6 +48,8 @@ import com.aura.reader.ui.theme.SepiaText
 @Composable
 fun ReaderSettingsBottomSheet(
     settings: ReaderSettings,
+    materialYouEnabled: Boolean = false,
+    onMaterialYouChange: ((Boolean) -> Unit)? = null,
     onDismiss: () -> Unit,
     onFontSizeChange: (Float) -> Unit,
     onLineHeightChange: (Float) -> Unit,
@@ -125,6 +127,41 @@ fun ReaderSettingsBottomSheet(
                     modifier = Modifier.weight(1f),
                     onClick = { onThemeModeChange(ReaderThemeMode.AMOLED) }
                 )
+            }
+
+            if (onMaterialYouChange != null) {
+                Spacer(modifier = Modifier.height(14.dp))
+                androidx.compose.material3.Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                text = "Цвета Material You",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Акценты под обои устройства",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = materialYouEnabled,
+                            onCheckedChange = onMaterialYouChange
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))

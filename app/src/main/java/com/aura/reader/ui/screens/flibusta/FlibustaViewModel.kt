@@ -19,9 +19,14 @@ import kotlinx.coroutines.launch
 
 enum class CatalogSortOption {
     DEFAULT,
-    POPULARITY,
-    TITLE_AZ,
-    AUTHOR_AZ
+    POPULAR_DESC,
+    POPULAR_ASC,
+    TITLE_ASC,
+    TITLE_DESC,
+    AUTHOR_ASC,
+    AUTHOR_DESC,
+    YEAR_DESC,
+    YEAR_ASC
 }
 
 sealed interface FlibustaUiState {
@@ -48,12 +53,20 @@ class FlibustaViewModel(
         val cats = books.filter { it.isCategory }
         val sortedNonCats = when (option) {
             CatalogSortOption.DEFAULT -> nonCats
-            CatalogSortOption.POPULARITY -> nonCats.sortedWith(
+            CatalogSortOption.POPULAR_DESC -> nonCats.sortedWith(
                 compareByDescending<FlibustaBook> { it.downloadsCount }
                     .thenBy { it.title.lowercase() }
             )
-            CatalogSortOption.TITLE_AZ -> nonCats.sortedBy { it.title.lowercase() }
-            CatalogSortOption.AUTHOR_AZ -> nonCats.sortedBy { it.author.lowercase() }
+            CatalogSortOption.POPULAR_ASC -> nonCats.sortedWith(
+                compareBy<FlibustaBook> { it.downloadsCount }
+                    .thenBy { it.title.lowercase() }
+            )
+            CatalogSortOption.TITLE_ASC -> nonCats.sortedBy { it.title.lowercase() }
+            CatalogSortOption.TITLE_DESC -> nonCats.sortedByDescending { it.title.lowercase() }
+            CatalogSortOption.AUTHOR_ASC -> nonCats.sortedBy { it.author.lowercase() }
+            CatalogSortOption.AUTHOR_DESC -> nonCats.sortedByDescending { it.author.lowercase() }
+            CatalogSortOption.YEAR_DESC -> nonCats.sortedByDescending { it.year?.toIntOrNull() ?: 0 }
+            CatalogSortOption.YEAR_ASC -> nonCats.sortedBy { it.year?.toIntOrNull() ?: 9999 }
         }
         return cats + sortedNonCats
     }
