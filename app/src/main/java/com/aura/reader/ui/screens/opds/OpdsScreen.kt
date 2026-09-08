@@ -1,4 +1,4 @@
-package com.aura.reader.ui.screens.flibusta
+package com.aura.reader.ui.screens.opds
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -91,13 +91,13 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.BookFormat
-import com.aura.reader.data.model.FlibustaBook
+import com.aura.reader.data.model.OpdsBook
 import com.aura.reader.ui.theme.LocalAppStrings
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun FlibustaScreen(
-    viewModel: FlibustaViewModel,
+fun OpdsScreen(
+    viewModel: OpdsViewModel,
     onNavigateBack: () -> Unit,
     onOpenBook: (Book) -> Unit
 ) {
@@ -128,11 +128,11 @@ fun FlibustaScreen(
     if (showMirrorDialog) {
         AlertDialog(
             onDismissRequest = { showMirrorDialog = false },
-            title = { Text(strings.flibustaMirrorTitle, fontWeight = FontWeight.Bold) },
+            title = { Text(strings.opdsMirrorTitle, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     Text(
-                        text = strings.flibustaMirrorSubtitle,
+                        text = strings.opdsMirrorSubtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -159,7 +159,7 @@ fun FlibustaScreen(
             dismissButton = {
                 TextButton(
                     onClick = {
-                        mirrorInput = "http://flibusta.is/opds"
+                        mirrorInput = "OpdsService.DEFAULT_BASE_URL"
                         viewModel.setBaseUrl(mirrorInput)
                         showMirrorDialog = false
                     }
@@ -172,7 +172,7 @@ fun FlibustaScreen(
 
     // Book Details Bottom Sheet
     selectedBookForDetails?.let { book ->
-        FlibustaBookDetailsBottomSheet(
+        OpdsBookDetailsBottomSheet(
             book = book,
             downloadProgress = activeDownloads[book.id],
             downloadedBook = downloadedBooks[book.id],
@@ -192,7 +192,7 @@ fun FlibustaScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = strings.flibustaCatalog,
+                        text = strings.opdsCatalog,
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -215,7 +215,7 @@ fun FlibustaScreen(
                         IconButton(onClick = { showMirrorDialog = true }) {
                             Icon(
                                 imageVector = Icons.Default.Dns,
-                                contentDescription = strings.flibustaMirrorTitle,
+                                contentDescription = strings.opdsMirrorTitle,
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -243,7 +243,7 @@ fun FlibustaScreen(
                 },
                 placeholder = {
                     Text(
-                        text = strings.flibustaSearchHint,
+                        text = strings.opdsSearchHint,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -356,7 +356,7 @@ fun FlibustaScreen(
             }
 
             // Sorting Selector Row (only shown when browsing categories or search results)
-            if (uiState is FlibustaUiState.Success) {
+            if (uiState is OpdsUiState.Success) {
                 var showSortDropdown by remember { mutableStateOf(false) }
                 val currentSortLabel = when (sortOption) {
                     CatalogSortOption.DEFAULT -> strings.sortByDefault
@@ -473,7 +473,7 @@ fun FlibustaScreen(
                     .weight(1f)
             ) {
                 when (val state = uiState) {
-                    is FlibustaUiState.Loading -> {
+                    is OpdsUiState.Loading -> {
                         Column(
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.Center,
@@ -488,8 +488,8 @@ fun FlibustaScreen(
                             )
                         }
                     }
-                    is FlibustaUiState.Error -> {
-                        FlibustaErrorView(
+                    is OpdsUiState.Error -> {
+                        OpdsErrorView(
                             isConnectionError = state.isConnectionError,
                             errorMessage = state.message,
                             showMirrorOption = customOpdsEnabled,
@@ -497,7 +497,7 @@ fun FlibustaScreen(
                             onOpenMirrorSettings = { showMirrorDialog = true }
                         )
                     }
-                    is FlibustaUiState.Success -> {
+                    is OpdsUiState.Success -> {
                         if (state.books.isEmpty()) {
                             Column(
                                 modifier = Modifier
@@ -546,7 +546,7 @@ fun FlibustaScreen(
                                     val progress = activeDownloads[book.id]
                                     val downloaded = downloadedBooks[book.id]
 
-                                    FlibustaBookCard(
+                                    OpdsBookCard(
                                         book = book,
                                         downloadProgress = progress,
                                         downloadedBook = downloaded,
@@ -568,8 +568,8 @@ fun FlibustaScreen(
                             }
                         }
                     }
-                    FlibustaUiState.Idle -> {
-                        FlibustaHomeView(
+                    OpdsUiState.Idle -> {
+                        OpdsHomeView(
                             customOpdsEnabled = customOpdsEnabled,
                             baseUrl = baseUrl,
                             onSelectCategory = { path, title ->
@@ -588,8 +588,8 @@ fun FlibustaScreen(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun FlibustaBookCard(
-    book: FlibustaBook,
+fun OpdsBookCard(
+    book: OpdsBook,
     downloadProgress: Int?,
     downloadedBook: Book?,
     onClick: () -> Unit,
@@ -847,7 +847,7 @@ fun FlibustaBookCard(
 }
 
 @Composable
-fun FlibustaErrorView(
+fun OpdsErrorView(
     isConnectionError: Boolean,
     errorMessage: String,
     showMirrorOption: Boolean = false,
@@ -881,7 +881,7 @@ fun FlibustaErrorView(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = if (isConnectionError) strings.flibustaConnectionErrorTitle else "Ошибка запроса",
+            text = if (isConnectionError) strings.opdsConnectionErrorTitle else "Ошибка запроса",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -891,7 +891,7 @@ fun FlibustaErrorView(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = if (isConnectionError) strings.flibustaConnectionErrorSubtitle else errorMessage,
+            text = if (isConnectionError) strings.opdsConnectionErrorSubtitle else errorMessage,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -917,7 +917,7 @@ fun FlibustaErrorView(
             ) {
                 Icon(Icons.Default.Dns, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(strings.flibustaMirrorTitle)
+                Text(strings.opdsMirrorTitle)
             }
         }
     }
@@ -925,8 +925,8 @@ fun FlibustaErrorView(
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun FlibustaBookDetailsBottomSheet(
-    book: FlibustaBook,
+fun OpdsBookDetailsBottomSheet(
+    book: OpdsBook,
     downloadProgress: Int?,
     downloadedBook: Book?,
     onDismiss: () -> Unit,
@@ -1183,7 +1183,7 @@ fun FlibustaBookDetailsBottomSheet(
 }
 
 @Composable
-fun FlibustaHomeView(
+fun OpdsHomeView(
     customOpdsEnabled: Boolean,
     baseUrl: String,
     onSelectCategory: (path: String, title: String) -> Unit,
@@ -1251,33 +1251,33 @@ fun FlibustaHomeView(
         }
 
         if (!customOpdsEnabled) {
-            // Category Cards Section (Flibusta curated feeds)
+            // Category Cards Section (Opds curated feeds)
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                FlibustaHomeCategoryCard(
+                OpdsHomeCategoryCard(
                     emoji = "🔥",
                     title = strings.catNew,
                     subtitle = strings.catNewSubtitle,
                     onClick = { onSelectCategory("/opds/new", strings.catNew) }
                 )
 
-                FlibustaHomeCategoryCard(
+                OpdsHomeCategoryCard(
                     emoji = "⭐",
                     title = strings.catPopular,
                     subtitle = strings.catPopularSubtitle,
                     onClick = { onSelectCategory("/opds/pop", strings.catPopular) }
                 )
 
-                FlibustaHomeCategoryCard(
+                OpdsHomeCategoryCard(
                     emoji = "👤",
                     title = strings.catAuthors,
                     subtitle = strings.catAuthorsSubtitle,
                     onClick = { onSelectCategory("/opds/authorsindex", strings.catAuthors) }
                 )
 
-                FlibustaHomeCategoryCard(
+                OpdsHomeCategoryCard(
                     emoji = "🏷️",
                     title = strings.catGenres,
                     subtitle = strings.catGenresSubtitle,
@@ -1290,7 +1290,7 @@ fun FlibustaHomeView(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                FlibustaHomeCategoryCard(
+                OpdsHomeCategoryCard(
                     emoji = "📚",
                     title = strings.customOpdsOpenRoot,
                     subtitle = baseUrl,
@@ -1304,7 +1304,7 @@ fun FlibustaHomeView(
 }
 
 @Composable
-fun FlibustaHomeCategoryCard(
+fun OpdsHomeCategoryCard(
     emoji: String,
     title: String,
     subtitle: String,

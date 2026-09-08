@@ -36,7 +36,7 @@ fun AddBooksBottomSheet(
     onDismiss: () -> Unit,
     onSelectFiles: () -> Unit,
     onScanFolder: () -> Unit,
-    onOpenFlibusta: () -> Unit
+    onOpenCatalog: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val strings = LocalAppStrings.current
@@ -83,11 +83,11 @@ fun AddBooksBottomSheet(
 
             AddMethodItem(
                 icon = Icons.Default.CloudDownload,
-                title = strings.flibustaCatalog,
-                subtitle = strings.flibustaCatalogSubtitle,
+                title = strings.opdsCatalog,
+                subtitle = strings.opdsCatalogSubtitle,
                 onClick = {
                     onDismiss()
-                    onOpenFlibusta()
+                    onOpenCatalog()
                 }
             )
 

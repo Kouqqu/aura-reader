@@ -56,7 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aura.reader.R
 import com.aura.reader.data.model.ReaderThemeMode
-import com.aura.reader.data.opds.FlibustaService
+import com.aura.reader.data.opds.OpdsService
 import com.aura.reader.ui.theme.AppLanguage
 import com.aura.reader.ui.theme.LocalAppStrings
 
@@ -76,7 +76,7 @@ fun SettingsBottomSheet(
     onToggleMaterialYou: (Boolean) -> Unit,
     onCheckUpdates: () -> Unit,
     customOpdsEnabled: Boolean = false,
-    customOpdsUrl: String = FlibustaService.DEFAULT_BASE_URL,
+    customOpdsUrl: String = OpdsService.DEFAULT_BASE_URL,
     onToggleCustomOpds: (Boolean) -> Unit = {},
     onCustomOpdsUrlChange: (String) -> Unit = {},
     onExportBackup: () -> Unit = {},
@@ -258,9 +258,9 @@ fun SettingsBottomSheet(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 3. Reading Statistics Section
+            // 3. Additional Features Section (Reading stats & Custom catalog)
             Text(
-                text = strings.todayReadingTime,
+                text = strings.additionalFeaturesSectionTitle,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
@@ -274,34 +274,98 @@ fun SettingsBottomSheet(
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                        Text(
-                            text = strings.readingStatsToggle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = strings.readingStatsSubtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Feature 1: Reading Stats
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                text = strings.readingStatsToggle,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = strings.readingStatsSubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = readingStatsEnabled,
+                            onCheckedChange = onToggleReadingStats,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                            )
                         )
                     }
-                    Switch(
-                        checked = readingStatsEnabled,
-                        onCheckedChange = onToggleReadingStats,
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.primary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Feature 2: Custom OPDS Catalog
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                text = strings.customOpdsToggle,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = strings.customOpdsSubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = customOpdsEnabled,
+                            onCheckedChange = onToggleCustomOpds,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                            )
                         )
-                    )
+                    }
+
+                    if (customOpdsEnabled) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        var urlText by remember(customOpdsUrl) { mutableStateOf(customOpdsUrl) }
+
+                        OutlinedTextField(
+                            value = urlText,
+                            onValueChange = {
+                                urlText = it
+                                onCustomOpdsUrlChange(it)
+                            },
+                            label = { Text(strings.customOpdsUrl) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            trailingIcon = {
+                                if (urlText != OpdsService.DEFAULT_BASE_URL) {
+                                    TextButton(onClick = {
+                                        urlText = OpdsService.DEFAULT_BASE_URL
+                                        onCustomOpdsUrlChange(OpdsService.DEFAULT_BASE_URL)
+                                    }) {
+                                        Text(strings.reset, style = MaterialTheme.typography.labelMedium)
+                                    }
+                                }
+                            }
+                        )
+                    }
                 }
             }
 
@@ -501,88 +565,7 @@ fun SettingsBottomSheet(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 6. Online Catalog Section
-            Text(
-                text = strings.onlineCatalogSectionTitle,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text(
-                                text = strings.customOpdsToggle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = strings.customOpdsSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = customOpdsEnabled,
-                            onCheckedChange = onToggleCustomOpds,
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        )
-                    }
-
-                    if (customOpdsEnabled) {
-                        Spacer(modifier = Modifier.height(14.dp))
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        var urlText by remember(customOpdsUrl) { mutableStateOf(customOpdsUrl) }
-
-                        OutlinedTextField(
-                            value = urlText,
-                            onValueChange = {
-                                urlText = it
-                                onCustomOpdsUrlChange(it)
-                            },
-                            label = { Text(strings.customOpdsUrl) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = {
-                                if (urlText != FlibustaService.DEFAULT_BASE_URL) {
-                                    TextButton(onClick = {
-                                        urlText = FlibustaService.DEFAULT_BASE_URL
-                                        onCustomOpdsUrlChange(FlibustaService.DEFAULT_BASE_URL)
-                                    }) {
-                                        Text(strings.reset, style = MaterialTheme.typography.labelMedium)
-                                    }
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 7. About, GitHub & Donate Section
+            // 6. About, GitHub & Donate Section
             Text(
                 text = strings.aboutSectionTitle,
                 style = MaterialTheme.typography.titleSmall,

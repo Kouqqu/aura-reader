@@ -92,15 +92,15 @@ class LibraryViewModel(
     val customOpdsEnabled: StateFlow<Boolean> = preferencesManager.customOpdsEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    val flibustaBaseUrl: StateFlow<String> = preferencesManager.flibustaBaseUrl
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "http://flibusta.is/opds")
+    val catalogBaseUrl: StateFlow<String> = preferencesManager.catalogBaseUrl
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.aura.reader.data.opds.OpdsService.DEFAULT_BASE_URL)
 
     fun setCustomOpdsEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setCustomOpdsEnabled(enabled) }
     }
 
     fun setCustomOpdsUrl(url: String) {
-        viewModelScope.launch { preferencesManager.setFlibustaBaseUrl(url) }
+        viewModelScope.launch { preferencesManager.setCatalogBaseUrl(url) }
     }
 
     val recentBooks: StateFlow<List<Book>> = bookRepository.recentBooks

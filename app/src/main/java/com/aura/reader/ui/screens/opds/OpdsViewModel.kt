@@ -1,4 +1,4 @@
-package com.aura.reader.ui.screens.flibusta
+package com.aura.reader.ui.screens.opds
 
 import android.content.Context
 import android.net.Uri
@@ -6,8 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.BookFormat
-import com.aura.reader.data.model.FlibustaBook
-import com.aura.reader.data.opds.FlibustaService
+import com.aura.reader.data.model.OpdsBook
+import com.aura.reader.data.opds.OpdsService
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.repository.BookRepository
 import kotlinx.coroutines.flow.combine
@@ -30,14 +30,14 @@ enum class CatalogSortOption {
     YEAR_ASC
 }
 
-sealed interface FlibustaUiState {
-    object Idle : FlibustaUiState
-    object Loading : FlibustaUiState
-    data class Success(val books: List<FlibustaBook>, val currentTitle: String = "") : FlibustaUiState
-    data class Error(val message: String, val isConnectionError: Boolean = false) : FlibustaUiState
+sealed interface OpdsUiState {
+    object Idle : OpdsUiState
+    object Loading : OpdsUiState
+    data class Success(val books: List<OpdsBook>, val currentTitle: String = "") : OpdsUiState
+    data class Error(val message: String, val isConnectionError: Boolean = false) : OpdsUiState
 }
 
-class FlibustaViewModel(
+class OpdsViewModel(
     private val bookRepository: BookRepository,
     private val preferencesManager: PreferencesManager
 ) : ViewModel() {
@@ -50,20 +50,20 @@ class FlibustaViewModel(
     }
 
     fun getSortedBooks(
-        books: List<FlibustaBook>,
+        books: List<OpdsBook>,
         option: CatalogSortOption
-    ): List<FlibustaBook> {
+    ): List<OpdsBook> {
         val cats = books.filter { it.isCategory }
         val nonCats = books.filter { !it.isCategory }
 
         val sortedNonCats = when (option) {
             CatalogSortOption.DEFAULT -> nonCats
             CatalogSortOption.POPULAR_DESC -> nonCats.sortedWith(
-                compareByDescending<FlibustaBook> { it.downloadsCount }
+                compareByDescending<OpdsBook> { it.downloadsCount }
                     .thenBy { it.title.lowercase() }
             )
             CatalogSortOption.POPULAR_ASC -> nonCats.sortedWith(
-                compareBy<FlibustaBook> { it.downloadsCount }
+                compareBy<OpdsBook> { it.downloadsCount }
                     .thenBy { it.title.lowercase() }
             )
             CatalogSortOption.TITLE_ASC -> nonCats.sortedBy { it.title.lowercase() }
@@ -83,7 +83,7 @@ class FlibustaViewModel(
         _searchQuery.value = query
     }
 
-    val searchHistory: StateFlow<List<String>> = preferencesManager.flibustaSearchHistory
+    val searchHistory: StateFlow<List<String>> = preferencesManager.catalogSearchHistory
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val customOpdsEnabled: StateFlow<Boolean> = preferencesManager.customOpdsEnabled
@@ -91,13 +91,13 @@ class FlibustaViewModel(
 
     val baseUrl: StateFlow<String> = combine(
         preferencesManager.customOpdsEnabled,
-        preferencesManager.flibustaBaseUrl
+        preferencesManager.catalogBaseUrl
     ) { customEnabled, url ->
-        if (customEnabled && url.isNotBlank()) url.trim() else FlibustaService.DEFAULT_BASE_URL
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FlibustaService.DEFAULT_BASE_URL)
+        if (customEnabled && url.isNotBlank()) url.trim() else OpdsService.DEFAULT_BASE_URL
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OpdsService.DEFAULT_BASE_URL)
 
-    private val _uiState = MutableStateFlow<FlibustaUiState>(FlibustaUiState.Idle)
-    val uiState: StateFlow<FlibustaUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<OpdsUiState>(OpdsUiState.Idle)
+    val uiState: StateFlow<OpdsUiState> = _uiState.asStateFlow()
 
     private val _activeDownloads = MutableStateFlow<Map<String, Int>>(emptyMap())
     val activeDownloads: StateFlow<Map<String, Int>> = _activeDownloads.asStateFlow()
@@ -105,8 +105,8 @@ class FlibustaViewModel(
     private val _downloadedBooks = MutableStateFlow<Map<String, Book>>(emptyMap())
     val downloadedBooks: StateFlow<Map<String, Book>> = _downloadedBooks.asStateFlow()
 
-    private val _selectedBookForDetails = MutableStateFlow<FlibustaBook?>(null)
-    val selectedBookForDetails: StateFlow<FlibustaBook?> = _selectedBookForDetails.asStateFlow()
+    private val _selectedBookForDetails = MutableStateFlow<OpdsBook?>(null)
+    val selectedBookForDetails: StateFlow<OpdsBook?> = _selectedBookForDetails.asStateFlow()
 
     data class CatalogHistoryEntry(
         val path: String? = null,
@@ -125,16 +125,16 @@ class FlibustaViewModel(
 
     init {
         // Start in clean Home state without forcibly loading anything
-        _uiState.value = FlibustaUiState.Idle
+        _uiState.value = OpdsUiState.Idle
     }
 
-    fun selectBookForDetails(book: FlibustaBook?) {
+    fun selectBookForDetails(book: OpdsBook?) {
         _selectedBookForDetails.value = book
     }
 
     fun setBaseUrl(url: String) {
         viewModelScope.launch {
-            preferencesManager.setFlibustaBaseUrl(url)
+            preferencesManager.setCatalogBaseUrl(url)
             retry()
         }
     }
@@ -144,7 +144,7 @@ class FlibustaViewModel(
         if (q.isEmpty()) return
         _searchQuery.value = q
         viewModelScope.launch {
-            preferencesManager.saveFlibustaSearchQuery(q)
+            preferencesManager.saveCatalogSearchQuery(q)
         }
 
         if (currentEntry.query != q) {
@@ -171,7 +171,7 @@ class FlibustaViewModel(
         _canGoBack.value = navStack.isNotEmpty()
         if (prev.isHome) {
             _searchQuery.value = ""
-            _uiState.value = FlibustaUiState.Idle
+            _uiState.value = OpdsUiState.Idle
             lastAction = null
         } else if (prev.query != null) {
             _searchQuery.value = prev.query
@@ -188,21 +188,21 @@ class FlibustaViewModel(
         navStack.clear()
         _canGoBack.value = false
         currentEntry = CatalogHistoryEntry(title = "Главная", isHome = true)
-        _uiState.value = FlibustaUiState.Idle
+        _uiState.value = OpdsUiState.Idle
         lastAction = null
     }
 
     private fun executeCategory(path: String, categoryTitle: String) {
         lastAction = { executeCategory(path, categoryTitle) }
         viewModelScope.launch {
-            _uiState.value = FlibustaUiState.Loading
+            _uiState.value = OpdsUiState.Loading
             val currentBase = baseUrl.value
-            val result = FlibustaService.getCategory(path, currentBase)
+            val result = OpdsService.getCategory(path, currentBase)
             result.onSuccess { list ->
-                _uiState.value = FlibustaUiState.Success(list, categoryTitle)
+                _uiState.value = OpdsUiState.Success(list, categoryTitle)
             }.onFailure { error ->
-                val isConn = FlibustaService.isConnectionError(error)
-                _uiState.value = FlibustaUiState.Error(
+                val isConn = OpdsService.isConnectionError(error)
+                _uiState.value = OpdsUiState.Error(
                     message = error.localizedMessage ?: "Ошибка связи с каталогом",
                     isConnectionError = isConn
                 )
@@ -213,14 +213,14 @@ class FlibustaViewModel(
     private fun executeSearch(q: String) {
         lastAction = { executeSearch(q) }
         viewModelScope.launch {
-            _uiState.value = FlibustaUiState.Loading
+            _uiState.value = OpdsUiState.Loading
             val currentBase = baseUrl.value
-            val result = FlibustaService.searchBooks(q, currentBase)
+            val result = OpdsService.searchBooks(q, currentBase)
             result.onSuccess { list ->
-                _uiState.value = FlibustaUiState.Success(list, "Результаты поиска: $q")
+                _uiState.value = OpdsUiState.Success(list, "Результаты поиска: $q")
             }.onFailure { error ->
-                val isConn = FlibustaService.isConnectionError(error)
-                _uiState.value = FlibustaUiState.Error(
+                val isConn = OpdsService.isConnectionError(error)
+                _uiState.value = OpdsUiState.Error(
                     message = error.localizedMessage ?: "Ошибка связи с каталогом",
                     isConnectionError = isConn
                 )
@@ -230,7 +230,7 @@ class FlibustaViewModel(
 
     fun downloadBook(
         context: Context,
-        book: FlibustaBook,
+        book: OpdsBook,
         format: BookFormat,
         onComplete: ((Book) -> Unit)? = null
     ) {
@@ -240,7 +240,7 @@ class FlibustaViewModel(
         val bookId = book.id
         viewModelScope.launch {
             _activeDownloads.value = _activeDownloads.value + (bookId to 0)
-            val result = FlibustaService.downloadAndExtractBook(
+            val result = OpdsService.downloadAndExtractBook(
                 context = context,
                 book = book,
                 format = format,
@@ -259,9 +259,9 @@ class FlibustaViewModel(
                     onComplete?.invoke(loadedBook)
                 }
             }.onFailure { e ->
-                _uiState.value = FlibustaUiState.Error(
+                _uiState.value = OpdsUiState.Error(
                     message = "Ошибка загрузки: ${e.localizedMessage}",
-                    isConnectionError = FlibustaService.isConnectionError(e)
+                    isConnectionError = OpdsService.isConnectionError(e)
                 )
             }
         }
@@ -269,13 +269,13 @@ class FlibustaViewModel(
 
     fun removeHistoryQuery(query: String) {
         viewModelScope.launch {
-            preferencesManager.removeFlibustaSearchQuery(query)
+            preferencesManager.removeCatalogSearchQuery(query)
         }
     }
 
     fun clearHistory() {
         viewModelScope.launch {
-            preferencesManager.clearFlibustaSearchHistory()
+            preferencesManager.clearCatalogSearchHistory()
         }
     }
 

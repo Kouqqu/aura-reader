@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var bookRepository: BookRepository
     private lateinit var libraryViewModel: LibraryViewModel
     private lateinit var readerViewModel: ReaderViewModel
-    private lateinit var flibustaViewModel: com.aura.reader.ui.screens.flibusta.FlibustaViewModel
+    private lateinit var opdsViewModel: com.aura.reader.ui.screens.opds.OpdsViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
         bookRepository = BookRepository(applicationContext, preferencesManager)
         libraryViewModel = LibraryViewModel(bookRepository, preferencesManager)
         readerViewModel = ReaderViewModel(bookRepository, preferencesManager)
-        flibustaViewModel = com.aura.reader.ui.screens.flibusta.FlibustaViewModel(bookRepository, preferencesManager)
+        opdsViewModel = com.aura.reader.ui.screens.opds.OpdsViewModel(bookRepository, preferencesManager)
 
         // Handle opening a book from external intent (e.g. file manager)
         handleIncomingIntent(intent)
@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         libraryViewModel = libraryViewModel,
                         readerViewModel = readerViewModel,
-                        flibustaViewModel = flibustaViewModel
+                        opdsViewModel = opdsViewModel
                     )
                 }
             }

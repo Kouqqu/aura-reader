@@ -39,8 +39,8 @@ class PreferencesManager(private val context: Context) {
         val UPDATE_NOTIFICATIONS_KEY = booleanPreferencesKey("update_notifications_enabled")
         val READING_STATS_ENABLED_KEY = booleanPreferencesKey("reading_stats_enabled")
         val MATERIAL_YOU_ENABLED_KEY = booleanPreferencesKey("material_you_enabled")
-        val FLIBUSTA_HISTORY_KEY = stringPreferencesKey("flibusta_search_history")
-        val FLIBUSTA_BASE_URL_KEY = stringPreferencesKey("flibusta_base_url")
+        val OPDS_HISTORY_KEY = stringPreferencesKey("opds_search_history")
+        val OPDS_BASE_URL_KEY = stringPreferencesKey("opds_base_url")
         val CUSTOM_OPDS_ENABLED_KEY = booleanPreferencesKey("custom_opds_enabled")
         val USER_COLLECTIONS_KEY = stringPreferencesKey("user_collections_json")
     }
@@ -317,9 +317,9 @@ class PreferencesManager(private val context: Context) {
         }
     }
 
-    // --- Flibusta OPDS Integration ---
-    val flibustaSearchHistory: Flow<List<String>> = context.dataStore.data.map { prefs ->
-        val raw = prefs[FLIBUSTA_HISTORY_KEY] ?: return@map emptyList()
+    // --- OPDS Catalog Integration ---
+    val catalogSearchHistory: Flow<List<String>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[OPDS_HISTORY_KEY] ?: return@map emptyList()
         try {
             val arr = JSONArray(raw)
             val list = mutableListOf<String>()
@@ -330,9 +330,9 @@ class PreferencesManager(private val context: Context) {
         }
     }
 
-    suspend fun saveFlibustaSearchQuery(query: String) {
+    suspend fun saveCatalogSearchQuery(query: String) {
         context.dataStore.edit { prefs ->
-            val raw = prefs[FLIBUSTA_HISTORY_KEY] ?: "[]"
+            val raw = prefs[OPDS_HISTORY_KEY] ?: "[]"
             val current = try {
                 val arr = JSONArray(raw)
                 val list = mutableListOf<String>()
@@ -346,13 +346,13 @@ class PreferencesManager(private val context: Context) {
             val trimmed = current.take(10)
             val newArr = JSONArray()
             for (item in trimmed) newArr.put(item)
-            prefs[FLIBUSTA_HISTORY_KEY] = newArr.toString()
+            prefs[OPDS_HISTORY_KEY] = newArr.toString()
         }
     }
 
-    suspend fun removeFlibustaSearchQuery(query: String) {
+    suspend fun removeCatalogSearchQuery(query: String) {
         context.dataStore.edit { prefs ->
-            val raw = prefs[FLIBUSTA_HISTORY_KEY] ?: "[]"
+            val raw = prefs[OPDS_HISTORY_KEY] ?: "[]"
             val current = try {
                 val arr = JSONArray(raw)
                 val list = mutableListOf<String>()
@@ -364,23 +364,23 @@ class PreferencesManager(private val context: Context) {
             current.remove(query)
             val newArr = JSONArray()
             for (item in current) newArr.put(item)
-            prefs[FLIBUSTA_HISTORY_KEY] = newArr.toString()
+            prefs[OPDS_HISTORY_KEY] = newArr.toString()
         }
     }
 
-    suspend fun clearFlibustaSearchHistory() {
+    suspend fun clearCatalogSearchHistory() {
         context.dataStore.edit { prefs ->
-            prefs.remove(FLIBUSTA_HISTORY_KEY)
+            prefs.remove(OPDS_HISTORY_KEY)
         }
     }
 
-    val flibustaBaseUrl: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[FLIBUSTA_BASE_URL_KEY] ?: "http://flibusta.is/opds"
+    val catalogBaseUrl: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[OPDS_BASE_URL_KEY] ?: com.aura.reader.data.opds.OpdsService.DEFAULT_BASE_URL
     }
 
-    suspend fun setFlibustaBaseUrl(url: String) {
+    suspend fun setCatalogBaseUrl(url: String) {
         context.dataStore.edit { prefs ->
-            prefs[FLIBUSTA_BASE_URL_KEY] = url.trim()
+            prefs[OPDS_BASE_URL_KEY] = url.trim()
         }
     }
 

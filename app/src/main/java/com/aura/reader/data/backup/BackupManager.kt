@@ -38,7 +38,7 @@ class BackupManager(
             val materialYou = preferencesManager.materialYouEnabled.first()
             val appLang = preferencesManager.appLanguage.first()
             val updateNotifs = preferencesManager.updateNotificationsEnabled.first()
-            val flibustaUrl = preferencesManager.flibustaBaseUrl.first()
+            val catalogUrl = preferencesManager.catalogBaseUrl.first()
 
             val manifest = JSONObject().apply {
                 put("version", 1)
@@ -89,7 +89,7 @@ class BackupManager(
                     put("statsEnabled", statsEnabled)
                     put("materialYou", materialYou)
                     put("updateNotifications", updateNotifs)
-                    put("flibustaUrl", flibustaUrl)
+                    put("catalogUrl", catalogUrl)
                 })
             }
 
@@ -254,7 +254,7 @@ class BackupManager(
                 if (s.has("statsEnabled")) preferencesManager.setReadingStatsEnabled(s.getBoolean("statsEnabled"))
                 if (s.has("materialYou")) preferencesManager.setMaterialYouEnabled(s.getBoolean("materialYou"))
                 if (s.has("updateNotifications")) preferencesManager.setUpdateNotificationsEnabled(s.getBoolean("updateNotifications"))
-                if (s.has("flibustaUrl")) preferencesManager.setFlibustaBaseUrl(s.getString("flibustaUrl"))
+                if (s.has("catalogUrl")) preferencesManager.setCatalogBaseUrl(s.getString("catalogUrl"))
                 if (s.has("appLanguage")) {
                     preferencesManager.updateAppLanguage(com.aura.reader.ui.theme.AppLanguage.fromCode(s.getString("appLanguage")))
                 }

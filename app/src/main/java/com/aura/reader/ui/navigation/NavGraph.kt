@@ -8,17 +8,17 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.aura.reader.ui.screens.flibusta.FlibustaScreen
-import com.aura.reader.ui.screens.flibusta.FlibustaViewModel
 import com.aura.reader.ui.screens.library.LibraryScreen
 import com.aura.reader.ui.screens.library.LibraryViewModel
+import com.aura.reader.ui.screens.opds.OpdsScreen
+import com.aura.reader.ui.screens.opds.OpdsViewModel
 import com.aura.reader.ui.screens.reader.ReaderScreen
 import com.aura.reader.ui.screens.reader.ReaderViewModel
 
 object NavRoutes {
     const val LIBRARY = "library"
     const val READER = "reader"
-    const val FLIBUSTA = "flibusta"
+    const val CATALOG = "catalog"
 }
 
 @Composable
@@ -26,7 +26,7 @@ fun AuraNavGraph(
     navController: NavHostController = rememberNavController(),
     libraryViewModel: LibraryViewModel,
     readerViewModel: ReaderViewModel,
-    flibustaViewModel: FlibustaViewModel
+    opdsViewModel: OpdsViewModel
 ) {
     NavHost(
         navController = navController,
@@ -63,8 +63,8 @@ fun AuraNavGraph(
                     readerViewModel.openBook(book)
                     navController.navigate(NavRoutes.READER)
                 },
-                onOpenFlibusta = {
-                    navController.navigate(NavRoutes.FLIBUSTA)
+                onOpenCatalog = {
+                    navController.navigate(NavRoutes.CATALOG)
                 }
             )
         }
@@ -78,9 +78,9 @@ fun AuraNavGraph(
             )
         }
 
-        composable(NavRoutes.FLIBUSTA) {
-            FlibustaScreen(
-                viewModel = flibustaViewModel,
+        composable(NavRoutes.CATALOG) {
+            OpdsScreen(
+                viewModel = opdsViewModel,
                 onNavigateBack = {
                     navController.popBackStack()
                 },

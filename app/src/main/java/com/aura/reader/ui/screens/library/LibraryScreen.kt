@@ -124,7 +124,7 @@ import java.io.File
 fun LibraryScreen(
     viewModel: LibraryViewModel,
     onBookSelected: (Book) -> Unit,
-    onOpenFlibusta: () -> Unit
+    onOpenCatalog: () -> Unit
 ) {
     val context = LocalContext.current
     val strings = LocalAppStrings.current
@@ -144,7 +144,7 @@ fun LibraryScreen(
     val userCollections by viewModel.userCollections.collectAsState()
     val activeCollectionFilter by viewModel.activeCollectionFilter.collectAsState()
     val customOpdsEnabled by viewModel.customOpdsEnabled.collectAsState()
-    val flibustaBaseUrl by viewModel.flibustaBaseUrl.collectAsState()
+    val catalogBaseUrl by viewModel.catalogBaseUrl.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -411,7 +411,7 @@ fun LibraryScreen(
                 onDismiss = { showAddBooksSheet = false },
                 onSelectFiles = { launchFilePicker() },
                 onScanFolder = { openFolderLauncher.launch(null) },
-                onOpenFlibusta = onOpenFlibusta
+                onOpenCatalog = onOpenCatalog
             )
         }
 
@@ -875,7 +875,7 @@ fun LibraryScreen(
             onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
             onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
             customOpdsEnabled = customOpdsEnabled,
-            customOpdsUrl = flibustaBaseUrl,
+            customOpdsUrl = catalogBaseUrl,
             onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
             onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
             onCheckUpdates = {

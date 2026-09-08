@@ -55,13 +55,13 @@ interface Strings {
     val selectFilesSubtitle: String
     val scanFolder: String
     val scanFolderSubtitle: String
-    val flibustaCatalog: String
-    val flibustaCatalogSubtitle: String
-    val flibustaSearchHint: String
-    val flibustaMirrorTitle: String
-    val flibustaMirrorSubtitle: String
-    val flibustaConnectionErrorTitle: String
-    val flibustaConnectionErrorSubtitle: String
+    val opdsCatalog: String
+    val opdsCatalogSubtitle: String
+    val opdsSearchHint: String
+    val opdsMirrorTitle: String
+    val opdsMirrorSubtitle: String
+    val opdsConnectionErrorTitle: String
+    val opdsConnectionErrorSubtitle: String
     val downloadFb2: String
     val downloadEpub: String
     val downloading: String
@@ -184,6 +184,7 @@ interface Strings {
     val noBookmarksYet: String
 
     val onlineCatalogSectionTitle: String
+    val additionalFeaturesSectionTitle: String
     val customOpdsToggle: String
     val customOpdsSubtitle: String
     val customOpdsUrl: String
@@ -253,13 +254,13 @@ class RuStrings : Strings {
     override val catalogHomeSubtitle = "Тысячи книг в свободном доступе"
     override fun downloadsCount(count: Int) = "$count скачиваний"
     override fun yearLabel(year: String) = "$year г."
-    override val flibustaCatalog = "Онлайн-каталог"
-    override val flibustaCatalogSubtitle = "Поиск и скачивание книг онлайн через OPDS"
-    override val flibustaSearchHint = "Поиск по автору или названию..."
-    override val flibustaMirrorTitle = "Настройки OPDS"
-    override val flibustaMirrorSubtitle = "Адрес OPDS-сервера. При блокировках можно указать рабочее зеркало."
-    override val flibustaConnectionErrorTitle = "Не удалось связаться с сервером"
-    override val flibustaConnectionErrorSubtitle = "Возможно, с IP-адресов других стран всё заработает."
+    override val opdsCatalog = "Онлайн-каталог"
+    override val opdsCatalogSubtitle = "Поиск и скачивание книг онлайн через OPDS"
+    override val opdsSearchHint = "Поиск по автору или названию..."
+    override val opdsMirrorTitle = "Настройки OPDS"
+    override val opdsMirrorSubtitle = "Адрес OPDS-сервера. При блокировках можно указать рабочее зеркало."
+    override val opdsConnectionErrorTitle = "Не удалось связаться с сервером"
+    override val opdsConnectionErrorSubtitle = "Возможно, с IP-адресов других стран всё заработает."
     override val downloadFb2 = "Скачать FB2"
     override val downloadEpub = "Скачать EPUB"
     override val downloading = "Загрузка..."
@@ -359,7 +360,8 @@ class RuStrings : Strings {
 
     override val onlineCatalogSectionTitle = "Онлайн-каталог"
     override val customOpdsToggle = "Свой OPDS-каталог"
-    override val customOpdsSubtitle = "Ввод своего адреса и отключение подборок Флибусты"
+    override val customOpdsSubtitle = "Ввод своего адреса и отключение подборок встроенного каталога"
+    override val additionalFeaturesSectionTitle = "Дополнительные функции"
     override val customOpdsUrl = "Адрес OPDS"
     override val customOpdsOpenRoot = "Открыть каталог"
 }
@@ -427,13 +429,13 @@ class EnStrings : Strings {
     override val catalogHomeSubtitle = "Thousands of books freely available"
     override fun downloadsCount(count: Int) = "$count downloads"
     override fun yearLabel(year: String) = "Year $year"
-    override val flibustaCatalog = "Online Catalog"
-    override val flibustaCatalogSubtitle = "Search and download books online via OPDS"
-    override val flibustaSearchHint = "Search by author or title..."
-    override val flibustaMirrorTitle = "OPDS Settings"
-    override val flibustaMirrorSubtitle = "OPDS server address. You can specify a working mirror if blocked."
-    override val flibustaConnectionErrorTitle = "Could not connect to server"
-    override val flibustaConnectionErrorSubtitle = "It might work when connecting from other countries."
+    override val opdsCatalog = "Online Catalog"
+    override val opdsCatalogSubtitle = "Search and download books online via OPDS"
+    override val opdsSearchHint = "Search by author or title..."
+    override val opdsMirrorTitle = "OPDS Settings"
+    override val opdsMirrorSubtitle = "OPDS server address. You can specify a working mirror if blocked."
+    override val opdsConnectionErrorTitle = "Could not connect to server"
+    override val opdsConnectionErrorSubtitle = "It might work when connecting from other countries."
     override val downloadFb2 = "Download FB2"
     override val downloadEpub = "Download EPUB"
     override val downloading = "Downloading..."
@@ -533,7 +535,8 @@ class EnStrings : Strings {
 
     override val onlineCatalogSectionTitle = "Online catalog"
     override val customOpdsToggle = "Custom OPDS catalog"
-    override val customOpdsSubtitle = "Enter custom address and hide Flibusta feeds"
+    override val customOpdsSubtitle = "Enter custom address and disable built-in catalog feeds"
+    override val additionalFeaturesSectionTitle = "Additional features"
     override val customOpdsUrl = "OPDS URL"
     override val customOpdsOpenRoot = "Open catalog"
 }
@@ -601,13 +604,13 @@ class UkStrings : Strings {
     override val catalogHomeSubtitle = "Тисячі книг у вільному доступі"
     override fun downloadsCount(count: Int) = "$count завантажень"
     override fun yearLabel(year: String) = "$year р."
-    override val flibustaCatalog = "Онлайн-каталог"
-    override val flibustaCatalogSubtitle = "Пошук та завантаження книг онлайн через OPDS"
-    override val flibustaSearchHint = "Пошук за автором або назвою..."
-    override val flibustaMirrorTitle = "Налаштування OPDS"
-    override val flibustaMirrorSubtitle = "Адреса OPDS-сервера. У разі блокувань можна вказати робоче дзеркало."
-    override val flibustaConnectionErrorTitle = "Не вдалося з'єднатися з сервером"
-    override val flibustaConnectionErrorSubtitle = "Можливо, з IP-адрес інших країн усе запрацює."
+    override val opdsCatalog = "Онлайн-каталог"
+    override val opdsCatalogSubtitle = "Пошук та завантаження книг онлайн через OPDS"
+    override val opdsSearchHint = "Пошук за автором або назвою..."
+    override val opdsMirrorTitle = "Налаштування OPDS"
+    override val opdsMirrorSubtitle = "Адреса OPDS-сервера. У разі блокувань можна вказати робоче дзеркало."
+    override val opdsConnectionErrorTitle = "Не вдалося з'єднатися з сервером"
+    override val opdsConnectionErrorSubtitle = "Можливо, з IP-адрес інших країн усе запрацює."
     override val downloadFb2 = "Завантажити FB2"
     override val downloadEpub = "Завантажити EPUB"
     override val downloading = "Завантаження..."
@@ -707,7 +710,8 @@ class UkStrings : Strings {
 
     override val onlineCatalogSectionTitle = "Онлайн-каталог"
     override val customOpdsToggle = "Власний OPDS-каталог"
-    override val customOpdsSubtitle = "Введення власної адреси та вимкнення добірок Флібусти"
+    override val customOpdsSubtitle = "Введення власної адреси та вимкнення добірок вбудованого каталогу"
+    override val additionalFeaturesSectionTitle = "Додаткові функції"
     override val customOpdsUrl = "Адреса OPDS"
     override val customOpdsOpenRoot = "Відкрити каталог"
 }
@@ -775,13 +779,13 @@ class BeStrings : Strings {
     override val catalogHomeSubtitle = "Тысячы кніг у вольным доступе"
     override fun downloadsCount(count: Int) = "$count спампоўванняў"
     override fun yearLabel(year: String) = "$year г."
-    override val flibustaCatalog = "Анлайн-каталог"
-    override val flibustaCatalogSubtitle = "Пошук і спампоўванне кніг анлайн праз OPDS"
-    override val flibustaSearchHint = "Пошук па аўтару або назве..."
-    override val flibustaMirrorTitle = "Налады OPDS"
-    override val flibustaMirrorSubtitle = "Адрас OPDS-сервера. Пры блакіроўках можна ўказаць працоўнае люстэрка."
-    override val flibustaConnectionErrorTitle = "Не ўдалося звязацца з серверам"
-    override val flibustaConnectionErrorSubtitle = "Магчыма, з IP-адрасоў іншых краін усё запрацуе."
+    override val opdsCatalog = "Анлайн-каталог"
+    override val opdsCatalogSubtitle = "Пошук і спампоўванне кніг анлайн праз OPDS"
+    override val opdsSearchHint = "Пошук па аўтару або назве..."
+    override val opdsMirrorTitle = "Налады OPDS"
+    override val opdsMirrorSubtitle = "Адрас OPDS-сервера. Пры блакіроўках можна ўказаць працоўнае люстэрка."
+    override val opdsConnectionErrorTitle = "Не ўдалося звязацца з серверам"
+    override val opdsConnectionErrorSubtitle = "Магчыма, з IP-адрасоў іншых краін усё запрацуе."
     override val downloadFb2 = "Спампаваць FB2"
     override val downloadEpub = "Спампаваць EPUB"
     override val downloading = "Спампоўванне..."
@@ -881,7 +885,8 @@ class BeStrings : Strings {
 
     override val onlineCatalogSectionTitle = "Анлайн-каталог"
     override val customOpdsToggle = "Уласны OPDS-каталог"
-    override val customOpdsSubtitle = "Увод свайго адраса і адключэнне падборак Флібусты"
+    override val customOpdsSubtitle = "Увод свайго адраса і адключэнне падборак убудаванага каталога"
+    override val additionalFeaturesSectionTitle = "Дадатковыя функцыі"
     override val customOpdsUrl = "Адрас OPDS"
     override val customOpdsOpenRoot = "Адкрыць каталог"
 }
@@ -949,13 +954,13 @@ class PlStrings : Strings {
     override val catalogHomeSubtitle = "Tysiące książek w wolnym dostępie"
     override fun downloadsCount(count: Int) = "$count pobrań"
     override fun yearLabel(year: String) = "Rok $year"
-    override val flibustaCatalog = "Katalog online"
-    override val flibustaCatalogSubtitle = "Wyszukiwanie i pobieranie książek online przez OPDS"
-    override val flibustaSearchHint = "Szukaj według autora lub tytułu..."
-    override val flibustaMirrorTitle = "Ustawienia OPDS"
-    override val flibustaMirrorSubtitle = "Adres serwera OPDS. W przypadku blokad można podać działające lustro."
-    override val flibustaConnectionErrorTitle = "Nie udało się połączyć z serwerem"
-    override val flibustaConnectionErrorSubtitle = "Być może połączenie zadziała z adresów IP innych krajów."
+    override val opdsCatalog = "Katalog online"
+    override val opdsCatalogSubtitle = "Wyszukiwanie i pobieranie książek online przez OPDS"
+    override val opdsSearchHint = "Szukaj według autora lub tytułu..."
+    override val opdsMirrorTitle = "Ustawienia OPDS"
+    override val opdsMirrorSubtitle = "Adres serwera OPDS. W przypadku blokad można podać działające lustro."
+    override val opdsConnectionErrorTitle = "Nie udało się połączyć z serwerem"
+    override val opdsConnectionErrorSubtitle = "Być może połączenie zadziała z adresów IP innych krajów."
     override val downloadFb2 = "Pobierz FB2"
     override val downloadEpub = "Pobierz EPUB"
     override val downloading = "Pobieranie..."
@@ -1055,7 +1060,8 @@ class PlStrings : Strings {
 
     override val onlineCatalogSectionTitle = "Katalog online"
     override val customOpdsToggle = "Własny katalog OPDS"
-    override val customOpdsSubtitle = "Wprowadzanie własnego adresu i wyłączenie kolekcji Flibusty"
+    override val customOpdsSubtitle = "Wprowadzanie własnego adresu i wyłączenie kolekcji wbudowanego katalogu"
+    override val additionalFeaturesSectionTitle = "Dodatkowe funkcje"
     override val customOpdsUrl = "Adres OPDS"
     override val customOpdsOpenRoot = "Otwórz katalog"
 }
