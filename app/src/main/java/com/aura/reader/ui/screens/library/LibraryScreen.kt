@@ -602,7 +602,7 @@ fun LibraryScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BookCard(
     book: Book,
