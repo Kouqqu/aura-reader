@@ -221,220 +221,11 @@ fun ReaderScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-            // Top Bar with expandVertically / shrinkVertically so text naturally shifts below it
-            AnimatedVisibility(
-                visible = showControls,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 3.dp,
-                    shadowElevation = 4.dp
-                ) {
-                    if (isSearchActive) {
-                        // Search in Book Top Bar
-                        TopAppBar(
-                            modifier = Modifier.statusBarsPadding(),
-                            navigationIcon = {
-                                IconButton(onClick = {
-                                    isSearchActive = false
-                                    viewModel.clearSearch()
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowBack,
-                                        contentDescription = strings.closeSearch
-                                    )
-                                }
-                            },
-                            title = {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(42.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                        .padding(horizontal = 12.dp),
-                                    contentAlignment = Alignment.CenterStart
-                                ) {
-                                    if (searchQuery.isEmpty()) {
-                                        Text(
-                                            text = strings.searchInBookHint,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    BasicTextField(
-                                        value = searchQuery,
-                                        onValueChange = { viewModel.performSearch(it) },
-                                        singleLine = true,
-                                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        ),
-                                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
-                            },
-                            actions = {
-                                if (searchResults.isNotEmpty()) {
-                                    Text(
-                                        text = "${currentSearchIndex + 1}/${searchResults.size}",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 4.dp)
-                                    )
-                                    IconButton(
-                                        onClick = { viewModel.prevSearchResult() },
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = strings.previous)
-                                    }
-                                    IconButton(
-                                        onClick = { viewModel.nextSearchResult() },
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = strings.next)
-                                    }
-                                }
-                                IconButton(
-                                    onClick = {
-                                        isSearchActive = false
-                                        viewModel.clearSearch()
-                                    },
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Icon(Icons.Default.Close, contentDescription = strings.clear)
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-                        )
-                    } else {
-                        // Standard Top Bar
-                        TopAppBar(
-                            modifier = Modifier.statusBarsPadding(),
-                            title = {
-                                Column {
-                                    Text(
-                                        text = book?.title ?: strings.appName,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = currentChapter?.title ?: "",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            },
-                            navigationIcon = {
-                                IconButton(onClick = {
-                                    viewModel.saveCurrentProgress()
-                                    onNavigateBack()
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowBack,
-                                        contentDescription = strings.back
-                                    )
-                                }
-                            },
-                            actions = {
-                                // Bookmark Toggle Icon
-                                IconButton(onClick = {
-                                    val preview = currentChapter?.content?.take(100) ?: ""
-                                    viewModel.toggleBookmark(preview)
-                                }) {
-                                    Icon(
-                                        imageVector = if (isCurrentChapterBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                        contentDescription = strings.bookmarks,
-                                        tint = if (isCurrentChapterBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-
-                                // Three-dots Overflow Menu
-                                Box {
-                                    IconButton(onClick = { showReaderMenu = true }) {
-                                        Icon(
-                                            imageVector = Icons.Default.MoreVert,
-                                            contentDescription = strings.moreOptions
-                                        )
-                                    }
-
-                                    DropdownMenu(
-                                        expanded = showReaderMenu,
-                                        onDismissRequest = { showReaderMenu = false }
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text(strings.searchInBook) },
-                                            leadingIcon = {
-                                                Icon(Icons.Default.Search, contentDescription = null)
-                                            },
-                                            onClick = {
-                                                showReaderMenu = false
-                                                isSearchActive = true
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(strings.contents) },
-                                            leadingIcon = {
-                                                Icon(Icons.Default.List, contentDescription = null)
-                                            },
-                                            onClick = {
-                                                showReaderMenu = false
-                                                showChaptersSheet = true
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(strings.bookmarksAndQuotes) },
-                                            leadingIcon = {
-                                                Icon(Icons.Default.CollectionsBookmark, contentDescription = null)
-                                            },
-                                            onClick = {
-                                                showReaderMenu = false
-                                                showBookmarksQuotesSheet = true
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(strings.fontAndTheme) },
-                                            leadingIcon = {
-                                                Icon(Icons.Default.FormatSize, contentDescription = null)
-                                            },
-                                            onClick = {
-                                                showReaderMenu = false
-                                                showSettingsSheet = true
-                                            }
-                                        )
-                                    }
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color.Transparent
-                            )
-                        )
-                    }
-                }
-            }
-
-            AnimatedVisibility(
-                visible = !showControls,
-                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
-                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
-            ) {
-                Spacer(modifier = Modifier.statusBarsPadding().height(10.dp))
-            }
-
+            // Stable Book Content Container (Never shifts or resizes on controls toggle)
             Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
+                    .fillMaxSize()
+                    .statusBarsPadding()
                     .navigationBarsPadding()
             ) {
                 if (chapters.isNotEmpty()) {
@@ -537,6 +328,211 @@ fun ReaderScreen(
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onBackground
                         )
+                    }
+                }
+            }
+
+        // Floating Top Bar with Material 3 Expressive Floating Card
+        AnimatedVisibility(
+            visible = showControls,
+            enter = fadeIn() + slideInVertically { -it },
+            exit = fadeOut() + slideOutVertically { -it },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+        ) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (isSearchActive) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = {
+                            isSearchActive = false
+                            viewModel.clearSearch()
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = strings.closeSearch
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                .padding(horizontal = 12.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (searchQuery.isEmpty()) {
+                                Text(
+                                    text = strings.searchInBookHint,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            BasicTextField(
+                                value = searchQuery,
+                                onValueChange = { viewModel.performSearch(it) },
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurface
+                                ),
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        if (searchResults.isNotEmpty()) {
+                            Text(
+                                text = "${currentSearchIndex + 1}/${searchResults.size}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+                            IconButton(
+                                onClick = { viewModel.prevSearchResult() },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.KeyboardArrowUp, contentDescription = strings.previous)
+                            }
+                            IconButton(
+                                onClick = { viewModel.nextSearchResult() },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = strings.next)
+                            }
+                        }
+
+                        IconButton(
+                            onClick = {
+                                isSearchActive = false
+                                viewModel.clearSearch()
+                            },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = strings.clear)
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = {
+                            viewModel.saveCurrentProgress()
+                            onNavigateBack()
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = strings.back
+                            )
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 8.dp)
+                        ) {
+                            Text(
+                                text = book?.title ?: strings.appName,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = currentChapter?.title ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        // Bookmark Toggle Icon
+                        IconButton(onClick = {
+                            val preview = currentChapter?.content?.take(100) ?: ""
+                            viewModel.toggleBookmark(preview)
+                        }) {
+                            Icon(
+                                imageVector = if (isCurrentChapterBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                contentDescription = strings.bookmarks,
+                                tint = if (isCurrentChapterBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        // Three-dots Overflow Menu
+                        Box {
+                            IconButton(onClick = { showReaderMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = strings.moreOptions
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded = showReaderMenu,
+                                onDismissRequest = { showReaderMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(strings.searchInBook) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Search, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        showReaderMenu = false
+                                        isSearchActive = true
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(strings.contents) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.List, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        showReaderMenu = false
+                                        showChaptersSheet = true
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(strings.bookmarksAndQuotes) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.CollectionsBookmark, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        showReaderMenu = false
+                                        showBookmarksQuotesSheet = true
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(strings.fontAndTheme) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.FormatSize, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        showReaderMenu = false
+                                        showSettingsSheet = true
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1158,7 +1154,7 @@ fun ChapterPagingView(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 24.dp)
-                            .padding(top = 4.dp, bottom = 32.dp),
+                            .padding(top = 16.dp, bottom = 56.dp),
                         verticalArrangement = Arrangement.Top
                     ) {
                         for ((_, block) in pageBlocks) {
@@ -1226,7 +1222,7 @@ fun ChapterPagingView(
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp)
+                .padding(bottom = 14.dp)
         )
     }
 }
@@ -1244,15 +1240,14 @@ private fun calculatePageCapacity(
     val fs = fontSizeSp.coerceIn(12f, 36f)
     val lh = lineHeightMultiplier.coerceIn(1.0f, 2.2f)
     val effectiveLineHeight = fs * lh
-    // 120dp safe margin ensures top padding (4dp), bottom padding (32dp), footer percentage (16dp),
-    // and paragraph margins (8dp) never cause the text to push into or overlap the footer.
-    val usableHeightDp = (screenHeightDp - 120f).coerceAtLeast(260f)
-    // Floor to integer full lines to guarantee no partial line overflow
-    val linesPerPage = (usableHeightDp / effectiveLineHeight).toInt().coerceIn(8, 40)
-    val usableWidthDp = (screenWidthDp - 48f).coerceAtLeast(240f)
-    // Cyrillic letters average ~0.53 * fontSize in standard fonts
-    val charsPerLine = (usableWidthDp / (fs * 0.53f)).toInt().coerceIn(20, 60)
-    return (linesPerPage * charsPerLine).coerceIn(400, 2800)
+    // 140dp margin ensures top padding (16dp), bottom padding (56dp), footer (28dp),
+    // and generous clearance so text strictly ends before the footer and never clips.
+    val usableHeightDp = (screenHeightDp - 140f).coerceAtLeast(200f)
+    val linesPerPage = (usableHeightDp / effectiveLineHeight).toInt().coerceIn(6, 36)
+    val usableWidthDp = (screenWidthDp - 48f).coerceAtLeast(200f)
+    // Cyrillic characters with word-wrap average ~0.62 * fontSize
+    val charsPerLine = (usableWidthDp / (fs * 0.62f)).toInt().coerceIn(16, 50)
+    return (linesPerPage * charsPerLine).coerceIn(300, 2400)
 }
 
 private fun findBestBreak(text: String, targetLen: Int): Int {
@@ -1341,6 +1336,7 @@ private fun paginateBlocks(
             }
             BlockType.PARAGRAPH -> {
                 var remainingText = block.text.trim()
+                var isContinuation = false
                 var loopGuard = 0
                 while (remainingText.isNotEmpty() && loopGuard++ < 1000) {
                     val availableChars = targetChars - currentChars
@@ -1351,17 +1347,24 @@ private fun paginateBlocks(
 
                     val effectiveAvailable = availableChars.coerceAtLeast(120)
                     if (remainingText.length <= effectiveAvailable) {
-                        currentPage.add(originalIndex to block.copy(text = remainingText))
-                        currentChars += remainingText.length + 20
+                        currentPage.add(originalIndex to block.copy(
+                            text = remainingText,
+                            subText = if (isContinuation) "continuation" else block.subText
+                        ))
+                        currentChars += remainingText.length + (targetChars / 25).coerceIn(25, 60)
                         remainingText = ""
                     } else {
                         val splitIndex = findBestBreak(remainingText, effectiveAvailable).coerceIn(1, remainingText.length)
                         val chunk = remainingText.substring(0, splitIndex).trim()
                         if (chunk.isNotEmpty()) {
-                            currentPage.add(originalIndex to block.copy(text = chunk))
+                            currentPage.add(originalIndex to block.copy(
+                                text = chunk,
+                                subText = if (isContinuation) "continuation" else block.subText
+                            ))
                         }
                         flushPage()
                         remainingText = remainingText.substring(splitIndex).trim()
+                        isContinuation = true
                     }
                 }
             }
@@ -1532,12 +1535,13 @@ fun RenderBlock(
             }
         }
         BlockType.PARAGRAPH -> {
+            val isContinuation = block.subText == "continuation"
             val paragraphStyle = TextStyle(
                 fontSize = settings.fontSizeSp.sp,
                 lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
                 fontFamily = resolvedFontFamily,
                 color = MaterialTheme.colorScheme.onBackground,
-                textIndent = TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp)
+                textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp)
             )
 
             InteractiveText(
