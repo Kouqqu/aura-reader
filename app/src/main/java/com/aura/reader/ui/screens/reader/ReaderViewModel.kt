@@ -105,6 +105,22 @@ class ReaderViewModel(
         }
     }
 
+    fun saveCurrentProgress() {
+        val book = currentBook.value ?: return
+        val chapterIdx = _currentChapterIndex.value
+        val scrollOffset = _savedScrollOffset.value
+        val totalChapters = book.chapters.size.coerceAtLeast(1)
+        val chapter = book.chapters.getOrNull(chapterIdx)
+        val totalBlocks = chapter?.blocks?.size?.coerceAtLeast(1) ?: 1
+        val intraProgress = if (totalBlocks > 1) {
+            (scrollOffset.toFloat() / (totalBlocks - 1)).coerceIn(0f, 1f)
+        } else 0f
+        val overallPercent = (((chapterIdx + intraProgress) / totalChapters) * 100).toInt().coerceIn(0, 100)
+        viewModelScope.launch {
+            bookRepository.updateReadingProgress(chapterIdx, scrollOffset, overallPercent)
+        }
+    }
+
     fun setFontSize(sizeSp: Float) {
         viewModelScope.launch {
             preferencesManager.updateFontSize(sizeSp)
@@ -164,6 +180,7 @@ class ReaderViewModel(
             }
             readingStartTime = 0L
         }
+        saveCurrentProgress()
     }
 
     // --- In-Book Search ---
