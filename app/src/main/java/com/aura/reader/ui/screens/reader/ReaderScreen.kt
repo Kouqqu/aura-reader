@@ -1154,7 +1154,7 @@ fun ChapterPagingView(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 24.dp)
-                            .padding(top = 16.dp, bottom = 56.dp),
+                            .padding(top = 16.dp, bottom = 38.dp),
                         verticalArrangement = Arrangement.Top
                     ) {
                         for ((_, block) in pageBlocks) {
@@ -1222,7 +1222,7 @@ fun ChapterPagingView(
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 14.dp)
+                .padding(bottom = 12.dp)
         )
     }
 }
@@ -1240,21 +1240,23 @@ private fun calculatePageCapacity(
     val fs = fontSizeSp.coerceIn(12f, 36f)
     val lh = lineHeightMultiplier.coerceIn(1.0f, 2.2f)
     val effectiveLineHeight = fs * lh
-    // 140dp margin ensures top padding (16dp), bottom padding (56dp), footer (28dp),
-    // and generous clearance so text strictly ends before the footer and never clips.
-    val usableHeightDp = (screenHeightDp - 140f).coerceAtLeast(200f)
-    val linesPerPage = (usableHeightDp / effectiveLineHeight).toInt().coerceIn(6, 36)
+    // 64dp accounts for top padding (16dp), bottom padding (38dp), and a 10dp safety clearance.
+    // toInt() floors the line count, strictly guaranteeing that full lines fit within the container
+    // without vertical overflow, clipping, or overlapping the footer percentage.
+    val usableHeightDp = (screenHeightDp - 64f).coerceAtLeast(200f)
+    val linesPerPage = (usableHeightDp / effectiveLineHeight).toInt().coerceIn(6, 48)
     val usableWidthDp = (screenWidthDp - 48f).coerceAtLeast(200f)
-    // Cyrillic characters with word-wrap average ~0.62 * fontSize
-    val charsPerLine = (usableWidthDp / (fs * 0.62f)).toInt().coerceIn(16, 50)
-    return (linesPerPage * charsPerLine).coerceIn(300, 2400)
+    // Cyrillic and Latin characters with natural word-wrap average ~0.53 * fontSize in standard fonts
+    val charsPerLine = (usableWidthDp / (fs * 0.53f)).toInt().coerceIn(18, 65)
+    return (linesPerPage * charsPerLine).coerceIn(400, 3200)
 }
 
-private fun findBestBreak(text: String, targetLen: Int): Int {
+private fun findBestBreak(text: String, targetLen: Int, charsPerLine: Int = 35): Int {
     if (text.length <= targetLen) return text.length
-    // Look for sentence endings strictly within bottom 12% [targetLen * 0.88 .. targetLen]
-    // so pages are evenly and tightly filled
-    val minSearchSentence = (targetLen * 0.88f).toInt().coerceAtLeast(0)
+    // Look for sentence endings strictly within the last 1.5 lines of the target area [targetLen - searchWindow .. targetLen],
+    // so pages are evenly and tightly filled down to the bottom without leaving large voids.
+    val searchWindow = (charsPerLine * 1.5f).toInt().coerceIn(30, 75)
+    val minSearchSentence = (targetLen - searchWindow).coerceAtLeast(0)
     val window = text.substring(0, targetLen.coerceAtMost(text.length))
 
     for (del in listOf(". ", "! ", "? ", ".\n", "!\n", "?\n")) {
@@ -1265,12 +1267,12 @@ private fun findBestBreak(text: String, targetLen: Int): Int {
     }
     for (del in listOf("; ", ": ", ", ")) {
         val idx = window.lastIndexOf(del)
-        if (idx >= (targetLen * 0.90f).toInt()) {
+        if (idx >= (targetLen - (charsPerLine * 0.8f).toInt()).coerceAtLeast(0)) {
             return idx + del.length
         }
     }
     val spaceIdx = window.lastIndexOf(' ')
-    if (spaceIdx >= (targetLen * 0.92f).toInt()) {
+    if (spaceIdx >= (targetLen - charsPerLine).coerceAtLeast(0)) {
         return spaceIdx + 1
     }
     return if (spaceIdx > 0) spaceIdx + 1 else targetLen
@@ -1285,10 +1287,19 @@ private fun paginateBlocks(
 ): List<List<Pair<Int, FormattedBlock>>> {
     if (blocks.isEmpty()) return listOf(emptyList())
 
+    val fs = fontSizeSp.coerceIn(12f, 36f)
+    val lh = lineHeightMultiplier.coerceIn(1.0f, 2.2f)
+    val effectiveLineHeight = fs * lh
+    val usableWidthDp = (screenWidthDp - 48f).coerceAtLeast(200f)
+    val charsPerLine = (usableWidthDp / (fs * 0.53f)).toInt().coerceIn(18, 65)
+
     val targetChars = calculatePageCapacity(fontSizeSp, lineHeightMultiplier, screenHeightDp, screenWidthDp)
     val pages = mutableListOf<List<Pair<Int, FormattedBlock>>>()
     var currentPage = mutableListOf<Pair<Int, FormattedBlock>>()
     var currentChars = 0
+
+    val paragraphSpacingPenalty = (charsPerLine * (8f / effectiveLineHeight)).toInt().coerceIn(8, 22)
+    val minParagraphRemainingChars = (charsPerLine * 0.9f).toInt().coerceIn(20, 50)
 
     fun flushPage() {
         if (currentPage.isNotEmpty()) {
@@ -1305,29 +1316,29 @@ private fun paginateBlocks(
                 pages.add(listOf(originalIndex to block))
             }
             BlockType.TITLE -> {
-                if (currentChars > targetChars * 0.5f) {
+                if (currentChars > targetChars * 0.45f) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
-                currentChars += (block.text.length + (targetChars * 0.07f).toInt())
+                currentChars += (block.text.length + (charsPerLine * 2.2f).toInt())
             }
             BlockType.SUBTITLE -> {
                 if (currentChars > targetChars * 0.6f) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
-                currentChars += (block.text.length + (targetChars * 0.05f).toInt())
+                currentChars += (block.text.length + (charsPerLine * 1.5f).toInt())
             }
             BlockType.DIVIDER -> {
-                if (currentChars + 30 > targetChars) {
+                if (currentChars + charsPerLine > targetChars) {
                     flushPage()
                 } else {
                     currentPage.add(originalIndex to block)
-                    currentChars += 30
+                    currentChars += charsPerLine
                 }
             }
             BlockType.EPIGRAPH, BlockType.VERSE -> {
-                val weight = block.text.length + 30
+                val weight = block.text.length + charsPerLine
                 if (currentChars + weight > targetChars && currentPage.isNotEmpty()) {
                     flushPage()
                 }
@@ -1340,21 +1351,21 @@ private fun paginateBlocks(
                 var loopGuard = 0
                 while (remainingText.isNotEmpty() && loopGuard++ < 1000) {
                     val availableChars = targetChars - currentChars
-                    if (availableChars < 120 && currentPage.isNotEmpty()) {
+                    if (availableChars < minParagraphRemainingChars && currentPage.isNotEmpty()) {
                         flushPage()
                         continue
                     }
 
-                    val effectiveAvailable = availableChars.coerceAtLeast(120)
+                    val effectiveAvailable = availableChars.coerceAtLeast(minParagraphRemainingChars)
                     if (remainingText.length <= effectiveAvailable) {
                         currentPage.add(originalIndex to block.copy(
                             text = remainingText,
                             subText = if (isContinuation) "continuation" else block.subText
                         ))
-                        currentChars += remainingText.length + (targetChars / 25).coerceIn(25, 60)
+                        currentChars += remainingText.length + paragraphSpacingPenalty
                         remainingText = ""
                     } else {
-                        val splitIndex = findBestBreak(remainingText, effectiveAvailable).coerceIn(1, remainingText.length)
+                        val splitIndex = findBestBreak(remainingText, effectiveAvailable, charsPerLine).coerceIn(1, remainingText.length)
                         val chunk = remainingText.substring(0, splitIndex).trim()
                         if (chunk.isNotEmpty()) {
                             currentPage.add(originalIndex to block.copy(
