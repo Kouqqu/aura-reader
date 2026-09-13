@@ -1467,9 +1467,9 @@ fun ChapterPagingView(
                             // 1. Убираем стандартное плоское смещение Pager, возвращая страницу в центр
                             translationX = pageOffset * size.width
 
-                            // 2. Устанавливаем точку вращения (левый или правый край)
+                            // 2. Устанавливаем точку вращения (левый корешок или правый край)
                             transformOrigin = TransformOrigin(
-                                pivotFractionX = if (pageOffset > 0) 1f else 0f,
+                                pivotFractionX = if (pageOffset > 0) 0f else 1f,
                                 pivotFractionY = 0.5f
                             )
 
@@ -1485,20 +1485,20 @@ fun ChapterPagingView(
                         .graphicsLayer {
                             alpha = if (pageOffset.absoluteValue >= 0.5f) 0f else 1f
                         }
-                        // 6. Реалистичная тень в месте изгиба/стыка страниц
+                        // 6. Реалистичная тень в месте сгиба/стыка страниц
                         .drawWithContent {
                             drawContent()
                             if (pageOffset != 0f) {
                                 val shadowAlpha = (pageOffset.absoluteValue).coerceIn(0f, 0.6f)
                                 val brush = if (pageOffset > 0) {
                                     Brush.horizontalGradient(
-                                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = shadowAlpha)),
+                                        colors = listOf(Color.Black.copy(alpha = shadowAlpha), Color.Transparent),
                                         startX = 0f,
                                         endX = size.width
                                     )
                                 } else {
                                     Brush.horizontalGradient(
-                                        colors = listOf(Color.Black.copy(alpha = shadowAlpha), Color.Transparent),
+                                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = shadowAlpha)),
                                         startX = 0f,
                                         endX = size.width
                                     )

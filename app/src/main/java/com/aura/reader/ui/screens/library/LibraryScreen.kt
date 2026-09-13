@@ -1,5 +1,25 @@
 package com.aura.reader.ui.screens.library
 
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
@@ -151,6 +171,7 @@ fun LibraryScreen(
     var showAddBooksSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var bookToDelete by remember { mutableStateOf<Book?>(null) }
+    var inspectingCoverBook by remember { mutableStateOf<Book?>(null) }
     var isSearchExpanded by remember { mutableStateOf(false) }
     var showNewCollectionDialog by remember { mutableStateOf(false) }
     var bookForCollections by remember { mutableStateOf<Book?>(null) }
@@ -619,6 +640,9 @@ fun LibraryScreen(
                             },
                             onSetProgress = { prog ->
                                 viewModel.setBookReadingProgress(book.id, prog)
+                            },
+                            onCoverClick = {
+                                inspectingCoverBook = book
                             }
                         )
                     }
@@ -896,6 +920,13 @@ fun LibraryScreen(
             }
         )
     }
+
+    inspectingCoverBook?.let { book ->
+        ParallaxCoverViewer(
+            book = book,
+            onDismiss = { inspectingCoverBook = null }
+        )
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -906,7 +937,8 @@ fun BookCard(
     onDelete: () -> Unit,
     onToggleFavorite: () -> Unit = {},
     onAddToCollection: () -> Unit = {},
-    onSetProgress: (Int) -> Unit = {}
+    onSetProgress: (Int) -> Unit = {},
+    onCoverClick: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val strings = LocalAppStrings.current
@@ -935,6 +967,7 @@ fun BookCard(
                 modifier = Modifier
                     .size(width = 64.dp, height = 90.dp)
                     .clip(RoundedCornerShape(10.dp))
+                    .clickable { onCoverClick() }
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -1236,3 +1269,270 @@ fun AuraLogoIcon(
     }
 }
 
+
+
+@Composable
+fun ParallaxCoverViewer(
+    book: Book,
+    onDismiss: () -> Unit
+) {
+    BackHandler { onDismiss() }
+
+    val context = LocalContext.current
+    val strings = LocalAppStrings.current
+    val density = LocalDensity.current
+
+    var rawPitch by remember { mutableFloatStateOf(0f) }
+    var rawRoll by remember { mutableFloatStateOf(0f) }
+
+    DisposableEffect(Unit) {
+        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+        val sensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+            ?: sensorManager?.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
+            ?: sensorManager?.getDefaultSensor(Sensor.TYPE_GRAVITY)
+            ?: sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+
+        val listener = object : SensorEventListener {
+            val rotationMatrix = FloatArray(9)
+            val orientation = FloatArray(3)
+            var basePitch: Float? = null
+            var baseRoll: Float? = null
+
+            override fun onSensorChanged(event: SensorEvent) {
+                when (event.sensor.type) {
+                    Sensor.TYPE_ROTATION_VECTOR, Sensor.TYPE_GAME_ROTATION_VECTOR -> {
+                        SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+                        SensorManager.getOrientation(rotationMatrix, orientation)
+                        val p = Math.toDegrees(orientation[1].toDouble()).toFloat()
+                        val r = Math.toDegrees(orientation[2].toDouble()).toFloat()
+                        if (basePitch == null) {
+                            basePitch = p
+                            baseRoll = r
+                        }
+                        rawPitch = ((p - (basePitch ?: 0f))).coerceIn(-22f, 22f)
+                        rawRoll = ((r - (baseRoll ?: 0f))).coerceIn(-22f, 22f)
+                    }
+                    Sensor.TYPE_GRAVITY, Sensor.TYPE_ACCELEROMETER -> {
+                        val gx = event.values[0]
+                        val gy = event.values[1]
+                        rawRoll = (gx / 9.8f * 20f).coerceIn(-22f, 22f)
+                        rawPitch = ((gy - 4.5f) / 9.8f * 20f).coerceIn(-22f, 22f)
+                    }
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+        }
+
+        if (sensor != null) {
+            sensorManager?.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
+        }
+
+        onDispose {
+            sensorManager?.unregisterListener(listener)
+        }
+    }
+
+    var touchOffsetX by remember { mutableFloatStateOf(0f) }
+    var touchOffsetY by remember { mutableFloatStateOf(0f) }
+
+    val targetTiltY = (-rawRoll + touchOffsetX).coerceIn(-25f, 25f)
+    val targetTiltX = (rawPitch + touchOffsetY).coerceIn(-25f, 25f)
+
+    val tiltY by animateFloatAsState(
+        targetValue = targetTiltY,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "tiltY"
+    )
+
+    val tiltX by animateFloatAsState(
+        targetValue = targetTiltX,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "tiltX"
+    )
+
+    val bitmap = remember(book.coverBase64) {
+        if (!book.coverBase64.isNullOrBlank()) {
+            try {
+                val decoded = Base64.decode(book.coverBase64, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(decoded, 0, decoded.size)
+            } catch (e: Exception) {
+                null
+            }
+        } else null
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.85f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onDismiss() },
+        contentAlignment = Alignment.Center
+    ) {
+        // Top action bar with title & close button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .padding(horizontal = 20.dp, vertical = 28.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                Text(
+                    text = book.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (book.author.isNotBlank()) {
+                    Text(
+                        text = book.author,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(50))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = strings.closeDialog,
+                    tint = Color.White
+                )
+            }
+        }
+
+        // Center 3D Parallax Book Cover Card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.82f)
+                .aspectRatio(0.68f)
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            touchOffsetX = (touchOffsetX + dragAmount.x * 0.12f).coerceIn(-20f, 20f)
+                            touchOffsetY = (touchOffsetY - dragAmount.y * 0.12f).coerceIn(-20f, 20f)
+                        },
+                        onDragEnd = {
+                            touchOffsetX = 0f
+                            touchOffsetY = 0f
+                        },
+                        onDragCancel = {
+                            touchOffsetX = 0f
+                            touchOffsetY = 0f
+                        }
+                    )
+                }
+                .graphicsLayer {
+                    rotationY = tiltY
+                    rotationX = tiltX
+                    cameraDistance = 16f * density.density
+                    translationX = tiltY * 1.6f
+                    translationY = tiltX * 1.6f
+                    shadowElevation = 32.dp.toPx()
+                    shape = RoundedCornerShape(22.dp)
+                    clip = true
+                }
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(22.dp))
+        ) {
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = book.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Book,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = book.title,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // Real hardcover book spine indentation / crease on left edge
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(18.dp)
+                    .align(Alignment.CenterStart)
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.38f),
+                                Color.Black.copy(alpha = 0.12f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+            // Dynamic holographic light specular glare moving across the surface
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val glareCenterX = size.width * (0.5f - (tiltY / 25f) * 0.45f)
+                val glareCenterY = size.height * (0.5f + (tiltX / 25f) * 0.45f)
+                val glareRadius = size.width * 1.2f
+
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.28f),
+                            Color.White.copy(alpha = 0.08f),
+                            Color.Transparent
+                        ),
+                        center = Offset(glareCenterX, glareCenterY),
+                        radius = glareRadius
+                    )
+                )
+            }
+        }
+
+        // Subtitle hint at bottom
+        Text(
+            text = strings.parallaxCoverHint,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White.copy(alpha = 0.6f),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 28.dp)
+        )
+    }
+}

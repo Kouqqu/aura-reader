@@ -222,6 +222,7 @@ interface Strings {
     val understandFootnote: String
     fun minutesLeftInChapter(minutes: Int): String
 
+    val parallaxCoverHint: String
 }
 
 class RuStrings : Strings {
@@ -429,6 +430,7 @@ class RuStrings : Strings {
     override val closeDialog = "Закрыть"
     override val understandFootnote = "Понятно"
     override fun minutesLeftInChapter(minutes: Int) = "$minutes мин до конца главы"
+    override val parallaxCoverHint = "Наклоняйте устройство или проведите пальцем для 3D-эффекта"
 
 }
 
@@ -637,6 +639,7 @@ class EnStrings : Strings {
     override val closeDialog = "Close"
     override val understandFootnote = "Got it"
     override fun minutesLeftInChapter(minutes: Int) = "$minutes min left in chapter"
+    override val parallaxCoverHint = "Tilt device or drag finger for 3D effect"
 
 }
 
@@ -845,6 +848,7 @@ class UkStrings : Strings {
     override val closeDialog = "Закрити"
     override val understandFootnote = "Зрозуміло"
     override fun minutesLeftInChapter(minutes: Int) = "$minutes хв до кінця розділу"
+    override val parallaxCoverHint = "Нахиляйте пристрій або проведіть пальцем для 3D-ефекту"
 
 }
 
@@ -1053,6 +1057,7 @@ class BeStrings : Strings {
     override val closeDialog = "Закрыць"
     override val understandFootnote = "Зразумела"
     override fun minutesLeftInChapter(minutes: Int) = "$minutes хв да канца раздзела"
+    override val parallaxCoverHint = "Нахіляйце прыладу або правядзіце пальцам для 3D-эфекту"
 
 }
 
@@ -1261,6 +1266,7 @@ class PlStrings : Strings {
     override val closeDialog = "Zamknij"
     override val understandFootnote = "Rozumiem"
     override fun minutesLeftInChapter(minutes: Int) = "$minutes min do końca rozdziału"
+    override val parallaxCoverHint = "Przechyl urządzenie lub przeciągnij palcem, aby uzyskać efekt 3D"
 
 }
 
