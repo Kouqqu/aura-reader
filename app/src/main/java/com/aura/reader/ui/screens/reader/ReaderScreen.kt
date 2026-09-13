@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
@@ -1457,117 +1458,54 @@ fun ChapterPagingView(
                 .fillMaxSize()
                 .then(instantSwipeModifier)
         ) { spreadIdx ->
-            val pageOffset = (spreadIdx - pagerState.currentPage) - pagerState.currentPageOffsetFraction
+            // Вычисляем, насколько страница сдвинута от центра (от -1.0 до 1.0)
+            val pageOffset = ((pagerState.currentPage - spreadIdx) + pagerState.currentPageOffsetFraction)
             val animModifier = when (settings.pageAnimation) {
                 PageTurnAnimation.CURL -> {
                     Modifier
-                        // Hold all pages stationary at X = 0 so the top page peels to reveal the page underneath
                         .graphicsLayer {
-                            translationX = -pageOffset * size.width
+                            // 1. Убираем стандартное плоское смещение Pager, возвращая страницу в центр
+                            translationX = pageOffset * size.width
+
+                            // 2. Устанавливаем точку вращения (левый или правый край)
+                            transformOrigin = TransformOrigin(
+                                pivotX = if (pageOffset > 0) 1f else 0f,
+                                pivotY = 0.5f
+                            )
+
+                            // 3. Вычисляем угол вращения (разворот на 180 градусов)
+                            val rotation = pageOffset * -180f
+                            // Ограничиваем, чтобы не улетало
+                            rotationY = rotation.coerceIn(-180f, 180f)
+
+                            // 4. Добавляем глубину (перспективу)
+                            cameraDistance = 12f * density
                         }
-                        .then(
-                            if (pageOffset in -1f..0f) {
-                                // Page N turning forward (peeling leftwards, uncovering Page N+1 underneath)
-                                val progress = (-pageOffset).coerceIn(0f, 1f)
-                                Modifier
-                                    .zIndex(2f)
-                                    .drawWithContent {
-                                        val foldX = size.width * (1f - progress)
-                                        val curlWidth = 24.dp.toPx().coerceAtMost(size.width * 0.15f)
-                                        val shadowWidth = 32.dp.toPx()
-
-                                        // 1. Clip top page to the left of the fold
-                                        clipRect(left = 0f, top = 0f, right = foldX, bottom = size.height) {
-                                            this@drawWithContent.drawContent()
-
-                                            // 2. Paper curl ridge highlight along the edge
-                                            if (progress > 0.01f && progress < 0.99f) {
-                                                drawRect(
-                                                    brush = Brush.horizontalGradient(
-                                                        colors = listOf(
-                                                            androidx.compose.ui.graphics.Color.Transparent,
-                                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.08f),
-                                                            androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f),
-                                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.12f)
-                                                        ),
-                                                        startX = foldX - curlWidth,
-                                                        endX = foldX
-                                                    ),
-                                                    topLeft = Offset(foldX - curlWidth, 0f),
-                                                    size = Size(curlWidth, size.height)
-                                                )
-                                            }
-                                        }
-
-                                        // 3. Soft paper drop shadow cast onto the revealed page underneath
-                                        if (progress > 0.01f && progress < 0.99f) {
-                                            drawRect(
-                                                brush = Brush.horizontalGradient(
-                                                    colors = listOf(
-                                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.32f),
-                                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.10f),
-                                                        androidx.compose.ui.graphics.Color.Transparent
-                                                    ),
-                                                    startX = foldX,
-                                                    endX = foldX + shadowWidth
-                                                ),
-                                                topLeft = Offset(foldX, 0f),
-                                                size = Size(shadowWidth, size.height)
-                                            )
-                                        }
-                                    }
-                            } else if (pageOffset in 0f..1f && pagerState.currentPageOffsetFraction < 0f) {
-                                // Page N-1 peeling rightwards from left over Page N (turning backward)
-                                val progress = (1f - pageOffset).coerceIn(0f, 1f)
-                                Modifier
-                                    .zIndex(2f)
-                                    .drawWithContent {
-                                        val foldX = size.width * progress
-                                        val curlWidth = 24.dp.toPx().coerceAtMost(size.width * 0.15f)
-                                        val shadowWidth = 32.dp.toPx()
-
-                                        clipRect(left = 0f, top = 0f, right = foldX, bottom = size.height) {
-                                            this@drawWithContent.drawContent()
-
-                                            if (progress > 0.01f && progress < 0.99f) {
-                                                drawRect(
-                                                    brush = Brush.horizontalGradient(
-                                                        colors = listOf(
-                                                            androidx.compose.ui.graphics.Color.Transparent,
-                                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.08f),
-                                                            androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f),
-                                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.12f)
-                                                        ),
-                                                        startX = foldX - curlWidth,
-                                                        endX = foldX
-                                                    ),
-                                                    topLeft = Offset(foldX - curlWidth, 0f),
-                                                    size = Size(curlWidth, size.height)
-                                                )
-                                            }
-                                        }
-
-                                        if (progress > 0.01f && progress < 0.99f) {
-                                            drawRect(
-                                                brush = Brush.horizontalGradient(
-                                                    colors = listOf(
-                                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.32f),
-                                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.10f),
-                                                        androidx.compose.ui.graphics.Color.Transparent
-                                                    ),
-                                                    startX = foldX,
-                                                    endX = foldX + shadowWidth
-                                                ),
-                                                topLeft = Offset(foldX, 0f),
-                                                size = Size(shadowWidth, size.height)
-                                            )
-                                        }
-                                    }
-                            } else {
-                                // Stationary page underneath
-                                Modifier.zIndex(1f)
+                        // 5. Динамическое скрытие: скрываем тыльную сторону "листа" после поворота на 90 градусов
+                        .graphicsLayer {
+                            alpha = if (pageOffset.absoluteValue >= 0.5f) 0f else 1f
+                        }
+                        // 6. Реалистичная тень в месте изгиба/стыка страниц
+                        .drawWithContent {
+                            drawContent()
+                            if (pageOffset != 0f) {
+                                val shadowAlpha = (pageOffset.absoluteValue).coerceIn(0f, 0.6f)
+                                val brush = if (pageOffset > 0) {
+                                    Brush.horizontalGradient(
+                                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = shadowAlpha)),
+                                        startX = 0f,
+                                        endX = size.width
+                                    )
+                                } else {
+                                    Brush.horizontalGradient(
+                                        colors = listOf(Color.Black.copy(alpha = shadowAlpha), Color.Transparent),
+                                        startX = 0f,
+                                        endX = size.width
+                                    )
+                                }
+                                drawRect(brush = brush)
                             }
-                        )
+                        }
                 }
                 PageTurnAnimation.SLIDE -> Modifier
                 PageTurnAnimation.INSTANT -> Modifier
@@ -1577,6 +1515,7 @@ fun ChapterPagingView(
                 modifier = Modifier
                     .fillMaxSize()
                     .then(animModifier)
+                    .background(MaterialTheme.colorScheme.background)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
