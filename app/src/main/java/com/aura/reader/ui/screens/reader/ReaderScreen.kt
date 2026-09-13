@@ -1469,8 +1469,8 @@ fun ChapterPagingView(
 
                             // 2. Устанавливаем точку вращения (левый или правый край)
                             transformOrigin = TransformOrigin(
-                                pivotX = if (pageOffset > 0) 1f else 0f,
-                                pivotY = 0.5f
+                                pivotFractionX = if (pageOffset > 0) 1f else 0f,
+                                pivotFractionY = 0.5f
                             )
 
                             // 3. Вычисляем угол вращения (разворот на 180 градусов)
@@ -1479,7 +1479,7 @@ fun ChapterPagingView(
                             rotationY = rotation.coerceIn(-180f, 180f)
 
                             // 4. Добавляем глубину (перспективу)
-                            cameraDistance = 12f * density
+                            cameraDistance = 12f * density.density
                         }
                         // 5. Динамическое скрытие: скрываем тыльную сторону "листа" после поворота на 90 градусов
                         .graphicsLayer {
