@@ -19,6 +19,19 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -209,6 +222,7 @@ fun ReaderScreen(
     val defaultToolbar = LocalTextToolbar.current
     val clipboardManager = LocalClipboardManager.current
     var selectedQuoteCopyAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var selectionRect by remember { mutableStateOf<Rect?>(null) }
     var textToolbarStatus by remember { mutableStateOf(TextToolbarStatus.Hidden) }
 
     val customTextToolbar = remember(defaultToolbar) {
@@ -219,6 +233,7 @@ fun ReaderScreen(
             override fun hide() {
                 textToolbarStatus = TextToolbarStatus.Hidden
                 selectedQuoteCopyAction = null
+                selectionRect = null
             }
 
             override fun showMenu(
@@ -230,6 +245,7 @@ fun ReaderScreen(
             ) {
                 textToolbarStatus = TextToolbarStatus.Shown
                 selectedQuoteCopyAction = onCopyRequested
+                selectionRect = rect
             }
         }
     }
@@ -874,167 +890,167 @@ fun ReaderScreen(
                 )
             }
 
-            // Sleek compact floating pill for selected text
-            AnimatedVisibility(
-                visible = selectedQuoteCopyAction != null,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = if (showControls) 110.dp else 24.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    shadowElevation = 6.dp,
-                    tonalElevation = 4.dp,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .height(40.dp)
+            // Floating Popup anchored directly above or below selected text
+            if (selectedQuoteCopyAction != null && selectionRect != null) {
+                val density = LocalDensity.current
+                val rect = selectionRect!!
+
+                Popup(
+                    popupPositionProvider = object : PopupPositionProvider {
+                        override fun calculatePosition(
+                            anchorBounds: IntRect,
+                            windowSize: IntSize,
+                            layoutDirection: LayoutDirection,
+                            popupContentSize: IntSize
+                        ): IntOffset {
+                            val targetX = (rect.left + (rect.width - popupContentSize.width) / 2f).toInt()
+                            val minX = with(density) { 12.dp.toPx() }.toInt()
+                            val maxX = (windowSize.width - popupContentSize.width - minX).coerceAtLeast(minX)
+                            val clampedX = targetX.coerceIn(minX, maxX)
+
+                            val spaceAbove = rect.top - with(density) { 8.dp.toPx() }
+                            val targetY = if (spaceAbove >= popupContentSize.height + with(density) { 48.dp.toPx() }) {
+                                (rect.top - popupContentSize.height - with(density) { 8.dp.toPx() }).toInt()
+                            } else {
+                                (rect.bottom + with(density) { 8.dp.toPx() }).toInt()
+                            }
+                            val minY = with(density) { 40.dp.toPx() }.toInt()
+                            val maxY = (windowSize.height - popupContentSize.height - with(density) { 20.dp.toPx() }).toInt()
+                            val clampedY = targetY.coerceIn(minY, maxY.coerceAtLeast(minY))
+
+                            return IntOffset(clampedX, clampedY)
+                        }
+                    },
+                    onDismissRequest = {
+                        customTextToolbar.hide()
+                    },
+                    properties = PopupProperties(
+                        focusable = false,
+                        dismissOnBackPress = true,
+                        dismissOnClickOutside = true
+                    )
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        shadowElevation = 8.dp,
+                        tonalElevation = 6.dp,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
                     ) {
-                        // 1. Quote
-                        TextButton(
-                            onClick = {
-                                val action = selectedQuoteCopyAction
-                                action?.invoke()
-                                val clip = clipboardManager.getText()?.text
-                                if (!clip.isNullOrBlank()) {
-                                    quoteToSave = clip.trim()
-                                }
-                                customTextToolbar.hide()
-                            },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                            modifier = Modifier.height(32.dp)
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
-                            Icon(Icons.Default.FormatQuote, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = strings.saveQuoteAction,
-                                style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
+                            // 1. Copy
+                            TextButton(
+                                onClick = {
+                                    val action = selectedQuoteCopyAction
+                                    action?.invoke()
+                                    customTextToolbar.hide()
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                modifier = Modifier.height(34.dp)
+                            ) {
+                                Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(strings.copy, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
+                            }
 
-                        Box(modifier = Modifier.height(16.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
+                            Box(modifier = Modifier.height(14.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
 
-                        // 2. Dictionary
-                        TextButton(
-                            onClick = {
-                                val action = selectedQuoteCopyAction
-                                action?.invoke()
-                                val clip = clipboardManager.getText()?.text?.trim()
-                                customTextToolbar.hide()
-                                if (!clip.isNullOrBlank()) {
-                                    val word = clip.take(60)
-                                    dictionaryWord = word
-                                    dictionaryLoading = true
-                                    dictionaryDefinition = null
-                                    dictionaryError = null
-                                    coroutineScope.launch {
-                                        DictionaryService.lookupDefinition(word)
-                                            .onSuccess { def ->
-                                                dictionaryDefinition = def
-                                                dictionaryLoading = false
-                                            }
-                                            .onFailure { err ->
-                                                dictionaryError = err.message ?: strings.dictionaryNotFound
-                                                dictionaryLoading = false
-                                            }
+                            // 2. Quote
+                            TextButton(
+                                onClick = {
+                                    val action = selectedQuoteCopyAction
+                                    action?.invoke()
+                                    val clip = clipboardManager.getText()?.text
+                                    if (!clip.isNullOrBlank()) {
+                                        quoteToSave = clip.trim()
                                     }
-                                }
-                            },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Icon(Icons.Default.AutoStories, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = strings.dictionaryAction,
-                                style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
+                                    customTextToolbar.hide()
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                modifier = Modifier.height(34.dp)
+                            ) {
+                                Icon(Icons.Default.FormatQuote, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(strings.quoteAction, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
+                            }
 
-                        Box(modifier = Modifier.height(16.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
+                            Box(modifier = Modifier.height(14.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
 
-                        // 3. Translation
-                        TextButton(
-                            onClick = {
-                                val action = selectedQuoteCopyAction
-                                action?.invoke()
-                                val clip = clipboardManager.getText()?.text?.trim()
-                                customTextToolbar.hide()
-                                if (!clip.isNullOrBlank()) {
-                                    translationText = clip
-                                    translationLoading = true
-                                    translationResult = null
-                                    translationError = null
-                                    coroutineScope.launch {
-                                        DictionaryService.translateText(clip, targetLang = appLanguage.code)
-                                            .onSuccess { res ->
-                                                translationResult = res
-                                                translationLoading = false
-                                            }
-                                            .onFailure { err ->
-                                                translationError = err.message ?: strings.translationFailed
-                                                translationLoading = false
-                                            }
+                            // 3. Dictionary
+                            TextButton(
+                                onClick = {
+                                    val action = selectedQuoteCopyAction
+                                    action?.invoke()
+                                    val clip = clipboardManager.getText()?.text?.trim()
+                                    customTextToolbar.hide()
+                                    if (!clip.isNullOrBlank()) {
+                                        val word = clip.take(60)
+                                        dictionaryWord = word
+                                        dictionaryLoading = true
+                                        dictionaryDefinition = null
+                                        dictionaryError = null
+                                        coroutineScope.launch {
+                                            DictionaryService.lookupDefinition(word)
+                                                .onSuccess { def ->
+                                                    dictionaryDefinition = def
+                                                    dictionaryLoading = false
+                                                }
+                                                .onFailure { err ->
+                                                    dictionaryError = err.message ?: strings.dictionaryNotFound
+                                                    dictionaryLoading = false
+                                                }
+                                        }
                                     }
-                                }
-                            },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = strings.translateAction,
-                                style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                modifier = Modifier.height(34.dp)
+                            ) {
+                                Icon(Icons.Default.AutoStories, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(strings.dictionaryAction, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
+                            }
 
-                        Box(modifier = Modifier.height(16.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
+                            Box(modifier = Modifier.height(14.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
 
-                        // 4. Copy
-                        TextButton(
-                            onClick = {
-                                val action = selectedQuoteCopyAction
-                                action?.invoke()
-                                customTextToolbar.hide()
-                            },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = strings.copy,
-                                style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
-
-                        // Close button
-                        IconButton(
-                            onClick = { customTextToolbar.hide() },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.outline
-                            )
+                            // 4. Translation
+                            TextButton(
+                                onClick = {
+                                    val action = selectedQuoteCopyAction
+                                    action?.invoke()
+                                    val clip = clipboardManager.getText()?.text?.trim()
+                                    customTextToolbar.hide()
+                                    if (!clip.isNullOrBlank()) {
+                                        translationText = clip
+                                        translationLoading = true
+                                        translationResult = null
+                                        translationError = null
+                                        coroutineScope.launch {
+                                            DictionaryService.translateText(clip, targetLang = appLanguage.code)
+                                                .onSuccess { res ->
+                                                    translationResult = res
+                                                    translationLoading = false
+                                                }
+                                                .onFailure { err ->
+                                                    translationError = err.message ?: strings.translationFailed
+                                                    translationLoading = false
+                                                }
+                                        }
+                                    }
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                modifier = Modifier.height(34.dp)
+                            ) {
+                                Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(strings.translateAction, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
+                            }
                         }
                     }
                 }
@@ -1410,40 +1426,71 @@ fun ChapterPagingView(
             }
         }
 
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { spreadIdx ->
-            val position = (spreadIdx - pagerState.currentPage) - pagerState.currentPageOffsetFraction
-            val animModifier = when (settings.pageAnimation) {
-                PageTurnAnimation.CURL -> {
-                    Modifier.graphicsLayer {
-                        if (position in -1.5f..1.5f) {
-                            if (position < 0f) {
-                                // Turning page curls away around left spine
-                                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
-                                cameraDistance = 16f * density.density
-                                val progress = (-position).coerceIn(0f, 1f)
-                                rotationY = -55f * progress
-                                translationX = size.width * progress * 0.45f
-                                alpha = (1f - progress * 0.15f).coerceIn(0f, 1f)
-                                shadowElevation = (12.dp.toPx() * (1f - progress)).coerceAtLeast(0f)
-                            } else if (position > 0f) {
-                                // Underlying next page revealed stationary underneath
-                                val progress = position.coerceIn(0f, 1f)
-                                translationX = -size.width * progress * 0.85f
-                                alpha = (0.75f + 0.25f * (1f - progress)).coerceIn(0f, 1f)
-                            }
+        val instantSwipeModifier = if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+            Modifier.pointerInput(pagerState.currentPage, totalSpreads) {
+                detectHorizontalDragGestures { _, dragAmount ->
+                    if (dragAmount < -25f) {
+                        if (pagerState.currentPage < totalSpreads - 1) {
+                            coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
+                        } else {
+                            onNextChapter()
+                        }
+                    } else if (dragAmount > 25f) {
+                        if (pagerState.currentPage > 0) {
+                            coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
+                        } else {
+                            onPrevChapter()
                         }
                     }
                 }
-                PageTurnAnimation.INSTANT -> {
-                    Modifier.graphicsLayer {
-                        alpha = if (kotlin.math.abs(position) < 0.5f) 1f else 0f
-                        translationX = size.width * position
-                    }
+            }
+        } else Modifier
+
+        HorizontalPager(
+            state = pagerState,
+            userScrollEnabled = settings.pageAnimation != PageTurnAnimation.INSTANT,
+            modifier = Modifier
+                .fillMaxSize()
+                .then(instantSwipeModifier)
+        ) { spreadIdx ->
+            val pageOffset = (spreadIdx - pagerState.currentPage) - pagerState.currentPageOffsetFraction
+            val animModifier = when (settings.pageAnimation) {
+                PageTurnAnimation.CURL -> {
+                    Modifier
+                        .zIndex(if (pageOffset <= 0f) 2f else 1f)
+                        .graphicsLayer {
+                            if (pageOffset > 0f) {
+                                // Page to the right (underneath): hold completely stationary at X = 0!
+                                translationX = -pageOffset * size.width
+                                alpha = (0.88f + 0.12f * (1f - pageOffset.coerceIn(0f, 1f)))
+                            } else {
+                                // Top page being pulled to the left
+                                shadowElevation = (16.dp.toPx() * (1f + pageOffset.coerceIn(-1f, 0f))).coerceAtLeast(0f)
+                            }
+                        }
+                        .drawWithContent {
+                            drawContent()
+                            if (pageOffset in -1f..0f) {
+                                // Draw realistic paper drop shadow along the right edge of the peeling top page
+                                val shadowWidth = 24.dp.toPx()
+                                val rightEdge = size.width
+                                drawRect(
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(
+                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.28f),
+                                            androidx.compose.ui.graphics.Color.Transparent
+                                        ),
+                                        startX = rightEdge,
+                                        endX = rightEdge + shadowWidth
+                                    ),
+                                    topLeft = Offset(rightEdge, 0f),
+                                    size = Size(shadowWidth, size.height)
+                                )
+                            }
+                        }
                 }
                 PageTurnAnimation.SLIDE -> Modifier
+                PageTurnAnimation.INSTANT -> Modifier
             }
 
             Box(
@@ -1555,7 +1602,7 @@ fun ChapterPagingView(
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .width(32.dp)
+                .width(64.dp)
                 .align(Alignment.CenterStart)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -1572,7 +1619,7 @@ fun ChapterPagingView(
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .width(32.dp)
+                .width(64.dp)
                 .align(Alignment.CenterEnd)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },

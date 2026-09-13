@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -68,7 +69,7 @@ fun ReaderSettingsBottomSheet(
     onPageAnimationChange: (PageTurnAnimation) -> Unit = {},
     onHapticFeedbackChange: (Boolean) -> Unit = {}
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val strings = LocalAppStrings.current
 
     ModalBottomSheet(
@@ -81,6 +82,7 @@ fun ReaderSettingsBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
         ) {
@@ -380,6 +382,36 @@ fun ReaderSettingsBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // --- Haptic Feedback ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onHapticFeedbackChange(!settings.hapticFeedbackEnabled) }
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text(
+                        text = strings.hapticFeedbackTitle,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = strings.hapticFeedbackSubtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = settings.hapticFeedbackEnabled,
+                    onCheckedChange = onHapticFeedbackChange
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // --- Auto Hyphenation ---
             Row(
                 modifier = Modifier
@@ -410,33 +442,7 @@ fun ReaderSettingsBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Haptic Feedback ---
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onHapticFeedbackChange(!settings.hapticFeedbackEnabled) }
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                    Text(
-                        text = strings.hapticFeedbackTitle,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = strings.hapticFeedbackSubtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Switch(
-                    checked = settings.hapticFeedbackEnabled,
-                    onCheckedChange = onHapticFeedbackChange
-                )
-            }
+
 
             Spacer(modifier = Modifier.height(16.dp))
 

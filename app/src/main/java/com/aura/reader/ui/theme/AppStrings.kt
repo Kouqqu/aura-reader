@@ -177,6 +177,7 @@ interface Strings {
 
     val saveQuoteTitle: String
     val saveQuoteAction: String
+    val quoteAction: String
     val quoteSavedNotification: String
     val textCopiedNotification: String
     val addQuotePlaceholder: String
@@ -384,6 +385,7 @@ class RuStrings : Strings {
 
     override val saveQuoteTitle = "Сохранить цитату"
     override val saveQuoteAction = "Сохранить цитату"
+    override val quoteAction = "Цитата"
     override val quoteSavedNotification = "Цитата сохранена в закладках"
     override val textCopiedNotification = "Текст скопирован в буфер"
     override val addQuotePlaceholder = "Введите текст цитаты..."
@@ -591,6 +593,7 @@ class EnStrings : Strings {
 
     override val saveQuoteTitle = "Save Quote"
     override val saveQuoteAction = "Save Quote"
+    override val quoteAction = "Quote"
     override val quoteSavedNotification = "Quote saved to bookmarks"
     override val textCopiedNotification = "Text copied to clipboard"
     override val addQuotePlaceholder = "Enter quote text..."
@@ -798,6 +801,7 @@ class UkStrings : Strings {
 
     override val saveQuoteTitle = "Зберегти цитату"
     override val saveQuoteAction = "Зберегти цитату"
+    override val quoteAction = "Цитата"
     override val quoteSavedNotification = "Цитату збережено у закладках"
     override val textCopiedNotification = "Текст скопійовано у буфер"
     override val addQuotePlaceholder = "Введіть текст цитати..."
@@ -1005,6 +1009,7 @@ class BeStrings : Strings {
 
     override val saveQuoteTitle = "Захаваць цытату"
     override val saveQuoteAction = "Захаваць цытату"
+    override val quoteAction = "Цытата"
     override val quoteSavedNotification = "Цытата захавана ў закладках"
     override val textCopiedNotification = "Тэкст скапіяваны ў буфер"
     override val addQuotePlaceholder = "Увядзіце тэкст цытаты..."
@@ -1212,6 +1217,7 @@ class PlStrings : Strings {
 
     override val saveQuoteTitle = "Zapisz cytat"
     override val saveQuoteAction = "Zapisz cytat"
+    override val quoteAction = "Cytat"
     override val quoteSavedNotification = "Cytat zapisany w zakładkach"
     override val textCopiedNotification = "Tekst skopiowany do schowka"
     override val addQuotePlaceholder = "Wpisz tekst cytatu..."
