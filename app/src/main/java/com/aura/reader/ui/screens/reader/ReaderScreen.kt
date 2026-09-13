@@ -104,6 +104,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -160,6 +161,7 @@ fun ReaderScreen(
     val currentChapterIndex by viewModel.currentChapterIndex.collectAsState()
     val savedOffset by viewModel.savedScrollOffset.collectAsState()
     val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
+    val appLanguage by viewModel.appLanguage.collectAsState()
 
     // Search state
     var isSearchActive by remember { mutableStateOf(false) }
@@ -207,15 +209,16 @@ fun ReaderScreen(
     val defaultToolbar = LocalTextToolbar.current
     val clipboardManager = LocalClipboardManager.current
     var selectedQuoteCopyAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var textToolbarStatus by remember { mutableStateOf(TextToolbarStatus.Hidden) }
 
     val customTextToolbar = remember(defaultToolbar) {
         object : TextToolbar {
             override val status: TextToolbarStatus
-                get() = defaultToolbar.status
+                get() = textToolbarStatus
 
             override fun hide() {
+                textToolbarStatus = TextToolbarStatus.Hidden
                 selectedQuoteCopyAction = null
-                defaultToolbar.hide()
             }
 
             override fun showMenu(
@@ -225,8 +228,8 @@ fun ReaderScreen(
                 onCutRequested: (() -> Unit)?,
                 onSelectAllRequested: (() -> Unit)?
             ) {
+                textToolbarStatus = TextToolbarStatus.Shown
                 selectedQuoteCopyAction = onCopyRequested
-                defaultToolbar.showMenu(rect, onCopyRequested, onPasteRequested, onCutRequested, onSelectAllRequested)
             }
         }
     }
@@ -871,26 +874,28 @@ fun ReaderScreen(
                 )
             }
 
-            // Floating pill for selected text: Quote, Dictionary, Translate, Copy
+            // Sleek compact floating pill for selected text
             AnimatedVisibility(
                 visible = selectedQuoteCopyAction != null,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
+                enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = if (showControls) 130.dp else 48.dp)
+                    .padding(bottom = if (showControls) 110.dp else 24.dp)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(28.dp),
+                    shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    shadowElevation = 8.dp,
-                    tonalElevation = 6.dp,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    shadowElevation = 6.dp,
+                    tonalElevation = 4.dp,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .height(40.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         // 1. Quote
                         TextButton(
@@ -902,14 +907,21 @@ fun ReaderScreen(
                                     quoteToSave = clip.trim()
                                 }
                                 customTextToolbar.hide()
-                            }
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier.height(32.dp)
                         ) {
-                            Icon(Icons.Default.FormatQuote, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.FormatQuote, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(strings.saveQuoteAction, style = MaterialTheme.typography.labelMedium)
+                            Text(
+                                text = strings.saveQuoteAction,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                softWrap = false
+                            )
                         }
 
-                        Box(modifier = Modifier.height(18.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
+                        Box(modifier = Modifier.height(16.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
 
                         // 2. Dictionary
                         TextButton(
@@ -931,19 +943,26 @@ fun ReaderScreen(
                                                 dictionaryLoading = false
                                             }
                                             .onFailure { err ->
-                                                dictionaryError = err.message ?: "Толкование не найдено"
+                                                dictionaryError = err.message ?: strings.dictionaryNotFound
                                                 dictionaryLoading = false
                                             }
                                     }
                                 }
-                            }
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier.height(32.dp)
                         ) {
-                            Icon(Icons.Default.AutoStories, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.AutoStories, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Словарь", style = MaterialTheme.typography.labelMedium)
+                            Text(
+                                text = strings.dictionaryAction,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                softWrap = false
+                            )
                         }
 
-                        Box(modifier = Modifier.height(18.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
+                        Box(modifier = Modifier.height(16.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
 
                         // 3. Translation
                         TextButton(
@@ -958,25 +977,32 @@ fun ReaderScreen(
                                     translationResult = null
                                     translationError = null
                                     coroutineScope.launch {
-                                        DictionaryService.translateText(clip)
+                                        DictionaryService.translateText(clip, targetLang = appLanguage.code)
                                             .onSuccess { res ->
                                                 translationResult = res
                                                 translationLoading = false
                                             }
                                             .onFailure { err ->
-                                                translationError = err.message ?: "Ошибка перевода"
+                                                translationError = err.message ?: strings.translationFailed
                                                 translationLoading = false
                                             }
                                     }
                                 }
-                            }
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier.height(32.dp)
                         ) {
-                            Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Перевод", style = MaterialTheme.typography.labelMedium)
+                            Text(
+                                text = strings.translateAction,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                softWrap = false
+                            )
                         }
 
-                        Box(modifier = Modifier.height(18.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
+                        Box(modifier = Modifier.height(16.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
 
                         // 4. Copy
                         TextButton(
@@ -984,11 +1010,31 @@ fun ReaderScreen(
                                 val action = selectedQuoteCopyAction
                                 action?.invoke()
                                 customTextToolbar.hide()
-                            }
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier.height(32.dp)
                         ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Копировать", style = MaterialTheme.typography.labelMedium)
+                            Text(
+                                text = strings.copy,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+
+                        // Close button
+                        IconButton(
+                            onClick = { customTextToolbar.hide() },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.outline
+                            )
                         }
                     }
                 }
@@ -1255,6 +1301,8 @@ fun ChapterPagingView(
             )
         }
 
+        val strings = LocalAppStrings.current
+
         val totalSpreads = remember(pages.size, isTwoColumn) {
             if (isTwoColumn) ((pages.size + 1) / 2).coerceAtLeast(1) else pages.size.coerceAtLeast(1)
         }
@@ -1284,6 +1332,23 @@ fun ChapterPagingView(
         var lastViewedBlockIndex by remember { mutableIntStateOf(initialBlockIndex) }
         val haptic = LocalHapticFeedback.current
         var lastHapticSpread by remember { mutableIntStateOf(-1) }
+        var lastHapticOffset by remember { mutableFloatStateOf(pagerState.currentPage.toFloat()) }
+
+        // Continuous finger-following haptics during page flip
+        LaunchedEffect(pagerState.isScrollInProgress, pagerState.currentPageOffsetFraction) {
+            if (pagerState.isScrollInProgress) {
+                val currentOffset = pagerState.currentPage + pagerState.currentPageOffsetFraction
+                val delta = kotlin.math.abs(currentOffset - lastHapticOffset)
+                if (delta >= 0.12f) {
+                    if (settings.hapticFeedbackEnabled) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                    lastHapticOffset = currentOffset
+                }
+            } else {
+                lastHapticOffset = pagerState.currentPage.toFloat()
+            }
+        }
 
         LaunchedEffect(pagerState.currentPage, pages, isTwoColumn) {
             val currentSpread = pagerState.currentPage.coerceIn(0, (totalSpreads - 1).coerceAtLeast(0))
@@ -1349,15 +1414,36 @@ fun ChapterPagingView(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
         ) { spreadIdx ->
-            val pageOffset = ((pagerState.currentPage - spreadIdx) + pagerState.currentPageOffsetFraction).absoluteValue
+            val position = (spreadIdx - pagerState.currentPage) - pagerState.currentPageOffsetFraction
             val animModifier = when (settings.pageAnimation) {
-                PageTurnAnimation.FADE -> {
+                PageTurnAnimation.CURL -> {
                     Modifier.graphicsLayer {
-                        alpha = (1f - pageOffset).coerceIn(0f, 1f)
-                        translationX = size.width * ((pagerState.currentPage - spreadIdx) + pagerState.currentPageOffsetFraction)
+                        if (position in -1.5f..1.5f) {
+                            if (position < 0f) {
+                                // Turning page curls away around left spine
+                                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+                                cameraDistance = 16f * density.density
+                                val progress = (-position).coerceIn(0f, 1f)
+                                rotationY = -55f * progress
+                                translationX = size.width * progress * 0.45f
+                                alpha = (1f - progress * 0.15f).coerceIn(0f, 1f)
+                                shadowElevation = (12.dp.toPx() * (1f - progress)).coerceAtLeast(0f)
+                            } else if (position > 0f) {
+                                // Underlying next page revealed stationary underneath
+                                val progress = position.coerceIn(0f, 1f)
+                                translationX = -size.width * progress * 0.85f
+                                alpha = (0.75f + 0.25f * (1f - progress)).coerceIn(0f, 1f)
+                            }
+                        }
                     }
                 }
-                else -> Modifier
+                PageTurnAnimation.INSTANT -> {
+                    Modifier.graphicsLayer {
+                        alpha = if (kotlin.math.abs(position) < 0.5f) 1f else 0f
+                        translationX = size.width * position
+                    }
+                }
+                PageTurnAnimation.SLIDE -> Modifier
             }
 
             Box(
@@ -1523,14 +1609,14 @@ fun ChapterPagingView(
 
         val bottomText = when (bottomProgressMode) {
             0 -> "$overallPercent%"
-            1 -> "$minutesLeft мин до конца главы"
+            1 -> strings.minutesLeftInChapter(minutesLeft)
             else -> {
                 if (isTwoColumn) {
                     val p1 = pagerState.currentPage * 2 + 1
                     val p2 = (pagerState.currentPage * 2 + 2).coerceAtMost(pages.size)
-                    if (p1 == p2) "Стр. $p1 из ${pages.size}" else "Стр. $p1–$p2 из ${pages.size}"
+                    if (p1 == p2) "${strings.page} $p1 ${strings.ofPages} ${pages.size}" else "${strings.page} $p1–$p2 ${strings.ofPages} ${pages.size}"
                 } else {
-                    "Стр. ${pagerState.currentPage + 1} из ${pages.size}"
+                    "${strings.page} ${pagerState.currentPage + 1} ${strings.ofPages} ${pages.size}"
                 }
             }
         }

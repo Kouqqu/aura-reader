@@ -3,6 +3,8 @@ package com.aura.reader.ui.screens.reader
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,10 +12,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FormatSize
@@ -65,6 +69,7 @@ fun ReaderSettingsBottomSheet(
     onHapticFeedbackChange: (Boolean) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val strings = LocalAppStrings.current
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -312,57 +317,63 @@ fun ReaderSettingsBottomSheet(
             if (settings.pagingMode) {
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(
-                    text = "Анимация перелистывания",
+                    text = strings.pageAnimationSectionTitle,
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FilterChip(
                         selected = settings.pageAnimation == PageTurnAnimation.SLIDE,
                         onClick = { onPageAnimationChange(PageTurnAnimation.SLIDE) },
-                        label = { Text("Сдвиг") }
+                        label = { Text(strings.pageAnimationSlide, maxLines = 1, softWrap = false) }
                     )
                     FilterChip(
                         selected = settings.pageAnimation == PageTurnAnimation.INSTANT,
                         onClick = { onPageAnimationChange(PageTurnAnimation.INSTANT) },
-                        label = { Text("Мгновенно") }
+                        label = { Text(strings.pageAnimationInstant, maxLines = 1, softWrap = false) }
                     )
                     FilterChip(
-                        selected = settings.pageAnimation == PageTurnAnimation.FADE,
-                        onClick = { onPageAnimationChange(PageTurnAnimation.FADE) },
-                        label = { Text("Растворение") }
+                        selected = settings.pageAnimation == PageTurnAnimation.CURL,
+                        onClick = { onPageAnimationChange(PageTurnAnimation.CURL) },
+                        label = { Text(strings.pageAnimationCurl, maxLines = 1, softWrap = false) }
                     )
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(
-                    text = "Разворот книги (две страницы)",
+                    text = strings.twoColumnSpreadSectionTitle,
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Text(
+                    text = strings.twoColumnSpreadSubtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(top = 2.dp)
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FilterChip(
                         selected = settings.twoColumnMode == TwoColumnMode.AUTO,
                         onClick = { onTwoColumnModeChange(TwoColumnMode.AUTO) },
-                        label = { Text("Авто (Fold/планшет)") }
+                        label = { Text(strings.twoColumnSpreadAuto, maxLines = 1, softWrap = false) }
                     )
                     FilterChip(
                         selected = settings.twoColumnMode == TwoColumnMode.OFF,
                         onClick = { onTwoColumnModeChange(TwoColumnMode.OFF) },
-                        label = { Text("1 страница") }
+                        label = { Text(strings.twoColumnSpreadOff, maxLines = 1, softWrap = false) }
                     )
                     FilterChip(
                         selected = settings.twoColumnMode == TwoColumnMode.ALWAYS,
                         onClick = { onTwoColumnModeChange(TwoColumnMode.ALWAYS) },
-                        label = { Text("2 страницы") }
+                        label = { Text(strings.twoColumnSpreadAlways, maxLines = 1, softWrap = false) }
                     )
                 }
             }
@@ -381,12 +392,12 @@ fun ReaderSettingsBottomSheet(
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                     Text(
-                        text = "Перенос слов (дефисы)",
+                        text = strings.autoHyphenationTitle,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "Книжный перенос длинных слов по слогам (без дыр в строках)",
+                        text = strings.autoHyphenationSubtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -411,12 +422,12 @@ fun ReaderSettingsBottomSheet(
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                     Text(
-                        text = "Тактильный отклик (Haptics)",
+                        text = strings.hapticFeedbackTitle,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "Мягкая вибрация на ползунке глав и при перелистывании",
+                        text = strings.hapticFeedbackSubtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -456,6 +467,11 @@ fun ReaderSettingsBottomSheet(
                     onCheckedChange = onLightImageBackgroundChange
                 )
             }
+
+            // Safe bottom padding so bottom items are never cut off by navigation bar
+            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.navigationBarsPadding())
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

@@ -189,6 +189,38 @@ interface Strings {
     val customOpdsSubtitle: String
     val customOpdsUrl: String
     val customOpdsOpenRoot: String
+
+    val pageAnimationSectionTitle: String
+    val pageAnimationSlide: String
+    val pageAnimationInstant: String
+    val pageAnimationCurl: String
+
+    val twoColumnSpreadSectionTitle: String
+    val twoColumnSpreadSubtitle: String
+    val twoColumnSpreadAuto: String
+    val twoColumnSpreadOff: String
+    val twoColumnSpreadAlways: String
+
+    val autoHyphenationTitle: String
+    val autoHyphenationSubtitle: String
+
+    val hapticFeedbackTitle: String
+    val hapticFeedbackSubtitle: String
+
+    val dictionaryTitle: String
+    val dictionaryAction: String
+    val translateAction: String
+    val copyAction: String
+    val dictionaryLoading: String
+    val dictionaryNotFound: String
+    val dictionarySourcePrefix: String
+    val translationOriginalTitle: String
+    val translationTargetTitle: String
+    val translationFailed: String
+    val closeDialog: String
+    val understandFootnote: String
+    fun minutesLeftInChapter(minutes: Int): String
+
 }
 
 class RuStrings : Strings {
@@ -364,6 +396,38 @@ class RuStrings : Strings {
     override val additionalFeaturesSectionTitle = "Дополнительные функции"
     override val customOpdsUrl = "Адрес OPDS"
     override val customOpdsOpenRoot = "Открыть каталог"
+
+    override val pageAnimationSectionTitle = "Анимация перелистывания"
+    override val pageAnimationSlide = "Сдвиг"
+    override val pageAnimationInstant = "Мгновенно"
+    override val pageAnimationCurl = "Реалистичное"
+
+    override val twoColumnSpreadSectionTitle = "Разворот книги (две страницы)"
+    override val twoColumnSpreadSubtitle = "Автоматически на планшетах и экранах Fold"
+    override val twoColumnSpreadAuto = "Авто"
+    override val twoColumnSpreadOff = "1 страница"
+    override val twoColumnSpreadAlways = "2 страницы"
+
+    override val autoHyphenationTitle = "Перенос слов (дефисы)"
+    override val autoHyphenationSubtitle = "Книжный перенос длинных слов по слогам"
+
+    override val hapticFeedbackTitle = "Тактильный отклик (Haptics)"
+    override val hapticFeedbackSubtitle = "Мягкая вибрация, следующая за пальцем"
+
+    override val dictionaryTitle = "Толковый словарь"
+    override val dictionaryAction = "Словарь"
+    override val translateAction = "Перевод"
+    override val copyAction = "Копировать"
+    override val dictionaryLoading = "Поиск толкования…"
+    override val dictionaryNotFound = "Толкование не найдено"
+    override val dictionarySourcePrefix = "Источник:"
+    override val translationOriginalTitle = "Оригинал:"
+    override val translationTargetTitle = "Перевод:"
+    override val translationFailed = "Не удалось перевести текст"
+    override val closeDialog = "Закрыть"
+    override val understandFootnote = "Понятно"
+    override fun minutesLeftInChapter(minutes: Int) = "$minutes мин до конца главы"
+
 }
 
 class EnStrings : Strings {
@@ -539,6 +603,38 @@ class EnStrings : Strings {
     override val additionalFeaturesSectionTitle = "Additional features"
     override val customOpdsUrl = "OPDS URL"
     override val customOpdsOpenRoot = "Open catalog"
+
+    override val pageAnimationSectionTitle = "Page turn animation"
+    override val pageAnimationSlide = "Slide"
+    override val pageAnimationInstant = "Instant"
+    override val pageAnimationCurl = "Realistic"
+
+    override val twoColumnSpreadSectionTitle = "Two-page spread"
+    override val twoColumnSpreadSubtitle = "Automatic on tablets and Fold screens"
+    override val twoColumnSpreadAuto = "Auto"
+    override val twoColumnSpreadOff = "1 page"
+    override val twoColumnSpreadAlways = "2 pages"
+
+    override val autoHyphenationTitle = "Hyphenation"
+    override val autoHyphenationSubtitle = "Syllable hyphenation for long words"
+
+    override val hapticFeedbackTitle = "Haptic feedback"
+    override val hapticFeedbackSubtitle = "Soft vibration following finger movement"
+
+    override val dictionaryTitle = "Dictionary"
+    override val dictionaryAction = "Dictionary"
+    override val translateAction = "Translate"
+    override val copyAction = "Copy"
+    override val dictionaryLoading = "Looking up definition…"
+    override val dictionaryNotFound = "No definition found"
+    override val dictionarySourcePrefix = "Source:"
+    override val translationOriginalTitle = "Original:"
+    override val translationTargetTitle = "Translation:"
+    override val translationFailed = "Failed to translate text"
+    override val closeDialog = "Close"
+    override val understandFootnote = "Got it"
+    override fun minutesLeftInChapter(minutes: Int) = "$minutes min left in chapter"
+
 }
 
 class UkStrings : Strings {
@@ -714,6 +810,38 @@ class UkStrings : Strings {
     override val additionalFeaturesSectionTitle = "Додаткові функції"
     override val customOpdsUrl = "Адреса OPDS"
     override val customOpdsOpenRoot = "Відкрити каталог"
+
+    override val pageAnimationSectionTitle = "Анімація гортання"
+    override val pageAnimationSlide = "Зсув"
+    override val pageAnimationInstant = "Миттєво"
+    override val pageAnimationCurl = "Реалістичне"
+
+    override val twoColumnSpreadSectionTitle = "Книжковий розворот (дві сторінки)"
+    override val twoColumnSpreadSubtitle = "Автоматично на планшетах і екранах Fold"
+    override val twoColumnSpreadAuto = "Авто"
+    override val twoColumnSpreadOff = "1 сторінка"
+    override val twoColumnSpreadAlways = "2 сторінки"
+
+    override val autoHyphenationTitle = "Перенесення слів"
+    override val autoHyphenationSubtitle = "Книжкове перенесення довгих слів за складами"
+
+    override val hapticFeedbackTitle = "Тактильний відгук (Haptics)"
+    override val hapticFeedbackSubtitle = "М'яка вібрація за рухом пальця"
+
+    override val dictionaryTitle = "Тлумачний словник"
+    override val dictionaryAction = "Словник"
+    override val translateAction = "Переклад"
+    override val copyAction = "Копіювати"
+    override val dictionaryLoading = "Пошук тлумачення…"
+    override val dictionaryNotFound = "Тлумачення не знайдено"
+    override val dictionarySourcePrefix = "Джерело:"
+    override val translationOriginalTitle = "Оригінал:"
+    override val translationTargetTitle = "Переклад:"
+    override val translationFailed = "Не вдалося перекласти текст"
+    override val closeDialog = "Закрити"
+    override val understandFootnote = "Зрозуміло"
+    override fun minutesLeftInChapter(minutes: Int) = "$minutes хв до кінця розділу"
+
 }
 
 class BeStrings : Strings {
@@ -889,6 +1017,38 @@ class BeStrings : Strings {
     override val additionalFeaturesSectionTitle = "Дадатковыя функцыі"
     override val customOpdsUrl = "Адрас OPDS"
     override val customOpdsOpenRoot = "Адкрыць каталог"
+
+    override val pageAnimationSectionTitle = "Анімацыя гартання"
+    override val pageAnimationSlide = "Зрух"
+    override val pageAnimationInstant = "Імгненна"
+    override val pageAnimationCurl = "Рэалістычнае"
+
+    override val twoColumnSpreadSectionTitle = "Кніжны разварот (дзве старонкі)"
+    override val twoColumnSpreadSubtitle = "Аўтаматычна на планшэтах і экранах Fold"
+    override val twoColumnSpreadAuto = "Аўта"
+    override val twoColumnSpreadOff = "1 старонка"
+    override val twoColumnSpreadAlways = "2 старонкі"
+
+    override val autoHyphenationTitle = "Перанос слоў"
+    override val autoHyphenationSubtitle = "Кніжны перанос доўгіх слоў па складах"
+
+    override val hapticFeedbackTitle = "Тактыльны водгук (Haptics)"
+    override val hapticFeedbackSubtitle = "Мяккая вібрацыя за рухам пальца"
+
+    override val dictionaryTitle = "Тлумачальны слоўнік"
+    override val dictionaryAction = "Слоўнік"
+    override val translateAction = "Пераклад"
+    override val copyAction = "Капіяваць"
+    override val dictionaryLoading = "Пошук тлумачэння…"
+    override val dictionaryNotFound = "Тлумачэнне не знойдзена"
+    override val dictionarySourcePrefix = "Крыніца:"
+    override val translationOriginalTitle = "Арыгінал:"
+    override val translationTargetTitle = "Пераклад:"
+    override val translationFailed = "Не ўдалося перакласці тэкст"
+    override val closeDialog = "Закрыць"
+    override val understandFootnote = "Зразумела"
+    override fun minutesLeftInChapter(minutes: Int) = "$minutes хв да канца раздзела"
+
 }
 
 class PlStrings : Strings {
@@ -1064,6 +1224,38 @@ class PlStrings : Strings {
     override val additionalFeaturesSectionTitle = "Dodatkowe funkcje"
     override val customOpdsUrl = "Adres OPDS"
     override val customOpdsOpenRoot = "Otwórz katalog"
+
+    override val pageAnimationSectionTitle = "Animacja przewracania stron"
+    override val pageAnimationSlide = "Przesunięcie"
+    override val pageAnimationInstant = "Błyskawicznie"
+    override val pageAnimationCurl = "Realistyczne"
+
+    override val twoColumnSpreadSectionTitle = "Rozkładówka książki (dwie strony)"
+    override val twoColumnSpreadSubtitle = "Automatycznie na tabletach i ekranach Fold"
+    override val twoColumnSpreadAuto = "Auto"
+    override val twoColumnSpreadOff = "1 strona"
+    override val twoColumnSpreadAlways = "2 strony"
+
+    override val autoHyphenationTitle = "Dzielenie wyrazów"
+    override val autoHyphenationSubtitle = "Dzielenie długich słów na sylaby"
+
+    override val hapticFeedbackTitle = "Wibracje haptyczne"
+    override val hapticFeedbackSubtitle = "Miękkie wibracje podążające za ruchem palca"
+
+    override val dictionaryTitle = "Słownik definicji"
+    override val dictionaryAction = "Słownik"
+    override val translateAction = "Tłumacz"
+    override val copyAction = "Kopiuj"
+    override val dictionaryLoading = "Szukanie definicji…"
+    override val dictionaryNotFound = "Nie znaleziono definicji"
+    override val dictionarySourcePrefix = "Źródło:"
+    override val translationOriginalTitle = "Oryginał:"
+    override val translationTargetTitle = "Tłumaczenie:"
+    override val translationFailed = "Nie udało się przetłumaczyć tekstu"
+    override val closeDialog = "Zamknij"
+    override val understandFootnote = "Rozumiem"
+    override fun minutesLeftInChapter(minutes: Int) = "$minutes min do końca rozdziału"
+
 }
 
 fun getStrings(language: AppLanguage): Strings = when (language) {

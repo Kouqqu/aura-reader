@@ -4,8 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -28,7 +30,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.aura.reader.data.services.WordDefinition
+import com.aura.reader.ui.theme.LocalAppStrings
 
 @Composable
 fun FootnoteDialog(
@@ -48,6 +50,8 @@ fun FootnoteDialog(
     content: String,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
@@ -78,7 +82,7 @@ fun FootnoteDialog(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = if (refLabel.isNotBlank()) "Сноска $refLabel" else "Сноска",
+                            text = if (refLabel.isNotBlank()) "${strings.footnoteTitle} $refLabel" else strings.footnoteTitle,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -91,7 +95,7 @@ fun FootnoteDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Закрыть",
+                            contentDescription = strings.closeDialog,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -121,9 +125,15 @@ fun FootnoteDialog(
                 ) {
                     FilledTonalButton(
                         onClick = onDismiss,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.defaultMinSize(minWidth = 96.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
                     ) {
-                        Text("Понятно")
+                        Text(
+                            text = strings.understandFootnote,
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
                 }
             }
@@ -140,6 +150,7 @@ fun DictionaryDialog(
     onDismiss: () -> Unit
 ) {
     val clipboardManager = LocalClipboardManager.current
+    val strings = LocalAppStrings.current
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -150,12 +161,12 @@ fun DictionaryDialog(
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 12.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(20.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -171,7 +182,7 @@ fun DictionaryDialog(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "Толковый словарь",
+                            text = strings.dictionaryTitle,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -184,7 +195,7 @@ fun DictionaryDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Закрыть",
+                            contentDescription = strings.closeDialog,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -199,7 +210,15 @@ fun DictionaryDialog(
                             .height(140.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = strings.dictionaryLoading,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 } else if (definition != null) {
                     Text(
@@ -228,13 +247,13 @@ fun DictionaryDialog(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = "Источник: ${definition.source}",
+                        text = "${strings.dictionarySourcePrefix} ${definition.source}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 } else {
                     Text(
-                        text = errorMessage ?: "Толкование для «$word» не найдено.",
+                        text = errorMessage ?: strings.dictionaryNotFound,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 20.dp)
@@ -252,11 +271,16 @@ fun DictionaryDialog(
                         TextButton(
                             onClick = {
                                 clipboardManager.setText(AnnotatedString("${definition.title}: ${definition.extract}"))
-                            }
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                         ) {
                             Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Скопировать")
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = strings.copyAction,
+                                maxLines = 1,
+                                softWrap = false
+                            )
                         }
                     } else {
                         Spacer(modifier = Modifier.weight(1f))
@@ -264,9 +288,15 @@ fun DictionaryDialog(
 
                     FilledTonalButton(
                         onClick = onDismiss,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.defaultMinSize(minWidth = 96.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
                     ) {
-                        Text("Закрыть")
+                        Text(
+                            text = strings.closeDialog,
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
                 }
             }
@@ -283,6 +313,7 @@ fun TranslationDialog(
     onDismiss: () -> Unit
 ) {
     val clipboardManager = LocalClipboardManager.current
+    val strings = LocalAppStrings.current
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -293,12 +324,12 @@ fun TranslationDialog(
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 12.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(20.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -314,7 +345,7 @@ fun TranslationDialog(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "Перевод",
+                            text = strings.translateAction,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -327,7 +358,7 @@ fun TranslationDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Закрыть",
+                            contentDescription = strings.closeDialog,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -336,7 +367,7 @@ fun TranslationDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Оригинал:",
+                    text = strings.translationOriginalTitle,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -359,7 +390,7 @@ fun TranslationDialog(
                     }
                 } else if (translatedText != null) {
                     Text(
-                        text = "Перевод на русский:",
+                        text = strings.translationTargetTitle,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
@@ -383,7 +414,7 @@ fun TranslationDialog(
                     }
                 } else {
                     Text(
-                        text = errorMessage ?: "Не удалось перевести текст",
+                        text = errorMessage ?: strings.translationFailed,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(vertical = 12.dp)
@@ -401,11 +432,16 @@ fun TranslationDialog(
                         TextButton(
                             onClick = {
                                 clipboardManager.setText(AnnotatedString(translatedText))
-                            }
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                         ) {
                             Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Скопировать")
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = strings.copyAction,
+                                maxLines = 1,
+                                softWrap = false
+                            )
                         }
                     } else {
                         Spacer(modifier = Modifier.weight(1f))
@@ -413,9 +449,15 @@ fun TranslationDialog(
 
                     FilledTonalButton(
                         onClick = onDismiss,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.defaultMinSize(minWidth = 96.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
                     ) {
-                        Text("Закрыть")
+                        Text(
+                            text = strings.closeDialog,
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
                 }
             }
