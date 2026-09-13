@@ -84,6 +84,9 @@ import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -1457,37 +1460,113 @@ fun ChapterPagingView(
             val animModifier = when (settings.pageAnimation) {
                 PageTurnAnimation.CURL -> {
                     Modifier
-                        .zIndex(if (pageOffset <= 0f) 2f else 1f)
+                        // Hold all pages stationary at X = 0 so the top page peels to reveal the page underneath
                         .graphicsLayer {
-                            if (pageOffset > 0f) {
-                                // Page to the right (underneath): hold completely stationary at X = 0!
-                                translationX = -pageOffset * size.width
-                                alpha = (0.88f + 0.12f * (1f - pageOffset.coerceIn(0f, 1f)))
-                            } else {
-                                // Top page being pulled to the left
-                                shadowElevation = (16.dp.toPx() * (1f + pageOffset.coerceIn(-1f, 0f))).coerceAtLeast(0f)
-                            }
+                            translationX = -pageOffset * size.width
                         }
-                        .drawWithContent {
-                            drawContent()
+                        .then(
                             if (pageOffset in -1f..0f) {
-                                // Draw realistic paper drop shadow along the right edge of the peeling top page
-                                val shadowWidth = 24.dp.toPx()
-                                val rightEdge = size.width
-                                drawRect(
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(
-                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.28f),
-                                            androidx.compose.ui.graphics.Color.Transparent
-                                        ),
-                                        startX = rightEdge,
-                                        endX = rightEdge + shadowWidth
-                                    ),
-                                    topLeft = Offset(rightEdge, 0f),
-                                    size = Size(shadowWidth, size.height)
-                                )
+                                // Page N turning forward (peeling leftwards, uncovering Page N+1 underneath)
+                                val progress = (-pageOffset).coerceIn(0f, 1f)
+                                Modifier
+                                    .zIndex(2f)
+                                    .drawWithContent {
+                                        val foldX = size.width * (1f - progress)
+                                        val curlWidth = 24.dp.toPx().coerceAtMost(size.width * 0.15f)
+                                        val shadowWidth = 32.dp.toPx()
+
+                                        // 1. Clip top page to the left of the fold
+                                        clipRect(left = 0f, top = 0f, right = foldX, bottom = size.height) {
+                                            this@drawWithContent.drawContent()
+
+                                            // 2. Paper curl ridge highlight along the edge
+                                            if (progress > 0.01f && progress < 0.99f) {
+                                                drawRect(
+                                                    brush = Brush.horizontalGradient(
+                                                        colors = listOf(
+                                                            androidx.compose.ui.graphics.Color.Transparent,
+                                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.08f),
+                                                            androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f),
+                                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.12f)
+                                                        ),
+                                                        startX = foldX - curlWidth,
+                                                        endX = foldX
+                                                    ),
+                                                    topLeft = Offset(foldX - curlWidth, 0f),
+                                                    size = Size(curlWidth, size.height)
+                                                )
+                                            }
+                                        }
+
+                                        // 3. Soft paper drop shadow cast onto the revealed page underneath
+                                        if (progress > 0.01f && progress < 0.99f) {
+                                            drawRect(
+                                                brush = Brush.horizontalGradient(
+                                                    colors = listOf(
+                                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.32f),
+                                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.10f),
+                                                        androidx.compose.ui.graphics.Color.Transparent
+                                                    ),
+                                                    startX = foldX,
+                                                    endX = foldX + shadowWidth
+                                                ),
+                                                topLeft = Offset(foldX, 0f),
+                                                size = Size(shadowWidth, size.height)
+                                            )
+                                        }
+                                    }
+                            } else if (pageOffset in 0f..1f && pagerState.currentPageOffsetFraction < 0f) {
+                                // Page N-1 peeling rightwards from left over Page N (turning backward)
+                                val progress = (1f - pageOffset).coerceIn(0f, 1f)
+                                Modifier
+                                    .zIndex(2f)
+                                    .drawWithContent {
+                                        val foldX = size.width * progress
+                                        val curlWidth = 24.dp.toPx().coerceAtMost(size.width * 0.15f)
+                                        val shadowWidth = 32.dp.toPx()
+
+                                        clipRect(left = 0f, top = 0f, right = foldX, bottom = size.height) {
+                                            this@drawWithContent.drawContent()
+
+                                            if (progress > 0.01f && progress < 0.99f) {
+                                                drawRect(
+                                                    brush = Brush.horizontalGradient(
+                                                        colors = listOf(
+                                                            androidx.compose.ui.graphics.Color.Transparent,
+                                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.08f),
+                                                            androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f),
+                                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.12f)
+                                                        ),
+                                                        startX = foldX - curlWidth,
+                                                        endX = foldX
+                                                    ),
+                                                    topLeft = Offset(foldX - curlWidth, 0f),
+                                                    size = Size(curlWidth, size.height)
+                                                )
+                                            }
+                                        }
+
+                                        if (progress > 0.01f && progress < 0.99f) {
+                                            drawRect(
+                                                brush = Brush.horizontalGradient(
+                                                    colors = listOf(
+                                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.32f),
+                                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.10f),
+                                                        androidx.compose.ui.graphics.Color.Transparent
+                                                    ),
+                                                    startX = foldX,
+                                                    endX = foldX + shadowWidth
+                                                ),
+                                                topLeft = Offset(foldX, 0f),
+                                                size = Size(shadowWidth, size.height)
+                                            )
+                                        }
+                                    }
+                            } else {
+                                // Stationary page underneath
+                                Modifier.zIndex(1f)
                             }
-                        }
+                        )
                 }
                 PageTurnAnimation.SLIDE -> Modifier
                 PageTurnAnimation.INSTANT -> Modifier
@@ -1668,23 +1747,65 @@ fun ChapterPagingView(
             }
         }
 
-        Text(
-            text = bottomText,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-            fontWeight = FontWeight.Normal,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+        Surface(
+            onClick = {
+                bottomProgressMode = (bottomProgressMode + 1) % 3
+                if (settings.hapticFeedbackEnabled) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                }
+            },
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f),
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            ),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 10.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .clickable {
-                    bottomProgressMode = (bottomProgressMode + 1) % 3
-                    if (settings.hapticFeedbackEnabled) {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                .padding(bottom = 8.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = when (bottomProgressMode) {
+                        0 -> Icons.Default.MenuBook
+                        1 -> Icons.Default.Timer
+                        else -> Icons.Default.AutoStories
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(13.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+
+                Text(
+                    text = bottomText,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // 3 interactive indicator dots showing the 3 modes: • ○ ○
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    repeat(3) { idx ->
+                        Box(
+                            modifier = Modifier
+                                .size(if (idx == bottomProgressMode) 4.5.dp else 3.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (idx == bottomProgressMode) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+                                )
+                        )
                     }
                 }
-                .padding(horizontal = 8.dp, vertical = 2.dp)
-        )
+            }
+        }
     }
 }
 

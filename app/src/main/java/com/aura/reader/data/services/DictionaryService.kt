@@ -43,13 +43,15 @@ object DictionaryService {
             return@withContext Result.success(it)
         }
 
-        // 1. Primary: Wiktionary (Викисловарь) for true explanatory dictionary meanings
+        val userAgent = "AuraReader/1.3 (https://github.com/Kouqqu/aura-reader)"
+
+        // 1. Primary: Wiktionary (Викисловарь) with &redirects=1 for inflected word forms & base lemmas
         try {
             val encoded = URLEncoder.encode(cleanWord.lowercase(), "UTF-8")
-            val url = "https://ru.wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&titles=" + encoded + "&format=json"
+            val url = "https://ru.wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&titles=" + encoded + "&format=json"
             val request = Request.Builder()
                 .url(url)
-                .header("User-Agent", "AuraReader/1.3 (Android)")
+                .header("User-Agent", userAgent)
                 .build()
 
             client.newCall(request).execute().use { response ->
@@ -63,16 +65,80 @@ object DictionaryService {
                                 if (key != "-1") {
                                     val pageObj = pages.getJSONObject(key)
                                     val extract = pageObj.optString("extract", "")
+                                    val foundTitle = pageObj.optString("title", cleanWord)
                                     val parsedMeaning = extractWiktionaryMeanings(extract)
                                     if (!parsedMeaning.isNullOrBlank()) {
+                                        val displayTitle = if (!foundTitle.equals(cleanWord, ignoreCase = true)) {
+                                            "${foundTitle.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }} (${cleanWord})"
+                                        } else {
+                                            cleanWord.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                                        }
                                         val def = WordDefinition(
                                             word = cleanWord,
-                                            title = cleanWord.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+                                            title = displayTitle,
                                             extract = parsedMeaning,
                                             source = "Викисловарь"
                                         )
                                         definitionCache[cacheKey] = def
                                         return@withContext Result.success(def)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) { }
+
+        // 1b. Fallback: Wiktionary search query (for complex inflected forms, e.g. "домами" -> "дом")
+        try {
+            val encoded = URLEncoder.encode(cleanWord.lowercase(), "UTF-8")
+            val searchUrl = "https://ru.wiktionary.org/w/api.php?action=query&list=search&srsearch=" + encoded + "&srlimit=1&format=json"
+            val request = Request.Builder()
+                .url(searchUrl)
+                .header("User-Agent", userAgent)
+                .build()
+
+            var candidateTitle: String? = null
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val body = response.body?.string()
+                    if (!body.isNullOrBlank()) {
+                        val json = JSONObject(body)
+                        val searchArr = json.optJSONObject("query")?.optJSONArray("search")
+                        if (searchArr != null && searchArr.length() > 0) {
+                            candidateTitle = searchArr.getJSONObject(0).optString("title")
+                        }
+                    }
+                }
+            }
+
+            if (!candidateTitle.isNullOrBlank()) {
+                val encCand = URLEncoder.encode(candidateTitle!!.lowercase(), "UTF-8")
+                val urlCand = "https://ru.wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&titles=" + encCand + "&format=json"
+                val reqCand = Request.Builder().url(urlCand).header("User-Agent", userAgent).build()
+                client.newCall(reqCand).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val body = response.body?.string()
+                        if (!body.isNullOrBlank()) {
+                            val json = JSONObject(body)
+                            val pages = json.optJSONObject("query")?.optJSONObject("pages")
+                            if (pages != null) {
+                                for (key in pages.keys()) {
+                                    if (key != "-1") {
+                                        val pageObj = pages.getJSONObject(key)
+                                        val extract = pageObj.optString("extract", "")
+                                        val parsedMeaning = extractWiktionaryMeanings(extract)
+                                        if (!parsedMeaning.isNullOrBlank()) {
+                                            val def = WordDefinition(
+                                                word = cleanWord,
+                                                title = "${candidateTitle!!.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }} (${cleanWord})",
+                                                extract = parsedMeaning,
+                                                source = "Викисловарь"
+                                            )
+                                            definitionCache[cacheKey] = def
+                                            return@withContext Result.success(def)
+                                        }
                                     }
                                 }
                             }
@@ -88,7 +154,7 @@ object DictionaryService {
             val url = "https://ru.wikipedia.org/api/rest_v1/page/summary/" + encoded
             val request = Request.Builder()
                 .url(url)
-                .header("User-Agent", "AuraReader/1.3 (Android)")
+                .header("User-Agent", userAgent)
                 .build()
 
             client.newCall(request).execute().use { response ->
@@ -119,7 +185,7 @@ object DictionaryService {
             val url = "https://en.wikipedia.org/api/rest_v1/page/summary/" + encoded
             val request = Request.Builder()
                 .url(url)
-                .header("User-Agent", "AuraReader/1.3 (Android)")
+                .header("User-Agent", userAgent)
                 .build()
 
             client.newCall(request).execute().use { response ->
