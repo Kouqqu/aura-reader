@@ -13,6 +13,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
@@ -2036,8 +2037,10 @@ fun RenderBlock(
             Spacer(modifier = Modifier.height(16.dp))
         }
         BlockType.IMAGE -> {
-            val isDark = settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.AMOLED ||
-                    settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.SYSTEM_DYNAMIC
+            val isSystemDark = isSystemInDarkTheme()
+            val isDark = settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.DARK ||
+                    settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.AMOLED ||
+                    (settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.SYSTEM_DYNAMIC && isSystemDark)
             val shouldApplyLightCard = settings.lightImageBackground && isDark
             val imageCardBg = if (shouldApplyLightCard) {
                 Color(0xFFF5F4F0)
@@ -2079,6 +2082,11 @@ fun RenderBlock(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(if (shouldApplyLightCard) 8.dp else 16.dp))
+                                .then(
+                                    if (shouldApplyLightCard) {
+                                        Modifier.background(Color.White)
+                                    } else Modifier
+                                )
                         )
                     }
                 }

@@ -46,6 +46,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.PaddingValues
@@ -1420,80 +1421,100 @@ fun ParallaxCoverViewer(
         }
 
         // Center 3D Parallax Book Cover Card
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
-                .fillMaxWidth(0.82f)
-                .aspectRatio(0.68f)
-                .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            touchOffsetX = (touchOffsetX + dragAmount.x * 0.12f).coerceIn(-20f, 20f)
-                            touchOffsetY = (touchOffsetY - dragAmount.y * 0.12f).coerceIn(-20f, 20f)
-                        },
-                        onDragEnd = {
-                            touchOffsetX = 0f
-                            touchOffsetY = 0f
-                        },
-                        onDragCancel = {
-                            touchOffsetX = 0f
-                            touchOffsetY = 0f
-                        }
-                    )
-                }
-                .graphicsLayer {
-                    rotationY = tiltY
-                    rotationX = tiltX
-                    cameraDistance = 16f * density.density
-                    translationX = tiltY * 1.6f
-                    translationY = tiltX * 1.6f
-                    shadowElevation = 32.dp.toPx()
-                    shape = RoundedCornerShape(22.dp)
-                    clip = true
-                }
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(22.dp))
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
+                .padding(top = 96.dp, bottom = 72.dp),
+            contentAlignment = Alignment.Center
         ) {
-            if (bitmap != null) {
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = book.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+            val cardAspectRatio = 0.68f
+            val maxCardWidth = maxWidth.coerceAtMost(400.dp)
+            val maxCardHeight = maxHeight
+
+            val (cardWidth, cardHeight) = if (maxCardWidth / maxCardHeight < cardAspectRatio) {
+                val w = maxCardWidth
+                val h = w / cardAspectRatio
+                w to h
             } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Book,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = book.title,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                val h = maxCardHeight
+                val w = h * cardAspectRatio
+                w to h
             }
 
-            // Real hardcover book spine indentation / crease on left edge
             Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .width(18.dp)
-                    .align(Alignment.CenterStart)
+                    .size(width = cardWidth, height = cardHeight)
+                    .pointerInput(Unit) {
+                        detectDragGestures(
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                touchOffsetX = (touchOffsetX + dragAmount.x * 0.12f).coerceIn(-20f, 20f)
+                                touchOffsetY = (touchOffsetY - dragAmount.y * 0.12f).coerceIn(-20f, 20f)
+                            },
+                            onDragEnd = {
+                                touchOffsetX = 0f
+                                touchOffsetY = 0f
+                            },
+                            onDragCancel = {
+                                touchOffsetX = 0f
+                                touchOffsetY = 0f
+                            }
+                        )
+                    }
+                    .graphicsLayer {
+                        rotationY = tiltY
+                        rotationX = tiltX
+                        cameraDistance = 16f * density.density
+                        translationX = tiltY * 1.6f
+                        translationY = tiltX * 1.6f
+                        shadowElevation = 32.dp.toPx()
+                        shape = RoundedCornerShape(22.dp)
+                        clip = true
+                    }
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(22.dp))
+            ) {
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = book.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Book,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = book.title,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                // Real hardcover book spine indentation / crease on left edge
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(18.dp)
+                        .align(Alignment.CenterStart)
                     .background(
                         Brush.horizontalGradient(
                             colors = listOf(
@@ -1503,26 +1524,27 @@ fun ParallaxCoverViewer(
                             )
                         )
                     )
-            )
-
-            // Dynamic holographic light specular glare moving smoothly across the surface
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val glareCenterX = size.width * (0.5f - (tiltY / 25f) * 0.6f)
-                val glareCenterY = size.height * (0.5f + (tiltX / 25f) * 0.6f)
-                val glareRadius = size.maxDimension * 1.2f
-
-                drawRect(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.22f),
-                            Color.White.copy(alpha = 0.12f),
-                            Color.White.copy(alpha = 0.04f),
-                            Color.Transparent
-                        ),
-                        center = Offset(glareCenterX, glareCenterY),
-                        radius = glareRadius
-                    )
                 )
+
+                // Dynamic holographic light specular glare moving smoothly across the surface
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val glareCenterX = size.width * (0.5f - (tiltY / 25f) * 0.6f)
+                    val glareCenterY = size.height * (0.5f + (tiltX / 25f) * 0.6f)
+                    val glareRadius = size.maxDimension * 1.2f
+
+                    drawRect(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.22f),
+                                Color.White.copy(alpha = 0.12f),
+                                Color.White.copy(alpha = 0.04f),
+                                Color.Transparent
+                            ),
+                            center = Offset(glareCenterX, glareCenterY),
+                            radius = glareRadius
+                        )
+                    )
+                }
             }
         }
 
