@@ -7,10 +7,12 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.aura.reader.data.model.Bookmark
+import com.aura.reader.data.model.PageTurnAnimation
 import com.aura.reader.data.model.Quote
 import com.aura.reader.data.model.ReaderFontFamily
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.ReaderThemeMode
+import com.aura.reader.data.model.TwoColumnMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
@@ -31,6 +33,10 @@ class PreferencesManager(private val context: Context) {
         val KEEP_SCREEN_ON_KEY = booleanPreferencesKey("keep_screen_on")
         val LIGHT_IMAGE_BG_KEY = booleanPreferencesKey("light_image_background")
         val PAGING_MODE_KEY = booleanPreferencesKey("paging_mode")
+        val AUTO_HYPHENATION_KEY = booleanPreferencesKey("auto_hyphenation")
+        val TWO_COLUMN_MODE_KEY = stringPreferencesKey("two_column_mode")
+        val PAGE_ANIMATION_KEY = stringPreferencesKey("page_animation")
+        val HAPTIC_FEEDBACK_KEY = booleanPreferencesKey("haptic_feedback_enabled")
         val RECENT_BOOKS_KEY = stringPreferencesKey("recent_books_json")
         val READING_STATS_KEY = stringPreferencesKey("reading_stats_json")
         val BOOKMARKS_KEY = stringPreferencesKey("bookmarks_json")
@@ -94,6 +100,10 @@ class PreferencesManager(private val context: Context) {
         val keepScreenOn = prefs[KEEP_SCREEN_ON_KEY] ?: true
         val lightImageBackground = prefs[LIGHT_IMAGE_BG_KEY] ?: true
         val pagingMode = prefs[PAGING_MODE_KEY] ?: false
+        val autoHyphenation = prefs[AUTO_HYPHENATION_KEY] ?: true
+        val twoColumnModeStr = prefs[TWO_COLUMN_MODE_KEY] ?: TwoColumnMode.AUTO.name
+        val pageAnimationStr = prefs[PAGE_ANIMATION_KEY] ?: PageTurnAnimation.SLIDE.name
+        val hapticFeedbackEnabled = prefs[HAPTIC_FEEDBACK_KEY] ?: true
 
         val themeMode = try {
             ReaderThemeMode.valueOf(themeModeStr)
@@ -107,6 +117,18 @@ class PreferencesManager(private val context: Context) {
             ReaderFontFamily.SERIF
         }
 
+        val twoColumnMode = try {
+            TwoColumnMode.valueOf(twoColumnModeStr)
+        } catch (e: Exception) {
+            TwoColumnMode.AUTO
+        }
+
+        val pageAnimation = try {
+            PageTurnAnimation.valueOf(pageAnimationStr)
+        } catch (e: Exception) {
+            PageTurnAnimation.SLIDE
+        }
+
         ReaderSettings(
             fontSizeSp = fontSize,
             lineHeightMultiplier = lineHeight,
@@ -114,7 +136,11 @@ class PreferencesManager(private val context: Context) {
             fontFamily = fontFamily,
             keepScreenOn = keepScreenOn,
             lightImageBackground = lightImageBackground,
-            pagingMode = pagingMode
+            pagingMode = pagingMode,
+            autoHyphenation = autoHyphenation,
+            twoColumnMode = twoColumnMode,
+            pageAnimation = pageAnimation,
+            hapticFeedbackEnabled = hapticFeedbackEnabled
         )
     }
 
@@ -157,6 +183,30 @@ class PreferencesManager(private val context: Context) {
     suspend fun updatePagingMode(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PAGING_MODE_KEY] = enabled
+        }
+    }
+
+    suspend fun updateAutoHyphenation(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[AUTO_HYPHENATION_KEY] = enabled
+        }
+    }
+
+    suspend fun updateTwoColumnMode(mode: TwoColumnMode) {
+        context.dataStore.edit { prefs ->
+            prefs[TWO_COLUMN_MODE_KEY] = mode.name
+        }
+    }
+
+    suspend fun updatePageAnimation(animation: PageTurnAnimation) {
+        context.dataStore.edit { prefs ->
+            prefs[PAGE_ANIMATION_KEY] = animation.name
+        }
+    }
+
+    suspend fun updateHapticFeedbackEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[HAPTIC_FEEDBACK_KEY] = enabled
         }
     }
 

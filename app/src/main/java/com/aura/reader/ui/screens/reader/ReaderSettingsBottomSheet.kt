@@ -36,9 +36,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aura.reader.data.model.PageTurnAnimation
 import com.aura.reader.data.model.ReaderFontFamily
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.ReaderThemeMode
+import com.aura.reader.data.model.TwoColumnMode
 import com.aura.reader.ui.theme.AmoledBackground
 import com.aura.reader.ui.theme.AmoledText
 import com.aura.reader.ui.theme.SepiaBackground
@@ -56,7 +58,11 @@ fun ReaderSettingsBottomSheet(
     onThemeModeChange: (ReaderThemeMode) -> Unit,
     onFontFamilyChange: (ReaderFontFamily) -> Unit,
     onLightImageBackgroundChange: (Boolean) -> Unit,
-    onPagingModeChange: (Boolean) -> Unit
+    onPagingModeChange: (Boolean) -> Unit,
+    onAutoHyphenationChange: (Boolean) -> Unit = {},
+    onTwoColumnModeChange: (TwoColumnMode) -> Unit = {},
+    onPageAnimationChange: (PageTurnAnimation) -> Unit = {},
+    onHapticFeedbackChange: (Boolean) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -300,6 +306,124 @@ fun ReaderSettingsBottomSheet(
                 Switch(
                     checked = settings.pagingMode,
                     onCheckedChange = onPagingModeChange
+                )
+            }
+
+            if (settings.pagingMode) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = "Анимация перелистывания",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = settings.pageAnimation == PageTurnAnimation.SLIDE,
+                        onClick = { onPageAnimationChange(PageTurnAnimation.SLIDE) },
+                        label = { Text("Сдвиг") }
+                    )
+                    FilterChip(
+                        selected = settings.pageAnimation == PageTurnAnimation.INSTANT,
+                        onClick = { onPageAnimationChange(PageTurnAnimation.INSTANT) },
+                        label = { Text("Мгновенно") }
+                    )
+                    FilterChip(
+                        selected = settings.pageAnimation == PageTurnAnimation.FADE,
+                        onClick = { onPageAnimationChange(PageTurnAnimation.FADE) },
+                        label = { Text("Растворение") }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = "Разворот книги (две страницы)",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = settings.twoColumnMode == TwoColumnMode.AUTO,
+                        onClick = { onTwoColumnModeChange(TwoColumnMode.AUTO) },
+                        label = { Text("Авто (Fold/планшет)") }
+                    )
+                    FilterChip(
+                        selected = settings.twoColumnMode == TwoColumnMode.OFF,
+                        onClick = { onTwoColumnModeChange(TwoColumnMode.OFF) },
+                        label = { Text("1 страница") }
+                    )
+                    FilterChip(
+                        selected = settings.twoColumnMode == TwoColumnMode.ALWAYS,
+                        onClick = { onTwoColumnModeChange(TwoColumnMode.ALWAYS) },
+                        label = { Text("2 страницы") }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // --- Auto Hyphenation ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onAutoHyphenationChange(!settings.autoHyphenation) }
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text(
+                        text = "Перенос слов (дефисы)",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "Книжный перенос длинных слов по слогам (без дыр в строках)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = settings.autoHyphenation,
+                    onCheckedChange = onAutoHyphenationChange
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // --- Haptic Feedback ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onHapticFeedbackChange(!settings.hapticFeedbackEnabled) }
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text(
+                        text = "Тактильный отклик (Haptics)",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "Мягкая вибрация на ползунке глав и при перелистывании",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = settings.hapticFeedbackEnabled,
+                    onCheckedChange = onHapticFeedbackChange
                 )
             }
 

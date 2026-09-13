@@ -15,6 +15,18 @@ enum class ReaderFontFamily {
     MONOSPACE
 }
 
+enum class PageTurnAnimation {
+    SLIDE,
+    INSTANT,
+    FADE
+}
+
+enum class TwoColumnMode {
+    AUTO,
+    OFF,
+    ALWAYS
+}
+
 data class ReaderSettings(
     val fontSizeSp: Float = 18f,
     val lineHeightMultiplier: Float = 1.5f,
@@ -22,5 +34,9 @@ data class ReaderSettings(
     val fontFamily: ReaderFontFamily = ReaderFontFamily.SERIF,
     val keepScreenOn: Boolean = true,
     val lightImageBackground: Boolean = true,
-    val pagingMode: Boolean = false
+    val pagingMode: Boolean = false,
+    val autoHyphenation: Boolean = true,
+    val twoColumnMode: TwoColumnMode = TwoColumnMode.AUTO,
+    val pageAnimation: PageTurnAnimation = PageTurnAnimation.SLIDE,
+    val hapticFeedbackEnabled: Boolean = true
 )

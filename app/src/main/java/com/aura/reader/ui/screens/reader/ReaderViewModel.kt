@@ -163,6 +163,30 @@ class ReaderViewModel(
         }
     }
 
+    fun setAutoHyphenation(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesManager.updateAutoHyphenation(enabled)
+        }
+    }
+
+    fun setTwoColumnMode(mode: com.aura.reader.data.model.TwoColumnMode) {
+        viewModelScope.launch {
+            preferencesManager.updateTwoColumnMode(mode)
+        }
+    }
+
+    fun setPageAnimation(animation: com.aura.reader.data.model.PageTurnAnimation) {
+        viewModelScope.launch {
+            preferencesManager.updatePageAnimation(animation)
+        }
+    }
+
+    fun setHapticFeedbackEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesManager.updateHapticFeedbackEnabled(enabled)
+        }
+    }
+
     // --- Active Reading Timer ---
     private var readingStartTime: Long = 0L
 

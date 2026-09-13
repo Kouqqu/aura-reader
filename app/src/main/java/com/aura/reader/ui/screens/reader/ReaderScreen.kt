@@ -19,7 +19,10 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalTextToolbar
 import androidx.compose.ui.platform.TextToolbar
 import androidx.compose.ui.platform.TextToolbarStatus
@@ -28,9 +31,18 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import com.aura.reader.ui.theme.LocalAppStrings
+import com.aura.reader.data.model.PageTurnAnimation
+import com.aura.reader.data.model.TwoColumnMode
+import com.aura.reader.data.services.DictionaryService
+import com.aura.reader.data.services.WordDefinition
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material3.TextButton
+import kotlin.math.absoluteValue
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -177,6 +189,20 @@ fun ReaderScreen(
     var requestPagingPage by remember { mutableStateOf<Int?>(null) }
     var showReaderMenu by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+
+    val haptic = LocalHapticFeedback.current
+    var lastPageSliderStep by remember { mutableIntStateOf(-1) }
+    var lastChapterSliderStep by remember { mutableIntStateOf(-1) }
+
+    var dictionaryWord by remember { mutableStateOf<String?>(null) }
+    var dictionaryLoading by remember { mutableStateOf(false) }
+    var dictionaryDefinition by remember { mutableStateOf<WordDefinition?>(null) }
+    var dictionaryError by remember { mutableStateOf<String?>(null) }
+
+    var translationText by remember { mutableStateOf<String?>(null) }
+    var translationLoading by remember { mutableStateOf(false) }
+    var translationResult by remember { mutableStateOf<String?>(null) }
+    var translationError by remember { mutableStateOf<String?>(null) }
 
     val defaultToolbar = LocalTextToolbar.current
     val clipboardManager = LocalClipboardManager.current
@@ -650,7 +676,16 @@ fun ReaderScreen(
 
                                         Slider(
                                             value = currentPagingPage.toFloat().coerceIn(0f, (totalPagingPages - 1).coerceAtLeast(0).toFloat()),
-                                            onValueChange = { requestPagingPage = it.toInt() },
+                                            onValueChange = { newVal ->
+                                                val step = newVal.toInt()
+                                                if (step != lastPageSliderStep) {
+                                                    lastPageSliderStep = step
+                                                    if (settings.hapticFeedbackEnabled) {
+                                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    }
+                                                }
+                                                requestPagingPage = step
+                                            },
                                             valueRange = 0f..(totalPagingPages - 1).coerceAtLeast(1).toFloat(),
                                             steps = (totalPagingPages - 2).coerceAtLeast(0),
                                             modifier = Modifier.weight(1f),
@@ -744,7 +779,16 @@ fun ReaderScreen(
 
                                         Slider(
                                             value = currentChapterIndex.toFloat(),
-                                            onValueChange = { viewModel.setChapter(it.toInt()) },
+                                            onValueChange = { newVal ->
+                                                val step = newVal.toInt()
+                                                if (step != lastChapterSliderStep) {
+                                                    lastChapterSliderStep = step
+                                                    if (settings.hapticFeedbackEnabled) {
+                                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    }
+                                                }
+                                                viewModel.setChapter(step)
+                                            },
                                             valueRange = 0f..(chapters.size - 1).coerceAtLeast(1).toFloat(),
                                             steps = (chapters.size - 2).coerceAtLeast(0),
                                             modifier = Modifier.weight(1f),
@@ -787,7 +831,11 @@ fun ReaderScreen(
                     onThemeModeChange = { viewModel.setThemeMode(it) },
                     onFontFamilyChange = { viewModel.setFontFamily(it) },
                     onLightImageBackgroundChange = { viewModel.setLightImageBackground(it) },
-                    onPagingModeChange = { viewModel.setPagingMode(it) }
+                    onPagingModeChange = { viewModel.setPagingMode(it) },
+                    onAutoHyphenationChange = { viewModel.setAutoHyphenation(it) },
+                    onTwoColumnModeChange = { viewModel.setTwoColumnMode(it) },
+                    onPageAnimationChange = { viewModel.setPageAnimation(it) },
+                    onHapticFeedbackChange = { viewModel.setHapticFeedbackEnabled(it) }
                 )
             }
 
@@ -816,14 +864,14 @@ fun ReaderScreen(
             }
 
             selectedFootnote?.let { (ref, content) ->
-                FootnoteBottomSheet(
+                FootnoteDialog(
                     refLabel = ref,
                     content = content,
                     onDismiss = { selectedFootnote = null }
                 )
             }
 
-            // Floating pill to save selected text as quote
+            // Floating pill for selected text: Quote, Dictionary, Translate, Copy
             AnimatedVisibility(
                 visible = selectedQuoteCopyAction != null,
                 enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
@@ -834,14 +882,19 @@ fun ReaderScreen(
             ) {
                 Surface(
                     shape = RoundedCornerShape(28.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
                     shadowElevation = 8.dp,
                     tonalElevation = 6.dp,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .clickable {
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        // 1. Quote
+                        TextButton(
+                            onClick = {
                                 val action = selectedQuoteCopyAction
                                 action?.invoke()
                                 val clip = clipboardManager.getText()?.text
@@ -850,22 +903,93 @@ fun ReaderScreen(
                                 }
                                 customTextToolbar.hide()
                             }
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FormatQuote,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = strings.saveQuoteAction,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        ) {
+                            Icon(Icons.Default.FormatQuote, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(strings.saveQuoteAction, style = MaterialTheme.typography.labelMedium)
+                        }
+
+                        Box(modifier = Modifier.height(18.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
+
+                        // 2. Dictionary
+                        TextButton(
+                            onClick = {
+                                val action = selectedQuoteCopyAction
+                                action?.invoke()
+                                val clip = clipboardManager.getText()?.text?.trim()
+                                customTextToolbar.hide()
+                                if (!clip.isNullOrBlank()) {
+                                    val word = clip.take(60)
+                                    dictionaryWord = word
+                                    dictionaryLoading = true
+                                    dictionaryDefinition = null
+                                    dictionaryError = null
+                                    coroutineScope.launch {
+                                        DictionaryService.lookupDefinition(word)
+                                            .onSuccess { def ->
+                                                dictionaryDefinition = def
+                                                dictionaryLoading = false
+                                            }
+                                            .onFailure { err ->
+                                                dictionaryError = err.message ?: "Толкование не найдено"
+                                                dictionaryLoading = false
+                                            }
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.AutoStories, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Словарь", style = MaterialTheme.typography.labelMedium)
+                        }
+
+                        Box(modifier = Modifier.height(18.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
+
+                        // 3. Translation
+                        TextButton(
+                            onClick = {
+                                val action = selectedQuoteCopyAction
+                                action?.invoke()
+                                val clip = clipboardManager.getText()?.text?.trim()
+                                customTextToolbar.hide()
+                                if (!clip.isNullOrBlank()) {
+                                    translationText = clip
+                                    translationLoading = true
+                                    translationResult = null
+                                    translationError = null
+                                    coroutineScope.launch {
+                                        DictionaryService.translateText(clip)
+                                            .onSuccess { res ->
+                                                translationResult = res
+                                                translationLoading = false
+                                            }
+                                            .onFailure { err ->
+                                                translationError = err.message ?: "Ошибка перевода"
+                                                translationLoading = false
+                                            }
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Перевод", style = MaterialTheme.typography.labelMedium)
+                        }
+
+                        Box(modifier = Modifier.height(18.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
+
+                        // 4. Copy
+                        TextButton(
+                            onClick = {
+                                val action = selectedQuoteCopyAction
+                                action?.invoke()
+                                customTextToolbar.hide()
+                            }
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Копировать", style = MaterialTheme.typography.labelMedium)
+                        }
                     }
                 }
             }
@@ -880,6 +1004,26 @@ fun ReaderScreen(
                         viewModel.addQuote(it)
                         quoteToSave = null
                     }
+                )
+            }
+
+            dictionaryWord?.let { word ->
+                DictionaryDialog(
+                    word = word,
+                    isLoading = dictionaryLoading,
+                    definition = dictionaryDefinition,
+                    errorMessage = dictionaryError,
+                    onDismiss = { dictionaryWord = null }
+                )
+            }
+
+            translationText?.let { text ->
+                TranslationDialog(
+                    originalText = text,
+                    isLoading = translationLoading,
+                    translatedText = translationResult,
+                    errorMessage = translationError,
+                    onDismiss = { translationText = null }
                 )
             }
         }
@@ -1063,6 +1207,18 @@ fun ChapterPagingView(
         val screenHeightDp = maxHeight.value
         val screenWidthDp = maxWidth.value
 
+        val isTwoColumn = when (settings.twoColumnMode) {
+            TwoColumnMode.ALWAYS -> true
+            TwoColumnMode.OFF -> false
+            TwoColumnMode.AUTO -> screenWidthDp >= 600f
+        }
+
+        val columnWidthDp = if (isTwoColumn) {
+            ((screenWidthDp - 72f) / 2f).coerceAtLeast(120f)
+        } else {
+            (screenWidthDp - 48f).coerceAtLeast(120f)
+        }
+
         val blocks = remember(chapter) {
             if (chapter.blocks.isNotEmpty()) {
                 chapter.blocks
@@ -1076,7 +1232,17 @@ fun ChapterPagingView(
         val textMeasurer = rememberTextMeasurer()
         val density = LocalDensity.current
 
-        val pages = remember(blocks, settings.fontSizeSp, settings.lineHeightMultiplier, settings.fontFamily, resolvedFontFamily, screenHeightDp, screenWidthDp) {
+        val pages = remember(
+            blocks,
+            settings.fontSizeSp,
+            settings.lineHeightMultiplier,
+            settings.fontFamily,
+            settings.autoHyphenation,
+            settings.twoColumnMode,
+            resolvedFontFamily,
+            screenHeightDp,
+            screenWidthDp
+        ) {
             paginateBlocks(
                 blocks = blocks,
                 settings = settings,
@@ -1084,55 +1250,78 @@ fun ChapterPagingView(
                 textMeasurer = textMeasurer,
                 density = density,
                 screenHeightDp = screenHeightDp,
-                screenWidthDp = screenWidthDp
+                screenWidthDp = screenWidthDp,
+                columnWidthDp = columnWidthDp
             )
         }
 
-        val calculatedInitialPage = remember(pages, initialBlockIndex) {
+        val totalSpreads = remember(pages.size, isTwoColumn) {
+            if (isTwoColumn) ((pages.size + 1) / 2).coerceAtLeast(1) else pages.size.coerceAtLeast(1)
+        }
+
+        val calculatedInitialPage = remember(pages, initialBlockIndex, isTwoColumn) {
             if (pages.isEmpty()) 0
             else {
                 val pageByBlock = pages.indexOfLast { page ->
                     page.any { it.first <= initialBlockIndex }
                 }
-                if (pageByBlock in pages.indices) {
+                val page = if (pageByBlock in pages.indices) {
                     pageByBlock
                 } else if (initialBlockIndex in pages.indices) {
                     initialBlockIndex
                 } else {
                     0
                 }
+                if (isTwoColumn) page / 2 else page
             }
         }
 
         val pagerState = rememberPagerState(
-            initialPage = calculatedInitialPage.coerceIn(0, (pages.size - 1).coerceAtLeast(0)),
-            pageCount = { pages.size.coerceAtLeast(1) }
+            initialPage = calculatedInitialPage.coerceIn(0, (totalSpreads - 1).coerceAtLeast(0)),
+            pageCount = { totalSpreads.coerceAtLeast(1) }
         )
         val coroutineScope = rememberCoroutineScope()
         var lastViewedBlockIndex by remember { mutableIntStateOf(initialBlockIndex) }
+        val haptic = LocalHapticFeedback.current
+        var lastHapticSpread by remember { mutableIntStateOf(-1) }
 
-        LaunchedEffect(pagerState.currentPage, pages) {
-            val pageIdx = pagerState.currentPage.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
-            onPageChange(pageIdx, pages.size.coerceAtLeast(1))
-            val currentBlock = pages.getOrNull(pageIdx)?.firstOrNull()?.first ?: 0
+        LaunchedEffect(pagerState.currentPage, pages, isTwoColumn) {
+            val currentSpread = pagerState.currentPage.coerceIn(0, (totalSpreads - 1).coerceAtLeast(0))
+            if (currentSpread != lastHapticSpread) {
+                if (lastHapticSpread != -1 && settings.hapticFeedbackEnabled) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                }
+                lastHapticSpread = currentSpread
+            }
+
+            val activePageIdx = if (isTwoColumn) (currentSpread * 2).coerceIn(0, (pages.size - 1).coerceAtLeast(0)) else currentSpread
+            onPageChange(activePageIdx, pages.size.coerceAtLeast(1))
+
+            val currentBlock = pages.getOrNull(activePageIdx)?.firstOrNull()?.first ?: 0
             lastViewedBlockIndex = currentBlock
             onUpdateProgress(currentBlock, blocks.size.coerceAtLeast(1))
         }
 
-        LaunchedEffect(pages) {
-            val targetPage = pages.indexOfLast { page ->
+        LaunchedEffect(pages, isTwoColumn) {
+            val foundPage = pages.indexOfLast { page ->
                 page.any { it.first <= lastViewedBlockIndex }
             }.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
-            if (targetPage != pagerState.currentPage && targetPage in pages.indices) {
-                pagerState.scrollToPage(targetPage)
+            val targetSpread = if (isTwoColumn) foundPage / 2 else foundPage
+            if (targetSpread != pagerState.currentPage && targetSpread in 0 until totalSpreads) {
+                pagerState.scrollToPage(targetSpread)
             }
         }
 
         // React to requested page from page slider
         LaunchedEffect(targetPage) {
             if (targetPage != null) {
-                if (targetPage in pages.indices && targetPage != pagerState.currentPage) {
-                    pagerState.scrollToPage(targetPage)
+                val targetSpread = if (isTwoColumn) targetPage / 2 else targetPage
+                if (targetSpread in 0 until totalSpreads && targetSpread != pagerState.currentPage) {
+                    if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+                        pagerState.scrollToPage(targetSpread)
+                    } else {
+                        pagerState.animateScrollToPage(targetSpread)
+                    }
                 }
                 onConsumeTargetPage()
             }
@@ -1145,7 +1334,12 @@ fun ChapterPagingView(
                     page.any { it.first == targetBlockIndex }
                 }
                 if (foundPage >= 0) {
-                    pagerState.animateScrollToPage(foundPage)
+                    val targetSpread = if (isTwoColumn) foundPage / 2 else foundPage
+                    if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+                        pagerState.scrollToPage(targetSpread)
+                    } else {
+                        pagerState.animateScrollToPage(targetSpread)
+                    }
                 }
                 onConsumeTargetBlock()
             }
@@ -1154,36 +1348,107 @@ fun ChapterPagingView(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
-        ) { pageIdx ->
-            val pageBlocks = pages.getOrNull(pageIdx) ?: emptyList()
+        ) { spreadIdx ->
+            val pageOffset = ((pagerState.currentPage - spreadIdx) + pagerState.currentPageOffsetFraction).absoluteValue
+            val animModifier = when (settings.pageAnimation) {
+                PageTurnAnimation.FADE -> {
+                    Modifier.graphicsLayer {
+                        alpha = (1f - pageOffset).coerceIn(0f, 1f)
+                        translationX = size.width * ((pagerState.currentPage - spreadIdx) + pagerState.currentPageOffsetFraction)
+                    }
+                }
+                else -> Modifier
+            }
 
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .then(animModifier)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) { onToggleControls() }
             ) {
                 SelectionContainer {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 24.dp)
-                            .padding(top = 16.dp, bottom = 28.dp),
-                        verticalArrangement = Arrangement.Top
-                    ) {
-                        for ((_, block) in pageBlocks) {
-                            RenderBlock(
-                                block = block,
-                                settings = settings,
-                                resolvedFontFamily = resolvedFontFamily,
-                                searchQuery = searchQuery,
-                                footnotes = footnotes,
-                                onFootnoteClick = onFootnoteClick,
-                                onToggleControls = onToggleControls,
-                                onSaveQuote = onSaveQuote
+                    if (isTwoColumn) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 24.dp)
+                                .padding(top = 16.dp, bottom = 28.dp),
+                            horizontalArrangement = Arrangement.spacedBy(24.dp)
+                        ) {
+                            val leftPageBlocks = pages.getOrNull(spreadIdx * 2) ?: emptyList()
+                            val rightPageBlocks = pages.getOrNull(spreadIdx * 2 + 1) ?: emptyList()
+
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                                verticalArrangement = Arrangement.Top
+                            ) {
+                                for ((_, block) in leftPageBlocks) {
+                                    RenderBlock(
+                                        block = block,
+                                        settings = settings,
+                                        resolvedFontFamily = resolvedFontFamily,
+                                        searchQuery = searchQuery,
+                                        footnotes = footnotes,
+                                        onFootnoteClick = onFootnoteClick,
+                                        onToggleControls = onToggleControls,
+                                        onSaveQuote = onSaveQuote
+                                    )
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .width(1.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
                             )
+
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                                verticalArrangement = Arrangement.Top
+                            ) {
+                                for ((_, block) in rightPageBlocks) {
+                                    RenderBlock(
+                                        block = block,
+                                        settings = settings,
+                                        resolvedFontFamily = resolvedFontFamily,
+                                        searchQuery = searchQuery,
+                                        footnotes = footnotes,
+                                        onFootnoteClick = onFootnoteClick,
+                                        onToggleControls = onToggleControls,
+                                        onSaveQuote = onSaveQuote
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        val pageBlocks = pages.getOrNull(spreadIdx) ?: emptyList()
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 24.dp)
+                                .padding(top = 16.dp, bottom = 28.dp),
+                            verticalArrangement = Arrangement.Top
+                        ) {
+                            for ((_, block) in pageBlocks) {
+                                RenderBlock(
+                                    block = block,
+                                    settings = settings,
+                                    resolvedFontFamily = resolvedFontFamily,
+                                    searchQuery = searchQuery,
+                                    footnotes = footnotes,
+                                    onFootnoteClick = onFootnoteClick,
+                                    onToggleControls = onToggleControls,
+                                    onSaveQuote = onSaveQuote
+                                )
+                            }
                         }
                     }
                 }
@@ -1191,17 +1456,27 @@ fun ChapterPagingView(
         }
 
         // Thin margin tap zones for fast page flipping (outer padding area only)
+        val flipPage: (Int) -> Unit = { target ->
+            coroutineScope.launch {
+                if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+                    pagerState.scrollToPage(target)
+                } else {
+                    pagerState.animateScrollToPage(target)
+                }
+            }
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .width(28.dp)
+                .width(32.dp)
                 .align(Alignment.CenterStart)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
                     if (pagerState.currentPage > 0) {
-                        coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                        flipPage(pagerState.currentPage - 1)
                     } else {
                         onPrevChapter()
                     }
@@ -1211,34 +1486,71 @@ fun ChapterPagingView(
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .width(28.dp)
+                .width(32.dp)
                 .align(Alignment.CenterEnd)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
-                    if (pagerState.currentPage < pages.size - 1) {
-                        coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                    if (pagerState.currentPage < totalSpreads - 1) {
+                        flipPage(pagerState.currentPage + 1)
                     } else {
                         onNextChapter()
                     }
                 }
         )
 
-        // Bottom Overall Reading Progress Indicator
-        val intraChapterProgress = if (pages.size > 1) {
-            (pagerState.currentPage.toFloat() / (pages.size - 1)).coerceIn(0f, 1f)
+        // Kindle-style Bottom Reading Progress Indicator (cycles: % -> time remaining -> page count)
+        val intraChapterProgress = if (totalSpreads > 1) {
+            (pagerState.currentPage.toFloat() / (totalSpreads - 1)).coerceIn(0f, 1f)
         } else 0f
         val overallPercent = (((chapterIndex + intraChapterProgress) / totalChapters.coerceAtLeast(1)) * 100).toInt().coerceIn(0, 100)
 
+        val remainingWords = remember(pages, pagerState.currentPage, isTwoColumn) {
+            val startPage = if (isTwoColumn) pagerState.currentPage * 2 else pagerState.currentPage
+            var words = 0
+            for (p in startPage until pages.size) {
+                val pBlocks = pages.getOrNull(p) ?: continue
+                for ((_, b) in pBlocks) {
+                    words += b.text.split(Regex("\\s+")).count { it.isNotBlank() }
+                }
+            }
+            words
+        }
+        val minutesLeft = (remainingWords / 200).coerceAtLeast(1)
+
+        var bottomProgressMode by remember { mutableIntStateOf(0) } // 0: %, 1: time left, 2: page of pages
+
+        val bottomText = when (bottomProgressMode) {
+            0 -> "$overallPercent%"
+            1 -> "$minutesLeft мин до конца главы"
+            else -> {
+                if (isTwoColumn) {
+                    val p1 = pagerState.currentPage * 2 + 1
+                    val p2 = (pagerState.currentPage * 2 + 2).coerceAtMost(pages.size)
+                    if (p1 == p2) "Стр. $p1 из ${pages.size}" else "Стр. $p1–$p2 из ${pages.size}"
+                } else {
+                    "Стр. ${pagerState.currentPage + 1} из ${pages.size}"
+                }
+            }
+        }
+
         Text(
-            text = "$overallPercent%",
+            text = bottomText,
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
             fontWeight = FontWeight.Normal,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 12.dp)
+                .padding(bottom = 10.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable {
+                    bottomProgressMode = (bottomProgressMode + 1) % 3
+                    if (settings.hapticFeedbackEnabled) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                }
+                .padding(horizontal = 8.dp, vertical = 2.dp)
         )
     }
 }
@@ -1254,11 +1566,12 @@ private fun paginateBlocks(
     textMeasurer: TextMeasurer,
     density: Density,
     screenHeightDp: Float = 800f,
-    screenWidthDp: Float = 380f
+    screenWidthDp: Float = 380f,
+    columnWidthDp: Float? = null
 ): List<List<Pair<Int, FormattedBlock>>> {
     if (blocks.isEmpty()) return listOf(emptyList())
 
-    val usableWidthDp = (screenWidthDp - 48f).coerceAtLeast(100f)
+    val usableWidthDp = columnWidthDp ?: (screenWidthDp - 48f).coerceAtLeast(100f)
     val maxWidthPx = with(density) { usableWidthDp.dp.roundToPx() }
 
     // Column has top padding 16dp and bottom padding 28dp.
@@ -1337,7 +1650,8 @@ private fun paginateBlocks(
                     fontSize = (settings.fontSizeSp * 0.95f).sp,
                     lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 0.95f).sp,
                     fontFamily = resolvedFontFamily,
-                    fontStyle = FontStyle.Italic
+                    fontStyle = FontStyle.Italic,
+                    hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None
                 )
                 val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = epigraphWidthPx))
                 val epigraphPaddingPx = with(density) { 16.dp.toPx() }
@@ -1360,7 +1674,8 @@ private fun paginateBlocks(
                         fontSize = settings.fontSizeSp.sp,
                         lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
                         fontFamily = resolvedFontFamily,
-                        textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp)
+                        textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp),
+                        hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None
                     )
 
                     val layoutResult = textMeasurer.measure(
@@ -1593,7 +1908,8 @@ fun RenderBlock(
                 lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
                 fontFamily = resolvedFontFamily,
                 color = MaterialTheme.colorScheme.onBackground,
-                textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp)
+                textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp),
+                hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None
             )
 
             InteractiveText(
