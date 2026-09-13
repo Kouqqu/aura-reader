@@ -1505,17 +1505,18 @@ fun ParallaxCoverViewer(
                     )
             )
 
-            // Dynamic holographic light specular glare moving across the surface
+            // Dynamic holographic light specular glare moving smoothly across the surface
             Canvas(modifier = Modifier.fillMaxSize()) {
-                val glareCenterX = size.width * (0.5f - (tiltY / 25f) * 0.45f)
-                val glareCenterY = size.height * (0.5f + (tiltX / 25f) * 0.45f)
-                val glareRadius = size.width * 1.2f
+                val glareCenterX = size.width * (0.5f - (tiltY / 25f) * 0.6f)
+                val glareCenterY = size.height * (0.5f + (tiltX / 25f) * 0.6f)
+                val glareRadius = size.maxDimension * 1.2f
 
-                drawCircle(
+                drawRect(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color.White.copy(alpha = 0.28f),
-                            Color.White.copy(alpha = 0.08f),
+                            Color.White.copy(alpha = 0.22f),
+                            Color.White.copy(alpha = 0.12f),
+                            Color.White.copy(alpha = 0.04f),
                             Color.Transparent
                         ),
                         center = Offset(glareCenterX, glareCenterY),
