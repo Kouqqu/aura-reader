@@ -1154,7 +1154,7 @@ fun ChapterPagingView(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 24.dp)
-                            .padding(top = 16.dp, bottom = 44.dp),
+                            .padding(top = 16.dp, bottom = 48.dp),
                         verticalArrangement = Arrangement.Top
                     ) {
                         for ((_, block) in pageBlocks) {
@@ -1238,8 +1238,8 @@ private fun estimateParagraphLines(
     isContinuation: Boolean
 ): Int {
     val fs = fontSizeSp.coerceIn(12f, 36f)
-    // 0.56 * fontSizeSp closely models Cyrillic/Latin character widths with letter spacing and word bounds
-    val charWidth = fs * 0.56f
+    // 0.63 * fontSizeSp accurately models Cyrillic text line wrapping with word bounds
+    val charWidth = fs * 0.63f
     val firstLineIndent = if (isContinuation) 0f else (fs * 1.2f)
     val words = text.split(Regex("\\s+")).filter { it.isNotEmpty() }
     if (words.isEmpty()) return 0
@@ -1268,7 +1268,7 @@ private fun splitParagraphAtLines(
     isContinuation: Boolean
 ): Pair<String, String> {
     val fs = fontSizeSp.coerceIn(12f, 36f)
-    val charWidth = fs * 0.56f
+    val charWidth = fs * 0.63f
     val firstLineIndent = if (isContinuation) 0f else (fs * 1.2f)
     val words = text.split(Regex("\\s+")).filter { it.isNotEmpty() }
     if (words.isEmpty()) return Pair("", "")
@@ -1296,18 +1296,9 @@ private fun splitParagraphAtLines(
         return Pair(text, "")
     }
 
-    // Attempt to break at a sentence ending within the last few words (up to 8 words backwards)
-    var chosenIdx = splitWordIdx
-    for (i in (splitWordIdx - 1) downTo maxOf(0, splitWordIdx - 8)) {
-        val w = words[i]
-        if (w.endsWith(".") || w.endsWith("!") || w.endsWith("?") || w.endsWith("...")) {
-            chosenIdx = i + 1
-            break
-        }
-    }
-
-    val chunk1 = words.subList(0, chosenIdx).joinToString(" ")
-    val chunk2 = words.subList(chosenIdx, words.size).joinToString(" ")
+    val safeIdx = splitWordIdx.coerceIn(1, words.size - 1)
+    val chunk1 = words.subList(0, safeIdx).joinToString(" ")
+    val chunk2 = words.subList(safeIdx, words.size).joinToString(" ")
     return Pair(chunk1, chunk2)
 }
 
@@ -1325,10 +1316,12 @@ private fun paginateBlocks(
     val effectiveLineHeight = fs * lh
     val usableWidthDp = (screenWidthDp - 48f).coerceAtLeast(200f)
 
-    // Column has top padding 16dp and bottom padding 44dp.
-    // 68dp margin ensures the text strictly ends before the bottom boundary of the Column,
-    // leaving a guaranteed clearance of ~20dp above the percentage text (which is at bottom: 12dp).
-    val usableHeightDp = (screenHeightDp - 68f).coerceAtLeast(200f)
+    // Column has top padding 16dp and bottom padding 48dp.
+    // Setting usable height budget to screenHeightDp - 96f guarantees:
+    // 1) Text lines comfortably finish within the column without being clipped or overflowed.
+    // 2) A clean 2-line clearance (~50dp) is maintained above the bottom percentage label (which is at bottom: 12dp).
+    // 3) No huge empty void ("ВПП") - pages are filled naturally to ~90% of screen height.
+    val usableHeightDp = (screenHeightDp - 96f).coerceAtLeast(200f)
     val maxLines = (usableHeightDp / effectiveLineHeight).toInt().coerceIn(6, 50)
     val paragraphSpacingLines = (8f / effectiveLineHeight).coerceIn(0.2f, 0.6f)
 
