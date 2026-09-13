@@ -1154,7 +1154,7 @@ fun ChapterPagingView(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 24.dp)
-                            .padding(top = 16.dp, bottom = 38.dp),
+                            .padding(top = 16.dp, bottom = 44.dp),
                         verticalArrangement = Arrangement.Top
                     ) {
                         for ((_, block) in pageBlocks) {
@@ -1231,51 +1231,84 @@ fun ChapterPagingView(
 // PAGINATION HELPER
 // ------------------------------------------------------------------------------------------------
 
-private fun calculatePageCapacity(
+private fun estimateParagraphLines(
+    text: String,
+    usableWidthDp: Float,
     fontSizeSp: Float,
-    lineHeightMultiplier: Float,
-    screenHeightDp: Float = 800f,
-    screenWidthDp: Float = 380f
+    isContinuation: Boolean
 ): Int {
     val fs = fontSizeSp.coerceIn(12f, 36f)
-    val lh = lineHeightMultiplier.coerceIn(1.0f, 2.2f)
-    val effectiveLineHeight = fs * lh
-    // 64dp accounts for top padding (16dp), bottom padding (38dp), and a 10dp safety clearance.
-    // toInt() floors the line count, strictly guaranteeing that full lines fit within the container
-    // without vertical overflow, clipping, or overlapping the footer percentage.
-    val usableHeightDp = (screenHeightDp - 64f).coerceAtLeast(200f)
-    val linesPerPage = (usableHeightDp / effectiveLineHeight).toInt().coerceIn(6, 48)
-    val usableWidthDp = (screenWidthDp - 48f).coerceAtLeast(200f)
-    // Cyrillic and Latin characters with natural word-wrap average ~0.53 * fontSize in standard fonts
-    val charsPerLine = (usableWidthDp / (fs * 0.53f)).toInt().coerceIn(18, 65)
-    return (linesPerPage * charsPerLine).coerceIn(400, 3200)
+    // 0.56 * fontSizeSp closely models Cyrillic/Latin character widths with letter spacing and word bounds
+    val charWidth = fs * 0.56f
+    val firstLineIndent = if (isContinuation) 0f else (fs * 1.2f)
+    val words = text.split(Regex("\\s+")).filter { it.isNotEmpty() }
+    if (words.isEmpty()) return 0
+
+    var lines = 1
+    var currentLineWidth = firstLineIndent
+
+    for (word in words) {
+        val wordWidth = word.length * charWidth
+        val spaceWidth = charWidth * 0.55f
+        if (currentLineWidth + wordWidth <= usableWidthDp) {
+            currentLineWidth += wordWidth + spaceWidth
+        } else {
+            lines++
+            currentLineWidth = wordWidth + spaceWidth
+        }
+    }
+    return lines
 }
 
-private fun findBestBreak(text: String, targetLen: Int, charsPerLine: Int = 35): Int {
-    if (text.length <= targetLen) return text.length
-    // Look for sentence endings strictly within the last 1.5 lines of the target area [targetLen - searchWindow .. targetLen],
-    // so pages are evenly and tightly filled down to the bottom without leaving large voids.
-    val searchWindow = (charsPerLine * 1.5f).toInt().coerceIn(30, 75)
-    val minSearchSentence = (targetLen - searchWindow).coerceAtLeast(0)
-    val window = text.substring(0, targetLen.coerceAtMost(text.length))
+private fun splitParagraphAtLines(
+    text: String,
+    targetLines: Int,
+    usableWidthDp: Float,
+    fontSizeSp: Float,
+    isContinuation: Boolean
+): Pair<String, String> {
+    val fs = fontSizeSp.coerceIn(12f, 36f)
+    val charWidth = fs * 0.56f
+    val firstLineIndent = if (isContinuation) 0f else (fs * 1.2f)
+    val words = text.split(Regex("\\s+")).filter { it.isNotEmpty() }
+    if (words.isEmpty()) return Pair("", "")
 
-    for (del in listOf(". ", "! ", "? ", ".\n", "!\n", "?\n")) {
-        val idx = window.lastIndexOf(del)
-        if (idx >= minSearchSentence) {
-            return idx + del.length
+    var lines = 1
+    var currentLineWidth = firstLineIndent
+    var splitWordIdx = words.size
+
+    for ((idx, word) in words.withIndex()) {
+        val wordWidth = word.length * charWidth
+        val spaceWidth = charWidth * 0.55f
+        if (currentLineWidth + wordWidth <= usableWidthDp) {
+            currentLineWidth += wordWidth + spaceWidth
+        } else {
+            lines++
+            if (lines > targetLines) {
+                splitWordIdx = idx
+                break
+            }
+            currentLineWidth = wordWidth + spaceWidth
         }
     }
-    for (del in listOf("; ", ": ", ", ")) {
-        val idx = window.lastIndexOf(del)
-        if (idx >= (targetLen - (charsPerLine * 0.8f).toInt()).coerceAtLeast(0)) {
-            return idx + del.length
+
+    if (splitWordIdx >= words.size) {
+        return Pair(text, "")
+    }
+
+    // Attempt to break at a sentence ending within the last few words (up to 8 words backwards)
+    var chosenIdx = splitWordIdx
+    for (i in (splitWordIdx - 1) downTo maxOf(0, splitWordIdx - 8)) {
+        val w = words[i]
+        if (w.endsWith(".") || w.endsWith("!") || w.endsWith("?") || w.endsWith("...")) {
+            chosenIdx = i + 1
+            break
         }
     }
-    val spaceIdx = window.lastIndexOf(' ')
-    if (spaceIdx >= (targetLen - charsPerLine).coerceAtLeast(0)) {
-        return spaceIdx + 1
-    }
-    return if (spaceIdx > 0) spaceIdx + 1 else targetLen
+
+    val chunk1 = words.subList(0, chosenIdx).joinToString(" ")
+    val chunk2 = words.subList(chosenIdx, words.size).joinToString(" ")
+    return Pair(chunk1, chunk2)
 }
 
 private fun paginateBlocks(
@@ -1291,21 +1324,23 @@ private fun paginateBlocks(
     val lh = lineHeightMultiplier.coerceIn(1.0f, 2.2f)
     val effectiveLineHeight = fs * lh
     val usableWidthDp = (screenWidthDp - 48f).coerceAtLeast(200f)
-    val charsPerLine = (usableWidthDp / (fs * 0.53f)).toInt().coerceIn(18, 65)
 
-    val targetChars = calculatePageCapacity(fontSizeSp, lineHeightMultiplier, screenHeightDp, screenWidthDp)
+    // Column has top padding 16dp and bottom padding 44dp.
+    // 68dp margin ensures the text strictly ends before the bottom boundary of the Column,
+    // leaving a guaranteed clearance of ~20dp above the percentage text (which is at bottom: 12dp).
+    val usableHeightDp = (screenHeightDp - 68f).coerceAtLeast(200f)
+    val maxLines = (usableHeightDp / effectiveLineHeight).toInt().coerceIn(6, 50)
+    val paragraphSpacingLines = (8f / effectiveLineHeight).coerceIn(0.2f, 0.6f)
+
     val pages = mutableListOf<List<Pair<Int, FormattedBlock>>>()
     var currentPage = mutableListOf<Pair<Int, FormattedBlock>>()
-    var currentChars = 0
-
-    val paragraphSpacingPenalty = (charsPerLine * (8f / effectiveLineHeight)).toInt().coerceIn(8, 22)
-    val minParagraphRemainingChars = (charsPerLine * 0.9f).toInt().coerceIn(20, 50)
+    var currentLines = 0f
 
     fun flushPage() {
         if (currentPage.isNotEmpty()) {
             pages.add(ArrayList(currentPage))
             currentPage.clear()
-            currentChars = 0
+            currentLines = 0f
         }
     }
 
@@ -1316,57 +1351,71 @@ private fun paginateBlocks(
                 pages.add(listOf(originalIndex to block))
             }
             BlockType.TITLE -> {
-                if (currentChars > targetChars * 0.45f) {
+                val titleLines = estimateParagraphLines(block.text, usableWidthDp, fs * 1.3f, false) + 1.2f
+                if (currentLines > maxLines * 0.45f || (currentLines + titleLines > maxLines && currentPage.isNotEmpty())) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
-                currentChars += (block.text.length + (charsPerLine * 2.2f).toInt())
+                currentLines += titleLines
             }
             BlockType.SUBTITLE -> {
-                if (currentChars > targetChars * 0.6f) {
+                val subtitleLines = estimateParagraphLines(block.text, usableWidthDp, fs * 1.1f, false) + 0.8f
+                if (currentLines > maxLines * 0.6f || (currentLines + subtitleLines > maxLines && currentPage.isNotEmpty())) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
-                currentChars += (block.text.length + (charsPerLine * 1.5f).toInt())
+                currentLines += subtitleLines
             }
             BlockType.DIVIDER -> {
-                if (currentChars + charsPerLine > targetChars) {
-                    flushPage()
-                } else {
-                    currentPage.add(originalIndex to block)
-                    currentChars += charsPerLine
-                }
-            }
-            BlockType.EPIGRAPH, BlockType.VERSE -> {
-                val weight = block.text.length + charsPerLine
-                if (currentChars + weight > targetChars && currentPage.isNotEmpty()) {
+                val dividerLines = 1.0f
+                if (currentLines + dividerLines > maxLines && currentPage.isNotEmpty()) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
-                currentChars += weight
+                currentLines += dividerLines
+            }
+            BlockType.EPIGRAPH, BlockType.VERSE -> {
+                val epigraphLines = estimateParagraphLines(block.text, usableWidthDp, fs, false) + 0.5f
+                if (currentLines + epigraphLines > maxLines && currentPage.isNotEmpty()) {
+                    flushPage()
+                }
+                currentPage.add(originalIndex to block)
+                currentLines += epigraphLines
             }
             BlockType.PARAGRAPH -> {
                 var remainingText = block.text.trim()
                 var isContinuation = false
                 var loopGuard = 0
                 while (remainingText.isNotEmpty() && loopGuard++ < 1000) {
-                    val availableChars = targetChars - currentChars
-                    if (availableChars < minParagraphRemainingChars && currentPage.isNotEmpty()) {
+                    val availableLines = (maxLines - currentLines).toInt()
+
+                    // If less than 2 full lines remain on the current page and page is not empty,
+                    // start this paragraph on the next page so we don't leave an orphan single line.
+                    if (availableLines < 2 && currentPage.isNotEmpty()) {
                         flushPage()
                         continue
                     }
 
-                    val effectiveAvailable = availableChars.coerceAtLeast(minParagraphRemainingChars)
-                    if (remainingText.length <= effectiveAvailable) {
+                    val totalNeededLines = estimateParagraphLines(remainingText, usableWidthDp, fs, isContinuation)
+
+                    if (totalNeededLines <= availableLines) {
                         currentPage.add(originalIndex to block.copy(
                             text = remainingText,
                             subText = if (isContinuation) "continuation" else block.subText
                         ))
-                        currentChars += remainingText.length + paragraphSpacingPenalty
+                        currentLines += totalNeededLines + paragraphSpacingLines
                         remainingText = ""
                     } else {
-                        val splitIndex = findBestBreak(remainingText, effectiveAvailable, charsPerLine).coerceIn(1, remainingText.length)
-                        val chunk = remainingText.substring(0, splitIndex).trim()
+                        // The paragraph does not fit entirely in availableLines.
+                        // Split it so exactly availableLines lines fit on currentPage!
+                        val (chunk, nextChunk) = splitParagraphAtLines(
+                            text = remainingText,
+                            targetLines = availableLines,
+                            usableWidthDp = usableWidthDp,
+                            fontSizeSp = fs,
+                            isContinuation = isContinuation
+                        )
+
                         if (chunk.isNotEmpty()) {
                             currentPage.add(originalIndex to block.copy(
                                 text = chunk,
@@ -1374,7 +1423,7 @@ private fun paginateBlocks(
                             ))
                         }
                         flushPage()
-                        remainingText = remainingText.substring(splitIndex).trim()
+                        remainingText = nextChunk.trim()
                         isContinuation = true
                     }
                 }
