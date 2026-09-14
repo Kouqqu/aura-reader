@@ -4,6 +4,8 @@ import com.aura.reader.data.model.Quote
 import com.aura.reader.ui.theme.Strings
 import com.aura.reader.util.BookShareUtils
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -567,7 +569,7 @@ fun ReaderScreen(
                                 )
                             } else {
                                 Icon(
-                                    imageVector = Icons.Default.Book,
+                                    imageVector = Icons.Default.AutoStories,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
