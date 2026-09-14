@@ -223,6 +223,16 @@ interface Strings {
     fun minutesLeftInChapter(minutes: Int): String
 
     val parallaxCoverHint: String
+
+    val shareBookFile: String
+    val changeCover: String
+    val searchCoverTitle: String
+    val searchCoverOnline: String
+    val pickFromGallery: String
+    val removeCover: String
+    val noCoversFoundOnline: String
+    val coverUpdated: String
+    val applyCover: String
 }
 
 class RuStrings : Strings {
@@ -431,6 +441,15 @@ class RuStrings : Strings {
     override val understandFootnote = "Понятно"
     override fun minutesLeftInChapter(minutes: Int) = "$minutes мин до конца главы"
     override val parallaxCoverHint = "Наклоняйте устройство или проведите пальцем для 3D-эффекта"
+    override val shareBookFile = "Поделиться файлом"
+    override val changeCover = "Сменить обложку"
+    override val searchCoverTitle = "Выбор обложки"
+    override val searchCoverOnline = "Искать в сети"
+    override val pickFromGallery = "Выбрать из галереи"
+    override val removeCover = "Сбросить обложку"
+    override val noCoversFoundOnline = "Обложки не найдены"
+    override val coverUpdated = "Обложка обновлена"
+    override val applyCover = "Применить"
 
 }
 
@@ -640,6 +659,15 @@ class EnStrings : Strings {
     override val understandFootnote = "Got it"
     override fun minutesLeftInChapter(minutes: Int) = "$minutes min left in chapter"
     override val parallaxCoverHint = "Tilt device or drag finger for 3D effect"
+    override val shareBookFile = "Share book file"
+    override val changeCover = "Change cover"
+    override val searchCoverTitle = "Choose Cover"
+    override val searchCoverOnline = "Search online"
+    override val pickFromGallery = "Pick from gallery"
+    override val removeCover = "Reset cover"
+    override val noCoversFoundOnline = "No covers found"
+    override val coverUpdated = "Cover updated"
+    override val applyCover = "Apply"
 
 }
 
@@ -849,6 +877,15 @@ class UkStrings : Strings {
     override val understandFootnote = "Зрозуміло"
     override fun minutesLeftInChapter(minutes: Int) = "$minutes хв до кінця розділу"
     override val parallaxCoverHint = "Нахиляйте пристрій або проведіть пальцем для 3D-ефекту"
+    override val shareBookFile = "Поділитися файлом"
+    override val changeCover = "Змінити обкладинку"
+    override val searchCoverTitle = "Вибір обкладинки"
+    override val searchCoverOnline = "Шукати в мережі"
+    override val pickFromGallery = "Обрати з галереї"
+    override val removeCover = "Скинути обкладинку"
+    override val noCoversFoundOnline = "Обкладинки не знайдено"
+    override val coverUpdated = "Обкладинку оновлено"
+    override val applyCover = "Застосувати"
 
 }
 
@@ -1058,6 +1095,15 @@ class BeStrings : Strings {
     override val understandFootnote = "Зразумела"
     override fun minutesLeftInChapter(minutes: Int) = "$minutes хв да канца раздзела"
     override val parallaxCoverHint = "Нахіляйце прыладу або правядзіце пальцам для 3D-эфекту"
+    override val shareBookFile = "Падзяліцца файлам"
+    override val changeCover = "Змяніць вокладку"
+    override val searchCoverTitle = "Выбар вокладкі"
+    override val searchCoverOnline = "Шукаць у сетцы"
+    override val pickFromGallery = "Выбраць з галерэі"
+    override val removeCover = "Скінуць вокладку"
+    override val noCoversFoundOnline = "Вокладкі не знойдзены"
+    override val coverUpdated = "Вокладка абноўлена"
+    override val applyCover = "Ужыць"
 
 }
 
@@ -1267,6 +1313,15 @@ class PlStrings : Strings {
     override val understandFootnote = "Rozumiem"
     override fun minutesLeftInChapter(minutes: Int) = "$minutes min do końca rozdziału"
     override val parallaxCoverHint = "Przechyl urządzenie lub przeciągnij palcem, aby uzyskać efekt 3D"
+    override val shareBookFile = "Udostępnij plik"
+    override val changeCover = "Zmień okładkę"
+    override val searchCoverTitle = "Wybór okładki"
+    override val searchCoverOnline = "Szukaj w sieci"
+    override val pickFromGallery = "Wybierz z galerii"
+    override val removeCover = "Zresetuj okładkę"
+    override val noCoversFoundOnline = "Nie znaleziono okładek"
+    override val coverUpdated = "Okładka została zaktualizowana"
+    override val applyCover = "Zastosuj"
 
 }
 

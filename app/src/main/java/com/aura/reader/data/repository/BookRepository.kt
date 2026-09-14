@@ -433,6 +433,19 @@ class BookRepository(
         addOrUpdateRecentBook(updated)
     }
 
+    suspend fun updateBookCover(bookId: String, newCoverBase64: String?) = withContext(Dispatchers.IO) {
+        val currentList = _recentBooks.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == bookId }
+        if (index >= 0) {
+            val updated = currentList[index].copy(coverBase64 = newCoverBase64)
+            currentList[index] = updated
+            saveRecentBooks(currentList)
+            if (_currentBook.value?.id == bookId) {
+                _currentBook.value = updated
+            }
+        }
+    }
+
     private suspend fun addOrUpdateRecentBook(book: Book) {
         val currentList = _recentBooks.value.toMutableList()
         val index = currentList.indexOfFirst {

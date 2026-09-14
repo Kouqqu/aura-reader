@@ -151,6 +151,10 @@ class LibraryViewModel(
         viewModelScope.launch { bookRepository.setBookReadingProgress(bookId, progress) }
     }
 
+    fun updateBookCover(bookId: String, newCoverBase64: String?) {
+        viewModelScope.launch { bookRepository.updateBookCover(bookId, newCoverBase64) }
+    }
+
     fun exportBackup(outputStream: OutputStream, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             val res = bookRepository.backupManager.exportBackup(outputStream)

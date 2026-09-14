@@ -1,5 +1,8 @@
 package com.aura.reader.ui.screens.reader
 
+import com.aura.reader.util.BookShareUtils
+import androidx.compose.material.icons.filled.Share
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -558,13 +561,13 @@ fun ReaderScreen(
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text(strings.contents) },
+                                    text = { Text(strings.shareBookFile) },
                                     leadingIcon = {
-                                        Icon(Icons.Default.List, contentDescription = null)
+                                        Icon(Icons.Default.Share, contentDescription = null)
                                     },
                                     onClick = {
                                         showReaderMenu = false
-                                        showChaptersSheet = true
+                                        book?.let { BookShareUtils.shareBookFile(context, it) }
                                     }
                                 )
                                 DropdownMenuItem(

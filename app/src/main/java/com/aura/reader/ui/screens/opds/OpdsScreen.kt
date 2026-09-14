@@ -1,5 +1,7 @@
 package com.aura.reader.ui.screens.opds
 
+import com.aura.reader.ui.components.ParallaxCoverViewer
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -116,6 +118,7 @@ fun OpdsScreen(
     val sortOption by viewModel.sortOption.collectAsState()
     val canGoBack by viewModel.canGoBack.collectAsState()
     var isSearchFocused by remember { mutableStateOf(false) }
+    var inspectingCoverBook by remember { mutableStateOf<OpdsBook?>(null) }
 
     BackHandler(enabled = canGoBack) {
         viewModel.navigateBack()
@@ -177,6 +180,7 @@ fun OpdsScreen(
             downloadProgress = activeDownloads[book.id],
             downloadedBook = downloadedBooks[book.id],
             onDismiss = { viewModel.selectBookForDetails(null) },
+            onCoverClick = { inspectingCoverBook = book },
             onDownload = { format ->
                 viewModel.downloadBook(context, book, format)
             },
@@ -184,6 +188,13 @@ fun OpdsScreen(
                 viewModel.selectBookForDetails(null)
                 onOpenBook(openedBook)
             }
+        )
+    }
+
+    inspectingCoverBook?.let { book ->
+        ParallaxCoverViewer(
+            book = book,
+            onDismiss = { inspectingCoverBook = null }
         )
     }
 
@@ -557,6 +568,9 @@ fun OpdsScreen(
                                                 viewModel.selectBookForDetails(book)
                                             }
                                         },
+                                        onCoverClick = {
+                                            inspectingCoverBook = book
+                                        },
                                         onDownloadFb2 = {
                                             viewModel.downloadBook(context, book, BookFormat.FB2)
                                         },
@@ -593,6 +607,7 @@ fun OpdsBookCard(
     downloadProgress: Int?,
     downloadedBook: Book?,
     onClick: () -> Unit,
+    onCoverClick: () -> Unit = {},
     onDownloadFb2: () -> Unit,
     onOpenBook: (Book) -> Unit
 ) {
@@ -616,7 +631,12 @@ fun OpdsBookCard(
             // Book cover thumbnail or Category icon
             Surface(
                 modifier = Modifier
-                    .size(width = 56.dp, height = 80.dp),
+                    .size(width = 56.dp, height = 80.dp)
+                    .then(
+                        if (!book.isCategory && !book.coverUrl.isNullOrBlank()) {
+                            Modifier.clickable { onCoverClick() }
+                        } else Modifier
+                    ),
                 shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant
             ) {
@@ -930,6 +950,7 @@ fun OpdsBookDetailsBottomSheet(
     downloadProgress: Int?,
     downloadedBook: Book?,
     onDismiss: () -> Unit,
+    onCoverClick: () -> Unit = {},
     onDownload: (BookFormat) -> Unit,
     onOpenBook: (Book) -> Unit
 ) {
@@ -956,7 +977,12 @@ fun OpdsBookDetailsBottomSheet(
                 // Large Cover
                 Surface(
                     modifier = Modifier
-                        .size(width = 100.dp, height = 145.dp),
+                        .size(width = 100.dp, height = 145.dp)
+                        .then(
+                            if (!book.coverUrl.isNullOrBlank()) {
+                                Modifier.clickable { onCoverClick() }
+                            } else Modifier
+                        ),
                     shape = RoundedCornerShape(12.dp),
                     shadowElevation = 4.dp,
                     color = MaterialTheme.colorScheme.surfaceVariant
