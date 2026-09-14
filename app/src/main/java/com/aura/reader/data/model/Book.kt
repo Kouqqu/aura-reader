@@ -64,6 +64,7 @@ data class Quote(
     val bookTitle: String,
     val chapterIndex: Int,
     val text: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val color: Long = 0xFFFFF59D
 )
 

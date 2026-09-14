@@ -116,6 +116,9 @@ class LibraryViewModel(
     val todayReadingMinutes: StateFlow<Int> = bookRepository.todayReadingMinutes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    val readingStatsData: StateFlow<com.aura.reader.data.preferences.ReadingStatsData> = bookRepository.readingStatsData
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.aura.reader.data.preferences.ReadingStatsData())
+
     val userCollections: StateFlow<List<String>> = bookRepository.userCollections
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

@@ -443,6 +443,7 @@ class BookRepository(
             if (_currentBook.value?.id == bookId) {
                 _currentBook.value = updated
             }
+            com.aura.reader.widget.BookAppWidgetProvider.updateAllWidgets(context, updated)
         }
     }
 
@@ -456,6 +457,7 @@ class BookRepository(
         }
         currentList.add(0, book)
         saveRecentBooks(currentList.take(30))
+        com.aura.reader.widget.BookAppWidgetProvider.updateAllWidgets(context, book)
     }
 
     private fun getFileName(uri: Uri): String? {
@@ -525,6 +527,7 @@ class BookRepository(
     suspend fun removeQuote(id: String) = preferencesManager.removeQuote(id)
 
     val todayReadingMinutes = preferencesManager.todayReadingMinutes
+    val readingStatsData = preferencesManager.readingStatsData
     suspend fun addReadingSeconds(seconds: Long) = preferencesManager.addReadingSeconds(seconds)
 
     val backupManager = com.aura.reader.data.backup.BackupManager(context, preferencesManager)

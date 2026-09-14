@@ -53,6 +53,16 @@ import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import com.aura.reader.ui.theme.LocalAppStrings
+import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButtonDefaults
+import kotlin.math.roundToInt
+
 import com.aura.reader.data.model.PageTurnAnimation
 import com.aura.reader.data.model.TwoColumnMode
 import com.aura.reader.data.services.DictionaryService
@@ -195,6 +205,12 @@ fun ReaderScreen(
     // Bookmarks and Quotes
     val bookmarks by viewModel.bookmarks.collectAsState()
     val quotes by viewModel.quotes.collectAsState()
+    val userWpm by viewModel.userAverageWpm.collectAsState()
+    val ttsState by com.aura.reader.service.BookTtsService.ttsState.collectAsState()
+    val currentChapterQuotes = remember(quotes, book?.id, currentChapterIndex) {
+        val bId = book?.id
+        if (bId != null) quotes.filter { it.bookId == bId && it.chapterIndex == currentChapterIndex } else emptyList()
+    }
     val isCurrentChapterBookmarked = remember(bookmarks, book?.id, currentChapterIndex) {
         book?.id?.let { bId ->
             bookmarks.any { it.bookId == bId && it.chapterIndex == currentChapterIndex }
@@ -301,6 +317,9 @@ fun ReaderScreen(
                                 resolvedFontFamily = resolvedFontFamily,
                                 searchQuery = searchQuery,
                                 footnotes = footnotes,
+                                quotes = currentChapterQuotes,
+                                userWpm = userWpm,
+                                onPageTurn = { words -> viewModel.onPageOrSectionTurn(words) },
                                 targetBlockIndex = targetScrollOffset,
                                 targetPage = requestPagingPage,
                                 onConsumeTargetBlock = { viewModel.consumeTargetScrollOffset() },
@@ -526,6 +545,21 @@ fun ReaderScreen(
                             )
                         }
 
+                        // Audio Narration (TTS)
+                        IconButton(onClick = {
+                            if (ttsState.isServiceRunning) {
+                                com.aura.reader.service.BookTtsService.playPause(context)
+                            } else {
+                                viewModel.startTts(context)
+                            }
+                        }) {
+                            Icon(
+                                imageVector = if (ttsState.isPlaying) Icons.Default.VolumeUp else Icons.Default.Headphones,
+                                contentDescription = strings.ttsListenAction,
+                                tint = if (ttsState.isServiceRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
                         // Bookmark Toggle Icon
                         IconButton(onClick = {
                             val preview = currentChapter?.content?.take(100) ?: ""
@@ -551,6 +585,20 @@ fun ReaderScreen(
                                 expanded = showReaderMenu,
                                 onDismissRequest = { showReaderMenu = false }
                             ) {
+                                DropdownMenuItem(
+                                    text = { Text(strings.ttsListenAction) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Headphones, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        showReaderMenu = false
+                                        if (ttsState.isServiceRunning) {
+                                            com.aura.reader.service.BookTtsService.playPause(context)
+                                        } else {
+                                            viewModel.startTts(context)
+                                        }
+                                    }
+                                )
                                 DropdownMenuItem(
                                     text = { Text(strings.searchInBook) },
                                     leadingIcon = {
@@ -887,7 +935,7 @@ fun ReaderScreen(
                         viewModel.setChapter(chIdx)
                     },
                     onDeleteBookmark = { viewModel.removeBookmark(it) },
-                    onAddQuote = { viewModel.addQuote(it) },
+                    onAddQuote = { viewModel.addQuote(it, 0xFFFFF59DL) },
                     onDeleteQuote = { viewModel.removeQuote(it) }
                 )
             }
@@ -1072,8 +1120,8 @@ fun ReaderScreen(
                     bookTitle = book?.title ?: "",
                     chapterTitle = currentChapter?.title ?: "",
                     onDismiss = { quoteToSave = null },
-                    onSaveQuote = {
-                        viewModel.addQuote(it)
+                    onSaveQuote = { text, color ->
+                        viewModel.addQuote(text, color)
                         quoteToSave = null
                     }
                 )
@@ -1193,6 +1241,7 @@ fun ChapterContentView(
                     resolvedFontFamily = resolvedFontFamily,
                     searchQuery = searchQuery,
                     footnotes = footnotes,
+                    quotes = quotes,
                     onFootnoteClick = onFootnoteClick,
                     onToggleControls = onToggleControls,
                     onSaveQuote = onSaveQuote
@@ -1263,6 +1312,9 @@ fun ChapterPagingView(
     resolvedFontFamily: FontFamily,
     searchQuery: String,
     footnotes: Map<String, String>,
+    quotes: List<Quote> = emptyList(),
+    userWpm: Float = 200f,
+    onPageTurn: (Int) -> Unit = {},
     targetBlockIndex: Int?,
     targetPage: Int?,
     onConsumeTargetBlock: () -> Unit,
@@ -1551,6 +1603,7 @@ fun ChapterPagingView(
                                         resolvedFontFamily = resolvedFontFamily,
                                         searchQuery = searchQuery,
                                         footnotes = footnotes,
+                                        quotes = quotes,
                                         onFootnoteClick = onFootnoteClick,
                                         onToggleControls = onToggleControls,
                                         onSaveQuote = onSaveQuote
@@ -1578,6 +1631,7 @@ fun ChapterPagingView(
                                         resolvedFontFamily = resolvedFontFamily,
                                         searchQuery = searchQuery,
                                         footnotes = footnotes,
+                                        quotes = quotes,
                                         onFootnoteClick = onFootnoteClick,
                                         onToggleControls = onToggleControls,
                                         onSaveQuote = onSaveQuote
@@ -1601,6 +1655,7 @@ fun ChapterPagingView(
                                     resolvedFontFamily = resolvedFontFamily,
                                     searchQuery = searchQuery,
                                     footnotes = footnotes,
+                                    quotes = quotes,
                                     onFootnoteClick = onFootnoteClick,
                                     onToggleControls = onToggleControls,
                                     onSaveQuote = onSaveQuote
@@ -1674,7 +1729,21 @@ fun ChapterPagingView(
             }
             words
         }
-        val minutesLeft = (remainingWords / 200).coerceAtLeast(1)
+        val minutesLeft = (remainingWords / userWpm.coerceAtLeast(80f)).roundToInt().coerceAtLeast(1)
+
+        LaunchedEffect(pagerState.currentPage) {
+            val pageBlocks = if (isTwoColumn) {
+                val p1 = pagerState.currentPage * 2
+                val p2 = p1 + 1
+                (pages.getOrNull(p1) ?: emptyList()) + (pages.getOrNull(p2) ?: emptyList())
+            } else {
+                pages.getOrNull(pagerState.currentPage) ?: emptyList()
+            }
+            val wordsCount = pageBlocks.sumOf { (_, b) ->
+                b.text.split(Regex("\\s+")).count { it.isNotBlank() }
+            }
+            onPageTurn(wordsCount)
+        }
 
         var bottomProgressMode by remember { mutableIntStateOf(0) } // 0: %, 1: time left, 2: page of pages
 
@@ -1952,6 +2021,7 @@ fun RenderBlock(
     resolvedFontFamily: FontFamily,
     searchQuery: String,
     footnotes: Map<String, String>,
+    quotes: List<Quote> = emptyList(),
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onToggleControls: () -> Unit,
     onSaveQuote: (String) -> Unit
@@ -2123,6 +2193,7 @@ fun RenderBlock(
                 style = paragraphStyle,
                 searchQuery = searchQuery,
                 footnotes = footnotes,
+                quotes = quotes,
                 onFootnoteClick = onFootnoteClick,
                 onToggleControls = onToggleControls,
                 onSaveQuote = onSaveQuote,
@@ -2142,15 +2213,36 @@ fun InteractiveText(
     style: TextStyle,
     searchQuery: String,
     footnotes: Map<String, String>,
+    quotes: List<Quote> = emptyList(),
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onToggleControls: () -> Unit,
     onSaveQuote: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
-    val annotated = remember(rawText, searchQuery, footnotes) {
+    val annotated = remember(rawText, searchQuery, footnotes, quotes) {
         buildAnnotatedString {
             append(rawText)
+
+            // Highlight saved quotes
+            for (quote in quotes) {
+                val qText = quote.text.trim()
+                if (qText.length >= 2) {
+                    var start = 0
+                    while (start < rawText.length) {
+                        val idx = rawText.indexOf(qText, start, ignoreCase = true)
+                        if (idx == -1) break
+                        addStyle(
+                            style = SpanStyle(
+                                background = Color(quote.color).copy(alpha = 0.38f)
+                            ),
+                            start = idx,
+                            end = idx + qText.length
+                        )
+                        start = idx + qText.length
+                    }
+                }
+            }
 
             // Highlight in-book search results
             val q = searchQuery.trim()
@@ -2225,4 +2317,135 @@ fun resolveFootnoteText(ref: String, footnotes: Map<String, String>): String? {
         it.key.equals(clean, ignoreCase = true) ||
         it.key.contains(clean, ignoreCase = true)
     }?.value
+}
+
+
+@Composable
+fun TtsControlBar(
+    ttsState: com.aura.reader.service.TtsState,
+    strings: Strings,
+    onPlayPause: () -> Unit,
+    onPrev: () -> Unit,
+    onNext: () -> Unit,
+    onStop: () -> Unit,
+    onSpeedChange: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.98f),
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Headphones,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${strings.ttsNotificationTitle} (${ttsState.currentParagraphIndex + 1}/${ttsState.totalParagraphs.coerceAtLeast(1)})",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1
+                )
+                Text(
+                    text = ttsState.currentText.ifBlank { ttsState.chapterTitle },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            IconButton(
+                onClick = onPrev,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SkipPrevious,
+                    contentDescription = strings.previous,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            FilledIconButton(
+                onClick = onPlayPause,
+                modifier = Modifier.size(42.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Icon(
+                    imageVector = if (ttsState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (ttsState.isPlaying) strings.ttsPaused else strings.ttsPlaying,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            IconButton(
+                onClick = onNext,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SkipNext,
+                    contentDescription = strings.next,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            val speeds = listOf(0.8f, 1.0f, 1.25f, 1.5f, 2.0f)
+            TextButton(
+                onClick = {
+                    val currentIdx = speeds.indexOfFirst { kotlin.math.abs(it - ttsState.speed) < 0.05f }
+                    val nextSpeed = speeds[(if (currentIdx >= 0) currentIdx + 1 else 1) % speeds.size]
+                    onSpeedChange(nextSpeed)
+                },
+                contentPadding = PaddingValues(horizontal = 4.dp),
+                modifier = Modifier.height(36.dp)
+            ) {
+                Text(
+                    text = "${ttsState.speed}x",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            IconButton(
+                onClick = onStop,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = strings.ttsStop,
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
 }

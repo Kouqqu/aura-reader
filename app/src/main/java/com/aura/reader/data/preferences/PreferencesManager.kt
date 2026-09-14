@@ -18,10 +18,27 @@ import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
 private val Context.dataStore by preferencesDataStore(name = "reader_preferences")
+
+
+data class DayReadingStat(
+    val dateStr: String,
+    val dayOfWeek: Int,
+    val minutes: Int,
+    val isToday: Boolean
+)
+
+data class ReadingStatsData(
+    val todayMinutes: Int = 0,
+    val totalMinutes: Int = 0,
+    val currentStreakDays: Int = 0,
+    val dailyAverageMinutes: Int = 0,
+    val weeklyStats: List<DayReadingStat> = emptyList()
+)
 
 class PreferencesManager(private val context: Context) {
 
@@ -49,6 +66,7 @@ class PreferencesManager(private val context: Context) {
         val OPDS_BASE_URL_KEY = stringPreferencesKey("opds_base_url")
         val CUSTOM_OPDS_ENABLED_KEY = booleanPreferencesKey("custom_opds_enabled")
         val USER_COLLECTIONS_KEY = stringPreferencesKey("user_collections_json")
+        val AVERAGE_WPM_KEY = floatPreferencesKey("user_average_wpm")
     }
 
     val readingStatsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -240,6 +258,102 @@ class PreferencesManager(private val context: Context) {
         }
     }
 
+    val readingStatsData: Flow<ReadingStatsData> = context.dataStore.data.map { prefs ->
+        val json = prefs[READING_STATS_KEY] ?: "{}"
+        try {
+            val obj = JSONObject(json)
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            val todayCal = Calendar.getInstance()
+            val todayStr = sdf.format(todayCal.time)
+            val todaySeconds = obj.optLong(todayStr, 0L)
+            val todayMins = (todaySeconds / 60).toInt()
+
+            var totalSecs = 0L
+            var activeDays = 0
+            val keys = obj.keys()
+            while (keys.hasNext()) {
+                val k = keys.next()
+                val s = obj.optLong(k, 0L)
+                if (s > 0) {
+                    totalSecs += s
+                    activeDays++
+                }
+            }
+            val totalMins = (totalSecs / 60).toInt()
+            val avgMins = if (activeDays > 0) (totalMins / activeDays) else todayMins
+
+            var streak = 0
+            val checkCal = Calendar.getInstance()
+            val todayHasReading = todaySeconds > 0
+            if (!todayHasReading) {
+                checkCal.add(Calendar.DAY_OF_YEAR, -1)
+                val yestStr = sdf.format(checkCal.time)
+                if (obj.optLong(yestStr, 0L) > 0) {
+                    streak = 1
+                    checkCal.add(Calendar.DAY_OF_YEAR, -1)
+                    while (true) {
+                        val dStr = sdf.format(checkCal.time)
+                        if (obj.optLong(dStr, 0L) > 0) {
+                            streak++
+                            checkCal.add(Calendar.DAY_OF_YEAR, -1)
+                        } else {
+                            break
+                        }
+                    }
+                }
+            } else {
+                streak = 1
+                checkCal.add(Calendar.DAY_OF_YEAR, -1)
+                while (true) {
+                    val dStr = sdf.format(checkCal.time)
+                    if (obj.optLong(dStr, 0L) > 0) {
+                        streak++
+                        checkCal.add(Calendar.DAY_OF_YEAR, -1)
+                    } else {
+                        break
+                    }
+                }
+            }
+
+            val weekly = mutableListOf<DayReadingStat>()
+            for (offset in 6 downTo 0) {
+                val dayCal = Calendar.getInstance()
+                dayCal.add(Calendar.DAY_OF_YEAR, -offset)
+                val dStr = sdf.format(dayCal.time)
+                val s = obj.optLong(dStr, 0L)
+                weekly.add(
+                    DayReadingStat(
+                        dateStr = dStr,
+                        dayOfWeek = dayCal.get(Calendar.DAY_OF_WEEK),
+                        minutes = (s / 60).toInt(),
+                        isToday = (offset == 0)
+                    )
+                )
+            }
+
+            ReadingStatsData(
+                todayMinutes = todayMins,
+                totalMinutes = totalMins,
+                currentStreakDays = streak,
+                dailyAverageMinutes = avgMins,
+                weeklyStats = weekly
+            )
+        } catch (e: Exception) {
+            ReadingStatsData()
+        }
+    }
+
+    val userAverageWpm: Flow<Float> = context.dataStore.data.map { prefs ->
+        prefs[AVERAGE_WPM_KEY] ?: 200f
+    }
+
+    suspend fun updateAverageWpm(wpm: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[AVERAGE_WPM_KEY] = wpm.coerceIn(80f, 600f)
+        }
+    }
+
+
     // --- Bookmarks Management ---
     val bookmarks: Flow<List<Bookmark>> = context.dataStore.data.map { prefs ->
         val json = prefs[BOOKMARKS_KEY] ?: "[]"
@@ -314,7 +428,8 @@ class PreferencesManager(private val context: Context) {
                         bookTitle = o.getString("bookTitle"),
                         chapterIndex = o.getInt("chapterIndex"),
                         text = o.getString("text"),
-                        timestamp = o.optLong("timestamp", System.currentTimeMillis())
+                        timestamp = o.optLong("timestamp", System.currentTimeMillis()),
+                        color = o.optLong("color", 0xFFFFF59DL)
                     )
                 )
             }
@@ -335,6 +450,7 @@ class PreferencesManager(private val context: Context) {
                 put("chapterIndex", quote.chapterIndex)
                 put("text", quote.text)
                 put("timestamp", quote.timestamp)
+                put("color", quote.color)
             }
             arr.put(o)
             prefs[QUOTES_KEY] = arr.toString()

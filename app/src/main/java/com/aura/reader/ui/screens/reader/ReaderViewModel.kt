@@ -1,5 +1,6 @@
 package com.aura.reader.ui.screens.reader
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aura.reader.data.model.Book
@@ -328,7 +329,7 @@ class ReaderViewModel(
         }
     }
 
-    fun addQuote(text: String) {
+    fun addQuote(text: String, color: Long = 0xFFFFF59DL) {
         val book = currentBook.value ?: return
         viewModelScope.launch {
             bookRepository.addQuote(
@@ -336,7 +337,8 @@ class ReaderViewModel(
                     bookId = book.id,
                     bookTitle = book.title,
                     chapterIndex = _currentChapterIndex.value,
-                    text = text.trim()
+                    text = text.trim(),
+                    color = color
                 )
             )
         }
@@ -345,6 +347,52 @@ class ReaderViewModel(
     fun removeQuote(id: String) {
         viewModelScope.launch {
             bookRepository.removeQuote(id)
+        }
+    }
+
+    // --- Dynamic Adaptive Reading Speed ---
+    val userAverageWpm: StateFlow<Float> = preferencesManager.userAverageWpm
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 200f)
+
+    private var pageEnterTimestamp: Long = System.currentTimeMillis()
+    private var lastRecordedWordsCount: Int = 0
+
+    fun onPageOrSectionTurn(wordsCount: Int) {
+        val now = System.currentTimeMillis()
+        val elapsedSecs = (now - pageEnterTimestamp) / 1000f
+        if (elapsedSecs in 4f..240f && lastRecordedWordsCount > 15) {
+            val sampleWpm = (lastRecordedWordsCount / elapsedSecs) * 60f
+            if (sampleWpm in 70f..650f) {
+                val currentAvg = userAverageWpm.value
+                val newAvg = (currentAvg * 0.82f + sampleWpm * 0.18f).coerceIn(80f, 600f)
+                viewModelScope.launch {
+                    preferencesManager.updateAverageWpm(newAvg)
+                }
+            }
+        }
+        pageEnterTimestamp = now
+        lastRecordedWordsCount = wordsCount
+    }
+
+    // --- TTS Narration ---
+    fun startTts(context: Context, startIndex: Int = 0) {
+        val book = currentBook.value ?: return
+        val chapter = book.chapters.getOrNull(_currentChapterIndex.value) ?: return
+        val paragraphs = ArrayList(
+            chapter.blocks
+                .filter { it.type != com.aura.reader.data.model.BlockType.IMAGE && it.type != com.aura.reader.data.model.BlockType.DIVIDER }
+                .map { it.text.trim() }
+                .filter { it.isNotBlank() }
+        )
+        if (paragraphs.isNotEmpty()) {
+            com.aura.reader.service.BookTtsService.start(
+                context = context,
+                bookTitle = book.title,
+                chapterTitle = chapter.title.ifBlank { "Глава ${_currentChapterIndex.value + 1}" },
+                paragraphs = paragraphs,
+                startIndex = startIndex.coerceIn(0, paragraphs.size - 1),
+                speed = 1.0f
+            )
         }
     }
 }

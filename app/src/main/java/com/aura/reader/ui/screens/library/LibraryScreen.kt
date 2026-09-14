@@ -158,6 +158,8 @@ fun LibraryScreen(
     val filteredRecentBooks by viewModel.filteredRecentBooks.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val todayMinutes by viewModel.todayReadingMinutes.collectAsState()
+    val readingStatsData by viewModel.readingStatsData.collectAsState()
+    var showReadingStatsSheet by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsState()
     val updateInfo by viewModel.updateInfo.collectAsState()
     val downloadProgress by viewModel.downloadProgress.collectAsState()
@@ -519,7 +521,10 @@ fun LibraryScreen(
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
                                 color = MaterialTheme.colorScheme.secondaryContainer,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .clickable { showReadingStatsSheet = true }
                             ) {
                                 Row(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -536,7 +541,23 @@ fun LibraryScreen(
                                         text = if (todayMinutes > 0) "${strings.todayReadingTime}: ${strings.minutesRead(todayMinutes)}" else strings.readingStatsEmpty,
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (readingStatsData.currentStreakDays > 0) {
+                                        Text(
+                                            text = "🔥 ${readingStatsData.currentStreakDays}",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
                             }
@@ -949,6 +970,13 @@ fun LibraryScreen(
                 viewModel.updateBookCover(book.id, newBase64)
                 bookForCoverChange = null
             }
+        )
+    }
+
+    if (showReadingStatsSheet) {
+        ReadingStatsBottomSheet(
+            statsData = readingStatsData,
+            onDismiss = { showReadingStatsSheet = false }
         )
     }
 }

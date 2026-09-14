@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:padding="14dp">
+
+    <!-- Active Book Content -->
+    <LinearLayout
+        android:id="@+id/widget_book_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="visible">
+
+        <!-- Book Cover -->
+        <ImageView
+            android:id="@+id/widget_book_cover"
+            android:layout_width="64dp"
+            android:layout_height="90dp"
+            android:scaleType="centerCrop"
+            android:background="@drawable/widget_cover_placeholder"
+            android:contentDescription="Book Cover" />
+
+        <!-- Info Column -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="14dp"
+            android:orientation="vertical"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/widget_app_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="AURA READER"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="#A084E8"
+                android:letterSpacing="0.1" />
+
+            <TextView
+                android:id="@+id/widget_book_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="Название книги"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:maxLines="2"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/widget_book_author"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Автор"
+                android:textSize="12sp"
+                android:textColor="#A5A5B5"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <!-- Progress row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ProgressBar
+                    android:id="@+id/widget_progress_bar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="0dp"
+                    android:layout_height="6dp"
+                    android:layout_weight="1"
+                    android:max="100"
+                    android:progress="0"
+                    android:progressDrawable="@drawable/widget_progress_bar" />
+
+                <TextView
+                    android:id="@+id/widget_progress_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="0%"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="#A084E8" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Empty State -->
+    <LinearLayout
+        android:id="@+id/widget_empty_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="Aura Reader" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Aura Reader"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/widget_empty_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Откройте книгу, чтобы продолжить чтение"
+                android:textSize="12sp"
+                android:textColor="#A5A5B5" />
+        </LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>

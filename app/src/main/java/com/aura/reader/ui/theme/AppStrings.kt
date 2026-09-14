@@ -233,7 +233,46 @@ interface Strings {
     val noCoversFoundOnline: String
     val coverUpdated: String
     val applyCover: String
+
+    // Highlights & Quotes
+    val highlightColorTitle: String
+    val quoteSavedAsHighlight: String
+
+    // Reading Stats Bottom Sheet
+    val readingStatsSheetTitle: String
+    val readingStreakDays: String
+    fun readingStreakFormat(days: Int): String
+    val readingStreakKeepGoing: String
+    val readingTimeTodayCard: String
+    val readingTimeTotalCard: String
+    val readingTimeAvgCard: String
+    val readingWeeklyActivityTitle: String
+    fun totalHoursAndMinutes(hours: Int, minutes: Int): String
+    val dayMon: String
+    val dayTue: String
+    val dayWed: String
+    val dayThu: String
+    val dayFri: String
+    val daySat: String
+    val daySun: String
+
+    // Text to Speech (TTS)
+    val ttsListenAction: String
+    val ttsPlaying: String
+    val ttsPaused: String
+    val ttsSpeed: String
+    val ttsStop: String
+    val ttsNotificationTitle: String
+    val ttsInitializing: String
+    val ttsError: String
+    val ttsLanguageNotSupported: String
+
+    // App Widget
+    val widgetContinueReading: String
+    val widgetNoBook: String
+    val widgetOpenApp: String
 }
+
 
 class RuStrings : Strings {
     override val chooseAddMethod = "Добавить книги в библиотеку"

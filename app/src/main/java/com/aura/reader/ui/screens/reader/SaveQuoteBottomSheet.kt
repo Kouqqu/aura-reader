@@ -4,7 +4,11 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,8 +17,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material3.BottomSheetDefaults
@@ -28,20 +34,31 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aura.reader.ui.theme.LocalAppStrings
+
+val HIGHLIGHT_PALETTE = listOf(
+    0xFFFFF59DL, // Pastel Yellow
+    0xFFA5D6A7L, // Pastel Mint Green
+    0xFF90CAF9L, // Pastel Sky Blue
+    0xFFF48FB1L, // Pastel Rose
+    0xFFFFCC80L, // Pastel Peach
+    0xFFCE93D8L  // Pastel Lavender
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,12 +67,13 @@ fun SaveQuoteBottomSheet(
     bookTitle: String,
     chapterTitle: String,
     onDismiss: () -> Unit,
-    onSaveQuote: (String) -> Unit
+    onSaveQuote: (String, Long) -> Unit
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var quoteText by remember { mutableStateOf(initialText.trim()) }
+    var selectedColor by remember { mutableLongStateOf(HIGHLIGHT_PALETTE[0]) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -107,7 +125,7 @@ fun SaveQuoteBottomSheet(
                 onValueChange = { quoteText = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(140.dp),
+                    .height(120.dp),
                 placeholder = { Text(strings.addQuotePlaceholder) },
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -117,6 +135,51 @@ fun SaveQuoteBottomSheet(
                     unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 )
             )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = strings.highlightColorTitle,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HIGHLIGHT_PALETTE.forEach { colorVal ->
+                    val isSelected = selectedColor == colorVal
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(Color(colorVal))
+                            .clickable { selectedColor = colorVal }
+                            .then(
+                                if (isSelected) {
+                                    Modifier.border(2.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                } else {
+                                    Modifier.border(1.dp, Color.Black.copy(alpha = 0.15f), CircleShape)
+                                }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = Color(0xFF1E1E1E),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -147,8 +210,8 @@ fun SaveQuoteBottomSheet(
                 Button(
                     onClick = {
                         if (quoteText.isNotBlank()) {
-                            onSaveQuote(quoteText.trim())
-                            Toast.makeText(context, strings.quoteSavedNotification, Toast.LENGTH_SHORT).show()
+                            onSaveQuote(quoteText.trim(), selectedColor)
+                            Toast.makeText(context, strings.quoteSavedAsHighlight, Toast.LENGTH_SHORT).show()
                             onDismiss()
                         }
                     },

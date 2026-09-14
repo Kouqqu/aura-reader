@@ -40,6 +40,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.background
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontStyle
@@ -266,7 +268,12 @@ fun BookmarksAndQuotesBottomSheet(
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.surfaceContainer
                                         ),
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                onBookmarkClick(quote.chapterIndex, 0)
+                                                onDismiss()
+                                            }
                                     ) {
                                         Row(
                                             modifier = Modifier
@@ -274,6 +281,14 @@ fun BookmarksAndQuotesBottomSheet(
                                                 .padding(14.dp),
                                             verticalAlignment = Alignment.Top
                                         ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(4.dp)
+                                                    .height(36.dp)
+                                                    .clip(RoundedCornerShape(2.dp))
+                                                    .background(Color(quote.color))
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text(
                                                     text = "«${quote.text}»",

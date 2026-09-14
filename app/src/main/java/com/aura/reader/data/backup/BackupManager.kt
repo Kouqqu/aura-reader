@@ -74,6 +74,7 @@ class BackupManager(
                         put("chapterIndex", q.chapterIndex)
                         put("text", q.text)
                         put("timestamp", q.timestamp)
+                        put("color", q.color)
                     })
                 }
                 put("quotes", quotesArr)
@@ -228,7 +229,8 @@ class BackupManager(
                             bookTitle = o.getString("bookTitle"),
                             chapterIndex = o.getInt("chapterIndex"),
                             text = o.getString("text"),
-                            timestamp = o.optLong("timestamp", System.currentTimeMillis())
+                            timestamp = o.optLong("timestamp", System.currentTimeMillis()),
+                            color = o.optLong("color", 0xFFFFF59DL)
                         )
                     )
                 }
