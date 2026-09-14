@@ -425,7 +425,7 @@ fun TtsBottomSheet(
                                     OutlinedTextField(
                                         value = voiceSearchQuery,
                                         onValueChange = { voiceSearchQuery = it },
-                                        placeholder = { Text(strings.searchInLibraryPlaceholder) },
+                                        placeholder = { Text(strings.searchLibraryPlaceholder) },
                                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                                         singleLine = true,
                                         shape = RoundedCornerShape(12.dp),
