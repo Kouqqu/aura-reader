@@ -183,14 +183,9 @@ fun ParallaxCoverViewer(
         label = "tiltX"
     )
 
-    val bitmap = remember(coverBase64) {
+    val imageBitmap = remember(coverBase64) {
         if (!coverBase64.isNullOrBlank()) {
-            try {
-                val decoded = Base64.decode(coverBase64, Base64.DEFAULT)
-                BitmapFactory.decodeByteArray(decoded, 0, decoded.size)
-            } catch (e: Exception) {
-                null
-            }
+            com.aura.reader.util.CoverBitmapCache.getOrDecode(coverBase64, coverBase64, targetWidth = 800, targetHeight = 1200)
         } else null
     }
 
@@ -306,9 +301,9 @@ fun ParallaxCoverViewer(
                     }
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(22.dp))
             ) {
-                if (bitmap != null) {
+                if (imageBitmap != null) {
                     Image(
-                        bitmap = bitmap.asImageBitmap(),
+                        bitmap = imageBitmap,
                         contentDescription = title,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop

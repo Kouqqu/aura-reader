@@ -27,6 +27,9 @@ enum class TwoColumnMode {
     ALWAYS
 }
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class ReaderSettings(
     val fontSizeSp: Float = 18f,
     val lineHeightMultiplier: Float = 1.5f,

@@ -22,9 +22,11 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+import androidx.compose.runtime.Immutable
+
 private val Context.dataStore by preferencesDataStore(name = "reader_preferences")
 
-
+@Immutable
 data class DayReadingStat(
     val dateStr: String,
     val dayOfWeek: Int,
@@ -32,6 +34,7 @@ data class DayReadingStat(
     val isToday: Boolean
 )
 
+@Immutable
 data class ReadingStatsData(
     val todayMinutes: Int = 0,
     val totalMinutes: Int = 0,

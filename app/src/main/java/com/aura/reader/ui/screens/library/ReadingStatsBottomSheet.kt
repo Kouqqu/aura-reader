@@ -44,6 +44,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -342,13 +344,17 @@ private fun WeeklyActivityChart(
                             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     )
 
-                    // Filled Bar
-                    val barHeightDp = (80f * animatedRatio).coerceAtLeast(if (stat.minutes > 0) 8f else 0f)
-                    if (barHeightDp > 0f) {
+                    // Filled Bar (animated via Draw phase graphicsLayer scaleY to eliminate relayout jank)
+                    if (targetRatio > 0f || stat.minutes > 0) {
+                        val fillFraction = targetRatio.coerceAtLeast(if (stat.minutes > 0) 0.1f else 0f)
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(barHeightDp.dp)
+                                .fillMaxHeight(fillFraction)
+                                .graphicsLayer {
+                                    scaleY = animatedRatio
+                                    transformOrigin = TransformOrigin(0.5f, 1f)
+                                }
                                 .clip(RoundedCornerShape(9.dp))
                                 .background(
                                     if (stat.isToday) {

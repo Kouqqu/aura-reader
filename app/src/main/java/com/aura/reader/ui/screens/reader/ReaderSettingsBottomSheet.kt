@@ -1,5 +1,6 @@
 package com.aura.reader.ui.screens.reader
 
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.fillMaxSize
 
 import androidx.compose.foundation.background
@@ -47,6 +48,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -59,7 +61,6 @@ import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.model.TwoColumnMode
 import com.aura.reader.ui.components.PixelFullScreenBurst
 import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.onGloballyPositioned
 import com.aura.reader.ui.components.triggerThemeHaptic
 import com.aura.reader.ui.theme.AmoledBackground
 import com.aura.reader.ui.theme.AmoledText
@@ -82,13 +83,11 @@ fun ReaderSettingsBottomSheet(
     onAutoHyphenationChange: (Boolean) -> Unit = {},
     onTwoColumnModeChange: (TwoColumnMode) -> Unit = {},
     onPageAnimationChange: (PageTurnAnimation) -> Unit = {},
-    onHapticFeedbackChange: (Boolean) -> Unit = {},
-    onThemeBurst: (Offset, List<Color>) -> Unit = { _, _ -> }
+    onHapticFeedbackChange: (Boolean) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
-    var rootCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var burstTriggerKey by remember { mutableStateOf(0L) }
     var burstOrigin by remember { mutableStateOf(Offset.Zero) }
     var burstColors by remember { mutableStateOf<List<Color>>(emptyList()) }
@@ -103,7 +102,10 @@ fun ReaderSettingsBottomSheet(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .onGloballyPositioned { rootCoordinates = it }
+                .graphicsLayer {
+                    clip = true
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                }
         ) {
             Column(
                 modifier = Modifier
@@ -140,7 +142,6 @@ fun ReaderSettingsBottomSheet(
                         burstOrigin = origin
                         burstColors = colors
                         burstTriggerKey = System.currentTimeMillis()
-                        onThemeBurst(origin, colors)
                         onThemeModeChange(mode)
                     }
 
@@ -150,7 +151,6 @@ fun ReaderSettingsBottomSheet(
                         textColor = Color(0xFF1D1B20),
                         isSelected = settings.themeMode == ReaderThemeMode.LIGHT,
                         hapticEnabled = settings.hapticFeedbackEnabled,
-                        getRootCoordinates = { rootCoordinates },
                         modifier = Modifier.weight(1f),
                         onClick = { origin -> handleThemeClick(ReaderThemeMode.LIGHT, origin, lightColors) }
                     )
@@ -161,7 +161,6 @@ fun ReaderSettingsBottomSheet(
                         textColor = Color(0xFFE2E2E6),
                         isSelected = settings.themeMode == ReaderThemeMode.DARK || settings.themeMode == ReaderThemeMode.SYSTEM_DYNAMIC,
                         hapticEnabled = settings.hapticFeedbackEnabled,
-                        getRootCoordinates = { rootCoordinates },
                         modifier = Modifier.weight(1f),
                         onClick = { origin -> handleThemeClick(ReaderThemeMode.DARK, origin, darkColors) }
                     )
@@ -172,7 +171,6 @@ fun ReaderSettingsBottomSheet(
                         textColor = SepiaText,
                         isSelected = settings.themeMode == ReaderThemeMode.SEPIA,
                         hapticEnabled = settings.hapticFeedbackEnabled,
-                        getRootCoordinates = { rootCoordinates },
                         modifier = Modifier.weight(1f),
                         onClick = { origin -> handleThemeClick(ReaderThemeMode.SEPIA, origin, sepiaColors) }
                     )
@@ -183,7 +181,6 @@ fun ReaderSettingsBottomSheet(
                         textColor = AmoledText,
                         isSelected = settings.themeMode == ReaderThemeMode.AMOLED,
                         hapticEnabled = settings.hapticFeedbackEnabled,
-                        getRootCoordinates = { rootCoordinates },
                         modifier = Modifier.weight(1f),
                         onClick = { origin -> handleThemeClick(ReaderThemeMode.AMOLED, origin, amoledColors) }
                     )
@@ -529,7 +526,7 @@ fun ReaderSettingsBottomSheet(
                     triggerKey = burstTriggerKey,
                     origin = burstOrigin,
                     colors = burstColors,
-                    modifier = Modifier.matchParentSize()
+                    durationMillis = 2000
                 )
             }
         }
@@ -543,7 +540,6 @@ fun ThemeOptionButton(
     textColor: Color,
     isSelected: Boolean,
     hapticEnabled: Boolean,
-    getRootCoordinates: () -> LayoutCoordinates?,
     modifier: Modifier = Modifier,
     onClick: (Offset) -> Unit
 ) {
@@ -570,12 +566,11 @@ fun ThemeOptionButton(
                     triggerThemeHaptic(context)
                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                 }
-                val root = getRootCoordinates()
                 val btn = buttonCoordinates
-                val centerOffset = if (root != null && root.isAttached && btn != null && btn.isAttached) {
-                    root.localPositionOf(btn, Offset(btn.size.width / 2f, btn.size.height / 2f))
+                val centerOffset = if (btn != null && btn.isAttached) {
+                    btn.boundsInWindow().center
                 } else {
-                    Offset(100f, 100f)
+                    Offset(500f, 1500f)
                 }
                 onClick(centerOffset)
             },

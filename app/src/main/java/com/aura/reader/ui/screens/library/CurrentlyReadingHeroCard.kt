@@ -73,35 +73,31 @@ fun CurrentlyReadingHeroCard(
     val strings = LocalAppStrings.current
     var showMenu by remember { mutableStateOf(false) }
 
-    // Decode cover bitmap for dynamic color extraction
-    val coverBitmap: Bitmap? = remember(book.coverBase64) {
-        book.coverBase64?.let { base64 ->
-            try {
-                val bytes = Base64.decode(base64, Base64.DEFAULT)
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
-
-    // Dynamic color extraction via Palette API (Offloaded to Dispatchers.Default with downscaled bitmap for 120fps smoothness)
+    // Dynamic color extraction via Palette API (Offloaded entirely to Dispatchers.Default with downscaled thumbnail for 120fps smoothness)
     var dominantColor by remember { mutableStateOf<Color?>(null) }
     var accentColor by remember { mutableStateOf<Color?>(null) }
 
-    LaunchedEffect(coverBitmap) {
-        if (coverBitmap != null) {
+    LaunchedEffect(book.coverBase64) {
+        val base64 = book.coverBase64
+        if (!base64.isNullOrBlank()) {
             withContext(Dispatchers.Default) {
                 try {
-                    val scaled = Bitmap.createScaledBitmap(coverBitmap, 48, 64, false)
-                    val palette = Palette.from(scaled).maximumColorCount(12).generate()
-                    val swatch = palette.darkVibrantSwatch
-                        ?: palette.dominantSwatch
-                        ?: palette.mutedSwatch
-                    val vibrant = palette.vibrantSwatch ?: palette.lightVibrantSwatch
+                    val bytes = Base64.decode(base64, Base64.DEFAULT)
+                    val opts = BitmapFactory.Options().apply {
+                        inSampleSize = 8
+                        inPreferredConfig = Bitmap.Config.RGB_565
+                    }
+                    val thumb = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+                    if (thumb != null) {
+                        val palette = Palette.from(thumb).maximumColorCount(12).generate()
+                        val swatch = palette.darkVibrantSwatch
+                            ?: palette.dominantSwatch
+                            ?: palette.mutedSwatch
+                        val vibrant = palette.vibrantSwatch ?: palette.lightVibrantSwatch
 
-                    if (swatch != null) dominantColor = Color(swatch.rgb)
-                    if (vibrant != null) accentColor = Color(vibrant.rgb)
+                        if (swatch != null) dominantColor = Color(swatch.rgb)
+                        if (vibrant != null) accentColor = Color(vibrant.rgb)
+                    }
                 } catch (e: Exception) {
                     // fallback
                 }

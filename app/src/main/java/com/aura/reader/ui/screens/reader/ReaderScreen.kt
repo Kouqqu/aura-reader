@@ -1,7 +1,5 @@
 package com.aura.reader.ui.screens.reader
 
-import com.aura.reader.ui.components.PixelFullScreenBurst
-
 import androidx.compose.material3.CircularProgressIndicator
 
 import androidx.compose.animation.core.tween
@@ -234,9 +232,6 @@ fun ReaderScreen(
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showTtsSheet by remember { mutableStateOf(false) }
     var showChaptersSheet by remember { mutableStateOf(false) }
-    var themeBurstTrigger by remember { mutableStateOf(0L) }
-    var themeBurstOrigin by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-    var themeBurstColors by remember { mutableStateOf<List<androidx.compose.ui.graphics.Color>>(emptyList()) }
     var showBookmarksQuotesSheet by remember { mutableStateOf(false) }
     var selectedFootnote by remember { mutableStateOf<Pair<String, String>?>(null) }
     var quoteToSave by remember { mutableStateOf<String?>(null) }
@@ -1018,11 +1013,6 @@ fun ReaderScreen(
                     materialYouEnabled = materialYouEnabled,
                     onMaterialYouChange = { viewModel.setMaterialYouEnabled(it) },
                     onDismiss = { showSettingsSheet = false },
-                    onThemeBurst = { origin, colors ->
-                        themeBurstOrigin = origin
-                        themeBurstColors = colors
-                        themeBurstTrigger = System.currentTimeMillis()
-                    },
                     onFontSizeChange = { viewModel.setFontSize(it) },
                     onLineHeightChange = { viewModel.setLineHeight(it) },
                     onThemeModeChange = { viewModel.setThemeMode(it) },
@@ -1264,16 +1254,6 @@ fun ReaderScreen(
                     translatedText = translationResult,
                     errorMessage = translationError,
                     onDismiss = { translationText = null }
-                )
-            }
-
-            // Full screen particle burst overlay covering the entire display
-            if (themeBurstTrigger > 0L && themeBurstColors.isNotEmpty()) {
-                PixelFullScreenBurst(
-                    triggerKey = themeBurstTrigger,
-                    origin = themeBurstOrigin,
-                    colors = themeBurstColors,
-                    modifier = Modifier.fillMaxSize()
                 )
             }
         }

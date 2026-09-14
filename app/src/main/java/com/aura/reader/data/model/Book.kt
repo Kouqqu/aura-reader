@@ -1,5 +1,7 @@
 package com.aura.reader.data.model
 
+import androidx.compose.runtime.Immutable
+
 enum class BookFormat {
     FB2,
     EPUB,
@@ -17,12 +19,14 @@ enum class BlockType {
     IMAGE           // Illustration / picture: text = local file path / URI, subText = caption
 }
 
+@Immutable
 data class FormattedBlock(
     val type: BlockType,
     val text: String,
     val subText: String? = null // Author of epigraph / quote
 )
 
+@Immutable
 data class Chapter(
     val id: String,
     val title: String,
@@ -31,6 +35,7 @@ data class Chapter(
     val order: Int
 )
 
+@Immutable
 data class Book(
     val id: String,
     val title: String,
@@ -48,6 +53,7 @@ data class Book(
     val collections: List<String> = emptyList()
 )
 
+@Immutable
 data class Bookmark(
     val id: String = java.util.UUID.randomUUID().toString(),
     val bookId: String,
@@ -58,6 +64,7 @@ data class Bookmark(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+@Immutable
 data class Quote(
     val id: String = java.util.UUID.randomUUID().toString(),
     val bookId: String,
