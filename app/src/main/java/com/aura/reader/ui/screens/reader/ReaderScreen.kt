@@ -1,5 +1,9 @@
 package com.aura.reader.ui.screens.reader
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+
 import com.aura.reader.data.model.Quote
 import com.aura.reader.ui.theme.Strings
 import com.aura.reader.util.BookShareUtils
