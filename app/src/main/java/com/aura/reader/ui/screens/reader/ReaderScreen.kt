@@ -1,5 +1,7 @@
 package com.aura.reader.ui.screens.reader
 
+import androidx.compose.material3.CircularProgressIndicator
+
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.ExperimentalSharedTransitionApi
