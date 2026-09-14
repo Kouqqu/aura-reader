@@ -4,6 +4,7 @@ import com.aura.reader.ui.components.ParallaxCoverViewer
 import com.aura.reader.util.BookShareUtils
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.ChevronRight
 
 import android.content.Context
 import android.hardware.Sensor

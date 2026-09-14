@@ -1,5 +1,7 @@
 package com.aura.reader.ui.screens.reader
 
+import com.aura.reader.data.model.Quote
+import com.aura.reader.ui.theme.Strings
 import com.aura.reader.util.BookShareUtils
 import androidx.compose.material.icons.filled.Share
 
@@ -1169,6 +1171,7 @@ fun ChapterContentView(
     chaptersCount: Int,
     searchQuery: String,
     footnotes: Map<String, String>,
+    quotes: List<Quote> = emptyList(),
     onToggleControls: () -> Unit,
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onSaveQuote: (String) -> Unit,
