@@ -1,5 +1,7 @@
 package com.aura.reader.data.model
 
+import androidx.compose.runtime.Immutable
+
 enum class ReaderThemeMode {
     LIGHT,          // Crisp Clean White
     DARK,           // Modern Dark Slate
@@ -26,8 +28,6 @@ enum class TwoColumnMode {
     OFF,
     ALWAYS
 }
-
-import androidx.compose.runtime.Immutable
 
 @Immutable
 data class ReaderSettings(
