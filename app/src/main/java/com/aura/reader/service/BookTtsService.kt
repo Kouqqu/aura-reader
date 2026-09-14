@@ -247,6 +247,13 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 speechRate = intent.getFloatExtra(EXTRA_SPEED, 1.0f)
 
                 tts?.setSpeechRate(speechRate)
+                tts?.setPitch(speechPitch)
+                if (selectedVoice != null) {
+                    try {
+                        val matched = tts?.voices?.firstOrNull { it.name == selectedVoice }
+                        if (matched != null) tts?.voice = matched
+                    } catch (e: Throwable) {}
+                }
 
                 _ttsState.value = _ttsState.value.copy(
                     isPlaying = true,
@@ -287,12 +294,18 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 speechRate = newSpeed
                 tts?.setSpeechRate(speechRate)
                 _ttsState.value = _ttsState.value.copy(speed = speechRate)
+                if (_ttsState.value.isPlaying) {
+                    speakCurrentParagraph()
+                }
             }
             ACTION_SET_PITCH -> {
                 val newPitch = intent.getFloatExtra(EXTRA_PITCH, 1.0f)
                 speechPitch = newPitch
                 tts?.setPitch(speechPitch)
                 _ttsState.value = _ttsState.value.copy(pitch = speechPitch)
+                if (_ttsState.value.isPlaying) {
+                    speakCurrentParagraph()
+                }
             }
             ACTION_SET_VOICE -> {
                 val voiceName = intent.getStringExtra(EXTRA_VOICE_NAME)
@@ -303,6 +316,9 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                             tts?.voice = matched
                             selectedVoice = voiceName
                             _ttsState.value = _ttsState.value.copy(selectedVoiceName = voiceName)
+                            if (_ttsState.value.isPlaying) {
+                                speakCurrentParagraph()
+                            }
                         }
                     } catch (e: Throwable) {
                         e.printStackTrace()

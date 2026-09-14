@@ -1,95 +1,104 @@
 package com.aura.reader.ui.components
 
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.dp
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
-data class Particle(
-    val angle: Double,
-    val speed: Float,
-    val radius: Float,
-    val color: Color,
-    val distance: Float
-)
-
-class ParticleBurstState {
-    var triggerKey by mutableStateOf(0L)
-        private set
-    var origin by mutableStateOf(Offset.Zero)
-        private set
-    var colors by mutableStateOf<List<Color>>(emptyList())
-        private set
-
-    fun burst(origin: Offset, colors: List<Color>) {
-        this.origin = origin
-        this.colors = colors
-        this.triggerKey = System.currentTimeMillis()
+fun triggerThemeHaptic(context: Context) {
+    try {
+        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && vibrator?.hasVibrator() == true) {
+            vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
+        }
+    } catch (e: Exception) {
+        // Fallback or ignore
     }
 }
 
-@Composable
-fun rememberParticleBurstState(): ParticleBurstState {
-    return remember { ParticleBurstState() }
-}
+private data class PixelParticle(
+    val angle: Double,
+    val distance: Float,
+    val radius: Float,
+    val color: Color
+)
 
 @Composable
-fun PixelParticleBurstOverlay(
-    state: ParticleBurstState,
+fun PixelButtonBurst(
+    triggerKey: Long,
+    colors: List<Color>,
     modifier: Modifier = Modifier
 ) {
-    if (state.triggerKey == 0L || state.colors.isEmpty()) return
+    if (triggerKey == 0L || colors.isEmpty()) return
 
-    val progress = remember(state.triggerKey) { Animatable(0f) }
-    val particles = remember(state.triggerKey) {
-        val rand = Random(state.triggerKey)
-        List(48) {
+    val progress = remember(triggerKey) { Animatable(0f) }
+    val particles = remember(triggerKey) {
+        val rand = Random(triggerKey)
+        List(56) {
             val angle = rand.nextDouble(0.0, Math.PI * 2)
-            val distance = rand.nextFloat() * 220f + 60f
-            val radius = rand.nextFloat() * 4.5f + 2f
-            val color = state.colors[rand.nextInt(state.colors.size)]
-            Particle(
+            val distance = rand.nextFloat() * 160f + 40f
+            val radius = rand.nextFloat() * 3.5f + 1.8f
+            val color = colors[rand.nextInt(colors.size)]
+            PixelParticle(
                 angle = angle,
-                speed = rand.nextFloat() * 0.8f + 0.4f,
+                distance = distance,
                 radius = radius,
-                color = color,
-                distance = distance
+                color = color
             )
         }
     }
 
-    LaunchedEffect(state.triggerKey) {
+    LaunchedEffect(triggerKey) {
         progress.snapTo(0f)
         progress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing)
+            animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing)
         )
     }
 
     val currentProgress = progress.value
     if (currentProgress < 1f) {
-        Canvas(modifier = modifier.fillMaxSize()) {
+        Canvas(
+            modifier = modifier.graphicsLayer(clip = false)
+        ) {
+            val centerOffset = Offset(size.width / 2f, size.height / 2f)
             val ease = currentProgress
-            val alpha = (1f - (currentProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)
+            val alpha = (1f - (ease - 0.25f) / 0.75f).coerceIn(0f, 1f)
 
+            // Shockwave ring
+            val ringRadius = ease * (size.width.coerceAtLeast(size.height) * 0.9f)
+            val ringAlpha = (1f - ease).coerceIn(0f, 0.7f)
+            if (ringRadius > 0f && ringAlpha > 0f) {
+                drawCircle(
+                    color = colors.first().copy(alpha = ringAlpha),
+                    radius = ringRadius,
+                    center = centerOffset,
+                    style = Stroke(width = 2.dp.toPx())
+                )
+            }
+
+            // Flying particles
             for (p in particles) {
                 val dist = p.distance * ease
-                val x = state.origin.x + (dist * cos(p.angle)).toFloat()
-                val y = state.origin.y + (dist * sin(p.angle)).toFloat()
-                val particleRadius = p.radius * (1f - ease * 0.4f)
+                val x = centerOffset.x + (dist * cos(p.angle)).toFloat()
+                val y = centerOffset.y + (dist * sin(p.angle)).toFloat()
+                val particleRadius = (p.radius * (1f - ease * 0.45f)).coerceAtLeast(0.5f)
 
                 drawCircle(
                     color = p.color.copy(alpha = alpha),

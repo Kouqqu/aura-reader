@@ -13,6 +13,9 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -648,6 +651,12 @@ fun LibraryScreen(
                     }
 
                     val currentHeroBook = recentBooks.firstOrNull()
+                    val displayedRecentBooks = if (currentHeroBook != null && searchQuery.isBlank() && activeCollectionFilter.type == CollectionFilterType.ALL) {
+                        filteredRecentBooks.filter { it.id != currentHeroBook.id }
+                    } else {
+                        filteredRecentBooks
+                    }
+
                     if (currentHeroBook != null && searchQuery.isBlank() && activeCollectionFilter.type == CollectionFilterType.ALL) {
                         item(key = "currently_reading_hero") {
                             CurrentlyReadingHeroCard(
@@ -660,14 +669,14 @@ fun LibraryScreen(
 
                     item {
                         Text(
-                            text = if (searchQuery.isBlank()) strings.recentBooks else strings.searchResultsCount(filteredRecentBooks.size),
+                            text = if (searchQuery.isBlank()) strings.recentBooks else strings.searchResultsCount(displayedRecentBooks.size),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
                         )
                     }
 
-                    if (filteredRecentBooks.isEmpty() && searchQuery.isNotBlank()) {
+                    if (displayedRecentBooks.isEmpty() && searchQuery.isNotBlank()) {
                         item {
                             Text(
                                 text = strings.noSearchResultsFound(searchQuery),
@@ -679,7 +688,7 @@ fun LibraryScreen(
                     }
 
                     if (libraryViewMode == "GRID") {
-                        val chunkedBooks = filteredRecentBooks.chunked(2)
+                        val chunkedBooks = displayedRecentBooks.chunked(2)
                         items(chunkedBooks, key = { chunk -> chunk.joinToString("_") { it.id } }) { rowBooks ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -689,7 +698,6 @@ fun LibraryScreen(
                                     BookGridCard(
                                         book = book,
                                         onClick = {
-                                            viewModel.openBook(book)
                                             onBookSelected(book)
                                         },
                                         onDelete = {
@@ -722,11 +730,10 @@ fun LibraryScreen(
                             }
                         }
                     } else {
-                        items(filteredRecentBooks, key = { it.id }) { book ->
+                        items(displayedRecentBooks, key = { it.id }) { book ->
                             BookCard(
                                 book = book,
                                 onClick = {
-                                    viewModel.openBook(book)
                                     onBookSelected(book)
                                 },
                                 onDelete = {
@@ -1263,20 +1270,28 @@ fun BookCoverView(
     coverBase64: String?,
     title: String,
     modifier: Modifier = Modifier,
-    bookId: String? = null
+    bookId: String? = null,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(10.dp)
 ) {
     val sharedTransitionScope = com.aura.reader.ui.navigation.LocalSharedTransitionScope.current
     val animatedVisibilityScope = com.aura.reader.ui.navigation.LocalNavAnimatedVisibilityScope.current
     val sharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && bookId != null) {
         with(sharedTransitionScope) {
             Modifier.sharedElement(
-                rememberSharedContentState(key = "book_cover_$bookId"),
-                animatedVisibilityScope = animatedVisibilityScope
+                state = rememberSharedContentState(key = "book_cover_$bookId"),
+                animatedVisibilityScope = animatedVisibilityScope,
+                boundsTransform = { _, _ ->
+                    tween(durationMillis = 350, easing = FastOutSlowInEasing)
+                },
+                clipInOverlayDuringTransition = OverlayClip(shape)
             )
         }
     } else Modifier
 
-    val finalModifier = modifier.then(sharedModifier)
+    val finalModifier = Modifier
+        .then(sharedModifier)
+        .clip(shape)
+        .then(modifier)
 
     val bitmap = remember(coverBase64) {
         if (!coverBase64.isNullOrBlank()) {

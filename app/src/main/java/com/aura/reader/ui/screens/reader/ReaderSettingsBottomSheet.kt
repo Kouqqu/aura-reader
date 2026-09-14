@@ -55,8 +55,8 @@ import com.aura.reader.data.model.ReaderFontFamily
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.model.TwoColumnMode
-import com.aura.reader.ui.components.PixelParticleBurstOverlay
-import com.aura.reader.ui.components.rememberParticleBurstState
+import com.aura.reader.ui.components.PixelButtonBurst
+import com.aura.reader.ui.components.triggerThemeHaptic
 import com.aura.reader.ui.theme.AmoledBackground
 import com.aura.reader.ui.theme.AmoledText
 import com.aura.reader.ui.theme.SepiaBackground
@@ -83,7 +83,6 @@ fun ReaderSettingsBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
-    val burstState = rememberParticleBurstState()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -124,21 +123,15 @@ fun ReaderSettingsBottomSheet(
                     val sepiaColors = listOf(Color(0xFFFFCC80), Color(0xFFFFB74D), Color(0xFFD7CCC8), Color(0xFFBCAAA4), Color(0xFFFFE0B2))
                     val amoledColors = listOf(Color(0xFFCE93D8), Color(0xFFBA68C8), Color(0xFF80DEEA), Color(0xFF4DD0E1), Color(0xFFFFFFFF))
 
-                    fun handleThemeClick(mode: ReaderThemeMode, origin: Offset, colors: List<Color>) {
-                        if (settings.hapticFeedbackEnabled) {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        }
-                        burstState.burst(origin, colors)
-                        onThemeModeChange(mode)
-                    }
-
                     ThemeOptionButton(
                         label = strings.themeLight,
                         bgColor = Color(0xFFFFFFFF),
                         textColor = Color(0xFF1D1B20),
                         isSelected = settings.themeMode == ReaderThemeMode.LIGHT,
+                        burstColors = lightColors,
+                        hapticEnabled = settings.hapticFeedbackEnabled,
                         modifier = Modifier.weight(1f),
-                        onClick = { origin -> handleThemeClick(ReaderThemeMode.LIGHT, origin, lightColors) }
+                        onClick = { onThemeModeChange(ReaderThemeMode.LIGHT) }
                     )
 
                     ThemeOptionButton(
@@ -146,8 +139,10 @@ fun ReaderSettingsBottomSheet(
                         bgColor = Color(0xFF1E2125),
                         textColor = Color(0xFFE2E2E6),
                         isSelected = settings.themeMode == ReaderThemeMode.DARK || settings.themeMode == ReaderThemeMode.SYSTEM_DYNAMIC,
+                        burstColors = darkColors,
+                        hapticEnabled = settings.hapticFeedbackEnabled,
                         modifier = Modifier.weight(1f),
-                        onClick = { origin -> handleThemeClick(ReaderThemeMode.DARK, origin, darkColors) }
+                        onClick = { onThemeModeChange(ReaderThemeMode.DARK) }
                     )
 
                     ThemeOptionButton(
@@ -155,8 +150,10 @@ fun ReaderSettingsBottomSheet(
                         bgColor = SepiaBackground,
                         textColor = SepiaText,
                         isSelected = settings.themeMode == ReaderThemeMode.SEPIA,
+                        burstColors = sepiaColors,
+                        hapticEnabled = settings.hapticFeedbackEnabled,
                         modifier = Modifier.weight(1f),
-                        onClick = { origin -> handleThemeClick(ReaderThemeMode.SEPIA, origin, sepiaColors) }
+                        onClick = { onThemeModeChange(ReaderThemeMode.SEPIA) }
                     )
 
                     ThemeOptionButton(
@@ -164,8 +161,10 @@ fun ReaderSettingsBottomSheet(
                         bgColor = AmoledBackground,
                         textColor = AmoledText,
                         isSelected = settings.themeMode == ReaderThemeMode.AMOLED,
+                        burstColors = amoledColors,
+                        hapticEnabled = settings.hapticFeedbackEnabled,
                         modifier = Modifier.weight(1f),
-                        onClick = { origin -> handleThemeClick(ReaderThemeMode.AMOLED, origin, amoledColors) }
+                        onClick = { onThemeModeChange(ReaderThemeMode.AMOLED) }
                     )
                 }
 
@@ -504,8 +503,7 @@ fun ReaderSettingsBottomSheet(
                 Spacer(modifier = Modifier.height(32.dp))
             }
 
-            // Particle Burst Canvas Overlay
-            PixelParticleBurstOverlay(state = burstState)
+
         }
     }
 }
@@ -516,16 +514,20 @@ fun ThemeOptionButton(
     bgColor: Color,
     textColor: Color,
     isSelected: Boolean,
+    burstColors: List<Color>,
+    hapticEnabled: Boolean,
     modifier: Modifier = Modifier,
-    onClick: (Offset) -> Unit
+    onClick: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    var burstTrigger by remember { mutableStateOf(0L) }
+
     val borderModifier = if (isSelected) {
         Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(14.dp))
     } else {
         Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
     }
-
-    var buttonCenter by remember { mutableStateOf(Offset.Zero) }
 
     Box(
         modifier = modifier
@@ -533,11 +535,14 @@ fun ThemeOptionButton(
             .then(borderModifier)
             .clip(RoundedCornerShape(14.dp))
             .background(bgColor)
-            .onGloballyPositioned { coords ->
-                val bounds = coords.boundsInRoot()
-                buttonCenter = Offset(bounds.left + bounds.width / 2f, bounds.top + bounds.height / 2f)
-            }
-            .clickable { onClick(buttonCenter) },
+            .clickable {
+                if (hapticEnabled) {
+                    triggerThemeHaptic(context)
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                }
+                burstTrigger = System.currentTimeMillis()
+                onClick()
+            },
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -546,5 +551,13 @@ fun ThemeOptionButton(
             style = MaterialTheme.typography.labelMedium,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )
+
+        if (burstTrigger > 0L) {
+            PixelButtonBurst(
+                triggerKey = burstTrigger,
+                colors = burstColors,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }

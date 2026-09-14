@@ -75,7 +75,9 @@ fun AuraNavGraph(
                             viewModel = libraryViewModel,
                             onBookSelected = { book ->
                                 readerViewModel.openBook(book)
-                                navController.navigate(NavRoutes.READER)
+                                navController.navigate(NavRoutes.READER) {
+                                    launchSingleTop = true
+                                }
                             },
                             onOpenCatalog = {
                                 navController.navigate(NavRoutes.CATALOG)
@@ -104,7 +106,9 @@ fun AuraNavGraph(
                             },
                             onOpenBook = { book ->
                                 readerViewModel.openBook(book)
-                                navController.navigate(NavRoutes.READER)
+                                navController.navigate(NavRoutes.READER) {
+                                    launchSingleTop = true
+                                }
                             }
                         )
                     }

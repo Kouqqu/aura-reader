@@ -3,10 +3,6 @@ package com.aura.reader.ui.screens.library
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,8 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -45,8 +39,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -63,7 +55,7 @@ fun CurrentlyReadingHeroCard(
 ) {
     val strings = LocalAppStrings.current
 
-    // Decode cover bitmap
+    // Decode cover bitmap for dynamic color extraction
     val coverBitmap: Bitmap? = remember(book.coverBase64) {
         book.coverBase64?.let { base64 ->
             try {
@@ -133,7 +125,7 @@ fun CurrentlyReadingHeroCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Large cover with ambient shadow
+                // Large cover with ambient shadow and shared transition element
                 Box(
                     modifier = Modifier
                         .shadow(
@@ -142,26 +134,14 @@ fun CurrentlyReadingHeroCard(
                             ambientColor = cardBg.copy(alpha = 0.6f),
                             spotColor = cardBg
                         )
-                        .size(width = 88.dp, height = 130.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
                 ) {
-                    if (coverBitmap != null) {
-                        Image(
-                            bitmap = coverBitmap.asImageBitmap(),
-                            contentDescription = book.title,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(width = 88.dp, height = 130.dp)
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Book,
-                            contentDescription = null,
-                            tint = primaryAccent,
-                            modifier = Modifier.size(36.dp)
-                        )
-                    }
+                    BookCoverView(
+                        coverBase64 = book.coverBase64,
+                        title = book.title,
+                        bookId = book.id,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.size(width = 88.dp, height = 130.dp)
+                    )
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))

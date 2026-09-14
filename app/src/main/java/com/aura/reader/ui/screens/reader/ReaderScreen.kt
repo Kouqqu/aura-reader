@@ -536,8 +536,12 @@ fun ReaderScreen(
                         val coverSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && currentBook != null) {
                             with(sharedTransitionScope) {
                                 Modifier.sharedElement(
-                                    rememberSharedContentState(key = "book_cover_${currentBook.id}"),
-                                    animatedVisibilityScope = animatedVisibilityScope
+                                    state = rememberSharedContentState(key = "book_cover_${currentBook.id}"),
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    boundsTransform = { _, _ ->
+                                        tween(durationMillis = 350, easing = FastOutSlowInEasing)
+                                    },
+                                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(6.dp))
                                 )
                             }
                         } else Modifier
