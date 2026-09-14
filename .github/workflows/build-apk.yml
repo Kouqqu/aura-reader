@@ -61,16 +61,19 @@ jobs:
           path: AuraReader.apk
           if-no-files-found: error
 
-      - name: Publish GitHub Release
+      - name: Publish Test Preview Build
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.3.7"
-          name: "Aura Reader v1.3.7"
+          tag_name: "preview"
+          name: "Aura Reader (Тестовая сборка)"
+          prerelease: true
+          make_latest: false
           body: |
-            Aura Reader v1.3.7 — Исправление светлой подложки картинок и адаптивный размер 3D-обложки:
-            - 🖼️ Исправлена работа настройки «Светлая подложка картинок»: теперь корректно учитывается стандартная тёмная тема (ReaderThemeMode.DARK), AMOLED и системный тёмный режим, а прозрачные рисунки и текст получают чистый контрастный белый фон.
-            - 📱 Адаптивный размер 3D-обложки книги (BoxWithConstraints): обложка рассчитывается под пропорции экрана и никогда не вылезает за границы на планшетах, в горизонтальной ориентации и на экранах Fold.
+            🔄 Тестовая превью-сборка Aura Reader.
+            Собрана для тестирования новых функций перед официальным релизом v1.4.0.
+            
+            Прямая ссылка на APK: https://github.com/Kouqqu/aura-reader/releases/download/preview/AuraReader.apk
           files: AuraReader.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
