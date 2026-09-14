@@ -175,7 +175,8 @@ import java.io.File
 
 @OptIn(
     ExperimentalMaterial3Api::class,
-    androidx.compose.foundation.ExperimentalFoundationApi::class
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+    androidx.compose.animation.ExperimentalSharedTransitionApi::class
 )
 @Composable
 fun ReaderScreen(
@@ -527,19 +528,20 @@ fun ReaderScreen(
                             )
                         }
 
+                        val currentBook = book
                         val sharedTransitionScope = com.aura.reader.ui.navigation.LocalSharedTransitionScope.current
                         val animatedVisibilityScope = com.aura.reader.ui.navigation.LocalNavAnimatedVisibilityScope.current
-                        val coverSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && book != null) {
+                        val coverSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && currentBook != null) {
                             with(sharedTransitionScope) {
                                 Modifier.sharedElement(
-                                    rememberSharedContentState(key = "book_cover_${book.id}"),
+                                    rememberSharedContentState(key = "book_cover_${currentBook.id}"),
                                     animatedVisibilityScope = animatedVisibilityScope
                                 )
                             }
                         } else Modifier
 
-                        val topBarCoverBitmap = remember(book?.coverImageBase64) {
-                            book?.coverImageBase64?.let { base64 ->
+                        val topBarCoverBitmap = remember(currentBook?.coverBase64) {
+                            currentBook?.coverBase64?.let { base64 ->
                                 try {
                                     val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
                                     android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
@@ -951,7 +953,7 @@ fun ReaderScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(horizontal = 16.dp)
-                        .padding(bottom = if (isControlsVisible) 175.dp else 24.dp)
+                        .padding(bottom = if (showControls) 175.dp else 24.dp)
                 ) {
                     TtsControlBar(
                         ttsState = ttsState,

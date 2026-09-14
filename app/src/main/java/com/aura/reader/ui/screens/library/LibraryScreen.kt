@@ -73,6 +73,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -1502,7 +1503,7 @@ fun BookGridCard(
                     }
                 }
 
-                val prog = (book.readingProgress.coerceIn(0f, 1f) * 100).toInt()
+                val prog = book.progressPercent.coerceIn(0, 100)
                 if (prog > 0) {
                     Surface(
                         shape = RoundedCornerShape(6.dp),

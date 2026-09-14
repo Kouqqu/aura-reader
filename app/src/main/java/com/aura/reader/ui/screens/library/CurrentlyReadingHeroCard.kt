@@ -64,8 +64,8 @@ fun CurrentlyReadingHeroCard(
     val strings = LocalAppStrings.current
 
     // Decode cover bitmap
-    val coverBitmap: Bitmap? = remember(book.coverImageBase64) {
-        book.coverImageBase64?.let { base64 ->
+    val coverBitmap: Bitmap? = remember(book.coverBase64) {
+        book.coverBase64?.let { base64 ->
             try {
                 val bytes = Base64.decode(base64, Base64.DEFAULT)
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
@@ -208,8 +208,8 @@ fun CurrentlyReadingHeroCard(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     // Progress bar + percentage
-                    val progressFraction = book.readingProgress.coerceIn(0f, 1f)
-                    val progressPercent = (progressFraction * 100).toInt()
+                    val progressPercent = book.progressPercent.coerceIn(0, 100)
+                    val progressFraction = progressPercent / 100f
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
