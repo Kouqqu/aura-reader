@@ -92,7 +92,28 @@ class BookRepository(
         _recentBooks.value = books
     }
 
+    fun prepareBook(book: Book) {
+        if (_currentBook.value?.id != book.id) {
+            _currentBook.value = book
+        }
+    }
+
     suspend fun openBook(bookToOpen: Book): Result<Book> = withContext(Dispatchers.IO) {
+        if (bookToOpen.id == "sample_book" || bookToOpen.uriString == "sample://aura_guide") {
+            val sample = loadSampleBook()
+            return@withContext Result.success(sample)
+        }
+        val existingInMemory = _currentBook.value
+        if (existingInMemory != null && existingInMemory.id == bookToOpen.id && existingInMemory.chapters.isNotEmpty()) {
+            val updated = existingInMemory.copy(
+                currentChapterIndex = bookToOpen.currentChapterIndex,
+                currentScrollOffset = bookToOpen.currentScrollOffset,
+                progressPercent = bookToOpen.progressPercent
+            )
+            _currentBook.value = updated
+            addOrUpdateRecentBook(updated)
+            return@withContext Result.success(updated)
+        }
         val uri = Uri.parse(bookToOpen.uriString)
         val fileName = getFileName(uri) ?: "${bookToOpen.title}.${bookToOpen.format.name.lowercase()}"
         val inputStream = getInputStreamForUri(uri, fileName, bookToOpen.title)

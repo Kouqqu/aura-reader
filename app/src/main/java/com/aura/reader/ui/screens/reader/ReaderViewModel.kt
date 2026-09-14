@@ -49,6 +49,10 @@ class ReaderViewModel(
     fun openBook(book: Book) {
         _currentChapterIndex.value = book.currentChapterIndex
         _savedScrollOffset.value = book.currentScrollOffset
+        bookRepository.prepareBook(book)
+        viewModelScope.launch {
+            bookRepository.openBook(book)
+        }
     }
 
     fun setChapter(index: Int) {

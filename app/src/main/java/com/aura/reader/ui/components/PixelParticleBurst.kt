@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import kotlin.math.cos
+import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -40,8 +41,9 @@ private data class PixelParticle(
 )
 
 @Composable
-fun PixelButtonBurst(
+fun PixelFullScreenBurst(
     triggerKey: Long,
+    origin: Offset,
     colors: List<Color>,
     modifier: Modifier = Modifier
 ) {
@@ -50,10 +52,11 @@ fun PixelButtonBurst(
     val progress = remember(triggerKey) { Animatable(0f) }
     val particles = remember(triggerKey) {
         val rand = Random(triggerKey)
-        List(56) {
+        List(90) {
             val angle = rand.nextDouble(0.0, Math.PI * 2)
-            val distance = rand.nextFloat() * 160f + 40f
-            val radius = rand.nextFloat() * 3.5f + 1.8f
+            // Long trajectory flying across the entire screen
+            val distance = rand.nextFloat() * 1300f + 250f
+            val radius = rand.nextFloat() * 4.2f + 1.8f
             val color = colors[rand.nextInt(colors.size)]
             PixelParticle(
                 angle = angle,
@@ -68,7 +71,7 @@ fun PixelButtonBurst(
         progress.snapTo(0f)
         progress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing)
+            animationSpec = tween(durationMillis = 750, easing = FastOutSlowInEasing)
         )
     }
 
@@ -77,28 +80,39 @@ fun PixelButtonBurst(
         Canvas(
             modifier = modifier.graphicsLayer(clip = false)
         ) {
-            val centerOffset = Offset(size.width / 2f, size.height / 2f)
-            val ease = currentProgress
-            val alpha = (1f - (ease - 0.25f) / 0.75f).coerceIn(0f, 1f)
+            val ease = 1f - (1f - currentProgress).pow(2.5f)
+            val alpha = (1f - (ease - 0.15f) / 0.85f).coerceIn(0f, 1f)
 
-            // Shockwave ring
-            val ringRadius = ease * (size.width.coerceAtLeast(size.height) * 0.9f)
-            val ringAlpha = (1f - ease).coerceIn(0f, 0.7f)
-            if (ringRadius > 0f && ringAlpha > 0f) {
+            // Primary shockwave ring
+            val primaryRingRadius = ease * 700f
+            val primaryRingAlpha = (1f - ease * 1.1f).coerceIn(0f, 0.8f)
+            if (primaryRingRadius > 0f && primaryRingAlpha > 0f) {
                 drawCircle(
-                    color = colors.first().copy(alpha = ringAlpha),
-                    radius = ringRadius,
-                    center = centerOffset,
-                    style = Stroke(width = 2.dp.toPx())
+                    color = colors.first().copy(alpha = primaryRingAlpha),
+                    radius = primaryRingRadius,
+                    center = origin,
+                    style = Stroke(width = 2.5.dp.toPx())
                 )
             }
 
-            // Flying particles
+            // Secondary wider ambient shockwave ring
+            val secondaryRingRadius = ease * 1200f
+            val secondaryRingAlpha = (1f - ease * 1.3f).coerceIn(0f, 0.45f)
+            if (secondaryRingRadius > 0f && secondaryRingAlpha > 0f) {
+                drawCircle(
+                    color = colors.last().copy(alpha = secondaryRingAlpha),
+                    radius = secondaryRingRadius,
+                    center = origin,
+                    style = Stroke(width = 1.5.dp.toPx())
+                )
+            }
+
+            // Flying particles radiating across the entire screen
             for (p in particles) {
                 val dist = p.distance * ease
-                val x = centerOffset.x + (dist * cos(p.angle)).toFloat()
-                val y = centerOffset.y + (dist * sin(p.angle)).toFloat()
-                val particleRadius = (p.radius * (1f - ease * 0.45f)).coerceAtLeast(0.5f)
+                val x = origin.x + (dist * cos(p.angle)).toFloat()
+                val y = origin.y + (dist * sin(p.angle)).toFloat()
+                val particleRadius = (p.radius * (1f - ease * 0.4f)).coerceAtLeast(0.5f)
 
                 drawCircle(
                     color = p.color.copy(alpha = alpha),

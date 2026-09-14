@@ -57,7 +57,9 @@ import com.aura.reader.data.model.ReaderFontFamily
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.model.TwoColumnMode
-import com.aura.reader.ui.components.PixelButtonBurst
+import com.aura.reader.ui.components.PixelFullScreenBurst
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import com.aura.reader.ui.components.triggerThemeHaptic
 import com.aura.reader.ui.theme.AmoledBackground
 import com.aura.reader.ui.theme.AmoledText
@@ -85,6 +87,10 @@ fun ReaderSettingsBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
+    var rootCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var burstTriggerKey by remember { mutableStateOf(0L) }
+    var burstOrigin by remember { mutableStateOf(Offset.Zero) }
+    var burstColors by remember { mutableStateOf<List<Color>>(emptyList()) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -93,7 +99,11 @@ fun ReaderSettingsBottomSheet(
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { rootCoordinates = it }
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -125,15 +135,22 @@ fun ReaderSettingsBottomSheet(
                     val sepiaColors = listOf(Color(0xFFFFCC80), Color(0xFFFFB74D), Color(0xFFD7CCC8), Color(0xFFBCAAA4), Color(0xFFFFE0B2))
                     val amoledColors = listOf(Color(0xFFCE93D8), Color(0xFFBA68C8), Color(0xFF80DEEA), Color(0xFF4DD0E1), Color(0xFFFFFFFF))
 
+                    fun handleThemeClick(mode: ReaderThemeMode, origin: Offset, colors: List<Color>) {
+                        burstOrigin = origin
+                        burstColors = colors
+                        burstTriggerKey = System.currentTimeMillis()
+                        onThemeModeChange(mode)
+                    }
+
                     ThemeOptionButton(
                         label = strings.themeLight,
                         bgColor = Color(0xFFFFFFFF),
                         textColor = Color(0xFF1D1B20),
                         isSelected = settings.themeMode == ReaderThemeMode.LIGHT,
-                        burstColors = lightColors,
                         hapticEnabled = settings.hapticFeedbackEnabled,
+                        getRootCoordinates = { rootCoordinates },
                         modifier = Modifier.weight(1f),
-                        onClick = { onThemeModeChange(ReaderThemeMode.LIGHT) }
+                        onClick = { origin -> handleThemeClick(ReaderThemeMode.LIGHT, origin, lightColors) }
                     )
 
                     ThemeOptionButton(
@@ -141,10 +158,10 @@ fun ReaderSettingsBottomSheet(
                         bgColor = Color(0xFF1E2125),
                         textColor = Color(0xFFE2E2E6),
                         isSelected = settings.themeMode == ReaderThemeMode.DARK || settings.themeMode == ReaderThemeMode.SYSTEM_DYNAMIC,
-                        burstColors = darkColors,
                         hapticEnabled = settings.hapticFeedbackEnabled,
+                        getRootCoordinates = { rootCoordinates },
                         modifier = Modifier.weight(1f),
-                        onClick = { onThemeModeChange(ReaderThemeMode.DARK) }
+                        onClick = { origin -> handleThemeClick(ReaderThemeMode.DARK, origin, darkColors) }
                     )
 
                     ThemeOptionButton(
@@ -152,10 +169,10 @@ fun ReaderSettingsBottomSheet(
                         bgColor = SepiaBackground,
                         textColor = SepiaText,
                         isSelected = settings.themeMode == ReaderThemeMode.SEPIA,
-                        burstColors = sepiaColors,
                         hapticEnabled = settings.hapticFeedbackEnabled,
+                        getRootCoordinates = { rootCoordinates },
                         modifier = Modifier.weight(1f),
-                        onClick = { onThemeModeChange(ReaderThemeMode.SEPIA) }
+                        onClick = { origin -> handleThemeClick(ReaderThemeMode.SEPIA, origin, sepiaColors) }
                     )
 
                     ThemeOptionButton(
@@ -163,10 +180,10 @@ fun ReaderSettingsBottomSheet(
                         bgColor = AmoledBackground,
                         textColor = AmoledText,
                         isSelected = settings.themeMode == ReaderThemeMode.AMOLED,
-                        burstColors = amoledColors,
                         hapticEnabled = settings.hapticFeedbackEnabled,
+                        getRootCoordinates = { rootCoordinates },
                         modifier = Modifier.weight(1f),
-                        onClick = { onThemeModeChange(ReaderThemeMode.AMOLED) }
+                        onClick = { origin -> handleThemeClick(ReaderThemeMode.AMOLED, origin, amoledColors) }
                     )
                 }
 
@@ -505,7 +522,14 @@ fun ReaderSettingsBottomSheet(
                 Spacer(modifier = Modifier.height(32.dp))
             }
 
-
+            if (burstTriggerKey > 0L && burstColors.isNotEmpty()) {
+                PixelFullScreenBurst(
+                    triggerKey = burstTriggerKey,
+                    origin = burstOrigin,
+                    colors = burstColors,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
         }
     }
 }
@@ -516,14 +540,14 @@ fun ThemeOptionButton(
     bgColor: Color,
     textColor: Color,
     isSelected: Boolean,
-    burstColors: List<Color>,
     hapticEnabled: Boolean,
+    getRootCoordinates: () -> LayoutCoordinates?,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: (Offset) -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-    var burstTrigger by remember { mutableStateOf(0L) }
+    var buttonCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
     val borderModifier = if (isSelected) {
         Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(14.dp))
@@ -535,15 +559,23 @@ fun ThemeOptionButton(
         modifier = modifier
             .height(52.dp)
             .then(borderModifier)
-            .clip(RoundedCornerShape(14.dp))
-            .background(bgColor)
+            .background(bgColor, shape = RoundedCornerShape(14.dp))
+            .onGloballyPositioned { coords ->
+                buttonCoordinates = coords
+            }
             .clickable {
                 if (hapticEnabled) {
                     triggerThemeHaptic(context)
                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                 }
-                burstTrigger = System.currentTimeMillis()
-                onClick()
+                val root = getRootCoordinates()
+                val btn = buttonCoordinates
+                val centerOffset = if (root != null && root.isAttached && btn != null && btn.isAttached) {
+                    root.localPositionOf(btn, Offset(btn.size.width / 2f, btn.size.height / 2f))
+                } else {
+                    Offset(100f, 100f)
+                }
+                onClick(centerOffset)
             },
         contentAlignment = Alignment.Center
     ) {
@@ -553,13 +585,5 @@ fun ThemeOptionButton(
             style = MaterialTheme.typography.labelMedium,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )
-
-        if (burstTrigger > 0L) {
-            PixelButtonBurst(
-                triggerKey = burstTrigger,
-                colors = burstColors,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
     }
 }
