@@ -1,5 +1,8 @@
 package com.aura.reader.ui.components
 
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.hardware.Sensor
@@ -191,16 +194,23 @@ fun ParallaxCoverViewer(
         } else null
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.85f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { onDismiss() },
-        contentAlignment = Alignment.Center
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.85f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { onDismiss() },
+            contentAlignment = Alignment.Center
+        ) {
         // Top action bar with title & close button
         Row(
             modifier = Modifier
@@ -389,5 +399,6 @@ fun ParallaxCoverViewer(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 24.dp)
         )
+    }
     }
 }

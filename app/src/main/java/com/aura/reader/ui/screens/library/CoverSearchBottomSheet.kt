@@ -39,13 +39,13 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -89,9 +89,14 @@ fun CoverSearchBottomSheet(
     val scope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    val cleanTitle = remember(book.title) { CoverSearchService.cleanBookTitle(book.title) }
+    val cleanAuthor = remember(book.author) { CoverSearchService.cleanAuthorName(book.author) }
+
     var searchQuery by remember {
-        mutableStateOf("${book.title} ${book.author}".trim())
+        val initial = if (cleanAuthor.isNotBlank()) "$cleanTitle $cleanAuthor" else cleanTitle
+        mutableStateOf(initial.trim())
     }
+
     var isSearching by remember { mutableStateOf(false) }
     var covers by remember { mutableStateOf<List<OnlineCover>>(emptyList()) }
     var selectedCover by remember { mutableStateOf<OnlineCover?>(null) }
@@ -102,7 +107,7 @@ fun CoverSearchBottomSheet(
         scope.launch {
             isSearching = true
             selectedCover = null
-            covers = CoverSearchService.searchCovers(query)
+            covers = CoverSearchService.searchCovers(query, fallbackTitle = cleanTitle)
             isSearching = false
         }
     }
@@ -154,7 +159,7 @@ fun CoverSearchBottomSheet(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = book.title,
+                        text = cleanTitle,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -196,9 +201,52 @@ fun CoverSearchBottomSheet(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            // Quick suggestion chips
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (cleanAuthor.isNotBlank()) {
+                    val both = "$cleanTitle $cleanAuthor"
+                    FilterChip(
+                        selected = searchQuery.equals(both, ignoreCase = true),
+                        onClick = {
+                            searchQuery = both
+                            keyboardController?.hide()
+                            doSearch(both)
+                        },
+                        label = { Text("Название + Автор", style = MaterialTheme.typography.labelSmall) }
+                    )
+                }
 
-            // Action chips: Pick from gallery / Reset cover
+                FilterChip(
+                    selected = searchQuery.equals(cleanTitle, ignoreCase = true),
+                    onClick = {
+                        searchQuery = cleanTitle
+                        keyboardController?.hide()
+                        doSearch(cleanTitle)
+                    },
+                    label = { Text("Только название", style = MaterialTheme.typography.labelSmall) }
+                )
+
+                if (cleanAuthor.isNotBlank()) {
+                    FilterChip(
+                        selected = searchQuery.equals(cleanAuthor, ignoreCase = true),
+                        onClick = {
+                            searchQuery = cleanAuthor
+                            keyboardController?.hide()
+                            doSearch(cleanAuthor)
+                        },
+                        label = { Text("Автор", style = MaterialTheme.typography.labelSmall) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Action buttons: Pick from gallery / Reset cover
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -247,13 +295,13 @@ fun CoverSearchBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Search Results Grid
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 220.dp, max = 340.dp),
+                    .heightIn(min = 240.dp, max = 360.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (isSearching) {
@@ -289,53 +337,84 @@ fun CoverSearchBottomSheet(
                             val isSelected = selectedCover?.highResUrl == cover.highResUrl
                             val shape = RoundedCornerShape(12.dp)
 
-                            Box(
+                            Column(
                                 modifier = Modifier
-                                    .aspectRatio(0.68f)
                                     .clip(shape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .then(
-                                        if (isSelected) {
-                                            Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape)
-                                        } else {
-                                            Modifier
-                                        }
-                                    )
                                     .clickable { selectedCover = cover }
                             ) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(LocalContext.current)
-                                        .data(cover.thumbnailUrl)
-                                        .crossfade(true)
-                                        .build(),
-                                    contentDescription = cover.title,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-
-                                if (isSelected) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(0.68f)
+                                        .clip(shape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                        .then(
+                                            if (isSelected) {
+                                                Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape)
+                                            } else {
+                                                Modifier
+                                            }
+                                        )
+                                ) {
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(cover.thumbnailUrl)
+                                            .crossfade(true)
+                                            .build(),
+                                        contentDescription = cover.title,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
                                     )
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier
-                                            .padding(6.dp)
-                                            .size(24.dp)
-                                            .align(Alignment.TopEnd)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onPrimary,
-                                                modifier = Modifier.size(16.dp)
+
+                                    if (isSelected) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                                        )
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier
+                                                .padding(6.dp)
+                                                .size(24.dp)
+                                                .align(Alignment.TopEnd)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    if (cover.source.isNotBlank()) {
+                                        Surface(
+                                            shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 0.dp, bottomEnd = 6.dp),
+                                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
+                                            modifier = Modifier.align(Alignment.TopStart)
+                                        ) {
+                                            Text(
+                                                text = cover.source,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                                             )
                                         }
                                     }
+                                }
+
+                                if (cover.title.isNotBlank()) {
+                                    Text(
+                                        text = cover.title,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.padding(top = 4.dp, start = 2.dp, end = 2.dp)
+                                    )
                                 }
                             }
                         }
@@ -343,7 +422,7 @@ fun CoverSearchBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Action Buttons
             Row(

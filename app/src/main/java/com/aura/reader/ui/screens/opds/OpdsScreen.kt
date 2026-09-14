@@ -633,7 +633,7 @@ fun OpdsBookCard(
                 modifier = Modifier
                     .size(width = 56.dp, height = 80.dp)
                     .then(
-                        if (!book.isCategory && !book.coverUrl.isNullOrBlank()) {
+                        if (!book.isCategory) {
                             Modifier.clickable { onCoverClick() }
                         } else Modifier
                     ),
@@ -978,11 +978,7 @@ fun OpdsBookDetailsBottomSheet(
                 Surface(
                     modifier = Modifier
                         .size(width = 100.dp, height = 145.dp)
-                        .then(
-                            if (!book.coverUrl.isNullOrBlank()) {
-                                Modifier.clickable { onCoverClick() }
-                            } else Modifier
-                        ),
+                        .clickable { onCoverClick() },
                     shape = RoundedCornerShape(12.dp),
                     shadowElevation = 4.dp,
                     color = MaterialTheme.colorScheme.surfaceVariant
