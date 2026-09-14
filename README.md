@@ -24,7 +24,7 @@ Designed for comfortable, immersive reading without ads, telemetry, or bloated m
 - **Full-Text Search**: In-book keyword search with highlights and quick chapter jumping.
 - **Quotes & Highlights**: Save text excerpts with colored highlighter options (yellow, green, blue, pink, purple).
 - **Reading Statistics**: Track daily streaks, reading speed (words/min), and weekly interactive activity charts.
-- **Typography & Theming**: Custom font sizes, line height, serif/sans/mono fonts, plus Light, Dark, Sepia, Forest, and Pure Black (AMOLED) palettes.
+- **Typography & Theming**: Custom font sizes, line height, serif/sans/mono fonts, plus Light, Dark, Sepia and Pure Black (AMOLED) palettes.
 - **Multilingual**: Fully localized into 5 languages (English, Russian, Ukrainian, Belarusian, Polish).
 - **Auto-Updates**: In-app one-tap update checks and seamless installation.
 
@@ -54,7 +54,7 @@ This project is open-source under the terms of the [GNU General Public License v
 - **Полнотекстовый поиск**: Поиск слов и фраз внутри книги с подсветкой и навигацией, а также поиск по всей библиотеке.
 - **Цитаты и маркеры**: Сохранение фрагментов текста с выбором цвета хайлайта (жёлтый, зелёный, синий, розовый, фиолетовый).
 - **Интерактивная статистика**: Подсчёт времени чтения, страниц, темпа (слов/мин), стрик дней и анимированные графики активности.
-- **Типографика и темы**: Настройка шрифтов, кегля, межстрочного интервала, книжные отступы, темы: Светлая, Тёмная, Сепия, Лес и AMOLED.
+- **Типографика и темы**: Настройка шрифтов, кегля, межстрочного интервала, книжные отступы, темы: Светлая, Тёмная, Сепия и AMOLED.
 - **Мультиязычность**: 100% перевод интерфейса на 5 языков (Русский, Английский, Украинский, Белорусский, Польский).
 - **Автообновления**: Проверка и быстрая установка свежих версий прямо из приложения.
 
