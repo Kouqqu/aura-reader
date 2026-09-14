@@ -88,6 +88,7 @@ fun ReaderSettingsBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
+    var sheetCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var burstTriggerKey by remember { mutableStateOf(0L) }
     var burstOrigin by remember { mutableStateOf(Offset.Zero) }
     var burstColors by remember { mutableStateOf<List<Color>>(emptyList()) }
@@ -102,10 +103,7 @@ fun ReaderSettingsBottomSheet(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .graphicsLayer {
-                    clip = true
-                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-                }
+                .onGloballyPositioned { sheetCoordinates = it }
         ) {
             Column(
                 modifier = Modifier
@@ -133,10 +131,10 @@ fun ReaderSettingsBottomSheet(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    val lightColors = listOf(Color(0xFFFFF9C4), Color(0xFFFFE082), Color(0xFFFFD54F), Color(0xFFFFFFFF), Color(0xFFFFB74D))
-                    val darkColors = listOf(Color(0xFF90CAF9), Color(0xFF64B5F6), Color(0xFF42A5F5), Color(0xFFB39DDB), Color(0xFFE2E2E6))
-                    val sepiaColors = listOf(Color(0xFFFFCC80), Color(0xFFFFB74D), Color(0xFFD7CCC8), Color(0xFFBCAAA4), Color(0xFFFFE0B2))
-                    val amoledColors = listOf(Color(0xFFCE93D8), Color(0xFFBA68C8), Color(0xFF80DEEA), Color(0xFF4DD0E1), Color(0xFFFFFFFF))
+                    val lightColors = listOf(Color(0xFFFFD54F), Color(0xFFFFB300), Color(0xFFFF8F00), Color(0xFFFFF176), Color(0xFFE65100), Color(0xFFFFFFFF))
+                    val darkColors = listOf(Color(0xFF00E5FF), Color(0xFF40C4FF), Color(0xFF82B1FF), Color(0xFFB388FF), Color(0xFFE040FB), Color(0xFFFFFFFF))
+                    val sepiaColors = listOf(Color(0xFFFFB74D), Color(0xFFFF9800), Color(0xFFF57C00), Color(0xFFD7CCC8), Color(0xFFFFCC80), Color(0xFF8D6E63))
+                    val amoledColors = listOf(Color(0xFFE040FB), Color(0xFFD500F9), Color(0xFF00E5FF), Color(0xFF18FFFF), Color(0xFF69F0AE), Color(0xFFFFFFFF))
 
                     fun handleThemeClick(mode: ReaderThemeMode, origin: Offset, colors: List<Color>) {
                         burstOrigin = origin
@@ -151,6 +149,7 @@ fun ReaderSettingsBottomSheet(
                         textColor = Color(0xFF1D1B20),
                         isSelected = settings.themeMode == ReaderThemeMode.LIGHT,
                         hapticEnabled = settings.hapticFeedbackEnabled,
+                        getSheetCoordinates = { sheetCoordinates },
                         modifier = Modifier.weight(1f),
                         onClick = { origin -> handleThemeClick(ReaderThemeMode.LIGHT, origin, lightColors) }
                     )
@@ -161,6 +160,7 @@ fun ReaderSettingsBottomSheet(
                         textColor = Color(0xFFE2E2E6),
                         isSelected = settings.themeMode == ReaderThemeMode.DARK || settings.themeMode == ReaderThemeMode.SYSTEM_DYNAMIC,
                         hapticEnabled = settings.hapticFeedbackEnabled,
+                        getSheetCoordinates = { sheetCoordinates },
                         modifier = Modifier.weight(1f),
                         onClick = { origin -> handleThemeClick(ReaderThemeMode.DARK, origin, darkColors) }
                     )
@@ -171,6 +171,7 @@ fun ReaderSettingsBottomSheet(
                         textColor = SepiaText,
                         isSelected = settings.themeMode == ReaderThemeMode.SEPIA,
                         hapticEnabled = settings.hapticFeedbackEnabled,
+                        getSheetCoordinates = { sheetCoordinates },
                         modifier = Modifier.weight(1f),
                         onClick = { origin -> handleThemeClick(ReaderThemeMode.SEPIA, origin, sepiaColors) }
                     )
@@ -181,6 +182,7 @@ fun ReaderSettingsBottomSheet(
                         textColor = AmoledText,
                         isSelected = settings.themeMode == ReaderThemeMode.AMOLED,
                         hapticEnabled = settings.hapticFeedbackEnabled,
+                        getSheetCoordinates = { sheetCoordinates },
                         modifier = Modifier.weight(1f),
                         onClick = { origin -> handleThemeClick(ReaderThemeMode.AMOLED, origin, amoledColors) }
                     )
@@ -526,7 +528,8 @@ fun ReaderSettingsBottomSheet(
                     triggerKey = burstTriggerKey,
                     origin = burstOrigin,
                     colors = burstColors,
-                    durationMillis = 2000
+                    durationMillis = 2400,
+                    modifier = Modifier.matchParentSize()
                 )
             }
         }
@@ -540,6 +543,7 @@ fun ThemeOptionButton(
     textColor: Color,
     isSelected: Boolean,
     hapticEnabled: Boolean,
+    getSheetCoordinates: () -> LayoutCoordinates?,
     modifier: Modifier = Modifier,
     onClick: (Offset) -> Unit
 ) {
@@ -547,40 +551,46 @@ fun ThemeOptionButton(
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     var buttonCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
-    val borderModifier = if (isSelected) {
-        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(14.dp))
+    val border = if (isSelected) {
+        androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
     } else {
-        Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
+        androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     }
 
-    Box(
+    Surface(
+        onClick = {
+            if (hapticEnabled) {
+                triggerThemeHaptic(context)
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+            }
+            val sheet = getSheetCoordinates()
+            val btn = buttonCoordinates
+            val centerOffset = if (sheet != null && sheet.isAttached && btn != null && btn.isAttached) {
+                sheet.localPositionOf(btn, Offset(btn.size.width / 2f, btn.size.height / 2f))
+            } else {
+                Offset(btn?.size?.width?.div(2f) ?: 100f, 100f)
+            }
+            onClick(centerOffset)
+        },
+        shape = RoundedCornerShape(14.dp),
+        color = bgColor,
+        border = border,
         modifier = modifier
             .height(52.dp)
-            .then(borderModifier)
-            .background(bgColor, shape = RoundedCornerShape(14.dp))
             .onGloballyPositioned { coords ->
                 buttonCoordinates = coords
             }
-            .clickable {
-                if (hapticEnabled) {
-                    triggerThemeHaptic(context)
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                }
-                val btn = buttonCoordinates
-                val centerOffset = if (btn != null && btn.isAttached) {
-                    btn.boundsInWindow().center
-                } else {
-                    Offset(500f, 1500f)
-                }
-                onClick(centerOffset)
-            },
-        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = label,
-            color = textColor,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-        )
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = label,
+                color = textColor,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+            )
+        }
     }
 }
