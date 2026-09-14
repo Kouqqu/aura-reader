@@ -1,49 +1,65 @@
 # Aura Reader
 
-## 🇬🇧English
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![GitHub release](https://img.shields.io/github/v/release/Kouqqu/aura-reader?color=green)](https://github.com/Kouqqu/aura-reader/releases/latest)
+[![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://android.com)
 
-A simple, lightweight Android e-reader featuring Material 3 design.
+---
 
-Built for comfortable reading without clutter, ads, or bloated settings menus.
+## 🇬🇧 English
 
-### Features:
-- Supports **FB2**, **FB2.ZIP**, and **EPUB** formats (plus plain TXT files).
-- Two reading modes: **paginated** and **continuous scroll**.
-- **Popup footnotes**: opens notes instantly in a bottom sheet without losing your place in the text.
-- **Full-text search**: in-book keyword search with text highlighting and navigation, as well as library-wide search.
-- **Bookmarks & quotes**: one-tap bookmarking and easy saving of favorite passages.
-- **Reading stats**: tracks minutes read today directly on the home screen.
-- Book typography: centered chapter titles, italicized epigraphs/quotes with author attribution, and proper paragraph indents.
-- Dynamic Material 3 theming, plus a classic light theme, soft sepia, and pure black mode for AMOLED screens.
-- Remembers your exact reading progress (chapter and position).
-- Table of contents with quick chapter jumping.
-- Built-in storage scanner alongside system file picker support.
-- In-app automatic update checks and installation.
-- In-reader text adjustments: font size, line spacing, and font family selection (serif, sans-serif, monospace).
+A modern, lightweight Android e-reader built with Jetpack Compose and Material 3 design.
 
-### How to install:
-Head over to the [Releases](https://github.com/Kouqqu/aura-reader/releases) section, download the **`AuraReader.apk`** file, and install it on your device. Future updates can be handled directly within the app.
+Designed for comfortable, immersive reading without ads, telemetry, or bloated menus.
 
-## 🇷🇺Русский
+### Key Features:
+- **Formats**: Supports **EPUB**, **FB2**, **FB2.ZIP**, and plain **TXT**.
+- **Magazine Hero Card**: "Now Reading" card on the home screen with dynamic Aura Glow palette shadows and reading stats.
+- **Reading Modes**: Realistic **3D Page Flip**, **Page Peel/Curl**, **Paginated slide**, and **Continuous scroll**.
+- **Interactive 3D Parallax Covers**: Tilt your device or drag with your finger to examine book covers in real-time 3D with realistic lighting and gyroscope physics.
+- **Text-to-Speech (TTS)**: Background voice playback via system `MediaSessionCompat` with full lock screen and notification shade controls, plus system voice selection.
+- **Material You Widget**: Compact home screen widget supporting Android Dynamic Colors.
+- **Stardust Theme Switcher**: 180 glowing celestial particles bursting smoothly across the screen on palette changes.
+- **Dictionary & Footnotes**: Instant popup footnotes in a bottom sheet and smart offline dictionary looking up root lemmas.
+- **Full-Text Search**: In-book keyword search with highlights and quick chapter jumping.
+- **Quotes & Highlights**: Save text excerpts with colored highlighter options (yellow, green, blue, pink, purple).
+- **Reading Statistics**: Track daily streaks, reading speed (words/min), and weekly interactive activity charts.
+- **Typography & Theming**: Custom font sizes, line height, serif/sans/mono fonts, plus Light, Dark, Sepia, Forest, and Pure Black (AMOLED) palettes.
+- **Multilingual**: Fully localized into 5 languages (English, Russian, Ukrainian, Belarusian, Polish).
+- **Auto-Updates**: In-app one-tap update checks and seamless installation.
 
-Простая и лёгкая читалка для Android с дизайном Material 3
+### How to Install:
+Head over to the [Releases](https://github.com/Kouqqu/aura-reader/releases/latest) section, download **`AuraReader.apk`**, and install it on your Android device.
 
-Делалась для удобного чтения книг без лишней мишуры, рекламы и тяжеловесных настроек.
+### License:
+This project is open-source under the terms of the [GNU General Public License v3.0](LICENSE).
 
-### Что умеет:
-- Читает форматы **FB2**, **FB2.ZIP** и **EPUB** (плюс обычные TXT файлы).
-- Два режима чтения: **постраничный** и **непрерывная лента**.
-- **Всплывающие сноски**: моментальное открытие примечаний в нижнем окне без потери позиции в тексте.
-- **Полнотекстовый поиск**: поиск слов внутри книги с подсветкой и навигацией, а также поиск по библиотеке.
-- **Закладки и цитаты**: добавление закладок в один клик и сохранение любимых фрагментов текста.
-- **Статистика чтения**: подсчёт прочитанных за сегодня минут на главном экране.
-- Книжная вёрстка: центрированные заголовки, курсивные эпиграфы и цитаты с указанием авторов, абзацные отступы (красная строка).
-- Цвета оформления подстраиваются под Material 3, плюс есть классическая светлая тема, мягкая сепия и полностью чёрный режим для AMOLED-экранов.
-- Запоминает место, на котором остановился читать (главу и позицию).
-- Оглавление и быстрый переход между глазами.
-- Встроенный сканер книг в памяти плюс системный проводник.
-- Автоматическая проверка и установка обновлений прямо из приложения.
-- Настройки текста во время чтения: размер шрифта, межстрочный интервал и выбор шрифта (с засечками, без засечек, моно).
+---
+
+## 🇷🇺 Русский
+
+Современная, лёгкая и плавная читалка для Android на Jetpack Compose с дизайном Material 3.
+
+Создавалась для чистого и удобного чтения без рекламы, слежки и перегруженных настроек.
+
+### Основные возможности:
+- **Форматы**: Читает **EPUB**, **FB2**, **FB2.ZIP** и **TXT**.
+- **Журнальная карточка «Сейчас читаю»**: Стильная карточка на главном экране с мягким свечением Aura Glow в цвет обложки.
+- **Режимы чтения**: Физический **3D-разворот страниц (Flip)**, **стягивание страницы (Curl)**, **постраничный сдвиг** и **непрерывная лента**.
+- **3D Parallax обложки**: Интерактивный 3D-просмотр обложек с реакцией на датчик наклона (гироскоп), жесты пальцем и динамические световые блики.
+- **Фоновая озвучка (TTS)**: Чтение текста вслух в фоне через `MediaSessionCompat` с управлением из шторки уведомлений и экрана блокировки, плюс окно выбора всех системных голосов.
+- **Виджет Material You**: Компактный виджет для рабочего стола с поддержкой динамических системных цветов Android.
+- **Сияющие частицы смены темы**: 180 парящих мерцающих звёздных точек с мягким свечением при переключении палитры.
+- **Словарь и сноски**: Всплывающие сноски без потери позиции в тексте и умный поиск словарных форм слов.
+- **Полнотекстовый поиск**: Поиск слов и фраз внутри книги с подсветкой и навигацией, а также поиск по всей библиотеке.
+- **Цитаты и маркеры**: Сохранение фрагментов текста с выбором цвета хайлайта (жёлтый, зелёный, синий, розовый, фиолетовый).
+- **Интерактивная статистика**: Подсчёт времени чтения, страниц, темпа (слов/мин), стрик дней и анимированные графики активности.
+- **Типографика и темы**: Настройка шрифтов, кегля, межстрочного интервала, книжные отступы, темы: Светлая, Тёмная, Сепия, Лес и AMOLED.
+- **Мультиязычность**: 100% перевод интерфейса на 5 языков (Русский, Английский, Украинский, Белорусский, Польский).
+- **Автообновления**: Проверка и быстрая установка свежих версий прямо из приложения.
 
 ### Как установить:
-Зайдите в раздел [Releases](https://github.com/Kouqqu/aura-reader/releases), скачайте файл **`AuraReader.apk`** и установите на свой телефон. Дальше приложение можно будет обновлять прям внутри.
+Зайдите в раздел [Releases](https://github.com/Kouqqu/aura-reader/releases/latest), скачайте файл **`AuraReader.apk`** и установите на телефон. Дальше приложение сможет обновляться прямо внутри.
+
+### Лицензия:
+Проект распространяется под свободной лицензией [GNU General Public License v3.0](LICENSE).
