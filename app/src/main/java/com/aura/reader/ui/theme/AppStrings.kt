@@ -1486,15 +1486,6 @@ class PlStrings : Strings {
     override val coverUpdated = "Okładka została zaktualizowana"
     override val applyCover = "Zastosuj"
 
-}
-
-fun getStrings(language: AppLanguage): Strings = when (language) {
-    AppLanguage.RU -> RuStrings()
-    AppLanguage.EN -> EnStrings()
-    AppLanguage.UK -> UkStrings()
-    AppLanguage.BE -> BeStrings()
-    AppLanguage.PL -> PlStrings()
-
     override val highlightColorTitle = "Kolor zakreślacza"
     override val quoteSavedAsHighlight = "Cytat zapisany i wyróżniony w tekście"
     override val readingStatsSheetTitle = "Statystyki czytania"
@@ -1525,6 +1516,14 @@ fun getStrings(language: AppLanguage): Strings = when (language) {
     override val widgetContinueReading = "Kontynuuj czytanie"
     override val widgetNoBook = "Brak otwartych książek"
     override val widgetOpenApp = "Otwórz Aura Reader"
+}
+
+fun getStrings(language: AppLanguage): Strings = when (language) {
+    AppLanguage.RU -> RuStrings()
+    AppLanguage.EN -> EnStrings()
+    AppLanguage.UK -> UkStrings()
+    AppLanguage.BE -> BeStrings()
+    AppLanguage.PL -> PlStrings()
 }
 
 val LocalAppStrings = staticCompositionLocalOf<Strings> { RuStrings() }
