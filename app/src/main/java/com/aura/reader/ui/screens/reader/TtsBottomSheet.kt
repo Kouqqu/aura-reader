@@ -1,5 +1,15 @@
 package com.aura.reader.ui.screens.reader
 
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.Color
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -354,7 +364,7 @@ fun TtsBottomSheet(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Voice Selector
+            // Voice / Language Selector
             if (ttsState.availableVoices.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(
@@ -368,44 +378,112 @@ fun TtsBottomSheet(
                 val currentVoiceLabel = ttsState.availableVoices.firstOrNull { it.name == currentVoiceName }?.displayName
                     ?: strings.ttsVoiceDefault
 
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedCard(
-                        onClick = { isVoiceDropdownExpanded = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp)
+                OutlinedCard(
+                    onClick = { isVoiceDropdownExpanded = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = currentVoiceLabel,
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Icon(Icons.Default.ExpandMore, contentDescription = null)
+                        Text(
+                            text = currentVoiceLabel,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(Icons.Default.ExpandMore, contentDescription = null)
+                    }
+                }
+
+                if (isVoiceDropdownExpanded) {
+                    var voiceSearchQuery by remember { mutableStateOf("") }
+                    val filteredVoices = remember(voiceSearchQuery, ttsState.availableVoices) {
+                        if (voiceSearchQuery.isBlank()) ttsState.availableVoices
+                        else ttsState.availableVoices.filter {
+                            it.displayName.contains(voiceSearchQuery, ignoreCase = true) ||
+                            it.name.contains(voiceSearchQuery, ignoreCase = true)
                         }
                     }
 
-                    DropdownMenu(
-                        expanded = isVoiceDropdownExpanded,
-                        onDismissRequest = { isVoiceDropdownExpanded = false }
-                    ) {
-                        ttsState.availableVoices.take(15).forEach { voice ->
-                            DropdownMenuItem(
-                                text = { Text(voice.displayName) },
-                                onClick = {
-                                    isVoiceDropdownExpanded = false
-                                    onVoiceChange(voice.name)
-                                }
+                    AlertDialog(
+                        onDismissRequest = { isVoiceDropdownExpanded = false },
+                        title = {
+                            Text(
+                                text = strings.ttsVoiceTitle,
+                                fontWeight = FontWeight.Bold
                             )
+                        },
+                        text = {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                if (ttsState.availableVoices.size > 5) {
+                                    OutlinedTextField(
+                                        value = voiceSearchQuery,
+                                        onValueChange = { voiceSearchQuery = it },
+                                        placeholder = { Text(strings.searchInLibraryPlaceholder) },
+                                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 8.dp)
+                                    )
+                                }
+
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(max = 360.dp)
+                                ) {
+                                    items(filteredVoices, key = { it.name }) { voice ->
+                                        val isSelected = voice.name == currentVoiceName
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(
+                                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                                    else Color.Transparent
+                                                )
+                                                .clickable {
+                                                    onVoiceChange(voice.name)
+                                                    isVoiceDropdownExpanded = false
+                                                }
+                                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = voice.displayName,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            if (isSelected) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { isVoiceDropdownExpanded = false }) {
+                                Text(strings.cancel)
+                            }
                         }
-                    }
+                    )
                 }
             }
 

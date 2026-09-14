@@ -662,6 +662,13 @@ fun LibraryScreen(
                             CurrentlyReadingHeroCard(
                                 book = currentHeroBook,
                                 onBookClick = onBookSelected,
+                                onDelete = { bookToDelete = currentHeroBook },
+                                onToggleFavorite = { viewModel.toggleFavorite(currentHeroBook.id) },
+                                onAddToCollection = { bookForCollections = currentHeroBook },
+                                onSetProgress = { prog -> viewModel.setBookReadingProgress(currentHeroBook.id, prog) },
+                                onCoverClick = { inspectingCoverBook = currentHeroBook },
+                                onShare = { BookShareUtils.shareBookFile(context, currentHeroBook) },
+                                onChangeCover = { bookForCoverChange = currentHeroBook },
                                 modifier = Modifier.padding(bottom = 6.dp)
                             )
                         }
@@ -1295,18 +1302,13 @@ fun BookCoverView(
 
     val bitmap = remember(coverBase64) {
         if (!coverBase64.isNullOrBlank()) {
-            try {
-                val decoded = Base64.decode(coverBase64, Base64.DEFAULT)
-                BitmapFactory.decodeByteArray(decoded, 0, decoded.size)
-            } catch (e: Exception) {
-                null
-            }
+            com.aura.reader.util.CoverBitmapCache.getOrDecode(bookId ?: coverBase64, coverBase64)
         } else null
     }
 
     if (bitmap != null) {
         Image(
-            bitmap = bitmap.asImageBitmap(),
+            bitmap = bitmap,
             contentDescription = title,
             modifier = finalModifier,
             contentScale = ContentScale.Crop

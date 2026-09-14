@@ -17,12 +17,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -46,14 +54,24 @@ import androidx.compose.ui.unit.sp
 import androidx.palette.graphics.Palette
 import com.aura.reader.data.model.Book
 import com.aura.reader.ui.theme.LocalAppStrings
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun CurrentlyReadingHeroCard(
     book: Book,
     onBookClick: (Book) -> Unit,
+    onDelete: () -> Unit = {},
+    onToggleFavorite: () -> Unit = {},
+    onAddToCollection: () -> Unit = {},
+    onSetProgress: (Int) -> Unit = {},
+    onCoverClick: (Book) -> Unit = {},
+    onShare: () -> Unit = {},
+    onChangeCover: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
+    var showMenu by remember { mutableStateOf(false) }
 
     // Decode cover bitmap for dynamic color extraction
     val coverBitmap: Bitmap? = remember(book.coverBase64) {
@@ -67,28 +85,26 @@ fun CurrentlyReadingHeroCard(
         }
     }
 
-    // Dynamic color extraction via Palette API
+    // Dynamic color extraction via Palette API (Offloaded to Dispatchers.Default with downscaled bitmap for 120fps smoothness)
     var dominantColor by remember { mutableStateOf<Color?>(null) }
     var accentColor by remember { mutableStateOf<Color?>(null) }
 
     LaunchedEffect(coverBitmap) {
         if (coverBitmap != null) {
-            try {
-                Palette.from(coverBitmap).generate { palette ->
-                    val swatch = palette?.darkVibrantSwatch
-                        ?: palette?.dominantSwatch
-                        ?: palette?.mutedSwatch
-                    val vibrant = palette?.vibrantSwatch ?: palette?.lightVibrantSwatch
+            withContext(Dispatchers.Default) {
+                try {
+                    val scaled = Bitmap.createScaledBitmap(coverBitmap, 48, 64, false)
+                    val palette = Palette.from(scaled).maximumColorCount(12).generate()
+                    val swatch = palette.darkVibrantSwatch
+                        ?: palette.dominantSwatch
+                        ?: palette.mutedSwatch
+                    val vibrant = palette.vibrantSwatch ?: palette.lightVibrantSwatch
 
-                    if (swatch != null) {
-                        dominantColor = Color(swatch.rgb)
-                    }
-                    if (vibrant != null) {
-                        accentColor = Color(vibrant.rgb)
-                    }
+                    if (swatch != null) dominantColor = Color(swatch.rgb)
+                    if (vibrant != null) accentColor = Color(vibrant.rgb)
+                } catch (e: Exception) {
+                    // fallback
                 }
-            } catch (e: Exception) {
-                // fallback
             }
         }
     }
@@ -125,7 +141,7 @@ fun CurrentlyReadingHeroCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Large cover with ambient shadow and shared transition element
+                // Large cover with ambient shadow, shared transition element and cover inspection click
                 Box(
                     modifier = Modifier
                         .shadow(
@@ -140,7 +156,9 @@ fun CurrentlyReadingHeroCard(
                         title = book.title,
                         bookId = book.id,
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.size(width = 88.dp, height = 130.dp)
+                        modifier = Modifier
+                            .size(width = 88.dp, height = 130.dp)
+                            .clickable { onCoverClick(book) }
                     )
                 }
 
@@ -151,21 +169,112 @@ fun CurrentlyReadingHeroCard(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Badge: CURRENTLY READING
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = primaryAccent.copy(alpha = 0.18f),
-                        modifier = Modifier.padding(bottom = 6.dp)
+                    // Header Row: Badge + Favorite & 3-dots Menu
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = strings.currentlyReadingBadge,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = primaryAccent,
-                            letterSpacing = 0.08.sp,
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = primaryAccent.copy(alpha = 0.18f)
+                        ) {
+                            Text(
+                                text = strings.currentlyReadingBadge,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = primaryAccent,
+                                letterSpacing = 0.08.sp,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                            )
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Favorite toggle
+                            IconButton(
+                                onClick = onToggleFavorite,
+                                modifier = Modifier.size(30.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (book.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = null,
+                                    tint = if (book.isFavorite) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            // 3-dots Menu
+                            Box {
+                                IconButton(
+                                    onClick = { showMenu = true },
+                                    modifier = Modifier.size(30.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MoreVert,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+
+                                DropdownMenu(
+                                    expanded = showMenu,
+                                    onDismissRequest = { showMenu = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(strings.shareBookFile) },
+                                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                        onClick = {
+                                            showMenu = false
+                                            onShare()
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(strings.changeCover) },
+                                        leadingIcon = { Icon(Icons.Default.Image, contentDescription = null) },
+                                        onClick = {
+                                            showMenu = false
+                                            onChangeCover()
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(strings.addToCollection) },
+                                        onClick = {
+                                            showMenu = false
+                                            onAddToCollection()
+                                        }
+                                    )
+                                    if (book.progressPercent < 100) {
+                                        DropdownMenuItem(
+                                            text = { Text(strings.markAsFinished) },
+                                            onClick = {
+                                                showMenu = false
+                                                onSetProgress(100)
+                                            }
+                                        )
+                                    }
+                                    if (book.progressPercent > 0) {
+                                        DropdownMenuItem(
+                                            text = { Text(strings.resetProgress) },
+                                            onClick = {
+                                                showMenu = false
+                                                onSetProgress(0)
+                                            }
+                                        )
+                                    }
+                                    DropdownMenuItem(
+                                        text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
+                                        onClick = {
+                                            showMenu = false
+                                            onDelete()
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(2.dp))
 
                     Text(
                         text = book.title,

@@ -82,7 +82,8 @@ fun ReaderSettingsBottomSheet(
     onAutoHyphenationChange: (Boolean) -> Unit = {},
     onTwoColumnModeChange: (TwoColumnMode) -> Unit = {},
     onPageAnimationChange: (PageTurnAnimation) -> Unit = {},
-    onHapticFeedbackChange: (Boolean) -> Unit = {}
+    onHapticFeedbackChange: (Boolean) -> Unit = {},
+    onThemeBurst: (Offset, List<Color>) -> Unit = { _, _ -> }
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val strings = LocalAppStrings.current
@@ -139,6 +140,7 @@ fun ReaderSettingsBottomSheet(
                         burstOrigin = origin
                         burstColors = colors
                         burstTriggerKey = System.currentTimeMillis()
+                        onThemeBurst(origin, colors)
                         onThemeModeChange(mode)
                     }
 
