@@ -67,6 +67,17 @@ class PreferencesManager(private val context: Context) {
         val CUSTOM_OPDS_ENABLED_KEY = booleanPreferencesKey("custom_opds_enabled")
         val USER_COLLECTIONS_KEY = stringPreferencesKey("user_collections_json")
         val AVERAGE_WPM_KEY = floatPreferencesKey("user_average_wpm")
+        val LIBRARY_VIEW_MODE_KEY = stringPreferencesKey("library_view_mode")
+    }
+
+    val libraryViewMode: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[LIBRARY_VIEW_MODE_KEY] ?: "LIST"
+    }
+
+    suspend fun setLibraryViewMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[LIBRARY_VIEW_MODE_KEY] = mode
+        }
     }
 
     val readingStatsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->

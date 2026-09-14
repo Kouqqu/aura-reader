@@ -69,6 +69,14 @@ class LibraryViewModel(
     val materialYouEnabled: StateFlow<Boolean> = preferencesManager.materialYouEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val libraryViewMode: StateFlow<String> = preferencesManager.libraryViewMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "LIST")
+
+    fun toggleLibraryViewMode() {
+        val next = if (libraryViewMode.value == "GRID") "LIST" else "GRID"
+        viewModelScope.launch { preferencesManager.setLibraryViewMode(next) }
+    }
+
     fun setAppLanguage(language: AppLanguage) {
         viewModelScope.launch { preferencesManager.updateAppLanguage(language) }
     }

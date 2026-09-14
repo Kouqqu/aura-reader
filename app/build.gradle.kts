@@ -86,6 +86,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.okhttp)
     implementation(libs.androidx.documentfile)
+    implementation("androidx.palette:palette-ktx:1.0.0")
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
-    android:padding="14dp">
+    android:padding="10dp">
 
     <!-- Active Book Content -->
     <LinearLayout
@@ -18,8 +18,8 @@
         <!-- Book Cover -->
         <ImageView
             android:id="@+id/widget_book_cover"
-            android:layout_width="64dp"
-            android:layout_height="90dp"
+            android:layout_width="48dp"
+            android:layout_height="68dp"
             android:scaleType="centerCrop"
             android:background="@drawable/widget_cover_placeholder"
             android:contentDescription="Book Cover" />
@@ -29,7 +29,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="14dp"
+            android:layout_marginStart="10dp"
             android:orientation="vertical"
             android:gravity="center_vertical">
 
@@ -38,20 +38,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="AURA READER"
-                android:textSize="10sp"
+                android:textSize="9sp"
                 android:textStyle="bold"
-                android:textColor="#A084E8"
-                android:letterSpacing="0.1" />
+                android:textColor="@color/widget_accent"
+                android:letterSpacing="0.08" />
 
             <TextView
                 android:id="@+id/widget_book_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
+                android:layout_marginTop="2dp"
                 android:text="Название книги"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_title"
                 android:maxLines="2"
                 android:ellipsize="end" />
 
@@ -59,10 +59,10 @@
                 android:id="@+id/widget_book_author"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="1dp"
                 android:text="Автор"
-                android:textSize="12sp"
-                android:textColor="#A5A5B5"
+                android:textSize="11sp"
+                android:textColor="@color/widget_subtitle"
                 android:maxLines="1"
                 android:ellipsize="end" />
 
@@ -70,7 +70,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
@@ -78,7 +78,7 @@
                     android:id="@+id/widget_progress_bar"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="0dp"
-                    android:layout_height="6dp"
+                    android:layout_height="5dp"
                     android:layout_weight="1"
                     android:max="100"
                     android:progress="0"
@@ -88,11 +88,11 @@
                     android:id="@+id/widget_progress_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="6dp"
                     android:text="0%"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold"
-                    android:textColor="#A084E8" />
+                    android:textColor="@color/widget_accent" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
@@ -107,24 +107,24 @@
         android:visibility="gone">
 
         <ImageView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@mipmap/ic_launcher"
             android:contentDescription="Aura Reader" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
+            android:layout_marginStart="10dp"
             android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Aura Reader"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF" />
+                android:textColor="@color/widget_title" />
 
             <TextView
                 android:id="@+id/widget_empty_text"
@@ -132,8 +132,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Откройте книгу, чтобы продолжить чтение"
-                android:textSize="12sp"
-                android:textColor="#A5A5B5" />
+                android:textSize="11sp"
+                android:textColor="@color/widget_subtitle" />
         </LinearLayout>
     </LinearLayout>
 

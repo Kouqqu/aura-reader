@@ -76,6 +76,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Close
@@ -172,6 +177,7 @@ fun LibraryScreen(
     val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
     val userCollections by viewModel.userCollections.collectAsState()
     val activeCollectionFilter by viewModel.activeCollectionFilter.collectAsState()
+    val libraryViewMode by viewModel.libraryViewMode.collectAsState()
     val customOpdsEnabled by viewModel.customOpdsEnabled.collectAsState()
     val catalogBaseUrl by viewModel.catalogBaseUrl.collectAsState()
 
@@ -403,6 +409,14 @@ fun LibraryScreen(
                         }
                     },
                     actions = {
+                        // View Mode Switcher
+                        IconButton(onClick = { viewModel.toggleLibraryViewMode() }) {
+                            Icon(
+                                imageVector = if (libraryViewMode == "GRID") Icons.Default.ViewList else Icons.Default.GridView,
+                                contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid
+                            )
+                        }
+
                         // Search Button
                         IconButton(onClick = { isSearchExpanded = true }) {
                             Icon(
@@ -632,6 +646,17 @@ fun LibraryScreen(
                         }
                     }
 
+                    val currentHeroBook = recentBooks.firstOrNull()
+                    if (currentHeroBook != null && searchQuery.isBlank() && activeCollectionFilter.type == CollectionFilterType.ALL) {
+                        item(key = "currently_reading_hero") {
+                            CurrentlyReadingHeroCard(
+                                book = currentHeroBook,
+                                onBookClick = onBookSelected,
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+                        }
+                    }
+
                     item {
                         Text(
                             text = if (searchQuery.isBlank()) strings.recentBooks else strings.searchResultsCount(filteredRecentBooks.size),
@@ -652,34 +677,80 @@ fun LibraryScreen(
                         }
                     }
 
-                    items(filteredRecentBooks, key = { it.id }) { book ->
-                        BookCard(
-                            book = book,
-                            onClick = {
-                                viewModel.openBook(book)
-                            },
-                            onDelete = {
-                                bookToDelete = book
-                            },
-                            onToggleFavorite = {
-                                viewModel.toggleFavorite(book.id)
-                            },
-                            onAddToCollection = {
-                                bookForCollections = book
-                            },
-                            onSetProgress = { prog ->
-                                viewModel.setBookReadingProgress(book.id, prog)
-                            },
-                            onCoverClick = {
-                                inspectingCoverBook = book
-                            },
-                            onShare = {
-                                BookShareUtils.shareBookFile(context, book)
-                            },
-                            onChangeCover = {
-                                bookForCoverChange = book
+                    if (libraryViewMode == "GRID") {
+                        val chunkedBooks = filteredRecentBooks.chunked(2)
+                        items(chunkedBooks, key = { chunk -> chunk.joinToString("_") { it.id } }) { rowBooks ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                for (book in rowBooks) {
+                                    BookGridCard(
+                                        book = book,
+                                        onClick = {
+                                            viewModel.openBook(book)
+                                            onBookSelected(book)
+                                        },
+                                        onDelete = {
+                                            bookToDelete = book
+                                        },
+                                        onToggleFavorite = {
+                                            viewModel.toggleFavorite(book.id)
+                                        },
+                                        onAddToCollection = {
+                                            bookForCollections = book
+                                        },
+                                        onSetProgress = { prog ->
+                                            viewModel.setBookReadingProgress(book.id, prog)
+                                        },
+                                        onCoverClick = {
+                                            inspectingCoverBook = book
+                                        },
+                                        onShare = {
+                                            BookShareUtils.shareBookFile(context, book)
+                                        },
+                                        onChangeCover = {
+                                            bookForCoverChange = book
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                if (rowBooks.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
                             }
-                        )
+                        }
+                    } else {
+                        items(filteredRecentBooks, key = { it.id }) { book ->
+                            BookCard(
+                                book = book,
+                                onClick = {
+                                    viewModel.openBook(book)
+                                    onBookSelected(book)
+                                },
+                                onDelete = {
+                                    bookToDelete = book
+                                },
+                                onToggleFavorite = {
+                                    viewModel.toggleFavorite(book.id)
+                                },
+                                onAddToCollection = {
+                                    bookForCollections = book
+                                },
+                                onSetProgress = { prog ->
+                                    viewModel.setBookReadingProgress(book.id, prog)
+                                },
+                                onCoverClick = {
+                                    inspectingCoverBook = book
+                                },
+                                onShare = {
+                                    BookShareUtils.shareBookFile(context, book)
+                                },
+                                onChangeCover = {
+                                    bookForCoverChange = book
+                                }
+                            )
+                        }
                     }
 
                     item {
@@ -1019,6 +1090,7 @@ fun BookCard(
             BookCoverView(
                 coverBase64 = book.coverBase64,
                 title = book.title,
+                bookId = book.id,
                 modifier = Modifier
                     .size(width = 64.dp, height = 90.dp)
                     .clip(RoundedCornerShape(10.dp))
@@ -1184,12 +1256,27 @@ fun BookCard(
     }
 }
 
+@OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
 fun BookCoverView(
     coverBase64: String?,
     title: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    bookId: String? = null
 ) {
+    val sharedTransitionScope = com.aura.reader.ui.navigation.LocalSharedTransitionScope.current
+    val animatedVisibilityScope = com.aura.reader.ui.navigation.LocalNavAnimatedVisibilityScope.current
+    val sharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && bookId != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                rememberSharedContentState(key = "book_cover_$bookId"),
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+    } else Modifier
+
+    val finalModifier = modifier.then(sharedModifier)
+
     val bitmap = remember(coverBase64) {
         if (!coverBase64.isNullOrBlank()) {
             try {
@@ -1205,12 +1292,12 @@ fun BookCoverView(
         Image(
             bitmap = bitmap.asImageBitmap(),
             contentDescription = title,
-            modifier = modifier,
+            modifier = finalModifier,
             contentScale = ContentScale.Crop
         )
     } else {
         Box(
-            modifier = modifier
+            modifier = finalModifier
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
@@ -1341,5 +1428,171 @@ fun AuraLogoIcon(
             size = Size(rightShort - left, lineH),
             cornerRadius = lineR
         )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun BookGridCard(
+    book: Book,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+    onToggleFavorite: () -> Unit = {},
+    onAddToCollection: () -> Unit = {},
+    onSetProgress: (Int) -> Unit = {},
+    onCoverClick: () -> Unit = {},
+    onShare: () -> Unit = {},
+    onChangeCover: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    val strings = LocalAppStrings.current
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = { showMenu = true }
+            ),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                BookCoverView(
+                    coverBase64 = book.coverBase64,
+                    title = book.title,
+                    bookId = book.id,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable { onCoverClick() }
+                )
+
+                if (book.isFavorite) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .size(26.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Favorite,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+
+                val prog = (book.readingProgress.coerceIn(0f, 1f) * 100).toInt()
+                if (prog > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(6.dp)
+                    ) {
+                        Text(
+                            text = "$prog%",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = book.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Text(
+                text = book.author,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text(if (book.isFavorite) strings.colFavorites else strings.addToCollection) },
+                    leadingIcon = {
+                        Icon(
+                            if (book.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = null
+                        )
+                    },
+                    onClick = {
+                        showMenu = false
+                        onToggleFavorite()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(strings.addToCollection) },
+                    leadingIcon = { Icon(Icons.Default.FolderOpen, contentDescription = null) },
+                    onClick = {
+                        showMenu = false
+                        onAddToCollection()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(strings.changeCover) },
+                    leadingIcon = { Icon(Icons.Default.Image, contentDescription = null) },
+                    onClick = {
+                        showMenu = false
+                        onChangeCover()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(strings.shareBookFile) },
+                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                    onClick = {
+                        showMenu = false
+                        onShare()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
+                    leadingIcon = {
+                        Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                    },
+                    onClick = {
+                        showMenu = false
+                        onDelete()
+                    }
+                )
+            }
+        }
     }
 }

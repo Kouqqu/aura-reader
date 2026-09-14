@@ -26,12 +26,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Locale
 
+data class TtsVoiceInfo(
+    val name: String,
+    val locale: String,
+    val displayName: String
+)
+
 data class TtsState(
     val isPlaying: Boolean = false,
     val isServiceRunning: Boolean = false,
     val currentParagraphIndex: Int = 0,
     val totalParagraphs: Int = 0,
     val speed: Float = 1.0f,
+    val pitch: Float = 1.0f,
+    val selectedVoiceName: String? = null,
+    val availableVoices: List<TtsVoiceInfo> = emptyList(),
     val currentText: String = "",
     val bookTitle: String = "",
     val chapterTitle: String = "",
@@ -52,12 +61,16 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         const val ACTION_NEXT = "com.aura.reader.tts.NEXT"
         const val ACTION_STOP = "com.aura.reader.tts.STOP"
         const val ACTION_SET_SPEED = "com.aura.reader.tts.SET_SPEED"
+        const val ACTION_SET_PITCH = "com.aura.reader.tts.SET_PITCH"
+        const val ACTION_SET_VOICE = "com.aura.reader.tts.SET_VOICE"
 
         const val EXTRA_BOOK_TITLE = "extra_book_title"
         const val EXTRA_CHAPTER_TITLE = "extra_chapter_title"
         const val EXTRA_PARAGRAPHS = "extra_paragraphs"
         const val EXTRA_START_INDEX = "extra_start_index"
         const val EXTRA_SPEED = "extra_speed"
+        const val EXTRA_PITCH = "extra_pitch"
+        const val EXTRA_VOICE_NAME = "extra_voice_name"
 
         private val _ttsState = MutableStateFlow(TtsState())
         val ttsState: StateFlow<TtsState> = _ttsState.asStateFlow()
@@ -120,6 +133,22 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             }
             context.startService(intent)
         }
+
+        fun setPitch(context: Context, pitch: Float) {
+            val intent = Intent(context, BookTtsService::class.java).apply {
+                action = ACTION_SET_PITCH
+                putExtra(EXTRA_PITCH, pitch)
+            }
+            context.startService(intent)
+        }
+
+        fun setVoice(context: Context, voiceName: String) {
+            val intent = Intent(context, BookTtsService::class.java).apply {
+                action = ACTION_SET_VOICE
+                putExtra(EXTRA_VOICE_NAME, voiceName)
+            }
+            context.startService(intent)
+        }
     }
 
     private var tts: TextToSpeech? = null
@@ -132,6 +161,8 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
     private var bookTitle: String = ""
     private var chapterTitle: String = ""
     private var speechRate: Float = 1.0f
+    private var speechPitch: Float = 1.0f
+    private var selectedVoice: String? = null
     private var isTtsReady: Boolean = false
 
     private val noisyReceiver = object : BroadcastReceiver() {
@@ -181,8 +212,23 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                     }
                 }
             })
+            val voicesList = try {
+                tts?.voices?.map { v ->
+                    TtsVoiceInfo(
+                        name = v.name,
+                        locale = v.locale.displayLanguage,
+                        displayName = "${v.locale.displayLanguage} (${v.name.takeLast(10)})"
+                    )
+                }?.distinctBy { it.name }?.sortedBy { it.displayName } ?: emptyList()
+            } catch (e: Throwable) {
+                emptyList()
+            }
             isTtsReady = true
-            _ttsState.value = _ttsState.value.copy(isInitialized = true)
+            _ttsState.value = _ttsState.value.copy(
+                isInitialized = true,
+                availableVoices = voicesList,
+                selectedVoiceName = tts?.voice?.name
+            )
 
             // If we already had paragraphs pending, start speaking
             if (paragraphs.isNotEmpty() && _ttsState.value.isPlaying) {
@@ -202,12 +248,14 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
 
                 tts?.setSpeechRate(speechRate)
 
-                _ttsState.value = TtsState(
+                _ttsState.value = _ttsState.value.copy(
                     isPlaying = true,
                     isServiceRunning = true,
                     currentParagraphIndex = currentIndex,
                     totalParagraphs = paragraphs.size,
                     speed = speechRate,
+                    pitch = speechPitch,
+                    selectedVoiceName = selectedVoice ?: tts?.voice?.name,
                     currentText = paragraphs.getOrNull(currentIndex) ?: "",
                     bookTitle = bookTitle,
                     chapterTitle = chapterTitle,
@@ -239,6 +287,27 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 speechRate = newSpeed
                 tts?.setSpeechRate(speechRate)
                 _ttsState.value = _ttsState.value.copy(speed = speechRate)
+            }
+            ACTION_SET_PITCH -> {
+                val newPitch = intent.getFloatExtra(EXTRA_PITCH, 1.0f)
+                speechPitch = newPitch
+                tts?.setPitch(speechPitch)
+                _ttsState.value = _ttsState.value.copy(pitch = speechPitch)
+            }
+            ACTION_SET_VOICE -> {
+                val voiceName = intent.getStringExtra(EXTRA_VOICE_NAME)
+                if (!voiceName.isNullOrBlank()) {
+                    try {
+                        val matched = tts?.voices?.firstOrNull { it.name == voiceName }
+                        if (matched != null) {
+                            tts?.voice = matched
+                            selectedVoice = voiceName
+                            _ttsState.value = _ttsState.value.copy(selectedVoiceName = voiceName)
+                        }
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
+                    }
+                }
             }
         }
 

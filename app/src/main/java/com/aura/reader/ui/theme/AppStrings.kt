@@ -271,6 +271,35 @@ interface Strings {
     val widgetContinueReading: String
     val widgetNoBook: String
     val widgetOpenApp: String
+
+    // Reader Settings Strings
+    val readerSettingsTitle: String
+    val themeModeTitle: String
+    val fontSizeTitle: String
+    val fontFamilyTitle: String
+    val fontFamilySerif: String
+    val fontFamilySansSerif: String
+    val fontFamilyMonospace: String
+    val fontFamilySystem: String
+    val lineHeightTitle: String
+    val readingModeTitle: String
+    val readingModePaged: String
+    val readingModeScroll: String
+    val lightImageBgTitle: String
+    val lightImageBgSubtitle: String
+
+    // Extended TTS Strings
+    val ttsSettingsSheetTitle: String
+    val ttsVoiceTitle: String
+    val ttsVoiceDefault: String
+    val ttsPitchTitle: String
+    fun ttsParagraphProgress(current: Int, total: Int): String
+
+    // Currently Reading & View Mode
+    val currentlyReadingBadge: String
+    val continueReadingAction: String
+    val viewModeList: String
+    val viewModeGrid: String
 }
 
 
@@ -521,6 +550,32 @@ class RuStrings : Strings {
     override val widgetContinueReading = "Продолжить чтение"
     override val widgetNoBook = "Книги не открыты"
     override val widgetOpenApp = "Открыть Aura Reader"
+
+    override val readerSettingsTitle = "Настройки чтения"
+    override val themeModeTitle = "Тема оформления"
+    override val fontSizeTitle = "Размер шрифта"
+    override val fontFamilyTitle = "Гарнитура шрифта"
+    override val fontFamilySerif = "С засечками"
+    override val fontFamilySansSerif = "Без засечек"
+    override val fontFamilyMonospace = "Моноширинный"
+    override val fontFamilySystem = "Системный"
+    override val lineHeightTitle = "Межстрочный интервал"
+    override val readingModeTitle = "Режим чтения"
+    override val readingModePaged = "Постраничный"
+    override val readingModeScroll = "Свиток"
+    override val lightImageBgTitle = "Светлая подложка под иллюстрации"
+    override val lightImageBgSubtitle = "Светлый фон для контрастности картинок в темных темах"
+
+    override val ttsSettingsSheetTitle = "Озвучка книги"
+    override val ttsVoiceTitle = "Голос"
+    override val ttsVoiceDefault = "По умолчанию"
+    override val ttsPitchTitle = "Высота тона"
+    override fun ttsParagraphProgress(current: Int, total: Int) = "Абзац $current из $total"
+
+    override val currentlyReadingBadge = "СЕЙЧАС ЧИТАЮ"
+    override val continueReadingAction = "Продолжить чтение"
+    override val viewModeList = "Список"
+    override val viewModeGrid = "Сетка"
 }
 
 class EnStrings : Strings {
@@ -770,6 +825,32 @@ class EnStrings : Strings {
     override val widgetContinueReading = "Continue reading"
     override val widgetNoBook = "No books read yet"
     override val widgetOpenApp = "Open Aura Reader"
+
+    override val readerSettingsTitle = "Reading Settings"
+    override val themeModeTitle = "Theme Mode"
+    override val fontSizeTitle = "Font Size"
+    override val fontFamilyTitle = "Font Family"
+    override val fontFamilySerif = "Serif"
+    override val fontFamilySansSerif = "Sans-Serif"
+    override val fontFamilyMonospace = "Monospace"
+    override val fontFamilySystem = "System"
+    override val lineHeightTitle = "Line Spacing"
+    override val readingModeTitle = "Reading Mode"
+    override val readingModePaged = "Paged"
+    override val readingModeScroll = "Continuous Scroll"
+    override val lightImageBgTitle = "Light Background for Images"
+    override val lightImageBgSubtitle = "White underlay for better contrast in dark themes"
+
+    override val ttsSettingsSheetTitle = "Audio Narration"
+    override val ttsVoiceTitle = "Voice"
+    override val ttsVoiceDefault = "System Default"
+    override val ttsPitchTitle = "Pitch"
+    override fun ttsParagraphProgress(current: Int, total: Int) = "Paragraph $current of $total"
+
+    override val currentlyReadingBadge = "CURRENTLY READING"
+    override val continueReadingAction = "Continue Reading"
+    override val viewModeList = "List"
+    override val viewModeGrid = "Grid"
 }
 
 class UkStrings : Strings {
@@ -1019,6 +1100,32 @@ class UkStrings : Strings {
     override val widgetContinueReading = "Продовжити читання"
     override val widgetNoBook = "Книги не відкриті"
     override val widgetOpenApp = "Відкрити Aura Reader"
+
+    override val readerSettingsTitle = "Налаштування читання"
+    override val themeModeTitle = "Тема оформлення"
+    override val fontSizeTitle = "Розмір шрифту"
+    override val fontFamilyTitle = "Гарнітура шрифту"
+    override val fontFamilySerif = "Із зарубками"
+    override val fontFamilySansSerif = "Без зарубок"
+    override val fontFamilyMonospace = "Моноширинний"
+    override val fontFamilySystem = "Системний"
+    override val lineHeightTitle = "Міжрядковий інтервал"
+    override val readingModeTitle = "Режим читання"
+    override val readingModePaged = "Посторінковий"
+    override val readingModeScroll = "Сувій"
+    override val lightImageBgTitle = "Світла підкладка для ілюстрацій"
+    override val lightImageBgSubtitle = "Світлий фон для контрастності картинок у темних темах"
+
+    override val ttsSettingsSheetTitle = "Озвучення книги"
+    override val ttsVoiceTitle = "Голос"
+    override val ttsVoiceDefault = "За замовчуванням"
+    override val ttsPitchTitle = "Висота тону"
+    override fun ttsParagraphProgress(current: Int, total: Int) = "Абзац $current з $total"
+
+    override val currentlyReadingBadge = "ЗАРАЗ ЧИТАЮ"
+    override val continueReadingAction = "Продовжити читання"
+    override val viewModeList = "Список"
+    override val viewModeGrid = "Сітка"
 }
 
 class BeStrings : Strings {
@@ -1268,6 +1375,32 @@ class BeStrings : Strings {
     override val widgetContinueReading = "Працягнуць чытанне"
     override val widgetNoBook = "Кнігі не адкрыты"
     override val widgetOpenApp = "Адкрыць Aura Reader"
+
+    override val readerSettingsTitle = "Налады чытання"
+    override val themeModeTitle = "Тэма афармлення"
+    override val fontSizeTitle = "Памер шрыфту"
+    override val fontFamilyTitle = "Гарнітура шрыфту"
+    override val fontFamilySerif = "З засечкамі"
+    override val fontFamilySansSerif = "Без засечак"
+    override val fontFamilyMonospace = "Монашырынны"
+    override val fontFamilySystem = "Сістэмны"
+    override val lineHeightTitle = "Міжрадковы інтэрвал"
+    override val readingModeTitle = "Рэжым чытання"
+    override val readingModePaged = "Пастаронкавы"
+    override val readingModeScroll = "Скрутак"
+    override val lightImageBgTitle = "Светлая падкладка пад ілюстрацыі"
+    override val lightImageBgSubtitle = "Светлы фон для кантраснасці малюнкаў у цёмных тэмах"
+
+    override val ttsSettingsSheetTitle = "Агучванне кнігі"
+    override val ttsVoiceTitle = "Голас"
+    override val ttsVoiceDefault = "Па змаўчанні"
+    override val ttsPitchTitle = "Вышыня тону"
+    override fun ttsParagraphProgress(current: Int, total: Int) = "Абзац $current з $total"
+
+    override val currentlyReadingBadge = "ЗАРАЗ ЧЫТАЮ"
+    override val continueReadingAction = "Працягнуць чытанне"
+    override val viewModeList = "Спіс"
+    override val viewModeGrid = "Сетка"
 }
 
 class PlStrings : Strings {
@@ -1516,6 +1649,32 @@ class PlStrings : Strings {
     override val widgetContinueReading = "Kontynuuj czytanie"
     override val widgetNoBook = "Brak otwartych książek"
     override val widgetOpenApp = "Otwórz Aura Reader"
+
+    override val readerSettingsTitle = "Ustawienia czytania"
+    override val themeModeTitle = "Motyw wyglądu"
+    override val fontSizeTitle = "Rozmiar czcionki"
+    override val fontFamilyTitle = "Krój czcionki"
+    override val fontFamilySerif = "Szeryfowy"
+    override val fontFamilySansSerif = "Bezszeryfowy"
+    override val fontFamilyMonospace = "O stałej szerokości"
+    override val fontFamilySystem = "Systemowy"
+    override val lineHeightTitle = "Interlinia"
+    override val readingModeTitle = "Tryb czytania"
+    override val readingModePaged = "Stronicowy"
+    override val readingModeScroll = "Ciągły"
+    override val lightImageBgTitle = "Jasne tło dla ilustracji"
+    override val lightImageBgSubtitle = "Jasny podkład dla kontrastu grafik w ciemnych motywach"
+
+    override val ttsSettingsSheetTitle = "Lektor książki"
+    override val ttsVoiceTitle = "Głos"
+    override val ttsVoiceDefault = "Domyślny"
+    override val ttsPitchTitle = "Wysokość tonu"
+    override fun ttsParagraphProgress(current: Int, total: Int) = "Akapit $current z $total"
+
+    override val currentlyReadingBadge = "TERAZ CZYTAM"
+    override val continueReadingAction = "Kontynuuj czytanie"
+    override val viewModeList = "Lista"
+    override val viewModeGrid = "Siatka"
 }
 
 fun getStrings(language: AppLanguage): Strings = when (language) {

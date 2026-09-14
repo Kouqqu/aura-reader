@@ -221,6 +221,7 @@ fun ReaderScreen(
 
     var showControls by remember { mutableStateOf(true) }
     var showSettingsSheet by remember { mutableStateOf(false) }
+    var showTtsSheet by remember { mutableStateOf(false) }
     var showChaptersSheet by remember { mutableStateOf(false) }
     var showBookmarksQuotesSheet by remember { mutableStateOf(false) }
     var selectedFootnote by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -526,6 +527,52 @@ fun ReaderScreen(
                             )
                         }
 
+                        val sharedTransitionScope = com.aura.reader.ui.navigation.LocalSharedTransitionScope.current
+                        val animatedVisibilityScope = com.aura.reader.ui.navigation.LocalNavAnimatedVisibilityScope.current
+                        val coverSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && book != null) {
+                            with(sharedTransitionScope) {
+                                Modifier.sharedElement(
+                                    rememberSharedContentState(key = "book_cover_${book.id}"),
+                                    animatedVisibilityScope = animatedVisibilityScope
+                                )
+                            }
+                        } else Modifier
+
+                        val topBarCoverBitmap = remember(book?.coverImageBase64) {
+                            book?.coverImageBase64?.let { base64 ->
+                                try {
+                                    val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                                    android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                                } catch (e: Exception) {
+                                    null
+                                }
+                            }
+                        }
+
+                        Box(
+                            modifier = coverSharedModifier
+                                .size(width = 28.dp, height = 40.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (topBarCoverBitmap != null) {
+                                Image(
+                                    bitmap = topBarCoverBitmap,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Book,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+
                         Column(
                             modifier = Modifier
                                 .weight(1f)
@@ -549,11 +596,10 @@ fun ReaderScreen(
 
                         // Audio Narration (TTS)
                         IconButton(onClick = {
-                            if (ttsState.isServiceRunning) {
-                                com.aura.reader.service.BookTtsService.playPause(context)
-                            } else {
+                            if (!ttsState.isServiceRunning) {
                                 viewModel.startTts(context)
                             }
+                            showTtsSheet = true
                         }) {
                             Icon(
                                 imageVector = if (ttsState.isPlaying) Icons.Default.VolumeUp else Icons.Default.Headphones,
@@ -594,11 +640,10 @@ fun ReaderScreen(
                                     },
                                     onClick = {
                                         showReaderMenu = false
-                                        if (ttsState.isServiceRunning) {
-                                            com.aura.reader.service.BookTtsService.playPause(context)
-                                        } else {
+                                        if (!ttsState.isServiceRunning) {
                                             viewModel.startTts(context)
                                         }
+                                        showTtsSheet = true
                                     }
                                 )
                                 DropdownMenuItem(
@@ -898,7 +943,46 @@ fun ReaderScreen(
                     }
                 }
 
+                // Floating TTS Player Bar when active
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = ttsState.isServiceRunning && !showTtsSheet,
+                    enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut(),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = if (isControlsVisible) 175.dp else 24.dp)
+                ) {
+                    TtsControlBar(
+                        ttsState = ttsState,
+                        strings = strings,
+                        onPlayPause = { com.aura.reader.service.BookTtsService.playPause(context) },
+                        onPrev = { com.aura.reader.service.BookTtsService.prev(context) },
+                        onNext = { com.aura.reader.service.BookTtsService.next(context) },
+                        onStop = { com.aura.reader.service.BookTtsService.stop(context) },
+                        onSpeedChange = { spd -> com.aura.reader.service.BookTtsService.setSpeed(context, spd) },
+                        onClick = { showTtsSheet = true }
+                    )
+                }
+
             // Bottom Sheets
+            if (showTtsSheet) {
+                TtsBottomSheet(
+                    ttsState = ttsState,
+                    onDismiss = { showTtsSheet = false },
+                    onPlayPause = { com.aura.reader.service.BookTtsService.playPause(context) },
+                    onPrev = { com.aura.reader.service.BookTtsService.prev(context) },
+                    onNext = { com.aura.reader.service.BookTtsService.next(context) },
+                    onStop = {
+                        com.aura.reader.service.BookTtsService.stop(context)
+                        showTtsSheet = false
+                    },
+                    onSpeedChange = { spd -> com.aura.reader.service.BookTtsService.setSpeed(context, spd) },
+                    onPitchChange = { pitch -> com.aura.reader.service.BookTtsService.setPitch(context, pitch) },
+                    onVoiceChange = { voice -> com.aura.reader.service.BookTtsService.setVoice(context, voice) }
+                )
+            }
+
             if (showSettingsSheet) {
                 ReaderSettingsBottomSheet(
                     settings = settings,
@@ -2332,6 +2416,7 @@ fun TtsControlBar(
     onNext: () -> Unit,
     onStop: () -> Unit,
     onSpeedChange: (Float) -> Unit,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -2341,7 +2426,9 @@ fun TtsControlBar(
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier
