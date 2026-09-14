@@ -208,6 +208,7 @@ fun ReaderScreen(
     var selectedFootnote by remember { mutableStateOf<Pair<String, String>?>(null) }
     var quoteToSave by remember { mutableStateOf<String?>(null) }
     val strings = LocalAppStrings.current
+    val context = LocalContext.current
     var currentPagingPage by remember { mutableIntStateOf(0) }
     var totalPagingPages by remember { mutableIntStateOf(1) }
     var requestPagingPage by remember { mutableStateOf<Int?>(null) }
