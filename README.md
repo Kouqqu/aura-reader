@@ -8,7 +8,7 @@
 
 ## 🇬🇧 English
 
-A modern, lightweight Android e-reader built with Jetpack Compose and Material 3 design.
+A modern, lightweight Android e-reader built with Material 3 design.
 
 Designed for comfortable, immersive reading without ads, telemetry, or bloated menus.
 
@@ -38,7 +38,7 @@ This project is open-source under the terms of the [GNU General Public License v
 
 ## 🇷🇺 Русский
 
-Современная, лёгкая и плавная читалка для Android на Jetpack Compose с дизайном Material 3.
+Современная, лёгкая и плавная читалка для Android с дизайном Material 3.
 
 Создавалась для чистого и удобного чтения без рекламы, слежки и перегруженных настроек.
 
