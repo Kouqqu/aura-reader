@@ -65,12 +65,12 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.4.0"
-          name: "Aura Reader v1.4.0"
-          prerelease: false
+          tag_name: "v1.4.1-beta"
+          name: "Aura Reader v1.4.1 Beta"
+          prerelease: true
           make_latest: true
           body: |
-            Aura Reader v1.4.0 — Журнальная карточка «Сейчас читаю», частицы смены тем, TTS в шторке, виджет Material You и 120 FPS:
+            Aura Reader v1.4.1 Beta — Поддержка MOBI и PDF, режим разработчика, ручная сортировка и доработки интерфейса:
 
             🌟 **Журнальная карточка «Сейчас читаю»**:
             - Новая стильная карточка на главном экране с крупной обложкой, адаптивным свечением палитры (Aura Glow) и мягкой объемной тенью.
