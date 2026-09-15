@@ -1,3 +1,5 @@
+package com.aura.reader.ui.screens.library
+
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -9,7 +11,6 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.lazy.itemsIndexed
-package com.aura.reader.ui.screens.library
 
 import com.aura.reader.ui.components.ParallaxCoverViewer
 import com.aura.reader.util.BookShareUtils
