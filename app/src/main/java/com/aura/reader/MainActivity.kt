@@ -30,7 +30,16 @@ class MainActivity : ComponentActivity() {
     private lateinit var opdsViewModel: com.aura.reader.ui.screens.opds.OpdsViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = androidx.activity.SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            ),
+            navigationBarStyle = androidx.activity.SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            )
+        )
         super.onCreate(savedInstanceState)
 
         preferencesManager = PreferencesManager(applicationContext)

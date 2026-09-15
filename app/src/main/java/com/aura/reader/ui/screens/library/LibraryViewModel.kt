@@ -175,13 +175,23 @@ class LibraryViewModel(
         val list = currentBooks.map { it.id }.toMutableList()
         val idx = list.indexOf(bookId)
         if (idx != -1) {
-            val targetIdx = idx + direction
-            if (targetIdx in list.indices) {
+            val targetIdx = (idx + direction).coerceIn(0, list.size - 1)
+            if (targetIdx != idx) {
                 val item = list.removeAt(idx)
                 list.add(targetIdx, item)
                 viewModelScope.launch {
                     preferencesManager.saveCustomBookOrder(list)
                 }
+            }
+        }
+    }
+
+    fun startReorderMode(currentBooks: List<Book>) {
+        viewModelScope.launch {
+            preferencesManager.setLibrarySortOrder(LibrarySortOption.CUSTOM.name)
+            val currentOrder = preferencesManager.customBookOrder.first()
+            if (currentOrder.isEmpty() && currentBooks.isNotEmpty()) {
+                preferencesManager.saveCustomBookOrder(currentBooks.map { it.id })
             }
         }
     }

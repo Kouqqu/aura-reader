@@ -23,6 +23,11 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -1442,6 +1447,14 @@ fun ChapterPagingView(
         val screenHeightDp = maxHeight.value
         val screenWidthDp = maxWidth.value
 
+        val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val bottomNavInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
+        val pillClearanceDp = 46.dp
+        val bottomPaddingDp = bottomNavInset + pillClearanceDp
+        val topPaddingDp = (topInset + 16.dp).coerceAtLeast(24.dp)
+        val usableContentHeightDp = (screenHeightDp - topPaddingDp.value - bottomPaddingDp.value).coerceAtLeast(120f)
+
         val isTwoColumn = when (settings.twoColumnMode) {
             TwoColumnMode.ALWAYS -> true
             TwoColumnMode.OFF -> false
@@ -1475,7 +1488,7 @@ fun ChapterPagingView(
             settings.autoHyphenation,
             settings.twoColumnMode,
             resolvedFontFamily,
-            screenHeightDp,
+            usableContentHeightDp,
             screenWidthDp
         ) {
             paginateBlocks(
@@ -1484,7 +1497,7 @@ fun ChapterPagingView(
                 resolvedFontFamily = resolvedFontFamily,
                 textMeasurer = textMeasurer,
                 density = density,
-                screenHeightDp = screenHeightDp,
+                contentHeightDp = usableContentHeightDp,
                 screenWidthDp = screenWidthDp,
                 columnWidthDp = columnWidthDp
             )
@@ -1695,7 +1708,7 @@ fun ChapterPagingView(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 24.dp)
-                                .padding(top = 16.dp, bottom = 28.dp),
+                                .padding(top = topPaddingDp, bottom = bottomPaddingDp),
                             horizontalArrangement = Arrangement.spacedBy(24.dp)
                         ) {
                             val leftPageBlocks = pages.getOrNull(spreadIdx * 2) ?: emptyList()
@@ -1756,7 +1769,7 @@ fun ChapterPagingView(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 24.dp)
-                                .padding(top = 16.dp, bottom = 28.dp),
+                                .padding(top = topPaddingDp, bottom = bottomPaddingDp),
                             verticalArrangement = Arrangement.Top
                         ) {
                             for ((_, block) in pageBlocks) {
@@ -1887,6 +1900,7 @@ fun ChapterPagingView(
             ),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(bottom = 8.dp)
         ) {
             Row(
@@ -1944,7 +1958,7 @@ private fun paginateBlocks(
     resolvedFontFamily: FontFamily,
     textMeasurer: TextMeasurer,
     density: Density,
-    screenHeightDp: Float = 800f,
+    contentHeightDp: Float = 600f,
     screenWidthDp: Float = 380f,
     columnWidthDp: Float? = null
 ): List<List<Pair<Int, FormattedBlock>>> {
@@ -1953,14 +1967,7 @@ private fun paginateBlocks(
     val usableWidthDp = columnWidthDp ?: (screenWidthDp - 48f).coerceAtLeast(100f)
     val maxWidthPx = with(density) { usableWidthDp.dp.roundToPx() }
 
-    // Column has top padding 16dp and bottom padding 28dp.
-    // The bottom percentage indicator is at bottom: 12dp, height ~16dp (top edge at 28dp from bottom).
-    // Allowing content up to (screenHeightDp - 16f - 34f) guarantees that the last line of text
-    // stops at least 34dp from the bottom of the container, leaving a clean 1-2 line gap above the indicator.
-    // TextMeasurer measures exact text layout with HarfBuzz/Skia, ensuring zero overflow,
-    // zero dropped lines/words, and optimal filling of the page with no runway.
-    val maxContentHeightDp = (screenHeightDp - 16f - 34f).coerceAtLeast(100f)
-    val maxHeightPx = with(density) { maxContentHeightDp.dp.toPx() }
+    val maxHeightPx = with(density) { contentHeightDp.dp.toPx() }
     val paragraphSpacingPx = with(density) { 8.dp.toPx() }
 
     val pages = mutableListOf<List<Pair<Int, FormattedBlock>>>()

@@ -252,19 +252,22 @@ object OpdsService {
                             val id = if (currentId.isNotBlank()) currentId else currentTitle.hashCode().toString()
                             val isCat = currentFb2Url == null && currentEpubUrl == null && currentMobiUrl == null && currentPdfUrl == null && currentCategoryPath != null
                             
-                            val lowerTitle = currentTitle.lowercase(Locale.ROOT)
-                            val isAuthOrPersonalCategory = lowerTitle.contains("книжная полка") ||
-                                lowerTitle.contains("книжные полки") ||
-                                lowerTitle.contains("моя полка") ||
-                                lowerTitle.contains("сборники") ||
-                                lowerTitle.contains("сборник") ||
-                                lowerTitle.contains("личная полка") ||
-                                lowerTitle.contains("пользовател") ||
-                                lowerTitle.contains("профиль") ||
-                                lowerTitle.contains("вход") ||
-                                lowerTitle.contains("регистрация")
+                            val textToCheck = "$currentTitle $currentAnnotation".lowercase(Locale.ROOT)
+                            val isAuthRequired = textToCheck.contains("требуется логин") ||
+                                textToCheck.contains("требуется авторизац") ||
+                                textToCheck.contains("отслеживаем") ||
+                                textToCheck.contains("книжная полка") ||
+                                textToCheck.contains("книжные полки") ||
+                                textToCheck.contains("моя полка") ||
+                                textToCheck.contains("сборники") ||
+                                textToCheck.contains("сборник") ||
+                                textToCheck.contains("личная полка") ||
+                                textToCheck.contains("пользовател") ||
+                                textToCheck.contains("профиль") ||
+                                textToCheck.contains("вход в систему") ||
+                                textToCheck.contains("регистрация")
 
-                            if (currentTitle.isNotBlank() && !(isCat && isAuthOrPersonalCategory)) {
+                            if (currentTitle.isNotBlank() && !isAuthRequired) {
                                 val parsedYear = YEAR_REGEX.find(currentAnnotation)?.groupValues?.get(1)
                                 val parsedFormat = FORMAT_REGEX.find(currentAnnotation)?.groupValues?.get(1)
                                 val parsedLang = LANG_REGEX.find(currentAnnotation)?.groupValues?.get(1)?.uppercase(Locale.ROOT)
