@@ -6,7 +6,8 @@ enum class BookFormat {
     FB2,
     EPUB,
     TXT,
-    PDF
+    PDF,
+    MOBI
 }
 
 enum class BlockType {

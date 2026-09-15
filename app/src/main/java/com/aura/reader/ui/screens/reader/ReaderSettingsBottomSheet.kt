@@ -133,10 +133,10 @@ fun ReaderSettingsBottomSheet(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    val lightColors = listOf(Color(0xFFFFD54F), Color(0xFFFFB300), Color(0xFFFF8F00), Color(0xFFFFF176), Color(0xFFE65100), Color(0xFFFFFFFF))
-                    val darkColors = listOf(Color(0xFF00E5FF), Color(0xFF40C4FF), Color(0xFF82B1FF), Color(0xFFB388FF), Color(0xFFE040FB), Color(0xFFFFFFFF))
-                    val sepiaColors = listOf(Color(0xFFFFB74D), Color(0xFFFF9800), Color(0xFFF57C00), Color(0xFFD7CCC8), Color(0xFFFFCC80), Color(0xFF8D6E63))
-                    val amoledColors = listOf(Color(0xFFE040FB), Color(0xFFD500F9), Color(0xFF00E5FF), Color(0xFF18FFFF), Color(0xFF69F0AE), Color(0xFFFFFFFF))
+                    val lightColors = listOf(Color(0xFFFFF9E6), Color(0xFFFFE082), Color(0xFFF5F5F5), Color(0xFFE0E0E0), Color(0xFFFFFDE7), Color(0xFFFFFFFF))
+                    val darkColors = listOf(Color(0xFFECEFF1), Color(0xFFCFD8DC), Color(0xFFB0BEC5), Color(0xFF90A4AE), Color(0xFF78909C), Color(0xFFFFFFFF))
+                    val sepiaColors = listOf(Color(0xFFFAF0E6), Color(0xFFD7CCC8), Color(0xFFBCAAA4), Color(0xFFFFE0B2), Color(0xFFEFEBE9), Color(0xFFFFFFFF))
+                    val amoledColors = listOf(Color(0xFFFFFFFF), Color(0xFFF5F5F5), Color(0xFFEEEEEE), Color(0xFFE0E0E0), Color(0xFFBDBDBD), Color(0xFFFFFFFF))
 
                     fun handleThemeClick(mode: ReaderThemeMode, origin: Offset, colors: List<Color>) {
                         burstOrigin = origin

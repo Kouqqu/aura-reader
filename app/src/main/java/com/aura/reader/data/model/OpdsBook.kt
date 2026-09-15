@@ -8,6 +8,8 @@ data class OpdsBook(
     val coverUrl: String? = null,
     val fb2Url: String? = null,
     val epubUrl: String? = null,
+    val mobiUrl: String? = null,
+    val pdfUrl: String? = null,
     val downloadSize: String? = null,
     val isCategory: Boolean = false,
     val categoryPath: String? = null,

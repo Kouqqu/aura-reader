@@ -22,7 +22,10 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,8 +33,10 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -60,7 +65,8 @@ import java.util.Calendar
 @Composable
 fun ReadingStatsBottomSheet(
     statsData: ReadingStatsData,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onResetStats: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -156,7 +162,51 @@ fun ReadingStatsBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            var showConfirmReset by remember { mutableStateOf(false) }
+
+            if (showConfirmReset) {
+                AlertDialog(
+                    onDismissRequest = { showConfirmReset = false },
+                    title = { Text(strings.resetStatsConfirmTitle, fontWeight = FontWeight.Bold) },
+                    text = { Text(strings.resetStatsConfirmMessage) },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showConfirmReset = false
+                                onResetStats()
+                            }
+                        ) {
+                            Text(strings.resetStatsTitle, color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showConfirmReset = false }) {
+                            Text(strings.cancel)
+                        }
+                    }
+                )
+            }
+
+            OutlinedButton(
+                onClick = { showConfirmReset = true },
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DeleteOutline,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(strings.resetStatsTitle)
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             FilledTonalButton(
                 onClick = onDismiss,

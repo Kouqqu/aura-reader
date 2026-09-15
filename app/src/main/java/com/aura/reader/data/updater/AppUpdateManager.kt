@@ -28,12 +28,53 @@ object AppUpdateManager {
     private const val GITHUB_API_LATEST_RELEASE =
         "https://api.github.com/repos/Kouqqu/aura-reader/releases/latest"
 
-    suspend fun checkForUpdates(currentVersion: String = "v1.0.0"): Result<UpdateInfo?> =
+    suspend fun checkForUpdates(currentVersion: String = "v1.0.0", isBetaChannel: Boolean = false): Result<UpdateInfo?> =
         withContext(Dispatchers.IO) {
             try {
                 var tagName = ""
                 var body = ""
                 var apkDownloadUrl = ""
+
+                if (isBetaChannel) {
+                    try {
+                        val url = URL("https://api.github.com/repos/Kouqqu/aura-reader/releases/tags/preview")
+                        val conn = url.openConnection() as HttpURLConnection
+                        conn.requestMethod = "GET"
+                        conn.setRequestProperty("User-Agent", "AuraReader-App")
+                        conn.connectTimeout = 6000
+                        conn.readTimeout = 6000
+                        if (conn.responseCode == 200) {
+                            val jsonStr = conn.inputStream.bufferedReader().use { it.readText() }
+                            val json = JSONObject(jsonStr)
+                            tagName = json.optString("tag_name", "preview").trim()
+                            body = json.optString("body", "").trim()
+                            val assets = json.optJSONArray("assets")
+                            if (assets != null) {
+                                for (i in 0 until assets.length()) {
+                                    val asset = assets.getJSONObject(i)
+                                    val name = asset.optString("name", "")
+                                    if (name.endsWith(".apk", ignoreCase = true)) {
+                                        apkDownloadUrl = asset.optString("browser_download_url", "")
+                                        break
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {}
+
+                    if (apkDownloadUrl.isBlank()) {
+                        apkDownloadUrl = "https://github.com/Kouqqu/aura-reader/releases/download/preview/AuraReader.apk"
+                    }
+
+                    return@withContext Result.success(
+                        UpdateInfo(
+                            isAvailable = true,
+                            latestVersion = "v1.4.1-beta (preview)",
+                            changelog = body.ifBlank { "Тестовая превью-сборка Aura Reader с новейшими экспериментальными функциями." },
+                            downloadUrl = apkDownloadUrl
+                        )
+                    )
+                }
 
                 // 1. First, check latest tag via GitHub redirect (100% rate-limit-free)
                 try {

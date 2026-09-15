@@ -71,6 +71,11 @@ class PreferencesManager(private val context: Context) {
         val USER_COLLECTIONS_KEY = stringPreferencesKey("user_collections_json")
         val AVERAGE_WPM_KEY = floatPreferencesKey("user_average_wpm")
         val LIBRARY_VIEW_MODE_KEY = stringPreferencesKey("library_view_mode")
+        val DEVELOPER_MODE_KEY = booleanPreferencesKey("developer_mode_enabled")
+        val UPDATE_CHANNEL_KEY = stringPreferencesKey("update_channel")
+        val VPN_NOTICE_DISMISSED_KEY = booleanPreferencesKey("vpn_notice_dismissed")
+        val LIBRARY_SORT_ORDER_KEY = stringPreferencesKey("library_sort_order")
+        val CUSTOM_BOOK_ORDER_KEY = stringPreferencesKey("custom_book_order_json")
     }
 
     val libraryViewMode: Flow<String> = context.dataStore.data.map { prefs ->
@@ -269,6 +274,12 @@ class PreferencesManager(private val context: Context) {
             val current = obj.optLong(today, 0L)
             obj.put(today, current + seconds)
             prefs[READING_STATS_KEY] = obj.toString()
+        }
+    }
+
+    suspend fun resetReadingStats() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(READING_STATS_KEY)
         }
     }
 
@@ -621,7 +632,69 @@ class PreferencesManager(private val context: Context) {
                 val item = arr.getString(i)
                 if (item != name) newArr.put(item)
             }
-            prefs[USER_COLLECTIONS_KEY] = newArr.toString()
+        }
+    }
+
+    // --- Developer Mode & Beta Channel ---
+    val developerModeEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[DEVELOPER_MODE_KEY] ?: false
+    }
+
+    suspend fun setDeveloperModeEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[DEVELOPER_MODE_KEY] = enabled
+        }
+    }
+
+    val updateChannel: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[UPDATE_CHANNEL_KEY] ?: "RELEASE"
+    }
+
+    suspend fun setUpdateChannel(channel: String) {
+        context.dataStore.edit { prefs ->
+            prefs[UPDATE_CHANNEL_KEY] = channel
+        }
+    }
+
+    // --- VPN Notice ---
+    val vpnNoticeDismissed: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[VPN_NOTICE_DISMISSED_KEY] ?: false
+    }
+
+    suspend fun setVpnNoticeDismissed(dismissed: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[VPN_NOTICE_DISMISSED_KEY] = dismissed
+        }
+    }
+
+    // --- Library Sorting & Custom Order ---
+    val librarySortOrder: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[LIBRARY_SORT_ORDER_KEY] ?: "RECENT"
+    }
+
+    suspend fun setLibrarySortOrder(order: String) {
+        context.dataStore.edit { prefs ->
+            prefs[LIBRARY_SORT_ORDER_KEY] = order
+        }
+    }
+
+    val customBookOrder: Flow<List<String>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[CUSTOM_BOOK_ORDER_KEY] ?: "[]"
+        try {
+            val arr = JSONArray(raw)
+            val list = mutableListOf<String>()
+            for (i in 0 until arr.length()) list.add(arr.getString(i))
+            list
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun saveCustomBookOrder(order: List<String>) {
+        context.dataStore.edit { prefs ->
+            val arr = JSONArray()
+            for (id in order) arr.put(id)
+            prefs[CUSTOM_BOOK_ORDER_KEY] = arr.toString()
         }
     }
 }

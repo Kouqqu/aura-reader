@@ -51,4 +51,27 @@ object CoverBitmapCache {
             null
         }
     }
+
+    fun getOrDecodeFull(key: String, base64: String): ImageBitmap? {
+        val fullKey = "${key}_full"
+        val cached = memoryCache.get(fullKey)
+        if (cached != null) return cached
+
+        return try {
+            val bytes = Base64.decode(base64, Base64.DEFAULT)
+            val decodeOpts = BitmapFactory.Options().apply {
+                inSampleSize = 1
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+                inDither = true
+            }
+            val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOpts)
+            if (bmp != null) {
+                val imgBmp = bmp.asImageBitmap()
+                memoryCache.put(fullKey, imgBmp)
+                imgBmp
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
 }

@@ -55,6 +55,21 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aura.reader.R
+import android.widget.Toast
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import com.aura.reader.ui.components.PixelFullScreenBurst
+import com.aura.reader.ui.screens.reader.ThemeOptionButton
+import com.aura.reader.ui.theme.AmoledBackground
+import com.aura.reader.ui.theme.AmoledText
+import com.aura.reader.ui.theme.SepiaBackground
+import com.aura.reader.ui.theme.SepiaText
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.opds.OpdsService
 import com.aura.reader.ui.theme.AppLanguage
@@ -76,12 +91,16 @@ fun SettingsBottomSheet(
     onToggleMaterialYou: (Boolean) -> Unit,
     onCheckUpdates: () -> Unit,
     customOpdsEnabled: Boolean = false,
-    customOpdsUrl: String = OpdsService.DEFAULT_BASE_URL,
+    customOpdsUrl: String = "",
     onToggleCustomOpds: (Boolean) -> Unit = {},
     onCustomOpdsUrlChange: (String) -> Unit = {},
     onExportBackup: () -> Unit = {},
     onSendToGoogleDrive: () -> Unit = {},
-    onRestoreBackup: () -> Unit = {}
+    onRestoreBackup: () -> Unit = {},
+    developerModeEnabled: Boolean = false,
+    updateChannel: String = "RELEASE",
+    onToggleDeveloperMode: (Boolean) -> Unit = {},
+    onUpdateChannelChange: (String) -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
@@ -91,6 +110,63 @@ fun SettingsBottomSheet(
         }.getOrNull() ?: "1.1.9"
     }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    var sheetCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var burstOrigin by remember { mutableStateOf(Offset.Zero) }
+    var burstColors by remember { mutableStateOf<List<Color>>(emptyList()) }
+    var burstTriggerKey by remember { mutableLongStateOf(0L) }
+
+    var versionTapCount by remember { mutableIntStateOf(0) }
+    var showDevPasswordDialog by remember { mutableStateOf(false) }
+    var devPasswordInput by remember { mutableStateOf("") }
+    var devPasswordError by remember { mutableStateOf(false) }
+
+    if (showDevPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showDevPasswordDialog = false },
+            title = { Text(strings.devModeTitle, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text(strings.devModePasswordPrompt, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = devPasswordInput,
+                        onValueChange = {
+                            devPasswordInput = it
+                            devPasswordError = false
+                        },
+                        placeholder = { Text(strings.devModePasswordPlaceholder) },
+                        singleLine = true,
+                        isError = devPasswordError,
+                        supportingText = if (devPasswordError) {
+                            { Text(strings.devModeWrongPassword, color = MaterialTheme.colorScheme.error) }
+                        } else null,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (devPasswordInput.trim().equals("aura", ignoreCase = true)) {
+                            onToggleDeveloperMode(true)
+                            showDevPasswordDialog = false
+                            devPasswordInput = ""
+                            Toast.makeText(context, strings.devModeActivated, Toast.LENGTH_SHORT).show()
+                        } else {
+                            devPasswordError = true
+                        }
+                    }
+                ) {
+                    Text(strings.save)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDevPasswordDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -102,6 +178,11 @@ fun SettingsBottomSheet(
             .statusBarsPadding()
             .padding(top = 24.dp)
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { sheetCoordinates = it }
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -140,33 +221,72 @@ fun SettingsBottomSheet(
             )
             Spacer(modifier = Modifier.height(10.dp))
 
-            FlowRow(
+            val lightColors = listOf(Color(0xFFFFF9E6), Color(0xFFFFE082), Color(0xFFF5F5F5), Color(0xFFE0E0E0), Color(0xFFFFFDE7), Color(0xFFFFFFFF))
+            val darkColors = listOf(Color(0xFFECEFF1), Color(0xFFCFD8DC), Color(0xFFB0BEC5), Color(0xFF90A4AE), Color(0xFF78909C), Color(0xFFFFFFFF))
+            val sepiaColors = listOf(Color(0xFFFAF0E6), Color(0xFFD7CCC8), Color(0xFFBCAAA4), Color(0xFFFFE0B2), Color(0xFFEFEBE9), Color(0xFFFFFFFF))
+            val amoledColors = listOf(Color(0xFFFFFFFF), Color(0xFFF5F5F5), Color(0xFFEEEEEE), Color(0xFFE0E0E0), Color(0xFFBDBDBD), Color(0xFFFFFFFF))
+
+            fun handleThemeClick(mode: ReaderThemeMode, origin: Offset, colors: List<Color>) {
+                burstOrigin = origin
+                burstColors = colors
+                burstTriggerKey = System.currentTimeMillis()
+                onThemeChange(mode)
+            }
+
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                val themes: List<Pair<ReaderThemeMode, String>> = listOf(
-                    ReaderThemeMode.LIGHT to strings.themeLight,
-                    ReaderThemeMode.DARK to strings.themeDark,
-                    ReaderThemeMode.AMOLED to strings.themeAmoled,
-                    ReaderThemeMode.SEPIA to strings.themeSepia
+                ThemeOptionButton(
+                    label = strings.themeLight,
+                    bgColor = Color(0xFFFFFFFF),
+                    textColor = Color(0xFF1D1B20),
+                    isSelected = currentTheme == ReaderThemeMode.LIGHT,
+                    hapticEnabled = true,
+                    getSheetCoordinates = { sheetCoordinates },
+                    modifier = Modifier.weight(1f),
+                    onClick = { origin -> handleThemeClick(ReaderThemeMode.LIGHT, origin, lightColors) }
                 )
-                themes.forEach { (mode, label) ->
-                    val selected = currentTheme == mode || (currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC && mode == ReaderThemeMode.DARK)
-                    FilterChip(
-                        selected = selected,
-                        onClick = { onThemeChange(mode) },
-                        label = { Text(label) },
-                        leadingIcon = if (selected) {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                        } else null,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    )
-                }
+
+                ThemeOptionButton(
+                    label = strings.themeDark,
+                    bgColor = Color(0xFF1E2125),
+                    textColor = Color(0xFFE2E2E6),
+                    isSelected = currentTheme == ReaderThemeMode.DARK || currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC,
+                    hapticEnabled = true,
+                    getSheetCoordinates = { sheetCoordinates },
+                    modifier = Modifier.weight(1f),
+                    onClick = { origin -> handleThemeClick(ReaderThemeMode.DARK, origin, darkColors) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ThemeOptionButton(
+                    label = strings.themeSepia,
+                    bgColor = SepiaBackground,
+                    textColor = SepiaText,
+                    isSelected = currentTheme == ReaderThemeMode.SEPIA,
+                    hapticEnabled = true,
+                    getSheetCoordinates = { sheetCoordinates },
+                    modifier = Modifier.weight(1f),
+                    onClick = { origin -> handleThemeClick(ReaderThemeMode.SEPIA, origin, sepiaColors) }
+                )
+
+                ThemeOptionButton(
+                    label = strings.themeAmoled,
+                    bgColor = AmoledBackground,
+                    textColor = AmoledText,
+                    isSelected = currentTheme == ReaderThemeMode.AMOLED,
+                    hapticEnabled = true,
+                    getSheetCoordinates = { sheetCoordinates },
+                    modifier = Modifier.weight(1f),
+                    onClick = { origin -> handleThemeClick(ReaderThemeMode.AMOLED, origin, amoledColors) }
+                )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -342,7 +462,9 @@ fun SettingsBottomSheet(
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        var urlText by remember(customOpdsUrl) { mutableStateOf(customOpdsUrl) }
+                        var urlText by remember(customOpdsUrl) {
+                            mutableStateOf(if (customOpdsUrl == OpdsService.DEFAULT_BASE_URL || customOpdsUrl.contains("flibusta", ignoreCase = true)) "" else customOpdsUrl)
+                        }
 
                         OutlinedTextField(
                             value = urlText,
@@ -350,17 +472,18 @@ fun SettingsBottomSheet(
                                 urlText = it
                                 onCustomOpdsUrlChange(it)
                             },
+                            placeholder = { Text("https://example.com/opds") },
                             label = { Text(strings.customOpdsUrl) },
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = {
-                                if (urlText != OpdsService.DEFAULT_BASE_URL) {
-                                    TextButton(onClick = {
-                                        urlText = OpdsService.DEFAULT_BASE_URL
-                                        onCustomOpdsUrlChange(OpdsService.DEFAULT_BASE_URL)
+                                if (urlText.isNotBlank()) {
+                                    IconButton(onClick = {
+                                        urlText = ""
+                                        onCustomOpdsUrlChange("")
                                     }) {
-                                        Text(strings.reset, style = MaterialTheme.typography.labelMedium)
+                                        Icon(Icons.Default.Clear, contentDescription = strings.clear)
                                     }
                                 }
                             }
@@ -428,7 +551,17 @@ fun SettingsBottomSheet(
                         Text(
                             text = strings.currentVersion(currentAppVersion),
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.clickable {
+                                versionTapCount++
+                                if (versionTapCount >= 7) {
+                                    versionTapCount = 0
+                                    showDevPasswordDialog = true
+                                } else if (versionTapCount >= 3) {
+                                    val remaining = 7 - versionTapCount
+                                    Toast.makeText(context, "Осталось нажать $remaining раз(а)", Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         )
 
                         OutlinedButton(
@@ -658,6 +791,16 @@ fun SettingsBottomSheet(
                         )
                     }
                 }
+            }
+        }
+            if (burstTriggerKey > 0L && burstColors.isNotEmpty()) {
+                PixelFullScreenBurst(
+                    triggerKey = burstTriggerKey,
+                    origin = burstOrigin,
+                    colors = burstColors,
+                    durationMillis = 2400,
+                    modifier = Modifier.matchParentSize()
+                )
             }
         }
     }

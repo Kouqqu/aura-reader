@@ -216,6 +216,13 @@ class BookRepository(
                         fileName
                     )
                 }
+                fileName.endsWith(".mobi", ignoreCase = true) || (bytes.size >= 68 && bytes[60] == 'B'.code.toByte() && bytes[61] == 'O'.code.toByte() && bytes[62] == 'O'.code.toByte() && bytes[63] == 'K'.code.toByte()) -> {
+                    com.aura.reader.data.parser.MobiParser.parse(
+                        java.io.ByteArrayInputStream(bytes),
+                        uri.toString(),
+                        fileName
+                    )
+                }
                 isZip -> {
                     var hasMetaInf = false
                     var hasFb2 = false
@@ -277,7 +284,7 @@ class BookRepository(
                                 fileName
                             )
                         } catch (e: Exception) {
-                            throw IllegalArgumentException("Формат «$fileName» не поддерживается. Aura Reader поддерживает FB2, EPUB, PDF и TXT.")
+                            throw IllegalArgumentException("Формат «$fileName» не поддерживается. Aura Reader поддерживает FB2, EPUB, PDF, MOBI и TXT.")
                         }
                     }
                 }
@@ -380,6 +387,7 @@ class BookRepository(
             targetNames.add("$bookTitle.epub")
             targetNames.add("$bookTitle.fb2.zip")
             targetNames.add("$bookTitle.pdf")
+            targetNames.add("$bookTitle.mobi")
             targetNames.add("$bookTitle.txt")
         }
 

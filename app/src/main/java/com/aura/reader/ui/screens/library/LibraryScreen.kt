@@ -80,6 +80,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.Share
@@ -166,6 +170,7 @@ fun LibraryScreen(
     val strings = LocalAppStrings.current
     val recentBooks by viewModel.recentBooks.collectAsState()
     val filteredRecentBooks by viewModel.filteredRecentBooks.collectAsState()
+    val librarySortOrder by viewModel.librarySortOrder.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val todayMinutes by viewModel.todayReadingMinutes.collectAsState()
     val readingStatsData by viewModel.readingStatsData.collectAsState()
@@ -184,6 +189,8 @@ fun LibraryScreen(
     val libraryViewMode by viewModel.libraryViewMode.collectAsState()
     val customOpdsEnabled by viewModel.customOpdsEnabled.collectAsState()
     val catalogBaseUrl by viewModel.catalogBaseUrl.collectAsState()
+    val developerModeEnabled by viewModel.developerModeEnabled.collectAsState()
+    val updateChannel by viewModel.updateChannel.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -675,12 +682,108 @@ fun LibraryScreen(
                     }
 
                     item {
-                        Text(
-                            text = if (searchQuery.isBlank()) strings.recentBooks else strings.searchResultsCount(displayedRecentBooks.size),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
-                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp, bottom = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (searchQuery.isBlank()) strings.recentBooks else strings.searchResultsCount(displayedRecentBooks.size),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            if (searchQuery.isBlank()) {
+                                Box {
+                                    var showSortMenu by remember { mutableStateOf(false) }
+                                    val sortLabel = when (librarySortOrder) {
+                                        LibrarySortOption.RECENT -> strings.sortByDefault
+                                        LibrarySortOption.TITLE -> strings.sortByTitle
+                                        LibrarySortOption.AUTHOR -> strings.sortByAuthor
+                                        LibrarySortOption.CUSTOM -> strings.sortCustomOrder
+                                    }
+                                    Surface(
+                                        onClick = { showSortMenu = true },
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Sort,
+                                                contentDescription = strings.sortTitle,
+                                                modifier = Modifier.size(16.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                            Text(
+                                                text = sortLabel,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    DropdownMenu(
+                                        expanded = showSortMenu,
+                                        onDismissRequest = { showSortMenu = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text(strings.sortByDefault) },
+                                            onClick = {
+                                                viewModel.setLibrarySortOrder(LibrarySortOption.RECENT)
+                                                showSortMenu = false
+                                            },
+                                            leadingIcon = {
+                                                if (librarySortOrder == LibrarySortOption.RECENT) {
+                                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(strings.sortByTitle) },
+                                            onClick = {
+                                                viewModel.setLibrarySortOrder(LibrarySortOption.TITLE)
+                                                showSortMenu = false
+                                            },
+                                            leadingIcon = {
+                                                if (librarySortOrder == LibrarySortOption.TITLE) {
+                                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(strings.sortByAuthor) },
+                                            onClick = {
+                                                viewModel.setLibrarySortOrder(LibrarySortOption.AUTHOR)
+                                                showSortMenu = false
+                                            },
+                                            leadingIcon = {
+                                                if (librarySortOrder == LibrarySortOption.AUTHOR) {
+                                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(strings.sortCustomOrder) },
+                                            onClick = {
+                                                viewModel.setLibrarySortOrder(LibrarySortOption.CUSTOM)
+                                                showSortMenu = false
+                                            },
+                                            leadingIcon = {
+                                                if (librarySortOrder == LibrarySortOption.CUSTOM) {
+                                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     if (displayedRecentBooks.isEmpty() && searchQuery.isNotBlank()) {
@@ -728,6 +831,12 @@ fun LibraryScreen(
                                         onChangeCover = {
                                             bookForCoverChange = book
                                         },
+                                        onMoveUp = if (librarySortOrder == LibrarySortOption.CUSTOM) {
+                                            { viewModel.moveBookCustomOrder(book.id, -1, displayedRecentBooks) }
+                                        } else null,
+                                        onMoveDown = if (librarySortOrder == LibrarySortOption.CUSTOM) {
+                                            { viewModel.moveBookCustomOrder(book.id, 1, displayedRecentBooks) }
+                                        } else null,
                                         modifier = Modifier.weight(1f)
                                     )
                                 }
@@ -763,7 +872,13 @@ fun LibraryScreen(
                                 },
                                 onChangeCover = {
                                     bookForCoverChange = book
-                                }
+                                },
+                                onMoveUp = if (librarySortOrder == LibrarySortOption.CUSTOM) {
+                                    { viewModel.moveBookCustomOrder(book.id, -1, displayedRecentBooks) }
+                                } else null,
+                                onMoveDown = if (librarySortOrder == LibrarySortOption.CUSTOM) {
+                                    { viewModel.moveBookCustomOrder(book.id, 1, displayedRecentBooks) }
+                                } else null
                             )
                         }
                     }
@@ -1023,6 +1138,10 @@ fun LibraryScreen(
             customOpdsUrl = catalogBaseUrl,
             onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
             onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
+            developerModeEnabled = developerModeEnabled,
+            updateChannel = updateChannel,
+            onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
+            onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
             onCheckUpdates = {
                 showSettingsSheet = false
                 viewModel.checkForUpdates(manual = true, context = context)
@@ -1063,7 +1182,11 @@ fun LibraryScreen(
     if (showReadingStatsSheet) {
         ReadingStatsBottomSheet(
             statsData = readingStatsData,
-            onDismiss = { showReadingStatsSheet = false }
+            onDismiss = { showReadingStatsSheet = false },
+            onResetStats = {
+                showReadingStatsSheet = false
+                viewModel.resetReadingStats()
+            }
         )
     }
 }
@@ -1208,6 +1331,26 @@ fun BookCard(
                                         onClick = {
                                             showMenu = false
                                             onSetProgress(0)
+                                        }
+                                    )
+                                }
+                                if (onMoveUp != null) {
+                                    DropdownMenuItem(
+                                        text = { Text(strings.moveUp) },
+                                        leadingIcon = { Icon(Icons.Default.ArrowUpward, contentDescription = null) },
+                                        onClick = {
+                                            showMenu = false
+                                            onMoveUp()
+                                        }
+                                    )
+                                }
+                                if (onMoveDown != null) {
+                                    DropdownMenuItem(
+                                        text = { Text(strings.moveDown) },
+                                        leadingIcon = { Icon(Icons.Default.ArrowDownward, contentDescription = null) },
+                                        onClick = {
+                                            showMenu = false
+                                            onMoveDown()
                                         }
                                     )
                                 }
@@ -1461,6 +1604,8 @@ fun BookGridCard(
     onCoverClick: () -> Unit = {},
     onShare: () -> Unit = {},
     onChangeCover: () -> Unit = {},
+    onMoveUp: (() -> Unit)? = null,
+    onMoveDown: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -1600,6 +1745,26 @@ fun BookGridCard(
                         onShare()
                     }
                 )
+                if (onMoveUp != null) {
+                    DropdownMenuItem(
+                        text = { Text(strings.moveUp) },
+                        leadingIcon = { Icon(Icons.Default.ArrowUpward, contentDescription = null) },
+                        onClick = {
+                            showMenu = false
+                            onMoveUp()
+                        }
+                    )
+                }
+                if (onMoveDown != null) {
+                    DropdownMenuItem(
+                        text = { Text(strings.moveDown) },
+                        leadingIcon = { Icon(Icons.Default.ArrowDownward, contentDescription = null) },
+                        onClick = {
+                            showMenu = false
+                            onMoveDown()
+                        }
+                    )
+                }
                 DropdownMenuItem(
                     text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
                     leadingIcon = {

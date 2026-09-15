@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -117,6 +118,7 @@ fun OpdsScreen(
     val selectedBookForDetails by viewModel.selectedBookForDetails.collectAsState()
     val sortOption by viewModel.sortOption.collectAsState()
     val canGoBack by viewModel.canGoBack.collectAsState()
+    val vpnNoticeDismissed by viewModel.vpnNoticeDismissed.collectAsState()
     var isSearchFocused by remember { mutableStateOf(false) }
     var inspectingCoverBook by remember { mutableStateOf<OpdsBook?>(null) }
 
@@ -330,6 +332,57 @@ fun OpdsScreen(
                     }
                     TextButton(onClick = { viewModel.clearHistory() }) {
                         Text(strings.clear, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+
+            // Dismissable VPN Notice Card for built-in catalog in RU
+            if (!vpnNoticeDismissed && !customOpdsEnabled) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.45f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = strings.opdsVpnNoticeTitle,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = strings.opdsVpnNoticeDescription,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                onClick = { viewModel.dismissVpnNotice() }
+                            ) {
+                                Text(strings.gotIt, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
                     }
                 }
             }
@@ -1164,36 +1217,74 @@ fun OpdsBookDetailsBottomSheet(
                     Text(strings.openBookAction, fontWeight = FontWeight.Bold)
                 }
             } else {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (book.fb2Url != null) {
-                        Button(
-                            onClick = { onDownload(BookFormat.FB2) },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                        ) {
-                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(strings.downloadFb2)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        if (book.fb2Url != null) {
+                            Button(
+                                onClick = { onDownload(BookFormat.FB2) },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                            ) {
+                                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(strings.downloadFb2)
+                            }
+                        }
+                        if (book.epubUrl != null) {
+                            OutlinedButton(
+                                onClick = { onDownload(BookFormat.EPUB) },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                            ) {
+                                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(strings.downloadEpub)
+                            }
                         }
                     }
-                    if (book.epubUrl != null) {
-                        OutlinedButton(
-                            onClick = { onDownload(BookFormat.EPUB) },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
+                    if (book.mobiUrl != null || book.pdfUrl != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(strings.downloadEpub)
+                            if (book.mobiUrl != null) {
+                                OutlinedButton(
+                                    onClick = { onDownload(BookFormat.MOBI) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(48.dp)
+                                ) {
+                                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(strings.opdsDownloadMobi)
+                                }
+                            }
+                            if (book.pdfUrl != null) {
+                                OutlinedButton(
+                                    onClick = { onDownload(BookFormat.PDF) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(48.dp)
+                                ) {
+                                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(strings.opdsDownloadPdf)
+                                }
+                            }
                         }
                     }
                 }

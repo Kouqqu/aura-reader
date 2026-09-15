@@ -96,6 +96,13 @@ class OpdsViewModel(
         if (customEnabled && url.isNotBlank()) url.trim() else OpdsService.DEFAULT_BASE_URL
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OpdsService.DEFAULT_BASE_URL)
 
+    val vpnNoticeDismissed: StateFlow<Boolean> = preferencesManager.vpnNoticeDismissed
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun dismissVpnNotice() {
+        viewModelScope.launch { preferencesManager.setVpnNoticeDismissed(true) }
+    }
+
     private val _uiState = MutableStateFlow<OpdsUiState>(OpdsUiState.Idle)
     val uiState: StateFlow<OpdsUiState> = _uiState.asStateFlow()
 
@@ -234,7 +241,13 @@ class OpdsViewModel(
         format: BookFormat,
         onComplete: ((Book) -> Unit)? = null
     ) {
-        val downloadUrl = if (format == BookFormat.FB2) book.fb2Url else book.epubUrl
+        val downloadUrl = when (format) {
+            BookFormat.FB2 -> book.fb2Url
+            BookFormat.EPUB -> book.epubUrl
+            BookFormat.PDF -> book.pdfUrl
+            BookFormat.MOBI -> book.mobiUrl
+            else -> book.fb2Url ?: book.epubUrl ?: book.mobiUrl ?: book.pdfUrl
+        }
         if (downloadUrl.isNullOrBlank()) return
 
         val bookId = book.id

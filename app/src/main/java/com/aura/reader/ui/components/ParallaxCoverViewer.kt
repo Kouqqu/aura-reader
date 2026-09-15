@@ -185,7 +185,7 @@ fun ParallaxCoverViewer(
 
     val imageBitmap = remember(coverBase64) {
         if (!coverBase64.isNullOrBlank()) {
-            com.aura.reader.util.CoverBitmapCache.getOrDecode(coverBase64, coverBase64, targetWidth = 800, targetHeight = 1200)
+            com.aura.reader.util.CoverBitmapCache.getOrDecodeFull(coverBase64, coverBase64)
         } else null
     }
 

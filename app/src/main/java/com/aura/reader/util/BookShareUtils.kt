@@ -92,6 +92,7 @@ object BookShareUtils {
                     BookFormat.EPUB -> "application/epub+zip"
                     BookFormat.PDF -> "application/pdf"
                     BookFormat.TXT -> "text/plain"
+                    BookFormat.MOBI -> "application/x-mobipocket-ebook"
                 }
 
                 val shareIntent = Intent(Intent.ACTION_SEND).apply {

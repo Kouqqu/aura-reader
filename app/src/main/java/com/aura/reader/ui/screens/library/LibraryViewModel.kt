@@ -28,6 +28,13 @@ import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.ui.theme.AppLanguage
 import kotlinx.coroutines.flow.first
 
+enum class LibrarySortOption {
+    RECENT,
+    TITLE,
+    AUTHOR,
+    CUSTOM
+}
+
 enum class CollectionFilterType {
     ALL,
     READING,
@@ -101,7 +108,25 @@ class LibraryViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val catalogBaseUrl: StateFlow<String> = preferencesManager.catalogBaseUrl
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.aura.reader.data.opds.OpdsService.DEFAULT_BASE_URL)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    val developerModeEnabled: StateFlow<Boolean> = preferencesManager.developerModeEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val updateChannel: StateFlow<String> = preferencesManager.updateChannel
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "RELEASE")
+
+    fun setDeveloperModeEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setDeveloperModeEnabled(enabled) }
+    }
+
+    fun setUpdateChannel(channel: String) {
+        viewModelScope.launch { preferencesManager.setUpdateChannel(channel) }
+    }
+
+    fun resetReadingStats() {
+        viewModelScope.launch { preferencesManager.resetReadingStats() }
+    }
 
     fun setCustomOpdsEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setCustomOpdsEnabled(enabled) }
@@ -132,6 +157,33 @@ class LibraryViewModel(
 
     private val _activeCollectionFilter = MutableStateFlow(ActiveCollectionFilter(CollectionFilterType.ALL))
     val activeCollectionFilter: StateFlow<ActiveCollectionFilter> = _activeCollectionFilter.asStateFlow()
+
+    val librarySortOrder: StateFlow<LibrarySortOption> = preferencesManager.librarySortOrder
+        .map {
+            try { LibrarySortOption.valueOf(it) } catch (e: Exception) { LibrarySortOption.RECENT }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibrarySortOption.RECENT)
+
+    fun setLibrarySortOrder(option: LibrarySortOption) {
+        viewModelScope.launch {
+            preferencesManager.setLibrarySortOrder(option.name)
+        }
+    }
+
+    fun moveBookCustomOrder(bookId: String, direction: Int, currentBooks: List<Book>) {
+        val list = currentBooks.map { it.id }.toMutableList()
+        val idx = list.indexOf(bookId)
+        if (idx != -1) {
+            val targetIdx = idx + direction
+            if (targetIdx in list.indices) {
+                val item = list.removeAt(idx)
+                list.add(targetIdx, item)
+                viewModelScope.launch {
+                    preferencesManager.saveCustomBookOrder(list)
+                }
+            }
+        }
+    }
 
     fun setCollectionFilter(filter: ActiveCollectionFilter) {
         _activeCollectionFilter.value = filter
@@ -203,8 +255,10 @@ class LibraryViewModel(
     val filteredRecentBooks: StateFlow<List<Book>> = kotlinx.coroutines.flow.combine(
         recentBooks,
         _searchQuery,
-        _activeCollectionFilter
-    ) { books, query, filter ->
+        _activeCollectionFilter,
+        preferencesManager.librarySortOrder,
+        preferencesManager.customBookOrder
+    ) { books, query, filter, sortStr, customOrderList ->
         val q = query.trim()
         val searchFiltered = if (q.isEmpty()) {
             books
@@ -216,7 +270,7 @@ class LibraryViewModel(
             }
         }
 
-        when (filter.type) {
+        val collectionFiltered = when (filter.type) {
             CollectionFilterType.ALL -> searchFiltered
             CollectionFilterType.READING -> searchFiltered.filter { it.progressPercent in 1..99 }
             CollectionFilterType.FAVORITES -> searchFiltered.filter { it.isFavorite }
@@ -225,6 +279,21 @@ class LibraryViewModel(
             CollectionFilterType.CUSTOM -> {
                 val custom = filter.customName ?: ""
                 searchFiltered.filter { it.collections.contains(custom) }
+            }
+        }
+
+        val sortOption = try { LibrarySortOption.valueOf(sortStr) } catch (e: Exception) { LibrarySortOption.RECENT }
+        when (sortOption) {
+            LibrarySortOption.RECENT -> collectionFiltered.sortedByDescending { it.lastReadTimestamp }
+            LibrarySortOption.TITLE -> collectionFiltered.sortedBy { it.title.lowercase() }
+            LibrarySortOption.AUTHOR -> collectionFiltered.sortedBy { it.author.lowercase() }
+            LibrarySortOption.CUSTOM -> {
+                if (customOrderList.isEmpty()) {
+                    collectionFiltered
+                } else {
+                    val orderMap = customOrderList.withIndex().associate { it.value to it.index }
+                    collectionFiltered.sortedBy { orderMap[it.id] ?: Int.MAX_VALUE }
+                }
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -266,7 +335,8 @@ class LibraryViewModel(
                 return@launch
             }
             val currentVersion = "v${com.aura.reader.BuildConfig.VERSION_NAME}"
-            val result = AppUpdateManager.checkForUpdates(currentVersion)
+            val isBeta = preferencesManager.updateChannel.first() == "BETA"
+            val result = AppUpdateManager.checkForUpdates(currentVersion, isBetaChannel = isBeta)
             result.onSuccess { info ->
                 if (info != null && info.isAvailable) {
                     _updateInfo.value = info

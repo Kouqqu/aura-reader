@@ -126,6 +126,8 @@ object OpdsService {
         var currentCoverUrl: String? = null
         var currentFb2Url: String? = null
         var currentEpubUrl: String? = null
+        var currentMobiUrl: String? = null
+        var currentPdfUrl: String? = null
         var currentDownloadSize: String? = null
         var currentCategoryPath: String? = null
         var inAuthor = false
@@ -144,6 +146,8 @@ object OpdsService {
                             currentCoverUrl = null
                             currentFb2Url = null
                             currentEpubUrl = null
+                            currentMobiUrl = null
+                            currentPdfUrl = null
                             currentDownloadSize = null
                             currentCategoryPath = null
                         }
@@ -211,6 +215,24 @@ object OpdsService {
                                     }
                                 }
 
+                                if (href.contains("/mobi", ignoreCase = true) ||
+                                    type.contains("mobi", ignoreCase = true) ||
+                                    href.endsWith(".mobi", ignoreCase = true)) {
+                                    currentMobiUrl = resolveUrl(feedUrl, href)
+                                    if (currentDownloadSize == null && length != null && length > 0) {
+                                        currentDownloadSize = formatFileSize(length)
+                                    }
+                                }
+
+                                if (href.contains("/pdf", ignoreCase = true) ||
+                                    type.contains("pdf", ignoreCase = true) ||
+                                    href.endsWith(".pdf", ignoreCase = true)) {
+                                    currentPdfUrl = resolveUrl(feedUrl, href)
+                                    if (currentDownloadSize == null && length != null && length > 0) {
+                                        currentDownloadSize = formatFileSize(length)
+                                    }
+                                }
+
                                 if (type.contains("atom+xml", ignoreCase = true) ||
                                     rel.contains("subsection", ignoreCase = true) ||
                                     rel.contains("related", ignoreCase = true)) {
@@ -228,8 +250,21 @@ object OpdsService {
                         "entry" -> {
                             inEntry = false
                             val id = if (currentId.isNotBlank()) currentId else currentTitle.hashCode().toString()
-                            val isCat = currentFb2Url == null && currentEpubUrl == null && currentCategoryPath != null
-                            if (currentTitle.isNotBlank()) {
+                            val isCat = currentFb2Url == null && currentEpubUrl == null && currentMobiUrl == null && currentPdfUrl == null && currentCategoryPath != null
+                            
+                            val lowerTitle = currentTitle.lowercase(Locale.ROOT)
+                            val isAuthOrPersonalCategory = lowerTitle.contains("книжная полка") ||
+                                lowerTitle.contains("книжные полки") ||
+                                lowerTitle.contains("моя полка") ||
+                                lowerTitle.contains("сборники") ||
+                                lowerTitle.contains("сборник") ||
+                                lowerTitle.contains("личная полка") ||
+                                lowerTitle.contains("пользовател") ||
+                                lowerTitle.contains("профиль") ||
+                                lowerTitle.contains("вход") ||
+                                lowerTitle.contains("регистрация")
+
+                            if (currentTitle.isNotBlank() && !(isCat && isAuthOrPersonalCategory)) {
                                 val parsedYear = YEAR_REGEX.find(currentAnnotation)?.groupValues?.get(1)
                                 val parsedFormat = FORMAT_REGEX.find(currentAnnotation)?.groupValues?.get(1)
                                 val parsedLang = LANG_REGEX.find(currentAnnotation)?.groupValues?.get(1)?.uppercase(Locale.ROOT)
@@ -247,6 +282,8 @@ object OpdsService {
                                         coverUrl = currentCoverUrl,
                                         fb2Url = currentFb2Url,
                                         epubUrl = currentEpubUrl,
+                                        mobiUrl = currentMobiUrl,
+                                        pdfUrl = currentPdfUrl,
                                         downloadSize = finalDownloadSize,
                                         isCategory = isCat,
                                         categoryPath = currentCategoryPath,
@@ -286,7 +323,13 @@ object OpdsService {
             val cleanTitle = book.title.replace(Regex("[^a-zA-Z0-9а-яА-ЯёЁ_ -]"), "").take(50).trim()
             val safeBaseName = if (cleanTitle.isNotBlank()) cleanTitle else "book"
             val safeBookId = book.id.replace(Regex("[^a-zA-Z0-9_-]"), "_").takeLast(20)
-            val ext = if (format == BookFormat.FB2) "fb2" else "epub"
+            val ext = when (format) {
+                BookFormat.FB2 -> "fb2"
+                BookFormat.EPUB -> "epub"
+                BookFormat.PDF -> "pdf"
+                BookFormat.MOBI -> "mobi"
+                BookFormat.TXT -> "txt"
+            }
             val destFile = File(booksDir, "${safeBaseName}_${safeBookId}.$ext")
 
             if (destFile.exists() && destFile.length() > 0) {
@@ -333,13 +376,20 @@ object OpdsService {
                 header[0] == 0x50.toByte() && header[1] == 0x4B.toByte() && header[2] == 0x03.toByte() && header[3] == 0x04.toByte()
             }
 
-            if (isZip && format == BookFormat.FB2) {
-                // Auto-unpack ZIP archive on the fly to raw .fb2
+            if (isZip && format != BookFormat.EPUB) {
+                // Auto-unpack ZIP archive on the fly if it wraps fb2, pdf, or mobi
+                val targetExt = when (format) {
+                    BookFormat.FB2 -> ".fb2"
+                    BookFormat.PDF -> ".pdf"
+                    BookFormat.MOBI -> ".mobi"
+                    BookFormat.TXT -> ".txt"
+                    else -> ".$ext"
+                }
                 var extracted = false
                 ZipInputStream(tempDownload.inputStream()).use { zis ->
                     var entry = zis.nextEntry
                     while (entry != null) {
-                        if (!entry.isDirectory && (entry.name.endsWith(".fb2", ignoreCase = true) || !entry.name.contains("."))) {
+                        if (!entry.isDirectory && (entry.name.endsWith(targetExt, ignoreCase = true) || !entry.name.contains("."))) {
                             destFile.outputStream().use { out ->
                                 zis.copyTo(out)
                             }
@@ -351,7 +401,7 @@ object OpdsService {
                 }
                 tempDownload.delete()
                 if (!extracted) {
-                    return@withContext Result.failure(Exception("В скачанном архиве не найден файл .fb2"))
+                    return@withContext Result.failure(Exception("В скачанном архиве не найден файл $targetExt"))
                 }
             } else {
                 // Raw file or epub

@@ -300,6 +300,25 @@ interface Strings {
     val continueReadingAction: String
     val viewModeList: String
     val viewModeGrid: String
+    // Beta 1.4.1 additions
+    val resetStatsTitle: String
+    val resetStatsConfirmTitle: String
+    val resetStatsConfirmMessage: String
+    val vpnNoticeTitle: String
+    val vpnNoticeMessage: String
+    val vpnNoticeUnderstood: String
+    val devModeTitle: String
+    val devModePasswordPrompt: String
+    val devModePasswordPlaceholder: String
+    val devModeActivated: String
+    val devModeWrongPassword: String
+    val updateChannelTitle: String
+    val updateChannelSubtitle: String
+    val updateChannelRelease: String
+    val updateChannelBeta: String
+    val sortCustomOrder: String
+    val moveUp: String
+    val moveDown: String
 }
 
 
@@ -576,6 +595,24 @@ class RuStrings : Strings {
     override val continueReadingAction = "Продолжить чтение"
     override val viewModeList = "Список"
     override val viewModeGrid = "Сетка"
+    override val resetStatsTitle = "Сбросить статистику"
+    override val resetStatsConfirmTitle = "Сбросить статистику чтения?"
+    override val resetStatsConfirmMessage = "Все прочитанные минуты, стрики и графики активности будут обнулены. Это действие нельзя отменить."
+    override val vpnNoticeTitle = "Онлайн-каталог и VPN"
+    override val vpnNoticeMessage = "Встроенный каталог книг в России может быть заблокирован провайдерами и стабильно работает только при включенном VPN."
+    override val vpnNoticeUnderstood = "Понятно"
+    override val devModeTitle = "Режим разработчика"
+    override val devModePasswordPrompt = "Введите пароль разработчика"
+    override val devModePasswordPlaceholder = "Пароль"
+    override val devModeActivated = "Режим разработчика активирован!"
+    override val devModeWrongPassword = "Неверный пароль"
+    override val updateChannelTitle = "Канал обновлений"
+    override val updateChannelSubtitle = "Выбор ветки для проверки обновлений приложения"
+    override val updateChannelRelease = "Стабильный (Release)"
+    override val updateChannelBeta = "Бета (Beta)"
+    override val sortCustomOrder = "Свой порядок"
+    override val moveUp = "Переместить выше"
+    override val moveDown = "Переместить ниже"
 }
 
 class EnStrings : Strings {
@@ -851,6 +888,22 @@ class EnStrings : Strings {
     override val continueReadingAction = "Continue Reading"
     override val viewModeList = "List"
     override val viewModeGrid = "Grid"
+    override val resetStatsTitle = "Reset Statistics"
+    override val resetStatsConfirmTitle = "Reset reading statistics?"
+    override val resetStatsConfirmMessage = "All read minutes, streaks, and activity charts will be reset. This action cannot be undone."
+    override val vpnNoticeTitle = "Online Catalog & VPN"
+    override val vpnNoticeMessage = "The built-in book catalog may be blocked in Russia and requires an active VPN connection."
+    override val vpnNoticeUnderstood = "Got it"
+    override val devModeTitle = "Developer Mode"
+    override val devModePasswordPrompt = "Enter developer password"
+    override val devModePasswordPlaceholder = "Password"
+    override val devModeActivated = "Developer mode activated!"
+    override val devModeWrongPassword = "Incorrect password"
+    override val updateChannelTitle = "Update Channel"
+    override val updateChannelSubtitle = "Choose release branch for app updates"
+    override val updateChannelRelease = "Release"
+    override val updateChannelBeta = "Beta"
+    override val sortCustomOrder = "Custom Order"
 }
 
 class UkStrings : Strings {
@@ -1126,6 +1179,24 @@ class UkStrings : Strings {
     override val continueReadingAction = "Продовжити читання"
     override val viewModeList = "Список"
     override val viewModeGrid = "Сітка"
+    override val resetStatsTitle = "Скинути статистику"
+    override val resetStatsConfirmTitle = "Скинути статистику читання?"
+    override val resetStatsConfirmMessage = "Усі прочитані хвилини, стрики та графіки активності будуть обнулені. Цю дію не можна скасувати."
+    override val vpnNoticeTitle = "Онлайн-каталог та VPN"
+    override val vpnNoticeMessage = "Вбудований каталог книг у РФ може бути заблокований провайдерами і стабільно працює лише з увімкненим VPN."
+    override val vpnNoticeUnderstood = "Зрозуміло"
+    override val devModeTitle = "Режим розробника"
+    override val devModePasswordPrompt = "Введіть пароль розробника"
+    override val devModePasswordPlaceholder = "Пароль"
+    override val devModeActivated = "Режим розробника активовано!"
+    override val devModeWrongPassword = "Невірний пароль"
+    override val updateChannelTitle = "Канал оновлень"
+    override val updateChannelSubtitle = "Вибір гілки для перевірки оновлень програми"
+    override val updateChannelRelease = "Стабільний (Release)"
+    override val updateChannelBeta = "Бета (Beta)"
+    override val sortCustomOrder = "Власний порядок"
+    override val moveUp = "Перемістити вище"
+    override val moveDown = "Перемістити нижче"
 }
 
 class BeStrings : Strings {
@@ -1401,6 +1472,22 @@ class BeStrings : Strings {
     override val continueReadingAction = "Працягнуць чытанне"
     override val viewModeList = "Спіс"
     override val viewModeGrid = "Сетка"
+    override val resetStatsTitle = "Сбросить статистику"
+    override val resetStatsConfirmTitle = "Сбросить статистику чтения?"
+    override val resetStatsConfirmMessage = "Все прочитанные минуты, стрики и графики активности будут обнулены. Это действие нельзя отменить."
+    override val vpnNoticeTitle = "Онлайн-каталог и VPN"
+    override val vpnNoticeMessage = "Встроенный каталог книг в России может быть заблокирован провайдерами и стабильно работает только при включенном VPN."
+    override val vpnNoticeUnderstood = "Понятно"
+    override val devModeTitle = "Режим разработчика"
+    override val devModePasswordPrompt = "Введите пароль разработчика"
+    override val devModePasswordPlaceholder = "Пароль"
+    override val devModeActivated = "Режим разработчика активирован!"
+    override val devModeWrongPassword = "Неверный пароль"
+    override val updateChannelTitle = "Канал обновлений"
+    override val updateChannelSubtitle = "Выбор ветки для проверки обновлений приложения"
+    override val updateChannelRelease = "Стабильный (Release)"
+    override val updateChannelBeta = "Бета (Beta)"
+    override val sortCustomOrder = "Свой порядок"
 }
 
 class PlStrings : Strings {
@@ -1675,6 +1762,24 @@ class PlStrings : Strings {
     override val continueReadingAction = "Kontynuuj czytanie"
     override val viewModeList = "Lista"
     override val viewModeGrid = "Siatka"
+    override val resetStatsTitle = "Zresetuj statystyki"
+    override val resetStatsConfirmTitle = "Zresetować statystyki czytania?"
+    override val resetStatsConfirmMessage = "Wszystkie minuty czytania, serie i wykresy aktywności zostaną wyzerowane. Tej czynności nie można cofnąć."
+    override val vpnNoticeTitle = "Katalog online i VPN"
+    override val vpnNoticeMessage = "Wbudowany katalog książek w Rosji może być zablokowany i wymaga aktywnego połączenia VPN."
+    override val vpnNoticeUnderstood = "Rozumiem"
+    override val devModeTitle = "Tryb programisty"
+    override val devModePasswordPrompt = "Wpisz hasło programisty"
+    override val devModePasswordPlaceholder = "Hasło"
+    override val devModeActivated = "Tryb programisty aktywowany!"
+    override val devModeWrongPassword = "Nieprawidłowe hasło"
+    override val updateChannelTitle = "Kanał aktualizacji"
+    override val updateChannelSubtitle = "Wybór gałęzi sprawdzania aktualizacji aplikacji"
+    override val updateChannelRelease = "Stabilny (Release)"
+    override val updateChannelBeta = "Beta"
+    override val sortCustomOrder = "Własna kolejność"
+    override val moveUp = "Przenieś w górę"
+    override val moveDown = "Przenieś w dół"
 }
 
 fun getStrings(language: AppLanguage): Strings = when (language) {
