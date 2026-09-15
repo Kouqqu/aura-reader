@@ -168,25 +168,19 @@ object MobiParser {
     }
 
     private fun cleanMobiHtml(html: String): String {
-        return html
-            .replace(Regex("<mbp:pagebreak/?>", RegexOption.IGNORE_CASE), "
-
-<!--pagebreak-->
-
-")
-            .replace(Regex("<br\s*/?>", RegexOption.IGNORE_CASE), "
-")
-            .replace(Regex("</p>|</div>|</h1>|</h2>|</h3>", RegexOption.IGNORE_CASE), "
-
-")
-            .replace(Regex("<[^>]+>"), "")
-            .replace("&nbsp;", " ")
-            .replace("&quot;", """)
-            .replace("&amp;", "&")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&apos;", "'")
-            .replace("&#160;", " ")
+        var res = html
+        res = res.replace(Regex("<mbp:pagebreak/?>", RegexOption.IGNORE_CASE), "\n\n<!--pagebreak-->\n\n")
+        res = res.replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
+        res = res.replace(Regex("</p>|</div>|</h1>|</h2>|</h3>", RegexOption.IGNORE_CASE), "\n\n")
+        res = res.replace(Regex("<[^>]+>"), "")
+        res = res.replace("&nbsp;", " ")
+        res = res.replace("&quot;", "\"")
+        res = res.replace("&amp;", "&")
+        res = res.replace("&lt;", "<")
+        res = res.replace("&gt;", ">")
+        res = res.replace("&apos;", "'")
+        res = res.replace("&#160;", " ")
+        return res
     }
 
     private fun buildChapters(text: String, defaultTitle: String): List<Chapter> {
@@ -203,13 +197,11 @@ object MobiParser {
             val title = if (lines.first().length <= 60 && (lines.first().startsWith("Глава", ignoreCase = true) || lines.first().startsWith("Chapter", ignoreCase = true) || lines.size > 1)) {
                 lines.first()
             } else {
-                if (rawSections.size > 1) "Часть ${idx + 1}" else defaultTitle
+                if (rawSections.size > 1) "Часть " + (idx + 1) else defaultTitle
             }
 
             val blocks = lines.map { FormattedBlock(BlockType.PARAGRAPH, it) }
-            val fullContent = blocks.joinToString("
-
-") { it.text }
+            val fullContent = blocks.joinToString("\n\n") { it.text }
 
             chapters.add(
                 Chapter(
