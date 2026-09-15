@@ -1,5 +1,9 @@
 package com.aura.reader.ui.screens.settings
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.IconButton
+
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable

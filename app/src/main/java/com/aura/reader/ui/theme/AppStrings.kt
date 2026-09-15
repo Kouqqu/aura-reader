@@ -319,6 +319,8 @@ interface Strings {
     val sortCustomOrder: String
     val moveUp: String
     val moveDown: String
+    val opdsDownloadMobi: String
+    val opdsDownloadPdf: String
 }
 
 
@@ -613,6 +615,8 @@ class RuStrings : Strings {
     override val sortCustomOrder = "Свой порядок"
     override val moveUp = "Переместить выше"
     override val moveDown = "Переместить ниже"
+    override val opdsDownloadMobi = "Скачать MOBI"
+    override val opdsDownloadPdf = "Скачать PDF"
 }
 
 class EnStrings : Strings {
@@ -904,6 +908,10 @@ class EnStrings : Strings {
     override val updateChannelRelease = "Release"
     override val updateChannelBeta = "Beta"
     override val sortCustomOrder = "Custom Order"
+    override val moveUp = "Move up"
+    override val moveDown = "Move down"
+    override val opdsDownloadMobi = "Download MOBI"
+    override val opdsDownloadPdf = "Download PDF"
 }
 
 class UkStrings : Strings {
@@ -1197,6 +1205,8 @@ class UkStrings : Strings {
     override val sortCustomOrder = "Власний порядок"
     override val moveUp = "Перемістити вище"
     override val moveDown = "Перемістити нижче"
+    override val opdsDownloadMobi = "Завантажити MOBI"
+    override val opdsDownloadPdf = "Завантажити PDF"
 }
 
 class BeStrings : Strings {
@@ -1488,6 +1498,10 @@ class BeStrings : Strings {
     override val updateChannelRelease = "Стабильный (Release)"
     override val updateChannelBeta = "Бета (Beta)"
     override val sortCustomOrder = "Свой порядок"
+    override val moveUp = "Перамясціць вышэй"
+    override val moveDown = "Перамясціць ніжэй"
+    override val opdsDownloadMobi = "Спампаваць MOBI"
+    override val opdsDownloadPdf = "Спампаваць PDF"
 }
 
 class PlStrings : Strings {
@@ -1780,6 +1794,8 @@ class PlStrings : Strings {
     override val sortCustomOrder = "Własna kolejność"
     override val moveUp = "Przenieś w górę"
     override val moveDown = "Przenieś w dół"
+    override val opdsDownloadMobi = "Pobierz MOBI"
+    override val opdsDownloadPdf = "Pobierz PDF"
 }
 
 fun getStrings(language: AppLanguage): Strings = when (language) {

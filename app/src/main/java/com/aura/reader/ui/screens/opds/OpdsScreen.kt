@@ -360,7 +360,7 @@ fun OpdsScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = strings.opdsVpnNoticeTitle,
+                                text = strings.vpnNoticeTitle,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -368,7 +368,7 @@ fun OpdsScreen(
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = strings.opdsVpnNoticeDescription,
+                            text = strings.vpnNoticeMessage,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -380,7 +380,7 @@ fun OpdsScreen(
                             TextButton(
                                 onClick = { viewModel.dismissVpnNotice() }
                             ) {
-                                Text(strings.gotIt, fontWeight = FontWeight.SemiBold)
+                                Text(strings.vpnNoticeUnderstood, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }

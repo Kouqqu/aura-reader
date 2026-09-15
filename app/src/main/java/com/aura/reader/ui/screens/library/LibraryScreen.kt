@@ -1202,7 +1202,9 @@ fun BookCard(
     onSetProgress: (Int) -> Unit = {},
     onCoverClick: () -> Unit = {},
     onShare: () -> Unit = {},
-    onChangeCover: () -> Unit = {}
+    onChangeCover: () -> Unit = {},
+    onMoveUp: (() -> Unit)? = null,
+    onMoveDown: (() -> Unit)? = null
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val strings = LocalAppStrings.current
