@@ -122,6 +122,7 @@ class BackupManager(
 
             zipOut.finish()
             zipOut.flush()
+            try { outputStream.flush() } catch (e: Exception) {}
 
             val booksArray = try { JSONArray(recentBooksJson) } catch (e: Exception) { JSONArray() }
             val count = maxOf(booksArray.length(), bookFilesCount)
@@ -136,9 +137,9 @@ class BackupManager(
             val backupsDir = File(context.cacheDir, "backups").apply { mkdirs() }
             val dateStr = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.US).format(Date())
             val tempFile = File(backupsDir, "AuraReader_Backup_$dateStr.aurabackup")
-            val outputStream = FileOutputStream(tempFile)
-            val exportResult = exportBackup(outputStream)
-            outputStream.close()
+            val exportResult = FileOutputStream(tempFile).use { outputStream ->
+                exportBackup(outputStream)
+            }
 
             if (exportResult.isSuccess) {
                 Result.success(Pair(tempFile, exportResult.getOrDefault(0)))
@@ -163,7 +164,8 @@ class BackupManager(
                 if (name == "manifest.json") {
                     manifestJsonStr = zis.readBytes().toString(Charsets.UTF_8)
                 } else if (name.startsWith("books/") && !entry.isDirectory) {
-                    val fileName = name.removePrefix("books/")
+                    val rawName = name.removePrefix("books/")
+                    val fileName = File(rawName).name
                     if (fileName.isNotBlank()) {
                         val targetFile = File(savedBooksDir, fileName)
                         FileOutputStream(targetFile).use { out ->

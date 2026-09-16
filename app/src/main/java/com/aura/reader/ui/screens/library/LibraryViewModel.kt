@@ -1,5 +1,6 @@
 package com.aura.reader.ui.screens.library
 
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -12,6 +13,7 @@ import com.aura.reader.data.repository.BookRepository
 import com.aura.reader.data.updater.AppUpdateManager
 import com.aura.reader.data.updater.UpdateInfo
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -261,13 +263,40 @@ class LibraryViewModel(
         viewModelScope.launch { bookRepository.updateBookCover(bookId, newCoverBase64) }
     }
 
+    fun exportBackup(
+        uri: Uri,
+        contentResolver: ContentResolver,
+        onSuccess: (Int) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val outputStream = contentResolver.openOutputStream(uri)
+                    ?: throw java.io.IOException("Не удалось открыть файл для записи")
+                val count = outputStream.use { out ->
+                    val res = bookRepository.backupManager.exportBackup(out)
+                    res.getOrThrow()
+                }
+                withContext(Dispatchers.Main) {
+                    onSuccess(count)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onError(e.localizedMessage ?: "Ошибка экспорта")
+                }
+            }
+        }
+    }
+
     fun exportBackup(outputStream: OutputStream, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val res = bookRepository.backupManager.exportBackup(outputStream)
-            res.onSuccess { count ->
-                onSuccess(count)
-            }.onFailure { e ->
-                onError(e.localizedMessage ?: "Ошибка экспорта")
+            withContext(Dispatchers.Main) {
+                res.onSuccess { count ->
+                    onSuccess(count)
+                }.onFailure { e ->
+                    onError(e.localizedMessage ?: "Ошибка экспорта")
+                }
             }
         }
     }
@@ -283,14 +312,42 @@ class LibraryViewModel(
         }
     }
 
-    fun importBackup(inputStream: InputStream, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
-        viewModelScope.launch {
-            val res = bookRepository.backupManager.importBackup(inputStream)
-            res.onSuccess { count ->
+    fun importBackup(
+        uri: Uri,
+        contentResolver: ContentResolver,
+        onSuccess: (Int) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val inputStream = contentResolver.openInputStream(uri)
+                    ?: throw java.io.IOException("Не удалось открыть файл для чтения")
+                val count = inputStream.use { inStream ->
+                    val res = bookRepository.backupManager.importBackup(inStream)
+                    res.getOrThrow()
+                }
                 bookRepository.loadRecentBooks()
-                onSuccess(count)
-            }.onFailure { e ->
-                onError(e.localizedMessage ?: "Ошибка импорта")
+                withContext(Dispatchers.Main) {
+                    onSuccess(count)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onError(e.localizedMessage ?: "Ошибка импорта")
+                }
+            }
+        }
+    }
+
+    fun importBackup(inputStream: InputStream, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val res = bookRepository.backupManager.importBackup(inputStream)
+            withContext(Dispatchers.Main) {
+                res.onSuccess { count ->
+                    bookRepository.loadRecentBooks()
+                    onSuccess(count)
+                }.onFailure { e ->
+                    onError(e.localizedMessage ?: "Ошибка импорта")
+                }
             }
         }
     }

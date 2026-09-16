@@ -257,21 +257,16 @@ fun LibraryScreen(
         contract = ActivityResultContracts.CreateDocument("application/zip")
     ) { uri: Uri? ->
         if (uri != null) {
-            try {
-                context.contentResolver.openOutputStream(uri)?.use { out ->
-                    viewModel.exportBackup(
-                        out,
-                        onSuccess = { count ->
-                            scope.launch { snackbarHostState.showSnackbar(strings.backupCreatedSuccess(count)) }
-                        },
-                        onError = { err ->
-                            scope.launch { snackbarHostState.showSnackbar("${strings.backupError}: $err") }
-                        }
-                    )
+            viewModel.exportBackup(
+                uri = uri,
+                contentResolver = context.contentResolver,
+                onSuccess = { count ->
+                    scope.launch { snackbarHostState.showSnackbar(strings.backupCreatedSuccess(count)) }
+                },
+                onError = { err ->
+                    scope.launch { snackbarHostState.showSnackbar("${strings.backupError}: $err") }
                 }
-            } catch (e: Exception) {
-                scope.launch { snackbarHostState.showSnackbar("${strings.backupError}: ${e.localizedMessage}") }
-            }
+            )
         }
     }
 
@@ -279,21 +274,16 @@ fun LibraryScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            try {
-                context.contentResolver.openInputStream(uri)?.use { inStream ->
-                    viewModel.importBackup(
-                        inStream,
-                        onSuccess = { count ->
-                            scope.launch { snackbarHostState.showSnackbar(strings.restoreCompletedSuccess(count)) }
-                        },
-                        onError = { err ->
-                            scope.launch { snackbarHostState.showSnackbar("${strings.backupError}: $err") }
-                        }
-                    )
+            viewModel.importBackup(
+                uri = uri,
+                contentResolver = context.contentResolver,
+                onSuccess = { count ->
+                    scope.launch { snackbarHostState.showSnackbar(strings.restoreCompletedSuccess(count)) }
+                },
+                onError = { err ->
+                    scope.launch { snackbarHostState.showSnackbar("${strings.backupError}: $err") }
                 }
-            } catch (e: Exception) {
-                scope.launch { snackbarHostState.showSnackbar("${strings.backupError}: ${e.localizedMessage}") }
-            }
+            )
         }
     }
 
