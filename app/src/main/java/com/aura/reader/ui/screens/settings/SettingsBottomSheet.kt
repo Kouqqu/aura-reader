@@ -44,6 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -128,8 +129,76 @@ fun SettingsBottomSheet(
 
     var versionTapCount by remember { mutableIntStateOf(0) }
     var showDevPasswordDialog by remember { mutableStateOf(false) }
+    var showChannelDialog by remember { mutableStateOf(false) }
     var devPasswordInput by remember { mutableStateOf("") }
     var devPasswordError by remember { mutableStateOf(false) }
+
+    if (showChannelDialog) {
+        var selectedChannel by remember { mutableStateOf(updateChannel) }
+        AlertDialog(
+            onDismissRequest = { showChannelDialog = false },
+            title = { Text(strings.updateChannelTitle, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text(strings.channelSwitchPrompt, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedChannel = "RELEASE" }
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedChannel == "RELEASE",
+                            onClick = { selectedChannel = "RELEASE" }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(strings.updateChannelRelease, fontWeight = FontWeight.SemiBold)
+                            Text("Официальные стабильные сборки", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedChannel = "BETA" }
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedChannel == "BETA",
+                            onClick = { selectedChannel = "BETA" }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(strings.updateChannelBeta, fontWeight = FontWeight.SemiBold)
+                            Text("Предварительные сборки с новыми функциями", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onUpdateChannelChange(selectedChannel)
+                        showChannelDialog = false
+                        onCheckUpdates()
+                        val channelName = if (selectedChannel == "BETA") strings.updateChannelBeta else strings.updateChannelRelease
+                        Toast.makeText(context, "$channelName. Проверка обновлений...", Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Text(strings.save)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showChannelDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
 
     if (showDevPasswordDialog) {
         AlertDialog(
@@ -162,7 +231,7 @@ fun SettingsBottomSheet(
                             onToggleDeveloperMode(true)
                             showDevPasswordDialog = false
                             devPasswordInput = ""
-                            Toast.makeText(context, strings.devModeActivated, Toast.LENGTH_SHORT).show()
+                            showChannelDialog = true
                         } else {
                             devPasswordError = true
                         }
@@ -676,13 +745,17 @@ fun SettingsBottomSheet(
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.outline,
                             modifier = Modifier.clickable {
-                                versionTapCount++
-                                if (versionTapCount >= 7) {
-                                    versionTapCount = 0
-                                    showDevPasswordDialog = true
-                                } else if (versionTapCount >= 3) {
-                                    val remaining = 7 - versionTapCount
-                                    Toast.makeText(context, "Осталось нажать $remaining раз(а)", Toast.LENGTH_SHORT).show()
+                                if (developerModeEnabled) {
+                                    showChannelDialog = true
+                                } else {
+                                    versionTapCount++
+                                    if (versionTapCount >= 7) {
+                                        versionTapCount = 0
+                                        showDevPasswordDialog = true
+                                    } else if (versionTapCount >= 3) {
+                                        val remaining = 7 - versionTapCount
+                                        Toast.makeText(context, "Осталось нажать $remaining раз(а)", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             }
                         )
@@ -698,6 +771,44 @@ fun SettingsBottomSheet(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(strings.checkUpdatesNow)
+                        }
+                    }
+
+                    if (developerModeEnabled) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = strings.updateChannelTitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = strings.updateChannelSubtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = updateChannel == "RELEASE",
+                                onClick = {
+                                    onUpdateChannelChange("RELEASE")
+                                    onCheckUpdates()
+                                    Toast.makeText(context, "${strings.updateChannelRelease}. Проверка обновлений...", Toast.LENGTH_SHORT).show()
+                                },
+                                label = { Text(strings.updateChannelRelease) }
+                            )
+                            FilterChip(
+                                selected = updateChannel == "BETA",
+                                onClick = {
+                                    onUpdateChannelChange("BETA")
+                                    onCheckUpdates()
+                                    Toast.makeText(context, "${strings.updateChannelBeta}. Проверка обновлений...", Toast.LENGTH_SHORT).show()
+                                },
+                                label = { Text(strings.updateChannelBeta) }
+                            )
                         }
                     }
                 }

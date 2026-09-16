@@ -70,8 +70,10 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.LineBreak
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
+import androidx.compose.ui.text.font.Font
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.runtime.snapshotFlow
 import android.app.Activity
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -307,6 +309,7 @@ fun ReaderScreen(
     var selectedQuoteCopyAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var selectionRect by remember { mutableStateOf<Rect?>(null) }
     var textToolbarStatus by remember { mutableStateOf(TextToolbarStatus.Hidden) }
+    var selectionResetKey by remember { mutableIntStateOf(0) }
 
     val customTextToolbar = remember(defaultToolbar) {
         object : TextToolbar {
@@ -333,12 +336,9 @@ fun ReaderScreen(
         }
     }
 
-    val fontProvider = remember {
-        GoogleFont.Provider(
-            providerAuthority = "com.google.android.gms.fonts",
-            providerPackage = "com.google.android.gms",
-            certificates = R.array.com_google_android_gms_fonts_certs
-        )
+    BackHandler(enabled = selectedQuoteCopyAction != null) {
+        selectionResetKey++
+        customTextToolbar.hide()
     }
 
     AuraReaderTheme(
@@ -353,17 +353,13 @@ fun ReaderScreen(
                 ReaderFontFamily.MONOSPACE -> FontFamily.Monospace
                 ReaderFontFamily.SYSTEM_DEFAULT -> FontFamily.Default
             }
-            if (settings.fontName.isBlank() || settings.fontName == "Системный") {
-                fallback
-            } else {
-                try {
-                    val googleFont = GoogleFont(settings.fontName)
-                    FontFamily(
-                        Font(googleFont = googleFont, fontProvider = fontProvider)
-                    )
-                } catch (e: Exception) {
-                    fallback
-                }
+            when (settings.fontName) {
+                "Literata" -> FontFamily(Font(R.font.literata_regular))
+                "PT Serif" -> FontFamily(Font(R.font.pt_serif_regular))
+                "Lora" -> FontFamily(Font(R.font.lora_regular))
+                "Inter" -> FontFamily(Font(R.font.inter_regular))
+                "JetBrains Mono" -> FontFamily(Font(R.font.jetbrains_mono_regular))
+                else -> fallback
             }
         }
 
@@ -399,6 +395,7 @@ fun ReaderScreen(
                                 footnotes = footnotes,
                                 quotes = currentChapterQuotes,
                                 userWpm = userWpm,
+                                selectionResetKey = selectionResetKey,
                                 onPageTurn = { words -> viewModel.onPageOrSectionTurn(words) },
                                 targetBlockIndex = targetScrollOffset,
                                 targetPage = requestPagingPage,
@@ -455,6 +452,7 @@ fun ReaderScreen(
                                     chaptersCount = chapters.size,
                                     searchQuery = searchQuery,
                                     footnotes = footnotes,
+                                    selectionResetKey = selectionResetKey,
                                     onToggleControls = { showControls = !showControls },
                                     onFootnoteClick = { ref, content -> selectedFootnote = ref to content },
                                     onSaveQuote = { quoteToSave = it },
@@ -1159,6 +1157,7 @@ fun ReaderScreen(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
                         ) {
+                            selectionResetKey++
                             customTextToolbar.hide()
                         }
                 )
@@ -1193,6 +1192,7 @@ fun ReaderScreen(
                         }
                     },
                     onDismissRequest = {
+                        selectionResetKey++
                         customTextToolbar.hide()
                     },
                     properties = PopupProperties(
@@ -1221,6 +1221,7 @@ fun ReaderScreen(
                                 onClick = {
                                     val action = selectedQuoteCopyAction
                                     action?.invoke()
+                                    selectionResetKey++
                                     customTextToolbar.hide()
                                 },
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
@@ -1242,6 +1243,7 @@ fun ReaderScreen(
                                     if (!clip.isNullOrBlank()) {
                                         quoteToSave = clip.trim()
                                     }
+                                    selectionResetKey++
                                     customTextToolbar.hide()
                                 },
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
@@ -1260,6 +1262,7 @@ fun ReaderScreen(
                                     val action = selectedQuoteCopyAction
                                     action?.invoke()
                                     val clip = clipboardManager.getText()?.text?.trim()
+                                    selectionResetKey++
                                     customTextToolbar.hide()
                                     if (!clip.isNullOrBlank()) {
                                         val word = clip.take(60)
@@ -1268,7 +1271,7 @@ fun ReaderScreen(
                                         dictionaryDefinition = null
                                         dictionaryError = null
                                         coroutineScope.launch {
-                                            DictionaryService.lookupDefinition(word)
+                                             DictionaryService.lookupDefinition(word)
                                                 .onSuccess { def ->
                                                     dictionaryDefinition = def
                                                     dictionaryLoading = false
@@ -1296,6 +1299,7 @@ fun ReaderScreen(
                                     val action = selectedQuoteCopyAction
                                     action?.invoke()
                                     val clip = clipboardManager.getText()?.text?.trim()
+                                    selectionResetKey++
                                     customTextToolbar.hide()
                                     if (!clip.isNullOrBlank()) {
                                         translationText = clip
@@ -1303,7 +1307,7 @@ fun ReaderScreen(
                                         translationResult = null
                                         translationError = null
                                         coroutineScope.launch {
-                                            DictionaryService.translateText(clip, targetLang = appLanguage.code)
+                                             DictionaryService.translateText(clip, targetLang = appLanguage.code)
                                                 .onSuccess { res ->
                                                     translationResult = res
                                                     translationLoading = false
@@ -1383,6 +1387,7 @@ fun ChapterContentView(
     searchQuery: String,
     footnotes: Map<String, String>,
     quotes: List<Quote> = emptyList(),
+    selectionResetKey: Int = 0,
     onToggleControls: () -> Unit,
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onSaveQuote: (String) -> Unit,
@@ -1430,82 +1435,88 @@ fun ChapterContentView(
     }
 
     val strings = LocalAppStrings.current
-    SelectionContainer {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    onToggleControls()
-                },
-            contentPadding = PaddingValues(
-                start = 22.dp,
-                end = 22.dp,
-                top = 16.dp,
-                bottom = 140.dp
-            )
-        ) {
-            items(blocks) { block ->
-                RenderBlock(
-                    block = block,
-                    settings = settings,
-                    resolvedFontFamily = resolvedFontFamily,
-                    searchQuery = searchQuery,
-                    footnotes = footnotes,
-                    quotes = quotes,
-                    onFootnoteClick = onFootnoteClick,
-                    onToggleControls = onToggleControls,
-                    onSaveQuote = onSaveQuote
+    val statusBarTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val cutoutTopInset = WindowInsets.displayCutout.asPaddingValues().calculateTopPadding()
+    val topPaddingDp = maxOf(statusBarTopInset, cutoutTopInset, 42.dp) + 6.dp
+
+    androidx.compose.runtime.key(selectionResetKey) {
+        SelectionContainer {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        onToggleControls()
+                    },
+                contentPadding = PaddingValues(
+                    start = 22.dp,
+                    end = 22.dp,
+                    top = topPaddingDp,
+                    bottom = 140.dp
                 )
-            }
-
-            // Symmetrical Prev/Next buttons at the bottom of chapter
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onPrevChapter,
-                        enabled = pageIndex > 0,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.ChevronLeft,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(strings.previous, maxLines = 1)
-                    }
-
-                    FilledTonalButton(
-                        onClick = onNextChapter,
-                        enabled = pageIndex < chaptersCount - 1,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Text(strings.next, maxLines = 1)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(
-                            Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+            ) {
+                items(blocks) { block ->
+                    RenderBlock(
+                        block = block,
+                        settings = settings,
+                        resolvedFontFamily = resolvedFontFamily,
+                        searchQuery = searchQuery,
+                        footnotes = footnotes,
+                        quotes = quotes,
+                        onFootnoteClick = onFootnoteClick,
+                        onToggleControls = onToggleControls,
+                        onSaveQuote = onSaveQuote
+                    )
                 }
-                Spacer(modifier = Modifier.height(64.dp))
+
+                // Symmetrical Prev/Next buttons at the bottom of chapter
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onPrevChapter,
+                            enabled = pageIndex > 0,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.ChevronLeft,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(strings.previous, maxLines = 1)
+                        }
+
+                        FilledTonalButton(
+                            onClick = onNextChapter,
+                            enabled = pageIndex < chaptersCount - 1,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text(strings.next, maxLines = 1)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(64.dp))
+                }
             }
         }
     }
@@ -1530,6 +1541,7 @@ fun ChapterPagingView(
     footnotes: Map<String, String>,
     quotes: List<Quote> = emptyList(),
     userWpm: Float = 200f,
+    selectionResetKey: Int = 0,
     onPageTurn: (Int) -> Unit = {},
     targetBlockIndex: Int?,
     targetPage: Int?,
@@ -1547,11 +1559,13 @@ fun ChapterPagingView(
         val screenHeightDp = maxHeight.value
         val screenWidthDp = maxWidth.value
 
+        val statusBarTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val cutoutTopInset = WindowInsets.displayCutout.asPaddingValues().calculateTopPadding()
+        val topPaddingDp = maxOf(statusBarTopInset, cutoutTopInset, 42.dp) + 6.dp
         val bottomNavInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
         val pillClearanceDp = 48.dp
         val bottomPaddingDp = bottomNavInset + pillClearanceDp
-        val topPaddingDp = 14.dp
         val usableContentHeightDp = (screenHeightDp - topPaddingDp.value - bottomPaddingDp.value).coerceAtLeast(120f)
 
         val isTwoColumn = when (settings.twoColumnMode) {
@@ -1659,22 +1673,23 @@ fun ChapterPagingView(
             }
         }
 
-        LaunchedEffect(pagerState.currentPage, totalPagerSpreads, hasPrev, hasNext) {
-            if (hasPrev && pagerState.currentPage == 0) {
-                if (settings.hapticFeedbackEnabled) {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        LaunchedEffect(pagerState, totalPagerSpreads, hasPrev, hasNext) {
+            snapshotFlow { pagerState.settledPage }.collect { settled ->
+                if (hasPrev && settled == 0) {
+                    if (settings.hapticFeedbackEnabled) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                    onPrevChapter()
+                } else if (hasNext && settled == totalPagerSpreads - 1) {
+                    if (settings.hapticFeedbackEnabled) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                    onNextChapter()
                 }
-                onPrevChapter()
-                return@LaunchedEffect
             }
-            if (hasNext && pagerState.currentPage == totalPagerSpreads - 1) {
-                if (settings.hapticFeedbackEnabled) {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                }
-                onNextChapter()
-                return@LaunchedEffect
-            }
+        }
 
+        LaunchedEffect(pagerState.currentPage, prevPageOffset, contentSpreadsCount, isTwoColumn, pages) {
             val currentSpread = pagerState.currentPage - prevPageOffset
             if (currentSpread in 0 until contentSpreadsCount) {
                 if (currentSpread != lastHapticSpread) {
@@ -1831,7 +1846,8 @@ fun ChapterPagingView(
                         chapterTitle = prevChapter?.title ?: "",
                         chapterNumber = chapterIndex,
                         settings = settings,
-                        resolvedFontFamily = resolvedFontFamily
+                        resolvedFontFamily = resolvedFontFamily,
+                        onClick = onPrevChapter
                     )
                 } else if (hasNext && spreadIdx == totalPagerSpreads - 1) {
                     ChapterTransitionSpread(
@@ -1839,92 +1855,95 @@ fun ChapterPagingView(
                         chapterTitle = nextChapter?.title ?: "",
                         chapterNumber = chapterIndex + 2,
                         settings = settings,
-                        resolvedFontFamily = resolvedFontFamily
+                        resolvedFontFamily = resolvedFontFamily,
+                        onClick = onNextChapter
                     )
                 } else {
                     val contentSpreadIdx = spreadIdx - prevPageOffset
-                    SelectionContainer {
-                        if (isTwoColumn) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 24.dp)
-                                    .padding(top = topPaddingDp, bottom = bottomPaddingDp),
-                                horizontalArrangement = Arrangement.spacedBy(24.dp)
-                            ) {
-                                val leftPageBlocks = pages.getOrNull(contentSpreadIdx * 2) ?: emptyList()
-                                val rightPageBlocks = pages.getOrNull(contentSpreadIdx * 2 + 1) ?: emptyList()
-
-                                Column(
+                    androidx.compose.runtime.key(selectionResetKey) {
+                        SelectionContainer {
+                            if (isTwoColumn) {
+                                Row(
                                     modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight(),
-                                    verticalArrangement = Arrangement.Top
+                                        .fillMaxSize()
+                                        .padding(horizontal = 24.dp)
+                                        .padding(top = topPaddingDp, bottom = bottomPaddingDp),
+                                    horizontalArrangement = Arrangement.spacedBy(24.dp)
                                 ) {
-                                    for ((_, block) in leftPageBlocks) {
-                                        RenderBlock(
-                                            block = block,
-                                            settings = settings,
-                                            resolvedFontFamily = resolvedFontFamily,
-                                            searchQuery = searchQuery,
-                                            footnotes = footnotes,
-                                            quotes = quotes,
-                                            onFootnoteClick = onFootnoteClick,
-                                            onToggleControls = onToggleControls,
-                                            onSaveQuote = onSaveQuote
-                                        )
-                                    }
-                                }
+                                    val leftPageBlocks = pages.getOrNull(contentSpreadIdx * 2) ?: emptyList()
+                                    val rightPageBlocks = pages.getOrNull(contentSpreadIdx * 2 + 1) ?: emptyList()
 
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .width(1.dp)
-                                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
-                                )
-
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight(),
-                                    verticalArrangement = Arrangement.Top
-                                ) {
-                                    for ((_, block) in rightPageBlocks) {
-                                        RenderBlock(
-                                            block = block,
-                                            settings = settings,
-                                            resolvedFontFamily = resolvedFontFamily,
-                                            searchQuery = searchQuery,
-                                            footnotes = footnotes,
-                                            quotes = quotes,
-                                            onFootnoteClick = onFootnoteClick,
-                                            onToggleControls = onToggleControls,
-                                            onSaveQuote = onSaveQuote
-                                        )
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight(),
+                                        verticalArrangement = Arrangement.Top
+                                    ) {
+                                        for ((_, block) in leftPageBlocks) {
+                                            RenderBlock(
+                                                block = block,
+                                                settings = settings,
+                                                resolvedFontFamily = resolvedFontFamily,
+                                                searchQuery = searchQuery,
+                                                footnotes = footnotes,
+                                                quotes = quotes,
+                                                onFootnoteClick = onFootnoteClick,
+                                                onToggleControls = onToggleControls,
+                                                onSaveQuote = onSaveQuote
+                                            )
+                                        }
                                     }
-                                }
-                            }
-                        } else {
-                            val pageBlocks = pages.getOrNull(contentSpreadIdx) ?: emptyList()
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 24.dp)
-                                    .padding(top = topPaddingDp, bottom = bottomPaddingDp),
-                                verticalArrangement = Arrangement.Top
-                            ) {
-                                for ((_, block) in pageBlocks) {
-                                    RenderBlock(
-                                        block = block,
-                                        settings = settings,
-                                        resolvedFontFamily = resolvedFontFamily,
-                                        searchQuery = searchQuery,
-                                        footnotes = footnotes,
-                                        quotes = quotes,
-                                        onFootnoteClick = onFootnoteClick,
-                                        onToggleControls = onToggleControls,
-                                        onSaveQuote = onSaveQuote
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxHeight()
+                                            .width(1.dp)
+                                            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
                                     )
+
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight(),
+                                        verticalArrangement = Arrangement.Top
+                                    ) {
+                                        for ((_, block) in rightPageBlocks) {
+                                            RenderBlock(
+                                                block = block,
+                                                settings = settings,
+                                                resolvedFontFamily = resolvedFontFamily,
+                                                searchQuery = searchQuery,
+                                                footnotes = footnotes,
+                                                quotes = quotes,
+                                                onFootnoteClick = onFootnoteClick,
+                                                onToggleControls = onToggleControls,
+                                                onSaveQuote = onSaveQuote
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                val pageBlocks = pages.getOrNull(contentSpreadIdx) ?: emptyList()
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 24.dp)
+                                        .padding(top = topPaddingDp, bottom = bottomPaddingDp),
+                                    verticalArrangement = Arrangement.Top
+                                ) {
+                                    for ((_, block) in pageBlocks) {
+                                        RenderBlock(
+                                            block = block,
+                                            settings = settings,
+                                            resolvedFontFamily = resolvedFontFamily,
+                                            searchQuery = searchQuery,
+                                            footnotes = footnotes,
+                                            quotes = quotes,
+                                            onFootnoteClick = onFootnoteClick,
+                                            onToggleControls = onToggleControls,
+                                            onSaveQuote = onSaveQuote
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -2793,12 +2812,17 @@ fun ChapterTransitionSpread(
     chapterTitle: String,
     chapterNumber: Int,
     settings: ReaderSettings,
-    resolvedFontFamily: FontFamily
+    resolvedFontFamily: FontFamily,
+    onClick: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onClick() }
             .padding(horizontal = 32.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center

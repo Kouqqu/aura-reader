@@ -321,14 +321,14 @@ fun ReaderSettingsBottomSheet(
 
                 // Specific Font Typeface Dropdown
                 val fontChoices = when (settings.fontFamily) {
-                    ReaderFontFamily.SERIF -> listOf("Системный", "PT Serif", "Georgia", "Merriweather", "Lora", "EB Garamond", "Playfair Display")
-                    ReaderFontFamily.SANS_SERIF -> listOf("Системный", "Roboto", "Inter", "Open Sans", "Montserrat", "Nunito")
-                    ReaderFontFamily.MONOSPACE -> listOf("Системный", "JetBrains Mono", "Fira Code", "Roboto Mono", "Inconsolata")
-                    ReaderFontFamily.SYSTEM_DEFAULT -> listOf("Системный")
+                    ReaderFontFamily.SERIF -> listOf(strings.fontDefault, "Literata", "PT Serif", "Lora")
+                    ReaderFontFamily.SANS_SERIF -> listOf(strings.fontDefault, "Inter")
+                    ReaderFontFamily.MONOSPACE -> listOf(strings.fontDefault, "JetBrains Mono")
+                    ReaderFontFamily.SYSTEM_DEFAULT -> listOf(strings.fontDefault)
                 }
 
                 var fontDropdownExpanded by remember { mutableStateOf(false) }
-                val currentFontLabel = if (settings.fontName.isBlank()) strings.fontFamilySystem else settings.fontName
+                val currentFontLabel = if (settings.fontName.isBlank() || settings.fontName == strings.fontDefault) strings.fontDefault else settings.fontName
 
                 ExposedDropdownMenuBox(
                     expanded = fontDropdownExpanded,
@@ -353,11 +353,11 @@ fun ReaderSettingsBottomSheet(
                         onDismissRequest = { fontDropdownExpanded = false }
                     ) {
                         fontChoices.forEach { fontOption ->
-                            val isSelected = (settings.fontName.isBlank() && (fontOption == "Системный" || fontOption == strings.fontFamilySystem)) || settings.fontName == fontOption
+                            val isSelected = (settings.fontName.isBlank() && fontOption == strings.fontDefault) || settings.fontName == fontOption
                             DropdownMenuItem(
-                                text = { Text(if (fontOption == "Системный") strings.fontFamilySystem else fontOption) },
+                                text = { Text(fontOption) },
                                 onClick = {
-                                    val toSave = if (fontOption == "Системный") "" else fontOption
+                                    val toSave = if (fontOption == strings.fontDefault) "" else fontOption
                                     onFontNameChange(toSave)
                                     fontDropdownExpanded = false
                                 },

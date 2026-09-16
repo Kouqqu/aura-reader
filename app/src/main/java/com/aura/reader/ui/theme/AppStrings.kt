@@ -335,6 +335,8 @@ interface Strings {
     val progress: String
     val pages: String
     val format: String
+    val skipVersion: String
+    val channelSwitchPrompt: String
 }
 
 
@@ -645,6 +647,8 @@ class RuStrings : Strings {
     override val progress = "Прогресс"
     override val pages = "Страницы"
     override val format = "Формат"
+    override val skipVersion = "Не напоминать"
+    override val channelSwitchPrompt = "Выберите канал обновлений:"
 }
 
 class EnStrings : Strings {
@@ -954,6 +958,8 @@ class EnStrings : Strings {
     override val progress = "Progress"
     override val pages = "Pages"
     override val format = "Format"
+    override val skipVersion = "Don't remind"
+    override val channelSwitchPrompt = "Select update channel:"
 }
 
 class UkStrings : Strings {
@@ -1263,6 +1269,8 @@ class UkStrings : Strings {
     override val progress = "Прогрес"
     override val pages = "Сторінки"
     override val format = "Формат"
+    override val skipVersion = "Не нагадувати"
+    override val channelSwitchPrompt = "Оберіть канал оновлень:"
 }
 
 class BeStrings : Strings {
@@ -1572,6 +1580,8 @@ class BeStrings : Strings {
     override val progress = "Прагрэс"
     override val pages = "Старонкі"
     override val format = "Фармат"
+    override val skipVersion = "Не нагадваць"
+    override val channelSwitchPrompt = "Выберыце канал абнаўленняў:"
 }
 
 class PlStrings : Strings {
@@ -1880,6 +1890,8 @@ class PlStrings : Strings {
     override val progress = "Postęp"
     override val pages = "Strony"
     override val format = "Format"
+    override val skipVersion = "Nie przypominaj"
+    override val channelSwitchPrompt = "Wybierz kanał aktualizacji:"
 }
 
 fun getStrings(language: AppLanguage): Strings = when (language) {

@@ -477,9 +477,14 @@ class LibraryViewModel(
         }
     }
 
+    private var updateDismissedThisSession: Boolean = false
+
     fun checkForUpdates(manual: Boolean = true, context: Context? = null) {
         viewModelScope.launch {
             if (!manual && !preferencesManager.updateNotificationsEnabled.first()) {
+                return@launch
+            }
+            if (!manual && updateDismissedThisSession) {
                 return@launch
             }
             val currentVersion = "v${com.aura.reader.BuildConfig.VERSION_NAME}"
@@ -487,8 +492,12 @@ class LibraryViewModel(
             val result = AppUpdateManager.checkForUpdates(currentVersion, isBetaChannel = isBeta)
             result.onSuccess { info ->
                 if (info != null && info.isAvailable) {
+                    val skipped = preferencesManager.skippedUpdateVersion.first()
+                    if (!manual && skipped.isNotBlank() && skipped.equals(info.latestVersion, ignoreCase = true)) {
+                        return@onSuccess
+                    }
                     _updateInfo.value = info
-                    if (preferencesManager.updateNotificationsEnabled.first()) {
+                    if (preferencesManager.updateNotificationsEnabled.first() && !manual) {
                         context?.let { AppUpdateManager.showUpdateNotification(it, info.latestVersion) }
                     }
                 } else if (manual) {
@@ -503,7 +512,16 @@ class LibraryViewModel(
     }
 
     fun dismissUpdateDialog() {
+        updateDismissedThisSession = true
         _updateInfo.value = null
+    }
+
+    fun skipUpdateVersion(version: String) {
+        updateDismissedThisSession = true
+        _updateInfo.value = null
+        viewModelScope.launch {
+            preferencesManager.setSkippedUpdateVersion(version)
+        }
     }
 
     fun startUpdateDownload(context: Context, downloadUrl: String) {

@@ -1082,8 +1082,13 @@ fun LibraryScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.dismissUpdateDialog() }) {
-                    Text(strings.later)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(onClick = { viewModel.skipUpdateVersion(info.latestVersion) }) {
+                        Text(strings.skipVersion, color = MaterialTheme.colorScheme.outline)
+                    }
+                    TextButton(onClick = { viewModel.dismissUpdateDialog() }) {
+                        Text(strings.later)
+                    }
                 }
             }
         )

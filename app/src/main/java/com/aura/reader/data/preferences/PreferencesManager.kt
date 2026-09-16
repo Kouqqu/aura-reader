@@ -79,6 +79,7 @@ class PreferencesManager(private val context: Context) {
         val VPN_NOTICE_DISMISSED_KEY = booleanPreferencesKey("vpn_notice_dismissed")
         val LIBRARY_SORT_ORDER_KEY = stringPreferencesKey("library_sort_order")
         val CUSTOM_BOOK_ORDER_KEY = stringPreferencesKey("custom_book_order_json")
+        val SKIPPED_UPDATE_VERSION_KEY = stringPreferencesKey("skipped_update_version")
     }
 
     val libraryViewMode: Flow<String> = context.dataStore.data.map { prefs ->
@@ -697,6 +698,16 @@ class PreferencesManager(private val context: Context) {
     suspend fun setUpdateChannel(channel: String) {
         context.dataStore.edit { prefs ->
             prefs[UPDATE_CHANNEL_KEY] = channel
+        }
+    }
+
+    val skippedUpdateVersion: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[SKIPPED_UPDATE_VERSION_KEY] ?: ""
+    }
+
+    suspend fun setSkippedUpdateVersion(version: String) {
+        context.dataStore.edit { prefs ->
+            prefs[SKIPPED_UPDATE_VERSION_KEY] = version
         }
     }
 

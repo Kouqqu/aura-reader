@@ -37,7 +37,7 @@ object AppUpdateManager {
 
                 if (isBetaChannel) {
                     try {
-                        val url = URL("https://api.github.com/repos/Kouqqu/aura-reader/releases?per_page=10")
+                        val url = URL("https://api.github.com/repos/Kouqqu/aura-reader/releases?per_page=15")
                         val conn = url.openConnection() as HttpURLConnection
                         conn.requestMethod = "GET"
                         conn.setRequestProperty("User-Agent", "AuraReader-App")
@@ -46,24 +46,42 @@ object AppUpdateManager {
                         if (conn.responseCode == 200) {
                             val jsonStr = conn.inputStream.bufferedReader().use { it.readText() }
                             val releasesArray = org.json.JSONArray(jsonStr)
+                            var bestTag = ""
+                            var bestBody = ""
+                            var bestUrl = ""
+
                             for (rIdx in 0 until releasesArray.length()) {
                                 val rel = releasesArray.getJSONObject(rIdx)
-                                if (rel.optBoolean("prerelease", false)) {
-                                    tagName = rel.optString("tag_name", "").trim()
-                                    body = rel.optString("body", "").trim()
-                                    val assets = rel.optJSONArray("assets")
-                                    if (assets != null) {
-                                        for (i in 0 until assets.length()) {
-                                            val asset = assets.getJSONObject(i)
-                                            val name = asset.optString("name", "")
-                                            if (name.endsWith(".apk", ignoreCase = true)) {
-                                                apkDownloadUrl = asset.optString("browser_download_url", "")
-                                                break
-                                            }
+                                val tag = rel.optString("tag_name", "").trim()
+                                if (tag.isBlank()) continue
+
+                                var apkUrl = ""
+                                val assets = rel.optJSONArray("assets")
+                                if (assets != null) {
+                                    for (i in 0 until assets.length()) {
+                                        val asset = assets.getJSONObject(i)
+                                        val name = asset.optString("name", "")
+                                        if (name.endsWith(".apk", ignoreCase = true)) {
+                                            apkUrl = asset.optString("browser_download_url", "")
+                                            break
                                         }
                                     }
-                                    break
                                 }
+                                if (apkUrl.isBlank()) {
+                                    apkUrl = "https://github.com/Kouqqu/aura-reader/releases/download/$tag/AuraReader.apk"
+                                }
+
+                                if (bestTag.isBlank() || isVersionNewer(tag, bestTag)) {
+                                    bestTag = tag
+                                    bestBody = rel.optString("body", "").trim()
+                                    bestUrl = apkUrl
+                                }
+                            }
+
+                            if (bestTag.isNotBlank()) {
+                                tagName = bestTag
+                                body = bestBody
+                                apkDownloadUrl = bestUrl
                             }
                         }
                     } catch (e: Exception) {}
@@ -77,7 +95,7 @@ object AppUpdateManager {
                             UpdateInfo(
                                 isAvailable = isNewer,
                                 latestVersion = tagName,
-                                changelog = body.ifBlank { "Тестовая бета-сборка $tagName Aura Reader с экспериментальными функциями." },
+                                changelog = body.ifBlank { "Сборка $tagName Aura Reader с новыми улучшениями." },
                                 downloadUrl = apkDownloadUrl
                             )
                         )
@@ -194,18 +212,48 @@ object AppUpdateManager {
         } catch (e: Exception) {}
     }
 
-    private fun isVersionNewer(latest: String, current: String): Boolean {
-        if (latest.isBlank()) return false
-        val latestParts = latest.split(".").mapNotNull { it.toIntOrNull() }
-        val currentParts = current.split(".").mapNotNull { it.toIntOrNull() }
+    fun isVersionNewer(latest: String, current: String): Boolean {
+        val cleanL = latest.trim().removePrefix("v").removePrefix("V")
+        val cleanC = current.trim().removePrefix("v").removePrefix("V")
+        if (cleanL.isBlank()) return false
+        if (cleanL.equals(cleanC, ignoreCase = true)) return false
 
-        val maxLen = maxOf(latestParts.size, currentParts.size)
-        for (i in 0 until maxLen) {
-            val l = latestParts.getOrElse(i) { 0 }
-            val c = currentParts.getOrElse(i) { 0 }
+        fun parseVersion(v: String): Triple<List<Int>, Boolean, Int> {
+            val isBeta = v.contains("beta", ignoreCase = true)
+            val parts = v.split(".", "-", "_")
+            val numbers = mutableListOf<Int>()
+            var betaNum = if (isBeta) 1 else 0
+            for (p in parts) {
+                val digits = p.filter { it.isDigit() }
+                if (digits.isNotBlank()) {
+                    val num = digits.toIntOrNull() ?: 0
+                    if (numbers.size < 3) {
+                        numbers.add(num)
+                    } else if (isBeta) {
+                        betaNum = num
+                    }
+                }
+            }
+            while (numbers.size < 3) numbers.add(0)
+            return Triple(numbers, isBeta, betaNum)
+        }
+
+        val (lNums, lIsBeta, lBetaNum) = parseVersion(cleanL)
+        val (cNums, cIsBeta, cBetaNum) = parseVersion(cleanC)
+
+        for (i in 0 until maxOf(lNums.size, cNums.size)) {
+            val l = lNums.getOrElse(i) { 0 }
+            val c = cNums.getOrElse(i) { 0 }
             if (l > c) return true
             if (l < c) return false
         }
+
+        if (!lIsBeta && cIsBeta) return true
+        if (lIsBeta && !cIsBeta) return false
+        if (lIsBeta && cIsBeta) {
+            return lBetaNum > cBetaNum
+        }
+
         return false
     }
 
