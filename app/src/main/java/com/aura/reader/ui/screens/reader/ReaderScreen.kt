@@ -1450,9 +1450,9 @@ fun ChapterPagingView(
         val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val bottomNavInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
-        val pillClearanceDp = 46.dp
+        val pillClearanceDp = 44.dp
         val bottomPaddingDp = bottomNavInset + pillClearanceDp
-        val topPaddingDp = (topInset + 16.dp).coerceAtLeast(24.dp)
+        val topPaddingDp = (topInset + 4.dp).coerceAtLeast(10.dp)
         val usableContentHeightDp = (screenHeightDp - topPaddingDp.value - bottomPaddingDp.value).coerceAtLeast(120f)
 
         val isTwoColumn = when (settings.twoColumnMode) {
@@ -1967,7 +1967,8 @@ private fun paginateBlocks(
     val usableWidthDp = columnWidthDp ?: (screenWidthDp - 48f).coerceAtLeast(100f)
     val maxWidthPx = with(density) { usableWidthDp.dp.roundToPx() }
 
-    val maxHeightPx = with(density) { contentHeightDp.dp.toPx() }
+    val safetyBufferPx = with(density) { 14.dp.toPx() }
+    val maxHeightPx = (with(density) { contentHeightDp.dp.toPx() } - safetyBufferPx).coerceAtLeast(100f)
     val paragraphSpacingPx = with(density) { 8.dp.toPx() }
 
     val pages = mutableListOf<List<Pair<Int, FormattedBlock>>>()
@@ -1990,15 +1991,15 @@ private fun paginateBlocks(
             }
             BlockType.TITLE -> {
                 val style = TextStyle(
-                    fontSize = (settings.fontSizeSp * 1.4f).sp,
+                    fontSize = (settings.fontSizeSp * 1.35f).sp,
                     lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.25f).sp,
                     fontFamily = resolvedFontFamily,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
                 val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = maxWidthPx))
-                val titleBottomPaddingPx = with(density) { 24.dp.toPx() }
-                val totalTitleHeight = layout.size.height + titleBottomPaddingPx
+                val titlePaddingPx = with(density) { 22.dp.toPx() } // 8dp top + 14dp bottom
+                val totalTitleHeight = layout.size.height + titlePaddingPx
                 if (currentHeightPx > maxHeightPx * 0.45f || (currentHeightPx + totalTitleHeight > maxHeightPx && currentPage.isNotEmpty())) {
                     flushPage()
                 }
@@ -2014,8 +2015,8 @@ private fun paginateBlocks(
                     textAlign = TextAlign.Center
                 )
                 val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = maxWidthPx))
-                val subBottomPaddingPx = with(density) { 20.dp.toPx() }
-                val totalSubHeight = layout.size.height + subBottomPaddingPx
+                val subPaddingPx = with(density) { 14.dp.toPx() } // 14dp bottom
+                val totalSubHeight = layout.size.height + subPaddingPx
                 if (currentHeightPx > maxHeightPx * 0.6f || (currentHeightPx + totalSubHeight > maxHeightPx && currentPage.isNotEmpty())) {
                     flushPage()
                 }
@@ -2095,7 +2096,13 @@ private fun paginateBlocks(
 
                         val linesToTake = fittingLines.coerceAtLeast(1)
                         val lastLineIdx = (linesToTake - 1).coerceIn(0, layoutResult.lineCount - 1)
-                        val endOffset = layoutResult.getLineEnd(lastLineIdx, visibleEnd = true).coerceIn(0, remainingText.length)
+                        var endOffset = layoutResult.getLineEnd(lastLineIdx, visibleEnd = true).coerceIn(0, remainingText.length)
+                        if (endOffset in 1 until remainingText.length && !remainingText[endOffset].isWhitespace() && !remainingText[endOffset - 1].isWhitespace()) {
+                            val lastSpace = remainingText.lastIndexOf(' ', endOffset)
+                            if (lastSpace > 0) {
+                                endOffset = lastSpace
+                            }
+                        }
 
                         if (endOffset <= 0 || endOffset >= remainingText.length) {
                             currentPage.add(originalIndex to block.copy(
@@ -2148,15 +2155,17 @@ fun RenderBlock(
         BlockType.TITLE -> {
             Text(
                 text = block.text,
-                style = MaterialTheme.typography.headlineMedium.copy(
+                style = TextStyle(
+                    fontSize = (settings.fontSizeSp * 1.35f).sp,
+                    lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.25f).sp,
                     fontFamily = resolvedFontFamily,
+                    fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 ),
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp, bottom = 12.dp)
+                    .padding(top = 8.dp, bottom = 14.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -2166,15 +2175,17 @@ fun RenderBlock(
         BlockType.SUBTITLE -> {
             Text(
                 text = block.text,
-                style = MaterialTheme.typography.titleMedium.copy(
+                style = TextStyle(
+                    fontSize = (settings.fontSizeSp * 1.15f).sp,
+                    lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.15f).sp,
                     fontFamily = resolvedFontFamily,
+                    fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center
                 ),
-                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 20.dp)
+                    .padding(bottom = 14.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null

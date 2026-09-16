@@ -82,6 +82,7 @@ interface Strings {
     val materialYouSubtitle: String
     val sortTitle: String
     val sortByDefault: String
+    val sortByRecent: String
     val sortByPopularDesc: String
     val sortByPopularAsc: String
     val sortByTitleAsc: String
@@ -336,6 +337,7 @@ class RuStrings : Strings {
     override val materialYouSubtitle = "Адаптировать акцентные цвета под обои устройства"
     override val sortTitle = "Сортировка"
     override val sortByDefault = "По умолчанию"
+    override val sortByRecent = "Недавние"
     override val sortByPopularDesc = "Самые популярные 🔥"
     override val sortByPopularAsc = "Менее популярные 📉"
     override val sortByTitleAsc = "По названию (А → Я)"
@@ -631,6 +633,7 @@ class EnStrings : Strings {
     override val materialYouSubtitle = "Adapt accent colors to device wallpaper"
     override val sortTitle = "Sort by"
     override val sortByDefault = "Default"
+    override val sortByRecent = "Recent"
     override val sortByPopularDesc = "Most popular 🔥"
     override val sortByPopularAsc = "Least popular 📉"
     override val sortByTitleAsc = "Title (A → Z)"
@@ -926,6 +929,7 @@ class UkStrings : Strings {
     override val materialYouSubtitle = "Адаптувати акцентні кольори під шпалери пристрою"
     override val sortTitle = "Сортування"
     override val sortByDefault = "За замовчуванням"
+    override val sortByRecent = "Нещодавні"
     override val sortByPopularDesc = "Найпопулярніші 🔥"
     override val sortByPopularAsc = "Менш популярні 📉"
     override val sortByTitleAsc = "За назвою (А → Я)"
@@ -1221,6 +1225,7 @@ class BeStrings : Strings {
     override val materialYouSubtitle = "Адаптаваць акцэнтныя колеры пад шпалеры прылады"
     override val sortTitle = "Сартаванне"
     override val sortByDefault = "Па змаўчанні"
+    override val sortByRecent = "Нядаўнія"
     override val sortByPopularDesc = "Самыя папулярныя 🔥"
     override val sortByPopularAsc = "Менш папулярныя 📉"
     override val sortByTitleAsc = "Па назве (А → Я)"
@@ -1516,6 +1521,7 @@ class PlStrings : Strings {
     override val materialYouSubtitle = "Dostosuj kolory akcentów do tapety urządzenia"
     override val sortTitle = "Sortowanie"
     override val sortByDefault = "Domyślnie"
+    override val sortByRecent = "Niedawne"
     override val sortByPopularDesc = "Najpopularniejsze 🔥"
     override val sortByPopularAsc = "Mniej popularne 📉"
     override val sortByTitleAsc = "Po tytule (A → Z)"
