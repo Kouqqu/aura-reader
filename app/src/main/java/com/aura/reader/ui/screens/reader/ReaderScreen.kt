@@ -54,6 +54,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalTextToolbar
@@ -1450,7 +1454,7 @@ fun ChapterPagingView(
         val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val bottomNavInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
-        val pillClearanceDp = 44.dp
+        val pillClearanceDp = 48.dp
         val bottomPaddingDp = bottomNavInset + pillClearanceDp
         val topPaddingDp = (topInset + 4.dp).coerceAtLeast(10.dp)
         val usableContentHeightDp = (screenHeightDp - topPaddingDp.value - bottomPaddingDp.value).coerceAtLeast(120f)
@@ -1612,6 +1616,73 @@ fun ChapterPagingView(
             }
         }
 
+        val chapterSwipeNestedScroll = remember(pagerState, totalSpreads, onNextChapter, onPrevChapter, settings.hapticFeedbackEnabled) {
+            object : NestedScrollConnection {
+                var overscrollX = 0f
+                var triggered = false
+
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    if (source == NestedScrollSource.Drag && triggered) {
+                        return available
+                    }
+                    return Offset.Zero
+                }
+
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource
+                ): Offset {
+                    if (source == NestedScrollSource.Drag && !triggered) {
+                        // At the last page, dragging left to go to next chapter (available.x < 0)
+                        if (pagerState.currentPage >= totalSpreads - 1 && available.x < -0.5f) {
+                            overscrollX += available.x
+                            if (overscrollX < -90f) {
+                                triggered = true
+                                if (settings.hapticFeedbackEnabled) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                }
+                                onNextChapter()
+                            }
+                        }
+                        // At the first page, dragging right to go to prev chapter (available.x > 0)
+                        else if (pagerState.currentPage <= 0 && available.x > 0.5f) {
+                            overscrollX += available.x
+                            if (overscrollX > 90f) {
+                                triggered = true
+                                if (settings.hapticFeedbackEnabled) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                }
+                                onPrevChapter()
+                            }
+                        }
+                    }
+                    return Offset.Zero
+                }
+
+                override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                    if (!triggered) {
+                        if (pagerState.currentPage >= totalSpreads - 1 && (overscrollX < -30f || available.x < -300f)) {
+                            triggered = true
+                            if (settings.hapticFeedbackEnabled) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
+                            onNextChapter()
+                        } else if (pagerState.currentPage <= 0 && (overscrollX > 30f || available.x > 300f)) {
+                            triggered = true
+                            if (settings.hapticFeedbackEnabled) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
+                            onPrevChapter()
+                        }
+                    }
+                    overscrollX = 0f
+                    triggered = false
+                    return Velocity.Zero
+                }
+            }
+        }
+
         val instantSwipeModifier = if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
             Modifier.pointerInput(pagerState.currentPage, totalSpreads) {
                 detectHorizontalDragGestures { _, dragAmount ->
@@ -1637,6 +1708,7 @@ fun ChapterPagingView(
             userScrollEnabled = settings.pageAnimation != PageTurnAnimation.INSTANT,
             modifier = Modifier
                 .fillMaxSize()
+                .nestedScroll(chapterSwipeNestedScroll)
                 .then(instantSwipeModifier)
         ) { spreadIdx ->
             // Вычисляем, насколько страница сдвинута от центра (от -1.0 до 1.0)
@@ -1967,7 +2039,7 @@ private fun paginateBlocks(
     val usableWidthDp = columnWidthDp ?: (screenWidthDp - 48f).coerceAtLeast(100f)
     val maxWidthPx = with(density) { usableWidthDp.dp.roundToPx() }
 
-    val safetyBufferPx = with(density) { 14.dp.toPx() }
+    val safetyBufferPx = with(density) { 18.dp.toPx() }
     val maxHeightPx = (with(density) { contentHeightDp.dp.toPx() } - safetyBufferPx).coerceAtLeast(100f)
     val firstPageExtraBufferPx = with(density) { 48.dp.toPx() }
     val paragraphSpacingPx = with(density) { 8.dp.toPx() }
@@ -2044,8 +2116,36 @@ private fun paginateBlocks(
                 currentPage.add(originalIndex to block)
                 currentHeightPx += dividerHeightPx
             }
-            BlockType.EPIGRAPH, BlockType.VERSE -> {
-                val epigraphWidthPx = with(density) { (usableWidthDp - 44f).coerceAtLeast(100f).dp.roundToPx() }
+            BlockType.EPIGRAPH -> {
+                val epigraphWidthPx = with(density) { (usableWidthDp - 44f).coerceAtLeast(80f).dp.roundToPx() }
+                val style = TextStyle(
+                    fontSize = (settings.fontSizeSp * 0.92f).sp,
+                    lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
+                    fontFamily = resolvedFontFamily,
+                    fontStyle = FontStyle.Italic,
+                    textAlign = TextAlign.End,
+                    hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None
+                )
+                val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = epigraphWidthPx))
+                var totalHeight = layout.size.height + with(density) { 16.dp.toPx() } // 4dp top + 12dp bottom
+                if (!block.subText.isNullOrBlank()) {
+                    val subStyle = TextStyle(
+                        fontSize = (settings.fontSizeSp * 0.82f).sp,
+                        fontFamily = resolvedFontFamily,
+                        textAlign = TextAlign.End
+                    )
+                    val subLayout = textMeasurer.measure(block.subText, subStyle, constraints = Constraints(maxWidth = epigraphWidthPx))
+                    totalHeight += subLayout.size.height + with(density) { 4.dp.toPx() } // 4dp spacer
+                }
+                val effectiveMax = getEffectiveMaxHeightPx()
+                if (currentHeightPx + totalHeight > effectiveMax && currentPage.isNotEmpty()) {
+                    flushPage()
+                }
+                currentPage.add(originalIndex to block)
+                currentHeightPx += totalHeight
+            }
+            BlockType.VERSE -> {
+                val verseWidthPx = with(density) { (usableWidthDp - 44f).coerceAtLeast(80f).dp.roundToPx() }
                 val style = TextStyle(
                     fontSize = (settings.fontSizeSp * 0.95f).sp,
                     lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 0.95f).sp,
@@ -2053,9 +2153,8 @@ private fun paginateBlocks(
                     fontStyle = FontStyle.Italic,
                     hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None
                 )
-                val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = epigraphWidthPx))
-                val epigraphPaddingPx = with(density) { 16.dp.toPx() }
-                val totalHeight = layout.size.height + epigraphPaddingPx
+                val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = verseWidthPx))
+                val totalHeight = layout.size.height + with(density) { 18.dp.toPx() } // 6dp top + 12dp bottom
                 val effectiveMax = getEffectiveMaxHeightPx()
                 if (currentHeightPx + totalHeight > effectiveMax && currentPage.isNotEmpty()) {
                     flushPage()
