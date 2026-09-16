@@ -28,12 +28,42 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "androiddebugkey"
         }
+        create("release") {
+            val ksPath = System.getenv("SIGNING_KEY_STORE_PATH")
+                ?: project.findProperty("RELEASE_STORE_FILE") as String?
+                ?: "aura-release.jks"
+            val storePass = System.getenv("SIGNING_STORE_PASSWORD")
+                ?: project.findProperty("RELEASE_STORE_PASSWORD") as String?
+                ?: "aura"
+            val alias = System.getenv("SIGNING_KEY_ALIAS")
+                ?: project.findProperty("RELEASE_KEY_ALIAS") as String?
+                ?: "aura"
+            val keyPass = System.getenv("SIGNING_KEY_PASSWORD")
+                ?: project.findProperty("RELEASE_KEY_PASSWORD") as String?
+                ?: "aura"
+
+            val ksFile = sequenceOf(file(ksPath), rootProject.file(ksPath)).firstOrNull { it.exists() } ?: file(ksPath)
+            if (ksFile.exists()) {
+                storeFile = ksFile
+                storePassword = storePass
+                keyAlias = alias
+                keyPassword = keyPass
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+            } else {
+                storeFile = file("debug.keystore")
+                storePassword = "androiddebugkey"
+                keyAlias = "androiddebugkey"
+                keyPassword = "androiddebugkey"
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -41,7 +71,7 @@ android {
         }
         debug {
             applicationIdSuffix = ".debug"
-            isDebuggable = false
+            isDebuggable = true
             signingConfig = signingConfigs.getByName("debug")
         }
     }
