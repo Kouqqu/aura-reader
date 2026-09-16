@@ -1,5 +1,6 @@
 package com.aura.reader.ui.screens.library
 
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.animation.core.rememberInfiniteTransition

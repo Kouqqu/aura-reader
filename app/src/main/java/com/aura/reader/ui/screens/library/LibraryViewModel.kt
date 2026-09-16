@@ -140,7 +140,7 @@ class LibraryViewModel(
     }
 
     fun updateHapticFeedback(enabled: Boolean) {
-        viewModelScope.launch { preferencesManager.updateHapticFeedback(enabled) }
+        viewModelScope.launch { preferencesManager.updateHapticFeedbackEnabled(enabled) }
     }
 
     fun setMaterialYouEnabled(enabled: Boolean) {

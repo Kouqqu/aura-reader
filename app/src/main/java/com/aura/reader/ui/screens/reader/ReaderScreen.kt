@@ -359,8 +359,7 @@ fun ReaderScreen(
                 try {
                     val googleFont = GoogleFont(settings.fontName)
                     FontFamily(
-                        Font(googleFont = googleFont, fontProvider = fontProvider),
-                        fallback
+                        Font(googleFont = googleFont, fontProvider = fontProvider)
                     )
                 } catch (e: Exception) {
                     fallback
@@ -1129,15 +1128,16 @@ fun ReaderScreen(
                 )
             }
 
-            if (showBookInfoDialog && book != null) {
+            val currentBook = book
+            if (showBookInfoDialog && currentBook != null) {
                 BookInfoDialog(
-                    book = book,
+                    book = currentBook,
                     currentChapter = currentChapter,
                     currentChapterIndex = currentChapterIndex,
                     totalChapters = chapters.size,
                     currentPage = currentPagingPage,
                     totalPages = totalPagingPages,
-                    progressPercent = book.progressPercent,
+                    progressPercent = currentBook.progressPercent,
                     onDismiss = { showBookInfoDialog = false }
                 )
             }

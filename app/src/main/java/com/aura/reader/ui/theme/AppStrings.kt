@@ -328,10 +328,13 @@ interface Strings {
     val syncThemesSubtitle: String
     val readerThemeSettingsTitle: String
     val readerThemeSettingsSubtitle: String
-    val themeSystem: String
     val specificFontTitle: String
     val fontDefault: String
     val bookInfoTitle: String
+    val chapters: String
+    val progress: String
+    val pages: String
+    val format: String
 }
 
 
@@ -635,10 +638,13 @@ class RuStrings : Strings {
     override val syncThemesSubtitle = "Одинаковая тема для интерфейса приложения и режима чтения"
     override val readerThemeSettingsTitle = "Оформление книг"
     override val readerThemeSettingsSubtitle = "Настройка тем, шрифтов и анимаций для режима чтения"
-    override val themeSystem = "Системная"
     override val specificFontTitle = "Гарнитура шрифта"
     override val fontDefault = "По умолчанию"
     override val bookInfoTitle = "О книге"
+    override val chapters = "Главы"
+    override val progress = "Прогресс"
+    override val pages = "Страницы"
+    override val format = "Формат"
 }
 
 class EnStrings : Strings {
@@ -941,10 +947,13 @@ class EnStrings : Strings {
     override val syncThemesSubtitle = "Use the same theme for app UI and reader"
     override val readerThemeSettingsTitle = "Book appearance"
     override val readerThemeSettingsSubtitle = "Customize themes, fonts, and animations for reading"
-    override val themeSystem = "System"
     override val specificFontTitle = "Font typeface"
     override val fontDefault = "Default"
     override val bookInfoTitle = "About Book"
+    override val chapters = "Chapters"
+    override val progress = "Progress"
+    override val pages = "Pages"
+    override val format = "Format"
 }
 
 class UkStrings : Strings {
@@ -1247,10 +1256,13 @@ class UkStrings : Strings {
     override val syncThemesSubtitle = "Однакова тема для інтерфейсу та читання"
     override val readerThemeSettingsTitle = "Оформлення книг"
     override val readerThemeSettingsSubtitle = "Налаштування тем, шрифтів та анімацій"
-    override val themeSystem = "Системна"
     override val specificFontTitle = "Гарнітура шрифту"
     override val fontDefault = "За замовчуванням"
     override val bookInfoTitle = "Про книгу"
+    override val chapters = "Розділи"
+    override val progress = "Прогрес"
+    override val pages = "Сторінки"
+    override val format = "Формат"
 }
 
 class BeStrings : Strings {
@@ -1553,10 +1565,13 @@ class BeStrings : Strings {
     override val syncThemesSubtitle = "Аднолькавая тэма для інтэрфейсу і чытання"
     override val readerThemeSettingsTitle = "Афармленне кніг"
     override val readerThemeSettingsSubtitle = "Налада тэм, шрыфтоў і анімацый"
-    override val themeSystem = "Сістэмная"
     override val specificFontTitle = "Гарнітура шрыфта"
     override val fontDefault = "Па змаўчанні"
     override val bookInfoTitle = "Пра кнігу"
+    override val chapters = "Раздзелы"
+    override val progress = "Прагрэс"
+    override val pages = "Старонкі"
+    override val format = "Фармат"
 }
 
 class PlStrings : Strings {
@@ -1858,10 +1873,13 @@ class PlStrings : Strings {
     override val syncThemesSubtitle = "Używaj tego samego motywu w aplikacji i czytniku"
     override val readerThemeSettingsTitle = "Wygląd książki"
     override val readerThemeSettingsSubtitle = "Dostosuj motywy, czcionki i animacje"
-    override val themeSystem = "Systemowy"
     override val specificFontTitle = "Krój czcionki"
     override val fontDefault = "Domyślny"
     override val bookInfoTitle = "O książce"
+    override val chapters = "Rozdziały"
+    override val progress = "Postęp"
+    override val pages = "Strony"
+    override val format = "Format"
 }
 
 fun getStrings(language: AppLanguage): Strings = when (language) {
