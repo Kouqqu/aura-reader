@@ -9,7 +9,8 @@ object CurlShaders {
     const val PAGE_CURL_VERTEX_SHADER = """
         uniform mat4 u_MVPMatrix;
         uniform vec2 u_CurlPos;       // Touch origin point in [0, 1]
-        uniform vec2 u_CurlDir;       // Curl direction vector
+        uniform vec2 u_CurlDir;       // Curl crease direction vector
+        uniform vec2 u_CurlNorm;      // Normal vector pointing into the curled portion
         uniform float u_Radius;       // Base curl cylinder radius
         uniform float u_Aspect;       // Screen aspect ratio (width / height)
         uniform float u_ConeFactor;   // Conical flare expansion factor
@@ -31,9 +32,9 @@ object CurlShaders {
             vec2 p = vec2(a_Position.x * u_Aspect, a_Position.y);
             vec2 p0 = vec2(u_CurlPos.x * u_Aspect, u_CurlPos.y);
 
-            // 2. Direction and normal vectors along curl axis
+            // 2. Normal and direction vectors along curl crease
+            vec2 norm = normalize(u_CurlNorm);
             vec2 dir = normalize(u_CurlDir);
-            vec2 norm = vec2(-dir.y, dir.x);
 
             // 3. Distance along normal and distance along axis
             float d = dot(p - p0, norm);
@@ -162,7 +163,7 @@ object CurlShaders {
 
         uniform sampler2D u_TextureUnder;
         uniform vec2 u_CurlPos;
-        uniform vec2 u_CurlDir;
+        uniform vec2 u_CurlNorm;
         uniform float u_Radius;
         uniform float u_Aspect;
 
@@ -175,15 +176,14 @@ object CurlShaders {
             // Compute distance from curl line in aspect-corrected coordinates
             vec2 p = vec2(v_Position.x * u_Aspect, v_Position.y);
             vec2 p0 = vec2(u_CurlPos.x * u_Aspect, u_CurlPos.y);
-            vec2 dir = normalize(u_CurlDir);
-            vec2 norm = vec2(-dir.y, dir.x);
+            vec2 norm = normalize(u_CurlNorm);
 
             float d = dot(p - p0, norm);
 
             // Drop shadow cast directly under and slightly ahead of the curl
             float shadow = 0.0;
             if (d > -0.05) {
-                float shadowWidth = u_Radius * 2.2;
+                float shadowWidth = u_Radius * 2.5;
                 float startFade = smoothstep(-0.05, 0.02, d);
                 float endFade = 1.0 - smoothstep(0.02, shadowWidth, d);
                 shadow = startFade * endFade * 0.45;

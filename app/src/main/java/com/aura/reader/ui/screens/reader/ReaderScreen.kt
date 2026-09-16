@@ -76,6 +76,11 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.runtime.snapshotFlow
 import android.app.Activity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.foundation.gestures.detectDragGestures
+import com.aura.reader.ui.screens.reader.curl.CurlView
+import com.aura.reader.ui.screens.reader.curl.PageBitmapRenderer
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -1754,6 +1759,107 @@ fun ChapterPagingView(
             }
         }
 
+        val localView = LocalView.current
+        var isCurlingActive by remember { mutableStateOf(false) }
+        var curlViewRef by remember { mutableStateOf<CurlView?>(null) }
+        val backgroundColorArgb = MaterialTheme.colorScheme.background.toArgb()
+        val textColorArgb = MaterialTheme.colorScheme.onBackground.toArgb()
+
+        val topPaddingPx = with(density) { topPaddingDp.toPx() }
+        val bottomPaddingPx = with(density) { bottomPaddingDp.toPx() }
+        val horizontalPaddingPx = with(density) { 24.dp.toPx() }
+
+        val startCurlTurn: (isNext: Boolean, programmatic: Boolean) -> Unit = { isNext, programmatic ->
+            val canTurn = if (isNext) pagerState.currentPage < totalPagerSpreads - 1 else pagerState.currentPage > 0
+            if (canTurn && curlViewRef != null) {
+                val frontBmp = PageBitmapRenderer.captureViewToBitmap(localView)
+                val targetSpreadIdx = if (isNext) pagerState.currentPage + 1 else pagerState.currentPage - 1
+                val targetContentIdx = targetSpreadIdx - prevPageOffset
+
+                val targetBlocks = if (targetContentIdx in 0 until contentSpreadsCount) {
+                    if (isTwoColumn) pages.getOrNull(targetContentIdx * 2) ?: emptyList()
+                    else pages.getOrNull(targetContentIdx) ?: emptyList()
+                } else emptyList()
+
+                val chapterTitle = if (hasPrev && targetSpreadIdx == 0) {
+                    prevChapter?.title
+                } else if (hasNext && targetSpreadIdx == totalPagerSpreads - 1) {
+                    nextChapter?.title
+                } else null
+
+                val underBmp = PageBitmapRenderer.renderPageToBitmap(
+                    width = localView.width,
+                    height = localView.height,
+                    pageBlocks = targetBlocks,
+                    settings = settings,
+                    backgroundColor = backgroundColorArgb,
+                    textColor = textColorArgb,
+                    topPaddingPx = topPaddingPx,
+                    bottomPaddingPx = bottomPaddingPx,
+                    horizontalPaddingPx = horizontalPaddingPx,
+                    chapterTitle = chapterTitle
+                )
+
+                curlViewRef?.setPages(frontBmp, underBmp)
+                isCurlingActive = true
+
+                if (programmatic) {
+                    curlViewRef?.startCurlAnimation(isNext) {
+                        coroutineScope.launch {
+                            pagerState.scrollToPage(targetSpreadIdx)
+                            isCurlingActive = false
+                        }
+                    }
+                }
+            }
+        }
+
+        val curlDragModifier = if (settings.pageAnimation == PageTurnAnimation.REALISTIC_CURL) {
+            Modifier.pointerInput(pagerState.currentPage, totalPagerSpreads) {
+                var dragStartX = 0f
+                var dragStartY = 0f
+                var dragStarted = false
+
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        dragStartX = offset.x
+                        dragStartY = offset.y
+                        dragStarted = false
+                    },
+                    onDrag = { change, _ ->
+                        val dx = change.position.x - dragStartX
+                        if (!dragStarted) {
+                            if (kotlin.math.abs(dx) > 18f) {
+                                val isNext = dx < 0
+                                val canTurn = if (isNext) pagerState.currentPage < totalPagerSpreads - 1 else pagerState.currentPage > 0
+                                if (canTurn) {
+                                    dragStarted = true
+                                    startCurlTurn(isNext, false)
+                                    curlViewRef?.startInteractiveCurl(dragStartX, dragStartY, isNext)
+                                }
+                            }
+                        }
+                        if (dragStarted && isCurlingActive) {
+                            curlViewRef?.updateCurlPose(change.position.x, change.position.y)
+                            change.consume()
+                        }
+                    },
+                    onDragEnd = {
+                        if (dragStarted && isCurlingActive) {
+                            curlViewRef?.finishInteractiveCurl(dragStartX, dragStartY, 0f)
+                        }
+                        dragStarted = false
+                    },
+                    onDragCancel = {
+                        if (dragStarted && isCurlingActive) {
+                            curlViewRef?.finishInteractiveCurl(dragStartX, dragStartY, 0f)
+                        }
+                        dragStarted = false
+                    }
+                )
+            }
+        } else Modifier
+
         val instantSwipeModifier = if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
             Modifier.pointerInput(pagerState.currentPage, totalPagerSpreads) {
                 detectHorizontalDragGestures { _, dragAmount ->
@@ -1772,10 +1878,11 @@ fun ChapterPagingView(
 
         HorizontalPager(
             state = pagerState,
-            userScrollEnabled = settings.pageAnimation != PageTurnAnimation.INSTANT,
+            userScrollEnabled = settings.pageAnimation != PageTurnAnimation.INSTANT && settings.pageAnimation != PageTurnAnimation.REALISTIC_CURL,
             modifier = Modifier
                 .fillMaxSize()
                 .then(instantSwipeModifier)
+                .then(curlDragModifier)
         ) { spreadIdx ->
             // Вычисляем, насколько страница сдвинута от центра (от -1.0 до 1.0)
             val pageOffset = ((pagerState.currentPage - spreadIdx) + pagerState.currentPageOffsetFraction)
@@ -1826,51 +1933,7 @@ fun ChapterPagingView(
                             }
                         }
                 }
-                PageTurnAnimation.REALISTIC_CURL -> {
-                    Modifier
-                        .graphicsLayer {
-                            translationX = pageOffset * size.width
-                            transformOrigin = TransformOrigin(
-                                pivotFractionX = if (pageOffset > 0) 0.02f else 0.98f,
-                                pivotFractionY = 0.5f
-                            )
-                            val rotation = pageOffset * -160f
-                            rotationY = rotation.coerceIn(-160f, 160f)
-                            cameraDistance = 16f * density.density
-                            shadowElevation = if (pageOffset.absoluteValue > 0.02f) 16f else 0f
-                        }
-                        .graphicsLayer {
-                            alpha = if (pageOffset.absoluteValue >= 0.5f) 0f else 1f
-                        }
-                        .drawWithContent {
-                            drawContent()
-                            if (pageOffset != 0f) {
-                                val shadowAlpha = (pageOffset.absoluteValue * 0.75f).coerceIn(0f, 0.7f)
-                                val brush = if (pageOffset > 0) {
-                                    Brush.horizontalGradient(
-                                        colors = listOf(
-                                            Color.Black.copy(alpha = shadowAlpha),
-                                            Color.Black.copy(alpha = shadowAlpha * 0.4f),
-                                            Color.Transparent
-                                        ),
-                                        startX = 0f,
-                                        endX = size.width * 0.7f
-                                    )
-                                } else {
-                                    Brush.horizontalGradient(
-                                        colors = listOf(
-                                            Color.Transparent,
-                                            Color.Black.copy(alpha = shadowAlpha * 0.4f),
-                                            Color.Black.copy(alpha = shadowAlpha)
-                                        ),
-                                        startX = size.width * 0.3f,
-                                        endX = size.width
-                                    )
-                                }
-                                drawRect(brush = brush)
-                            }
-                        }
-                }
+                PageTurnAnimation.REALISTIC_CURL -> Modifier
                 PageTurnAnimation.SLIDE -> Modifier
                 PageTurnAnimation.INSTANT -> Modifier
             }
@@ -1997,13 +2060,46 @@ fun ChapterPagingView(
             }
         }
 
+        if (settings.pageAnimation == PageTurnAnimation.REALISTIC_CURL) {
+            AndroidView(
+                factory = { ctx ->
+                    CurlView(ctx).apply {
+                        this.onPageFlipped = { isNext ->
+                            val target = if (isNext) pagerState.currentPage + 1 else pagerState.currentPage - 1
+                            if (target in 0 until totalPagerSpreads) {
+                                coroutineScope.launch { pagerState.scrollToPage(target) }
+                            }
+                        }
+                        this.onSettleComplete = {
+                            isCurlingActive = false
+                        }
+                        this.onToggleControls = {
+                            onToggleControls()
+                        }
+                        curlViewRef = this
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .zIndex(10f)
+                    .graphicsLayer {
+                        alpha = if (isCurlingActive) 1f else 0f
+                    }
+            )
+        }
+
         // Thin margin tap zones for fast page flipping (outer padding area only)
         val flipPage: (Int) -> Unit = { target ->
-            coroutineScope.launch {
-                if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
-                    pagerState.scrollToPage(target)
-                } else {
-                    pagerState.animateScrollToPage(target)
+            if (settings.pageAnimation == PageTurnAnimation.REALISTIC_CURL) {
+                val isNext = target > pagerState.currentPage
+                startCurlTurn(isNext, true)
+            } else {
+                coroutineScope.launch {
+                    if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+                        pagerState.scrollToPage(target)
+                    } else {
+                        pagerState.animateScrollToPage(target)
+                    }
                 }
             }
         }

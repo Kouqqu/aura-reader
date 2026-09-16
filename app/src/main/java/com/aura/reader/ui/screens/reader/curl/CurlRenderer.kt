@@ -19,6 +19,7 @@ class CurlRenderer : GLSurfaceView.Renderer {
     private var uCurlMVPMatrix: Int = 0
     private var uCurlPos: Int = 0
     private var uCurlDir: Int = 0
+    private var uCurlNorm: Int = 0
     private var uCurlRadius: Int = 0
     private var uCurlAspect: Int = 0
     private var uCurlConeFactor: Int = 0
@@ -32,6 +33,7 @@ class CurlRenderer : GLSurfaceView.Renderer {
     private var uUnderMVPMatrix: Int = 0
     private var uUnderCurlPos: Int = 0
     private var uUnderCurlDir: Int = 0
+    private var uUnderCurlNorm: Int = 0
     private var uUnderRadius: Int = 0
     private var uUnderAspect: Int = 0
     private var uTextureUnder: Int = 0
@@ -56,8 +58,10 @@ class CurlRenderer : GLSurfaceView.Renderer {
     // Touch & Curl state
     var curlPosX: Float = 1.0f
     var curlPosY: Float = 1.0f
-    var curlDirX: Float = -1.0f
-    var curlDirY: Float = 0.0f
+    var curlDirX: Float = 0.0f
+    var curlDirY: Float = 1.0f
+    var curlNormX: Float = 1.0f
+    var curlNormY: Float = 0.0f
     var curlRadius: Float = 0.16f
     var coneFactor: Float = 0.08f
     var isCurling: Boolean = false
@@ -67,9 +71,11 @@ class CurlRenderer : GLSurfaceView.Renderer {
     private var aspect: Float = 1080f / 1920f
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-        GLES20.glClearColor(0.12f, 0.12f, 0.12f, 1.0f)
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
         GLES20.glDepthFunc(GLES20.GL_LEQUAL)
+        GLES20.glEnable(GLES20.GL_BLEND)
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
 
         // Initialize shader programs
         curlProgram = createProgram(
@@ -79,6 +85,7 @@ class CurlRenderer : GLSurfaceView.Renderer {
         uCurlMVPMatrix = GLES20.glGetUniformLocation(curlProgram, "u_MVPMatrix")
         uCurlPos = GLES20.glGetUniformLocation(curlProgram, "u_CurlPos")
         uCurlDir = GLES20.glGetUniformLocation(curlProgram, "u_CurlDir")
+        uCurlNorm = GLES20.glGetUniformLocation(curlProgram, "u_CurlNorm")
         uCurlRadius = GLES20.glGetUniformLocation(curlProgram, "u_Radius")
         uCurlAspect = GLES20.glGetUniformLocation(curlProgram, "u_Aspect")
         uCurlConeFactor = GLES20.glGetUniformLocation(curlProgram, "u_ConeFactor")
@@ -95,6 +102,7 @@ class CurlRenderer : GLSurfaceView.Renderer {
         uUnderMVPMatrix = GLES20.glGetUniformLocation(underPageProgram, "u_MVPMatrix")
         uUnderCurlPos = GLES20.glGetUniformLocation(underPageProgram, "u_CurlPos")
         uUnderCurlDir = GLES20.glGetUniformLocation(underPageProgram, "u_CurlDir")
+        uUnderCurlNorm = GLES20.glGetUniformLocation(underPageProgram, "u_CurlNorm")
         uUnderRadius = GLES20.glGetUniformLocation(underPageProgram, "u_Radius")
         uUnderAspect = GLES20.glGetUniformLocation(underPageProgram, "u_Aspect")
         uTextureUnder = GLES20.glGetUniformLocation(underPageProgram, "u_TextureUnder")
@@ -134,6 +142,7 @@ class CurlRenderer : GLSurfaceView.Renderer {
         GLES20.glUniformMatrix4fv(uUnderMVPMatrix, 1, false, mvpMatrix, 0)
         GLES20.glUniform2f(uUnderCurlPos, curlPosX, curlPosY)
         GLES20.glUniform2f(uUnderCurlDir, curlDirX, curlDirY)
+        GLES20.glUniform2f(uUnderCurlNorm, curlNormX, curlNormY)
         GLES20.glUniform1f(uUnderRadius, curlRadius)
         GLES20.glUniform1f(uUnderAspect, aspect)
 
@@ -167,6 +176,7 @@ class CurlRenderer : GLSurfaceView.Renderer {
         GLES20.glUniformMatrix4fv(uCurlMVPMatrix, 1, false, mvpMatrix, 0)
         GLES20.glUniform2f(uCurlPos, curlPosX, curlPosY)
         GLES20.glUniform2f(uCurlDir, curlDirX, curlDirY)
+        GLES20.glUniform2f(uCurlNorm, curlNormX, curlNormY)
         GLES20.glUniform1f(uCurlRadius, curlRadius)
         GLES20.glUniform1f(uCurlAspect, aspect)
         GLES20.glUniform1f(uCurlConeFactor, coneFactor)
