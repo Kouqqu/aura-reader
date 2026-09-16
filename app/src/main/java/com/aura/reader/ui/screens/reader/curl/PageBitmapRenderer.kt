@@ -82,8 +82,8 @@ object PageBitmapRenderer {
 
         for ((_, block) in pageBlocks) {
             val paint = when (block.type) {
-                BlockType.TITLE -> titlePaint
-                BlockType.QUOTE, BlockType.EPIGRAPH, BlockType.POEM -> quotePaint
+                BlockType.TITLE, BlockType.SUBTITLE -> titlePaint
+                BlockType.EPIGRAPH, BlockType.VERSE -> quotePaint
                 else -> bodyPaint
             }
             val align = when (block.type) {
