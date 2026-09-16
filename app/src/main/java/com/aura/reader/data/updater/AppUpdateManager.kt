@@ -37,7 +37,7 @@ object AppUpdateManager {
 
                 if (isBetaChannel) {
                     try {
-                        val url = URL("https://api.github.com/repos/Kouqqu/aura-reader/releases/tags/preview")
+                        val url = URL("https://api.github.com/repos/Kouqqu/aura-reader/releases?per_page=10")
                         val conn = url.openConnection() as HttpURLConnection
                         conn.requestMethod = "GET"
                         conn.setRequestProperty("User-Agent", "AuraReader-App")
@@ -45,35 +45,43 @@ object AppUpdateManager {
                         conn.readTimeout = 6000
                         if (conn.responseCode == 200) {
                             val jsonStr = conn.inputStream.bufferedReader().use { it.readText() }
-                            val json = JSONObject(jsonStr)
-                            tagName = json.optString("tag_name", "preview").trim()
-                            body = json.optString("body", "").trim()
-                            val assets = json.optJSONArray("assets")
-                            if (assets != null) {
-                                for (i in 0 until assets.length()) {
-                                    val asset = assets.getJSONObject(i)
-                                    val name = asset.optString("name", "")
-                                    if (name.endsWith(".apk", ignoreCase = true)) {
-                                        apkDownloadUrl = asset.optString("browser_download_url", "")
-                                        break
+                            val releasesArray = org.json.JSONArray(jsonStr)
+                            for (rIdx in 0 until releasesArray.length()) {
+                                val rel = releasesArray.getJSONObject(rIdx)
+                                if (rel.optBoolean("prerelease", false)) {
+                                    tagName = rel.optString("tag_name", "").trim()
+                                    body = rel.optString("body", "").trim()
+                                    val assets = rel.optJSONArray("assets")
+                                    if (assets != null) {
+                                        for (i in 0 until assets.length()) {
+                                            val asset = assets.getJSONObject(i)
+                                            val name = asset.optString("name", "")
+                                            if (name.endsWith(".apk", ignoreCase = true)) {
+                                                apkDownloadUrl = asset.optString("browser_download_url", "")
+                                                break
+                                            }
+                                        }
                                     }
+                                    break
                                 }
                             }
                         }
                     } catch (e: Exception) {}
 
-                    if (apkDownloadUrl.isBlank()) {
-                        apkDownloadUrl = "https://github.com/Kouqqu/aura-reader/releases/download/preview/AuraReader.apk"
-                    }
-
-                    return@withContext Result.success(
-                        UpdateInfo(
-                            isAvailable = true,
-                            latestVersion = "v1.4.1-beta (preview)",
-                            changelog = body.ifBlank { "Тестовая превью-сборка Aura Reader с новейшими экспериментальными функциями." },
-                            downloadUrl = apkDownloadUrl
+                    if (tagName.isNotBlank()) {
+                        if (apkDownloadUrl.isBlank()) {
+                            apkDownloadUrl = "https://github.com/Kouqqu/aura-reader/releases/download/$tagName/AuraReader.apk"
+                        }
+                        val isNewer = isVersionNewer(tagName, currentVersion)
+                        return@withContext Result.success(
+                            UpdateInfo(
+                                isAvailable = isNewer,
+                                latestVersion = tagName,
+                                changelog = body.ifBlank { "Тестовая бета-сборка $tagName Aura Reader с экспериментальными функциями." },
+                                downloadUrl = apkDownloadUrl
+                            )
                         )
-                    )
+                    }
                 }
 
                 // 1. First, check latest tag via GitHub redirect (100% rate-limit-free)

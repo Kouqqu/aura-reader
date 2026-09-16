@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "beta" ]
   pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
@@ -86,7 +86,8 @@ jobs:
             Aura Reader v1.4.1:
 
             📖 **Чтение и верстка**:
-            - Исправлено отображение текста на первой странице глав — текст больше не обрезается внизу экрана.
+            - Исправлено отображение текста и цитат на страницах глав — текст больше не обрезается внизу экрана.
+            - Переход между главами свайпом страницы (вперед на следующую и назад на предыдущую).
             - Скорректирован верхний отступ под статус-баром для более комфортного чтения.
 
             🖐️ **Библиотека и сортировка**:
@@ -109,6 +110,22 @@ jobs:
 
             🌐 **Локализация**:
             - Поддержка 5 языков: Русский, Английский, Украинский, Белорусский и Польский.
+          files: AuraReader.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish GitHub Beta Release
+        if: github.ref == 'refs/heads/beta'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v1.4.2-beta"
+          name: "Aura Reader v1.4.2 Beta"
+          prerelease: true
+          make_latest: false
+          body: |
+            Aura Reader v1.4.2 Beta:
+
+            🧪 **Тестовая бета-сборка версии v1.4.2**
           files: AuraReader.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
