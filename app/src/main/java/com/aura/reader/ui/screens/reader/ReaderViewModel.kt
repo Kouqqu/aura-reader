@@ -55,12 +55,12 @@ class ReaderViewModel(
         }
     }
 
-    fun setChapter(index: Int) {
+    fun setChapter(index: Int, offset: Int = 0) {
         val book = currentBook.value ?: return
         if (index in book.chapters.indices) {
             _currentChapterIndex.value = index
-            _savedScrollOffset.value = 0
-            saveProgress(index, 0)
+            _savedScrollOffset.value = offset
+            saveProgress(index, offset)
         }
     }
 
@@ -68,14 +68,17 @@ class ReaderViewModel(
         val book = currentBook.value ?: return
         val next = _currentChapterIndex.value + 1
         if (next < book.chapters.size) {
-            setChapter(next)
+            setChapter(next, 0)
         }
     }
 
-    fun prevChapter() {
+    fun prevChapter(startAtEnd: Boolean = false) {
+        val book = currentBook.value ?: return
         val prev = _currentChapterIndex.value - 1
         if (prev >= 0) {
-            setChapter(prev)
+            val totalBlocks = book.chapters.getOrNull(prev)?.blocks?.size ?: 0
+            val offset = if (startAtEnd && totalBlocks > 0) totalBlocks - 1 else 0
+            setChapter(prev, offset)
         }
     }
 
@@ -156,6 +159,12 @@ class ReaderViewModel(
     fun setFontFamily(family: ReaderFontFamily) {
         viewModelScope.launch {
             preferencesManager.updateFontFamily(family)
+        }
+    }
+
+    fun setFontName(name: String) {
+        viewModelScope.launch {
+            preferencesManager.updateFontName(name)
         }
     }
 

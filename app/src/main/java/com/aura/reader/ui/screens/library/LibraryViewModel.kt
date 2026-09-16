@@ -95,6 +95,54 @@ class LibraryViewModel(
         viewModelScope.launch { preferencesManager.updateThemeMode(themeMode) }
     }
 
+    fun setAppThemeMode(themeMode: ReaderThemeMode) {
+        viewModelScope.launch { preferencesManager.updateAppThemeMode(themeMode) }
+    }
+
+    fun setSyncThemesWithApp(sync: Boolean) {
+        viewModelScope.launch { preferencesManager.updateSyncThemesWithApp(sync) }
+    }
+
+    fun updateFontSize(size: Float) {
+        viewModelScope.launch { preferencesManager.updateFontSize(size) }
+    }
+
+    fun updateLineHeight(multiplier: Float) {
+        viewModelScope.launch { preferencesManager.updateLineHeight(multiplier) }
+    }
+
+    fun updateFontFamily(family: com.aura.reader.data.model.ReaderFontFamily) {
+        viewModelScope.launch { preferencesManager.updateFontFamily(family) }
+    }
+
+    fun updateFontName(name: String) {
+        viewModelScope.launch { preferencesManager.updateFontName(name) }
+    }
+
+    fun updateLightImageBackground(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.updateLightImageBackground(enabled) }
+    }
+
+    fun updatePagingMode(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.updatePagingMode(enabled) }
+    }
+
+    fun updateAutoHyphenation(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.updateAutoHyphenation(enabled) }
+    }
+
+    fun updateTwoColumnMode(mode: com.aura.reader.data.model.TwoColumnMode) {
+        viewModelScope.launch { preferencesManager.updateTwoColumnMode(mode) }
+    }
+
+    fun updatePageAnimation(animation: com.aura.reader.data.model.PageTurnAnimation) {
+        viewModelScope.launch { preferencesManager.updatePageAnimation(animation) }
+    }
+
+    fun updateHapticFeedback(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.updateHapticFeedback(enabled) }
+    }
+
     fun setMaterialYouEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setMaterialYouEnabled(enabled) }
     }

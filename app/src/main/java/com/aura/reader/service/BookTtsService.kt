@@ -102,7 +102,15 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             val intent = Intent(context, BookTtsService::class.java).apply {
                 action = ACTION_PLAY_PAUSE
             }
-            context.startService(intent)
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            } catch (e: Exception) {
+                context.startService(intent)
+            }
         }
 
         fun next(context: Context) {
@@ -210,6 +218,10 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                     if (_ttsState.value.isPlaying) {
                         nextParagraph()
                     }
+                }
+
+                override fun onStop(utteranceId: String?, interrupted: Boolean) {
+                    // Intentionally stopped/paused, do nothing
                 }
             })
             val voicesList = try {
@@ -351,13 +363,13 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         )
 
         val notification = buildNotification(isPlaying = true)
-        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(NOTIFICATION_ID, notification)
+        startForeground(NOTIFICATION_ID, notification)
         updateMediaSessionState(isPlaying = true)
     }
 
     private fun pausePlayback() {
         tts?.stop()
+        abandonAudioFocus()
         _ttsState.value = _ttsState.value.copy(isPlaying = false)
 
         val notification = buildNotification(isPlaying = false)
@@ -509,24 +521,26 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
 
     private fun requestAudioFocus() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val audioAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .build()
+            if (audioFocusRequest == null) {
+                val audioAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
 
-            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                .setAudioAttributes(audioAttributes)
-                .setAcceptsDelayedFocusGain(true)
-                .setOnAudioFocusChangeListener { focusChange ->
-                    when (focusChange) {
-                        AudioManager.AUDIOFOCUS_LOSS -> pausePlayback()
-                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> pausePlayback()
-                        AudioManager.AUDIOFOCUS_GAIN -> if (_ttsState.value.isPlaying) resumePlayback()
+                audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                    .setAudioAttributes(audioAttributes)
+                    .setAcceptsDelayedFocusGain(true)
+                    .setOnAudioFocusChangeListener { focusChange ->
+                        when (focusChange) {
+                            AudioManager.AUDIOFOCUS_LOSS -> pausePlayback()
+                            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> pausePlayback()
+                            AudioManager.AUDIOFOCUS_GAIN -> if (_ttsState.value.isPlaying) resumePlayback()
+                        }
                     }
-                }
-                .build()
+                    .build()
+            }
 
-            audioManager?.requestAudioFocus(audioFocusRequest!!)
+            audioFocusRequest?.let { audioManager?.requestAudioFocus(it) }
         } else {
             @Suppress("DEPRECATION")
             audioManager?.requestAudioFocus(

@@ -30,6 +30,8 @@ import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -104,7 +106,12 @@ fun SettingsBottomSheet(
     developerModeEnabled: Boolean = false,
     updateChannel: String = "RELEASE",
     onToggleDeveloperMode: (Boolean) -> Unit = {},
-    onUpdateChannelChange: (String) -> Unit = {}
+    onUpdateChannelChange: (String) -> Unit = {},
+    readerTheme: ReaderThemeMode = ReaderThemeMode.SYSTEM_DYNAMIC,
+    syncThemesWithApp: Boolean = false,
+    onSyncThemesChange: (Boolean) -> Unit = {},
+    onReaderThemeChange: (ReaderThemeMode) -> Unit = {},
+    onOpenReaderThemeSettings: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
@@ -256,7 +263,7 @@ fun SettingsBottomSheet(
                     label = strings.themeDark,
                     bgColor = Color(0xFF1E2125),
                     textColor = Color(0xFFE2E2E6),
-                    isSelected = currentTheme == ReaderThemeMode.DARK || currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC,
+                    isSelected = currentTheme == ReaderThemeMode.DARK,
                     hapticEnabled = true,
                     getSheetCoordinates = { sheetCoordinates },
                     modifier = Modifier.weight(1f),
@@ -291,6 +298,118 @@ fun SettingsBottomSheet(
                     modifier = Modifier.weight(1f),
                     onClick = { origin -> handleThemeClick(ReaderThemeMode.AMOLED, origin, amoledColors) }
                 )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // System Auto-Theme Button
+            val isSysDark = androidx.compose.foundation.isSystemInDarkTheme()
+            ThemeOptionButton(
+                label = "${strings.themeSystem} (${if (isSysDark) strings.themeDark else strings.themeLight})",
+                bgColor = if (isSysDark) Color(0xFF252930) else Color(0xFFF0F3F6),
+                textColor = if (isSysDark) Color(0xFFE2E2E6) else Color(0xFF1D1B20),
+                isSelected = currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC,
+                hapticEnabled = true,
+                getSheetCoordinates = { sheetCoordinates },
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { origin -> handleThemeClick(ReaderThemeMode.SYSTEM_DYNAMIC, origin, if (isSysDark) darkColors else lightColors) }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Sync Themes Toggle Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSyncThemesChange(!syncThemesWithApp) },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 12.dp)
+                    ) {
+                        Text(
+                            text = strings.syncThemesTitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = strings.syncThemesSubtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = syncThemesWithApp,
+                        onCheckedChange = onSyncThemesChange
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Reader Theme Settings Navigation Button
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenReaderThemeSettings() },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MenuBook,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column {
+                            Text(
+                                text = strings.readerThemeSettingsTitle,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = strings.readerThemeSettingsSubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))

@@ -27,12 +27,15 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -85,7 +88,8 @@ fun ReaderSettingsBottomSheet(
     onAutoHyphenationChange: (Boolean) -> Unit = {},
     onTwoColumnModeChange: (TwoColumnMode) -> Unit = {},
     onPageAnimationChange: (PageTurnAnimation) -> Unit = {},
-    onHapticFeedbackChange: (Boolean) -> Unit = {}
+    onHapticFeedbackChange: (Boolean) -> Unit = {},
+    onFontNameChange: (String) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val strings = LocalAppStrings.current
@@ -279,7 +283,10 @@ fun ReaderSettingsBottomSheet(
                 ) {
                     FilterChip(
                         selected = settings.fontFamily == ReaderFontFamily.SERIF,
-                        onClick = { onFontFamilyChange(ReaderFontFamily.SERIF) },
+                        onClick = {
+                            onFontFamilyChange(ReaderFontFamily.SERIF)
+                            onFontNameChange("")
+                        },
                         label = { Text(strings.fontFamilySerif) },
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.SERIF) {
                             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
@@ -288,7 +295,10 @@ fun ReaderSettingsBottomSheet(
 
                     FilterChip(
                         selected = settings.fontFamily == ReaderFontFamily.SANS_SERIF,
-                        onClick = { onFontFamilyChange(ReaderFontFamily.SANS_SERIF) },
+                        onClick = {
+                            onFontFamilyChange(ReaderFontFamily.SANS_SERIF)
+                            onFontNameChange("")
+                        },
                         label = { Text(strings.fontFamilySansSerif) },
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.SANS_SERIF) {
                             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
@@ -297,12 +307,65 @@ fun ReaderSettingsBottomSheet(
 
                     FilterChip(
                         selected = settings.fontFamily == ReaderFontFamily.MONOSPACE,
-                        onClick = { onFontFamilyChange(ReaderFontFamily.MONOSPACE) },
+                        onClick = {
+                            onFontFamilyChange(ReaderFontFamily.MONOSPACE)
+                            onFontNameChange("")
+                        },
                         label = { Text(strings.fontFamilyMonospace) },
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.MONOSPACE) {
                             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                         } else null
                     )
+                }
+
+                // Specific Font Typeface Dropdown
+                val fontChoices = when (settings.fontFamily) {
+                    ReaderFontFamily.SERIF -> listOf("Системный", "PT Serif", "Georgia", "Merriweather", "Lora", "EB Garamond", "Playfair Display")
+                    ReaderFontFamily.SANS_SERIF -> listOf("Системный", "Roboto", "Inter", "Open Sans", "Montserrat", "Nunito")
+                    ReaderFontFamily.MONOSPACE -> listOf("Системный", "JetBrains Mono", "Fira Code", "Roboto Mono", "Inconsolata")
+                    ReaderFontFamily.SYSTEM_DEFAULT -> listOf("Системный")
+                }
+
+                var fontDropdownExpanded by remember { mutableStateOf(false) }
+                val currentFontLabel = if (settings.fontName.isBlank()) strings.fontFamilySystem else settings.fontName
+
+                ExposedDropdownMenuBox(
+                    expanded = fontDropdownExpanded,
+                    onExpandedChange = { fontDropdownExpanded = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = currentFontLabel,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(strings.specificFontTitle) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = fontDropdownExpanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = fontDropdownExpanded,
+                        onDismissRequest = { fontDropdownExpanded = false }
+                    ) {
+                        fontChoices.forEach { fontOption ->
+                            val isSelected = (settings.fontName.isBlank() && (fontOption == "Системный" || fontOption == strings.fontFamilySystem)) || settings.fontName == fontOption
+                            DropdownMenuItem(
+                                text = { Text(if (fontOption == "Системный") strings.fontFamilySystem else fontOption) },
+                                onClick = {
+                                    val toSave = if (fontOption == "Системный") "" else fontOption
+                                    onFontNameChange(toSave)
+                                    fontDropdownExpanded = false
+                                },
+                                trailingIcon = if (isSelected) {
+                                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                } else null
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

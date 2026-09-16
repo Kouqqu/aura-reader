@@ -121,6 +121,7 @@ import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.outlined.MenuBook
 import com.aura.reader.ui.screens.settings.SettingsBottomSheet
+import com.aura.reader.ui.screens.reader.ReaderSettingsBottomSheet
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -244,6 +245,7 @@ fun LibraryScreen(
     val scope = rememberCoroutineScope()
     var showAddBooksSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
+    var showReaderThemeSheet by remember { mutableStateOf(false) }
     var bookToDelete by remember { mutableStateOf<Book?>(null) }
     var inspectingCoverBook by remember { mutableStateOf<Book?>(null) }
     var bookForCoverChange by remember { mutableStateOf<Book?>(null) }
@@ -1215,13 +1217,13 @@ fun LibraryScreen(
 
     if (showSettingsSheet) {
         SettingsBottomSheet(
-            currentTheme = readerSettings.themeMode,
+            currentTheme = readerSettings.appThemeMode,
             currentLanguage = appLanguage,
             updateNotificationsEnabled = updateNotificationsEnabled,
             readingStatsEnabled = readingStatsEnabled,
             materialYouEnabled = materialYouEnabled,
             onDismiss = { showSettingsSheet = false },
-            onThemeChange = { viewModel.setThemeMode(it) },
+            onThemeChange = { viewModel.setAppThemeMode(it) },
             onLanguageChange = { viewModel.setAppLanguage(it) },
             onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
             onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
@@ -1249,7 +1251,35 @@ fun LibraryScreen(
             onRestoreBackup = {
                 showSettingsSheet = false
                 restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+            },
+            readerTheme = readerSettings.themeMode,
+            syncThemesWithApp = readerSettings.syncThemesWithApp,
+            onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
+            onReaderThemeChange = { viewModel.setThemeMode(it) },
+            onOpenReaderThemeSettings = {
+                showSettingsSheet = false
+                showReaderThemeSheet = true
             }
+        )
+    }
+
+    if (showReaderThemeSheet) {
+        ReaderSettingsBottomSheet(
+            settings = readerSettings,
+            materialYouEnabled = materialYouEnabled,
+            onMaterialYouChange = { viewModel.setMaterialYouEnabled(it) },
+            onDismiss = { showReaderThemeSheet = false },
+            onFontSizeChange = { viewModel.updateFontSize(it) },
+            onLineHeightChange = { viewModel.updateLineHeight(it) },
+            onThemeModeChange = { viewModel.setThemeMode(it) },
+            onFontFamilyChange = { viewModel.updateFontFamily(it) },
+            onFontNameChange = { viewModel.updateFontName(it) },
+            onLightImageBackgroundChange = { viewModel.updateLightImageBackground(it) },
+            onPagingModeChange = { viewModel.updatePagingMode(it) },
+            onAutoHyphenationChange = { viewModel.updateAutoHyphenation(it) },
+            onTwoColumnModeChange = { viewModel.updateTwoColumnMode(it) },
+            onPageAnimationChange = { viewModel.updatePageAnimation(it) },
+            onHapticFeedbackChange = { viewModel.updateHapticFeedback(it) }
         )
     }
 
@@ -1387,16 +1417,22 @@ fun BookCard(
                     )
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        SuggestionChip(
-                            onClick = {},
-                            label = {
-                                Text(
-                                    text = book.format.name,
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            },
-                            modifier = Modifier.padding(end = 4.dp)
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(end = 6.dp)
+                        ) {
+                            Text(
+                                text = book.format.name.uppercase(),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                         IconButton(
                             onClick = onToggleFavorite,
                             modifier = Modifier.size(32.dp)

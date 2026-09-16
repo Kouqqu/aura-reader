@@ -57,6 +57,9 @@ class PreferencesManager(private val context: Context) {
         val TWO_COLUMN_MODE_KEY = stringPreferencesKey("two_column_mode")
         val PAGE_ANIMATION_KEY = stringPreferencesKey("page_animation")
         val HAPTIC_FEEDBACK_KEY = booleanPreferencesKey("haptic_feedback_enabled")
+        val FONT_NAME_KEY = stringPreferencesKey("font_name")
+        val SYNC_THEMES_WITH_APP_KEY = booleanPreferencesKey("sync_themes_with_app")
+        val APP_THEME_MODE_KEY = stringPreferencesKey("app_theme_mode")
         val RECENT_BOOKS_KEY = stringPreferencesKey("recent_books_json")
         val READING_STATS_KEY = stringPreferencesKey("reading_stats_json")
         val BOOKMARKS_KEY = stringPreferencesKey("bookmarks_json")
@@ -166,6 +169,16 @@ class PreferencesManager(private val context: Context) {
             PageTurnAnimation.SLIDE
         }
 
+        val fontName = prefs[FONT_NAME_KEY] ?: ""
+        val syncThemesWithApp = prefs[SYNC_THEMES_WITH_APP_KEY] ?: false
+        val appThemeModeStr = prefs[APP_THEME_MODE_KEY] ?: ReaderThemeMode.SYSTEM_DYNAMIC.name
+
+        val appThemeMode = try {
+            ReaderThemeMode.valueOf(appThemeModeStr)
+        } catch (e: Exception) {
+            ReaderThemeMode.SYSTEM_DYNAMIC
+        }
+
         ReaderSettings(
             fontSizeSp = fontSize,
             lineHeightMultiplier = lineHeight,
@@ -177,7 +190,10 @@ class PreferencesManager(private val context: Context) {
             autoHyphenation = autoHyphenation,
             twoColumnMode = twoColumnMode,
             pageAnimation = pageAnimation,
-            hapticFeedbackEnabled = hapticFeedbackEnabled
+            hapticFeedbackEnabled = hapticFeedbackEnabled,
+            fontName = fontName,
+            syncThemesWithApp = syncThemesWithApp,
+            appThemeMode = appThemeMode
         )
     }
 
@@ -196,6 +212,34 @@ class PreferencesManager(private val context: Context) {
     suspend fun updateThemeMode(themeMode: ReaderThemeMode) {
         context.dataStore.edit { prefs ->
             prefs[THEME_MODE_KEY] = themeMode.name
+            if (prefs[SYNC_THEMES_WITH_APP_KEY] == true) {
+                prefs[APP_THEME_MODE_KEY] = themeMode.name
+            }
+        }
+    }
+
+    suspend fun updateAppThemeMode(themeMode: ReaderThemeMode) {
+        context.dataStore.edit { prefs ->
+            prefs[APP_THEME_MODE_KEY] = themeMode.name
+            if (prefs[SYNC_THEMES_WITH_APP_KEY] == true) {
+                prefs[THEME_MODE_KEY] = themeMode.name
+            }
+        }
+    }
+
+    suspend fun updateSyncThemesWithApp(sync: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[SYNC_THEMES_WITH_APP_KEY] = sync
+            if (sync) {
+                val currentReader = prefs[THEME_MODE_KEY] ?: ReaderThemeMode.SYSTEM_DYNAMIC.name
+                prefs[APP_THEME_MODE_KEY] = currentReader
+            }
+        }
+    }
+
+    suspend fun updateFontName(fontName: String) {
+        context.dataStore.edit { prefs ->
+            prefs[FONT_NAME_KEY] = fontName
         }
     }
 

@@ -322,6 +322,16 @@ interface Strings {
     val moveDown: String
     val opdsDownloadMobi: String
     val opdsDownloadPdf: String
+
+    // Beta 1.4.2 additions
+    val syncThemesTitle: String
+    val syncThemesSubtitle: String
+    val readerThemeSettingsTitle: String
+    val readerThemeSettingsSubtitle: String
+    val themeSystem: String
+    val specificFontTitle: String
+    val fontDefault: String
+    val bookInfoTitle: String
 }
 
 
@@ -515,7 +525,7 @@ class RuStrings : Strings {
     override val autoHyphenationTitle = "Перенос слов (дефисы)"
     override val autoHyphenationSubtitle = "Книжный перенос длинных слов по слогам"
 
-    override val hapticFeedbackTitle = "Тактильный отклик (Haptics)"
+    override val hapticFeedbackTitle = "Тактильный отклик"
     override val hapticFeedbackSubtitle = "Мягкая вибрация, следующая за пальцем"
 
     override val dictionaryTitle = "Толковый словарь"
@@ -619,6 +629,16 @@ class RuStrings : Strings {
     override val moveDown = "Переместить ниже"
     override val opdsDownloadMobi = "Скачать MOBI"
     override val opdsDownloadPdf = "Скачать PDF"
+
+    // Beta 1.4.2 additions
+    override val syncThemesTitle = "Синхронизировать темы"
+    override val syncThemesSubtitle = "Одинаковая тема для интерфейса приложения и режима чтения"
+    override val readerThemeSettingsTitle = "Оформление книг"
+    override val readerThemeSettingsSubtitle = "Настройка тем, шрифтов и анимаций для режима чтения"
+    override val themeSystem = "Системная"
+    override val specificFontTitle = "Гарнитура шрифта"
+    override val fontDefault = "По умолчанию"
+    override val bookInfoTitle = "О книге"
 }
 
 class EnStrings : Strings {
@@ -915,6 +935,16 @@ class EnStrings : Strings {
     override val moveDown = "Move down"
     override val opdsDownloadMobi = "Download MOBI"
     override val opdsDownloadPdf = "Download PDF"
+
+    // Beta 1.4.2 additions
+    override val syncThemesTitle = "Sync themes"
+    override val syncThemesSubtitle = "Use the same theme for app UI and reader"
+    override val readerThemeSettingsTitle = "Book appearance"
+    override val readerThemeSettingsSubtitle = "Customize themes, fonts, and animations for reading"
+    override val themeSystem = "System"
+    override val specificFontTitle = "Font typeface"
+    override val fontDefault = "Default"
+    override val bookInfoTitle = "About Book"
 }
 
 class UkStrings : Strings {
@@ -1107,7 +1137,7 @@ class UkStrings : Strings {
     override val autoHyphenationTitle = "Перенесення слів"
     override val autoHyphenationSubtitle = "Книжкове перенесення довгих слів за складами"
 
-    override val hapticFeedbackTitle = "Тактильний відгук (Haptics)"
+    override val hapticFeedbackTitle = "Тактильний відгук"
     override val hapticFeedbackSubtitle = "М'яка вібрація за рухом пальця"
 
     override val dictionaryTitle = "Тлумачний словник"
@@ -1211,6 +1241,16 @@ class UkStrings : Strings {
     override val moveDown = "Перемістити нижче"
     override val opdsDownloadMobi = "Завантажити MOBI"
     override val opdsDownloadPdf = "Завантажити PDF"
+
+    // Beta 1.4.2 additions
+    override val syncThemesTitle = "Синхронізувати теми"
+    override val syncThemesSubtitle = "Однакова тема для інтерфейсу та читання"
+    override val readerThemeSettingsTitle = "Оформлення книг"
+    override val readerThemeSettingsSubtitle = "Налаштування тем, шрифтів та анімацій"
+    override val themeSystem = "Системна"
+    override val specificFontTitle = "Гарнітура шрифту"
+    override val fontDefault = "За замовчуванням"
+    override val bookInfoTitle = "Про книгу"
 }
 
 class BeStrings : Strings {
@@ -1403,7 +1443,7 @@ class BeStrings : Strings {
     override val autoHyphenationTitle = "Перанос слоў"
     override val autoHyphenationSubtitle = "Кніжны перанос доўгіх слоў па складах"
 
-    override val hapticFeedbackTitle = "Тактыльны водгук (Haptics)"
+    override val hapticFeedbackTitle = "Тактыльны водгук"
     override val hapticFeedbackSubtitle = "Мяккая вібрацыя за рухам пальца"
 
     override val dictionaryTitle = "Тлумачальны слоўнік"
@@ -1507,6 +1547,16 @@ class BeStrings : Strings {
     override val moveDown = "Перамясціць ніжэй"
     override val opdsDownloadMobi = "Спампаваць MOBI"
     override val opdsDownloadPdf = "Спампаваць PDF"
+
+    // Beta 1.4.2 additions
+    override val syncThemesTitle = "Сінхранізаваць тэмы"
+    override val syncThemesSubtitle = "Аднолькавая тэма для інтэрфейсу і чытання"
+    override val readerThemeSettingsTitle = "Афармленне кніг"
+    override val readerThemeSettingsSubtitle = "Налада тэм, шрыфтоў і анімацый"
+    override val themeSystem = "Сістэмная"
+    override val specificFontTitle = "Гарнітура шрыфта"
+    override val fontDefault = "Па змаўчанні"
+    override val bookInfoTitle = "Пра кнігу"
 }
 
 class PlStrings : Strings {
@@ -1802,6 +1852,16 @@ class PlStrings : Strings {
     override val moveDown = "Przenieś w dół"
     override val opdsDownloadMobi = "Pobierz MOBI"
     override val opdsDownloadPdf = "Pobierz PDF"
+
+    // Beta 1.4.2 additions
+    override val syncThemesTitle = "Synchronizuj motywy"
+    override val syncThemesSubtitle = "Używaj tego samego motywu w aplikacji i czytniku"
+    override val readerThemeSettingsTitle = "Wygląd książki"
+    override val readerThemeSettingsSubtitle = "Dostosuj motywy, czcionki i animacje"
+    override val themeSystem = "Systemowy"
+    override val specificFontTitle = "Krój czcionki"
+    override val fontDefault = "Domyślny"
+    override val bookInfoTitle = "O książce"
 }
 
 fun getStrings(language: AppLanguage): Strings = when (language) {

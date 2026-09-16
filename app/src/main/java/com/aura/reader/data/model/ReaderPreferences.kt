@@ -41,5 +41,8 @@ data class ReaderSettings(
     val autoHyphenation: Boolean = true,
     val twoColumnMode: TwoColumnMode = TwoColumnMode.AUTO,
     val pageAnimation: PageTurnAnimation = PageTurnAnimation.SLIDE,
-    val hapticFeedbackEnabled: Boolean = true
+    val hapticFeedbackEnabled: Boolean = true,
+    val fontName: String = "",
+    val syncThemesWithApp: Boolean = false,
+    val appThemeMode: ReaderThemeMode = ReaderThemeMode.SYSTEM_DYNAMIC
 )

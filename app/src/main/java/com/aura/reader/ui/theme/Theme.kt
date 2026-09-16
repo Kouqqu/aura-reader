@@ -131,7 +131,12 @@ fun AuraReaderTheme(
             }
         }
         ReaderThemeMode.SYSTEM_DYNAMIC -> {
-            if (hasDynamic) dynamicDarkColorScheme(context) else DarkColorScheme
+            val isSystemDark = androidx.compose.foundation.isSystemInDarkTheme()
+            if (isSystemDark) {
+                if (hasDynamic) dynamicDarkColorScheme(context) else DarkColorScheme
+            } else {
+                if (hasDynamic) dynamicLightColorScheme(context) else LightColorScheme
+            }
         }
     }
 

@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
                 LocalAppStrings provides getStrings(appLanguage)
             ) {
                 AuraReaderTheme(
-                    themeMode = settings.themeMode,
+                    themeMode = settings.appThemeMode,
                     materialYou = materialYouEnabled
                 ) {
                     val navController = rememberNavController()

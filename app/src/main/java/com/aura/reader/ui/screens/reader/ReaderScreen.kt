@@ -69,6 +69,20 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
+import android.app.Activity
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.aura.reader.R
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import com.aura.reader.ui.theme.LocalAppStrings
@@ -238,6 +252,7 @@ fun ReaderScreen(
     }
 
     var showControls by remember { mutableStateOf(true) }
+    var showBookInfoDialog by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showTtsSheet by remember { mutableStateOf(false) }
     var showChaptersSheet by remember { mutableStateOf(false) }
@@ -246,6 +261,27 @@ fun ReaderScreen(
     var quoteToSave by remember { mutableStateOf<String?>(null) }
     val strings = LocalAppStrings.current
     val context = LocalContext.current
+    val view = LocalView.current
+    val window = remember(view) { (view.context as? Activity)?.window }
+
+    DisposableEffect(showControls, window) {
+        if (window != null) {
+            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+            insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            if (showControls) {
+                insetsController.show(WindowInsetsCompat.Type.statusBars())
+            } else {
+                insetsController.hide(WindowInsetsCompat.Type.statusBars())
+            }
+        }
+        onDispose {
+            if (window != null) {
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                insetsController.show(WindowInsetsCompat.Type.statusBars())
+            }
+        }
+    }
+
     var currentPagingPage by remember { mutableIntStateOf(0) }
     var totalPagingPages by remember { mutableIntStateOf(1) }
     var requestPagingPage by remember { mutableStateOf<Int?>(null) }
@@ -297,16 +333,39 @@ fun ReaderScreen(
         }
     }
 
+    val fontProvider = remember {
+        GoogleFont.Provider(
+            providerAuthority = "com.google.android.gms.fonts",
+            providerPackage = "com.google.android.gms",
+            certificates = R.array.com_google_android_gms_fonts_certs
+        )
+    }
+
     AuraReaderTheme(
         themeMode = settings.themeMode,
         materialYou = materialYouEnabled
     ) {
       CompositionLocalProvider(LocalTextToolbar provides customTextToolbar) {
-        val resolvedFontFamily = when (settings.fontFamily) {
-            ReaderFontFamily.SERIF -> FontFamily.Serif
-            ReaderFontFamily.SANS_SERIF -> FontFamily.SansSerif
-            ReaderFontFamily.MONOSPACE -> FontFamily.Monospace
-            ReaderFontFamily.SYSTEM_DEFAULT -> FontFamily.Default
+        val resolvedFontFamily = remember(settings.fontFamily, settings.fontName) {
+            val fallback = when (settings.fontFamily) {
+                ReaderFontFamily.SERIF -> FontFamily.Serif
+                ReaderFontFamily.SANS_SERIF -> FontFamily.SansSerif
+                ReaderFontFamily.MONOSPACE -> FontFamily.Monospace
+                ReaderFontFamily.SYSTEM_DEFAULT -> FontFamily.Default
+            }
+            if (settings.fontName.isBlank() || settings.fontName == "Системный") {
+                fallback
+            } else {
+                try {
+                    val googleFont = GoogleFont(settings.fontName)
+                    FontFamily(
+                        Font(googleFont = googleFont, fontProvider = fontProvider),
+                        fallback
+                    )
+                } catch (e: Exception) {
+                    fallback
+                }
+            }
         }
 
         val chapters = book?.chapters ?: emptyList()
@@ -322,7 +381,6 @@ fun ReaderScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .statusBarsPadding()
                     .navigationBarsPadding()
             ) {
                 if (chapters.isNotEmpty()) {
@@ -334,6 +392,8 @@ fun ReaderScreen(
                                 chapterIndex = currentChapterIndex,
                                 initialBlockIndex = savedOffset,
                                 totalChapters = chapters.size,
+                                prevChapter = chapters.getOrNull(currentChapterIndex - 1),
+                                nextChapter = chapters.getOrNull(currentChapterIndex + 1),
                                 settings = settings,
                                 resolvedFontFamily = resolvedFontFamily,
                                 searchQuery = searchQuery,
@@ -346,7 +406,7 @@ fun ReaderScreen(
                                 onConsumeTargetBlock = { viewModel.consumeTargetScrollOffset() },
                                 onConsumeTargetPage = { requestPagingPage = null },
                                 onToggleControls = { showControls = !showControls },
-                                onPrevChapter = { viewModel.prevChapter() },
+                                onPrevChapter = { viewModel.prevChapter(startAtEnd = true) },
                                 onNextChapter = { viewModel.nextChapter() },
                                 onFootnoteClick = { ref, content -> selectedFootnote = ref to content },
                                 onSaveQuote = { quoteToSave = it },
@@ -582,49 +642,58 @@ fun ReaderScreen(
                             }
                         }
 
-                        Box(
-                            modifier = coverSharedModifier
-                                .size(width = 28.dp, height = 40.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (topBarCoverBitmap != null) {
-                                Image(
-                                    bitmap = topBarCoverBitmap,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.AutoStories,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-
-                        Column(
+                        Row(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(horizontal = 8.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { showBookInfoDialog = true }
+                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = book?.title ?: strings.appName,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = currentChapter?.title ?: "",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Box(
+                                modifier = coverSharedModifier
+                                    .size(width = 28.dp, height = 40.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (topBarCoverBitmap != null) {
+                                    Image(
+                                        bitmap = topBarCoverBitmap,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoStories,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(start = 8.dp, end = 4.dp)
+                            ) {
+                                Text(
+                                    text = book?.title ?: strings.appName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = currentChapter?.title ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
 
                         // Audio Narration (TTS)
@@ -1031,7 +1100,8 @@ fun ReaderScreen(
                     onAutoHyphenationChange = { viewModel.setAutoHyphenation(it) },
                     onTwoColumnModeChange = { viewModel.setTwoColumnMode(it) },
                     onPageAnimationChange = { viewModel.setPageAnimation(it) },
-                    onHapticFeedbackChange = { viewModel.setHapticFeedbackEnabled(it) }
+                    onHapticFeedbackChange = { viewModel.setHapticFeedbackEnabled(it) },
+                    onFontNameChange = { viewModel.setFontName(it) }
                 )
             }
 
@@ -1059,6 +1129,19 @@ fun ReaderScreen(
                 )
             }
 
+            if (showBookInfoDialog && book != null) {
+                BookInfoDialog(
+                    book = book,
+                    currentChapter = currentChapter,
+                    currentChapterIndex = currentChapterIndex,
+                    totalChapters = chapters.size,
+                    currentPage = currentPagingPage,
+                    totalPages = totalPagingPages,
+                    progressPercent = book.progressPercent,
+                    onDismiss = { showBookInfoDialog = false }
+                )
+            }
+
             selectedFootnote?.let { (ref, content) ->
                 FootnoteDialog(
                     refLabel = ref,
@@ -1067,8 +1150,19 @@ fun ReaderScreen(
                 )
             }
 
-            // Floating Popup anchored directly above or below selected text
+            // Scrim to dismiss selection toolbar when tapping anywhere on the screen
             if (selectedQuoteCopyAction != null && selectionRect != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            customTextToolbar.hide()
+                        }
+                )
+
                 val density = LocalDensity.current
                 val rect = selectionRect!!
 
@@ -1350,7 +1444,7 @@ fun ChapterContentView(
             contentPadding = PaddingValues(
                 start = 22.dp,
                 end = 22.dp,
-                top = 28.dp,
+                top = 16.dp,
                 bottom = 140.dp
             )
         ) {
@@ -1428,6 +1522,8 @@ fun ChapterPagingView(
     chapterIndex: Int,
     initialBlockIndex: Int = 0,
     totalChapters: Int,
+    prevChapter: Chapter? = null,
+    nextChapter: Chapter? = null,
     settings: ReaderSettings,
     resolvedFontFamily: FontFamily,
     searchQuery: String,
@@ -1451,12 +1547,11 @@ fun ChapterPagingView(
         val screenHeightDp = maxHeight.value
         val screenWidthDp = maxWidth.value
 
-        val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val bottomNavInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
         val pillClearanceDp = 48.dp
         val bottomPaddingDp = bottomNavInset + pillClearanceDp
-        val topPaddingDp = (topInset + 4.dp).coerceAtLeast(10.dp)
+        val topPaddingDp = 14.dp
         val usableContentHeightDp = (screenHeightDp - topPaddingDp.value - bottomPaddingDp.value).coerceAtLeast(120f)
 
         val isTwoColumn = when (settings.twoColumnMode) {
@@ -1509,9 +1604,16 @@ fun ChapterPagingView(
 
         val strings = LocalAppStrings.current
 
-        val totalSpreads = remember(pages.size, isTwoColumn) {
+        val hasPrev = chapterIndex > 0 && prevChapter != null
+        val hasNext = chapterIndex < totalChapters - 1 && nextChapter != null
+
+        val contentSpreadsCount = remember(pages.size, isTwoColumn) {
             if (isTwoColumn) ((pages.size + 1) / 2).coerceAtLeast(1) else pages.size.coerceAtLeast(1)
         }
+
+        val prevPageOffset = if (hasPrev) 1 else 0
+        val nextPageOffset = if (hasNext) 1 else 0
+        val totalPagerSpreads = prevPageOffset + contentSpreadsCount + nextPageOffset
 
         val calculatedInitialPage = remember(pages, initialBlockIndex, isTwoColumn) {
             if (pages.isEmpty()) 0
@@ -1530,9 +1632,10 @@ fun ChapterPagingView(
             }
         }
 
+        val initialPagerSpread = prevPageOffset + calculatedInitialPage
         val pagerState = rememberPagerState(
-            initialPage = calculatedInitialPage.coerceIn(0, (totalSpreads - 1).coerceAtLeast(0)),
-            pageCount = { totalSpreads.coerceAtLeast(1) }
+            initialPage = initialPagerSpread.coerceIn(prevPageOffset, (totalPagerSpreads - 1).coerceAtLeast(prevPageOffset)),
+            pageCount = { totalPagerSpreads.coerceAtLeast(1) }
         )
         val coroutineScope = rememberCoroutineScope()
         var lastViewedBlockIndex by remember { mutableIntStateOf(initialBlockIndex) }
@@ -1556,21 +1659,38 @@ fun ChapterPagingView(
             }
         }
 
-        LaunchedEffect(pagerState.currentPage, pages, isTwoColumn) {
-            val currentSpread = pagerState.currentPage.coerceIn(0, (totalSpreads - 1).coerceAtLeast(0))
-            if (currentSpread != lastHapticSpread) {
-                if (lastHapticSpread != -1 && settings.hapticFeedbackEnabled) {
+        LaunchedEffect(pagerState.currentPage, totalPagerSpreads, hasPrev, hasNext) {
+            if (hasPrev && pagerState.currentPage == 0) {
+                if (settings.hapticFeedbackEnabled) {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 }
-                lastHapticSpread = currentSpread
+                onPrevChapter()
+                return@LaunchedEffect
+            }
+            if (hasNext && pagerState.currentPage == totalPagerSpreads - 1) {
+                if (settings.hapticFeedbackEnabled) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                }
+                onNextChapter()
+                return@LaunchedEffect
             }
 
-            val activePageIdx = if (isTwoColumn) (currentSpread * 2).coerceIn(0, (pages.size - 1).coerceAtLeast(0)) else currentSpread
-            onPageChange(activePageIdx, pages.size.coerceAtLeast(1))
+            val currentSpread = pagerState.currentPage - prevPageOffset
+            if (currentSpread in 0 until contentSpreadsCount) {
+                if (currentSpread != lastHapticSpread) {
+                    if (lastHapticSpread != -1 && settings.hapticFeedbackEnabled) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                    lastHapticSpread = currentSpread
+                }
 
-            val currentBlock = pages.getOrNull(activePageIdx)?.firstOrNull()?.first ?: 0
-            lastViewedBlockIndex = currentBlock
-            onUpdateProgress(currentBlock, blocks.size.coerceAtLeast(1))
+                val activePageIdx = if (isTwoColumn) (currentSpread * 2).coerceIn(0, (pages.size - 1).coerceAtLeast(0)) else currentSpread
+                onPageChange(activePageIdx, pages.size.coerceAtLeast(1))
+
+                val currentBlock = pages.getOrNull(activePageIdx)?.firstOrNull()?.first ?: 0
+                lastViewedBlockIndex = currentBlock
+                onUpdateProgress(currentBlock, blocks.size.coerceAtLeast(1))
+            }
         }
 
         LaunchedEffect(pages, isTwoColumn) {
@@ -1578,8 +1698,9 @@ fun ChapterPagingView(
                 page.any { it.first <= lastViewedBlockIndex }
             }.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
             val targetSpread = if (isTwoColumn) foundPage / 2 else foundPage
-            if (targetSpread != pagerState.currentPage && targetSpread in 0 until totalSpreads) {
-                pagerState.scrollToPage(targetSpread)
+            val targetPagerSpread = prevPageOffset + targetSpread
+            if (targetPagerSpread != pagerState.currentPage && targetPagerSpread in prevPageOffset until (prevPageOffset + contentSpreadsCount)) {
+                pagerState.scrollToPage(targetPagerSpread)
             }
         }
 
@@ -1587,11 +1708,12 @@ fun ChapterPagingView(
         LaunchedEffect(targetPage) {
             if (targetPage != null) {
                 val targetSpread = if (isTwoColumn) targetPage / 2 else targetPage
-                if (targetSpread in 0 until totalSpreads && targetSpread != pagerState.currentPage) {
+                val targetPagerSpread = prevPageOffset + targetSpread
+                if (targetPagerSpread in prevPageOffset until (prevPageOffset + contentSpreadsCount) && targetPagerSpread != pagerState.currentPage) {
                     if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
-                        pagerState.scrollToPage(targetSpread)
+                        pagerState.scrollToPage(targetPagerSpread)
                     } else {
-                        pagerState.animateScrollToPage(targetSpread)
+                        pagerState.animateScrollToPage(targetPagerSpread)
                     }
                 }
                 onConsumeTargetPage()
@@ -1606,97 +1728,27 @@ fun ChapterPagingView(
                 }
                 if (foundPage >= 0) {
                     val targetSpread = if (isTwoColumn) foundPage / 2 else foundPage
+                    val targetPagerSpread = prevPageOffset + targetSpread
                     if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
-                        pagerState.scrollToPage(targetSpread)
+                        pagerState.scrollToPage(targetPagerSpread)
                     } else {
-                        pagerState.animateScrollToPage(targetSpread)
+                        pagerState.animateScrollToPage(targetPagerSpread)
                     }
                 }
                 onConsumeTargetBlock()
             }
         }
 
-        val chapterSwipeNestedScroll = remember(pagerState, totalSpreads, onNextChapter, onPrevChapter, settings.hapticFeedbackEnabled) {
-            object : NestedScrollConnection {
-                var overscrollX = 0f
-                var triggered = false
-
-                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    if (source == NestedScrollSource.Drag && triggered) {
-                        return available
-                    }
-                    return Offset.Zero
-                }
-
-                override fun onPostScroll(
-                    consumed: Offset,
-                    available: Offset,
-                    source: NestedScrollSource
-                ): Offset {
-                    if (source == NestedScrollSource.Drag && !triggered) {
-                        // At the last page, dragging left to go to next chapter (available.x < 0)
-                        if (pagerState.currentPage >= totalSpreads - 1 && available.x < -0.5f) {
-                            overscrollX += available.x
-                            if (overscrollX < -90f) {
-                                triggered = true
-                                if (settings.hapticFeedbackEnabled) {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                }
-                                onNextChapter()
-                            }
-                        }
-                        // At the first page, dragging right to go to prev chapter (available.x > 0)
-                        else if (pagerState.currentPage <= 0 && available.x > 0.5f) {
-                            overscrollX += available.x
-                            if (overscrollX > 90f) {
-                                triggered = true
-                                if (settings.hapticFeedbackEnabled) {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                }
-                                onPrevChapter()
-                            }
-                        }
-                    }
-                    return Offset.Zero
-                }
-
-                override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                    if (!triggered) {
-                        if (pagerState.currentPage >= totalSpreads - 1 && (overscrollX < -30f || available.x < -300f)) {
-                            triggered = true
-                            if (settings.hapticFeedbackEnabled) {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            }
-                            onNextChapter()
-                        } else if (pagerState.currentPage <= 0 && (overscrollX > 30f || available.x > 300f)) {
-                            triggered = true
-                            if (settings.hapticFeedbackEnabled) {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            }
-                            onPrevChapter()
-                        }
-                    }
-                    overscrollX = 0f
-                    triggered = false
-                    return Velocity.Zero
-                }
-            }
-        }
-
         val instantSwipeModifier = if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
-            Modifier.pointerInput(pagerState.currentPage, totalSpreads) {
+            Modifier.pointerInput(pagerState.currentPage, totalPagerSpreads) {
                 detectHorizontalDragGestures { _, dragAmount ->
                     if (dragAmount < -25f) {
-                        if (pagerState.currentPage < totalSpreads - 1) {
+                        if (pagerState.currentPage < totalPagerSpreads - 1) {
                             coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
-                        } else {
-                            onNextChapter()
                         }
                     } else if (dragAmount > 25f) {
                         if (pagerState.currentPage > 0) {
                             coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
-                        } else {
-                            onPrevChapter()
                         }
                     }
                 }
@@ -1708,7 +1760,6 @@ fun ChapterPagingView(
             userScrollEnabled = settings.pageAnimation != PageTurnAnimation.INSTANT,
             modifier = Modifier
                 .fillMaxSize()
-                .nestedScroll(chapterSwipeNestedScroll)
                 .then(instantSwipeModifier)
         ) { spreadIdx ->
             // Вычисляем, насколько страница сдвинута от центра (от -1.0 до 1.0)
@@ -1774,88 +1825,107 @@ fun ChapterPagingView(
                         indication = null
                     ) { onToggleControls() }
             ) {
-                SelectionContainer {
-                    if (isTwoColumn) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 24.dp)
-                                .padding(top = topPaddingDp, bottom = bottomPaddingDp),
-                            horizontalArrangement = Arrangement.spacedBy(24.dp)
-                        ) {
-                            val leftPageBlocks = pages.getOrNull(spreadIdx * 2) ?: emptyList()
-                            val rightPageBlocks = pages.getOrNull(spreadIdx * 2 + 1) ?: emptyList()
-
-                            Column(
+                if (hasPrev && spreadIdx == 0) {
+                    ChapterTransitionSpread(
+                        isNext = false,
+                        chapterTitle = prevChapter?.title ?: "",
+                        chapterNumber = chapterIndex,
+                        settings = settings,
+                        resolvedFontFamily = resolvedFontFamily
+                    )
+                } else if (hasNext && spreadIdx == totalPagerSpreads - 1) {
+                    ChapterTransitionSpread(
+                        isNext = true,
+                        chapterTitle = nextChapter?.title ?: "",
+                        chapterNumber = chapterIndex + 2,
+                        settings = settings,
+                        resolvedFontFamily = resolvedFontFamily
+                    )
+                } else {
+                    val contentSpreadIdx = spreadIdx - prevPageOffset
+                    SelectionContainer {
+                        if (isTwoColumn) {
+                            Row(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
-                                verticalArrangement = Arrangement.Top
+                                    .fillMaxSize()
+                                    .padding(horizontal = 24.dp)
+                                    .padding(top = topPaddingDp, bottom = bottomPaddingDp),
+                                horizontalArrangement = Arrangement.spacedBy(24.dp)
                             ) {
-                                for ((_, block) in leftPageBlocks) {
-                                    RenderBlock(
-                                        block = block,
-                                        settings = settings,
-                                        resolvedFontFamily = resolvedFontFamily,
-                                        searchQuery = searchQuery,
-                                        footnotes = footnotes,
-                                        quotes = quotes,
-                                        onFootnoteClick = onFootnoteClick,
-                                        onToggleControls = onToggleControls,
-                                        onSaveQuote = onSaveQuote
-                                    )
-                                }
-                            }
+                                val leftPageBlocks = pages.getOrNull(contentSpreadIdx * 2) ?: emptyList()
+                                val rightPageBlocks = pages.getOrNull(contentSpreadIdx * 2 + 1) ?: emptyList()
 
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .width(1.dp)
-                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
-                            )
-
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
-                                verticalArrangement = Arrangement.Top
-                            ) {
-                                for ((_, block) in rightPageBlocks) {
-                                    RenderBlock(
-                                        block = block,
-                                        settings = settings,
-                                        resolvedFontFamily = resolvedFontFamily,
-                                        searchQuery = searchQuery,
-                                        footnotes = footnotes,
-                                        quotes = quotes,
-                                        onFootnoteClick = onFootnoteClick,
-                                        onToggleControls = onToggleControls,
-                                        onSaveQuote = onSaveQuote
-                                    )
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight(),
+                                    verticalArrangement = Arrangement.Top
+                                ) {
+                                    for ((_, block) in leftPageBlocks) {
+                                        RenderBlock(
+                                            block = block,
+                                            settings = settings,
+                                            resolvedFontFamily = resolvedFontFamily,
+                                            searchQuery = searchQuery,
+                                            footnotes = footnotes,
+                                            quotes = quotes,
+                                            onFootnoteClick = onFootnoteClick,
+                                            onToggleControls = onToggleControls,
+                                            onSaveQuote = onSaveQuote
+                                        )
+                                    }
                                 }
-                            }
-                        }
-                    } else {
-                        val pageBlocks = pages.getOrNull(spreadIdx) ?: emptyList()
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 24.dp)
-                                .padding(top = topPaddingDp, bottom = bottomPaddingDp),
-                            verticalArrangement = Arrangement.Top
-                        ) {
-                            for ((_, block) in pageBlocks) {
-                                RenderBlock(
-                                    block = block,
-                                    settings = settings,
-                                    resolvedFontFamily = resolvedFontFamily,
-                                    searchQuery = searchQuery,
-                                    footnotes = footnotes,
-                                    quotes = quotes,
-                                    onFootnoteClick = onFootnoteClick,
-                                    onToggleControls = onToggleControls,
-                                    onSaveQuote = onSaveQuote
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .width(1.dp)
+                                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
                                 )
+
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight(),
+                                    verticalArrangement = Arrangement.Top
+                                ) {
+                                    for ((_, block) in rightPageBlocks) {
+                                        RenderBlock(
+                                            block = block,
+                                            settings = settings,
+                                            resolvedFontFamily = resolvedFontFamily,
+                                            searchQuery = searchQuery,
+                                            footnotes = footnotes,
+                                            quotes = quotes,
+                                            onFootnoteClick = onFootnoteClick,
+                                            onToggleControls = onToggleControls,
+                                            onSaveQuote = onSaveQuote
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            val pageBlocks = pages.getOrNull(contentSpreadIdx) ?: emptyList()
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 24.dp)
+                                    .padding(top = topPaddingDp, bottom = bottomPaddingDp),
+                                verticalArrangement = Arrangement.Top
+                            ) {
+                                for ((_, block) in pageBlocks) {
+                                    RenderBlock(
+                                        block = block,
+                                        settings = settings,
+                                        resolvedFontFamily = resolvedFontFamily,
+                                        searchQuery = searchQuery,
+                                        footnotes = footnotes,
+                                        quotes = quotes,
+                                        onFootnoteClick = onFootnoteClick,
+                                        onToggleControls = onToggleControls,
+                                        onSaveQuote = onSaveQuote
+                                    )
+                                }
                             }
                         }
                     }
@@ -1885,8 +1955,6 @@ fun ChapterPagingView(
                 ) {
                     if (pagerState.currentPage > 0) {
                         flipPage(pagerState.currentPage - 1)
-                    } else {
-                        onPrevChapter()
                     }
                 }
         )
@@ -1900,22 +1968,21 @@ fun ChapterPagingView(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
-                    if (pagerState.currentPage < totalSpreads - 1) {
+                    if (pagerState.currentPage < totalPagerSpreads - 1) {
                         flipPage(pagerState.currentPage + 1)
-                    } else {
-                        onNextChapter()
                     }
                 }
         )
 
         // Kindle-style Bottom Reading Progress Indicator (cycles: % -> time remaining -> page count)
-        val intraChapterProgress = if (totalSpreads > 1) {
-            (pagerState.currentPage.toFloat() / (totalSpreads - 1)).coerceIn(0f, 1f)
+        val contentSpreadForProgress = (pagerState.currentPage - prevPageOffset).coerceIn(0, (contentSpreadsCount - 1).coerceAtLeast(0))
+        val intraChapterProgress = if (contentSpreadsCount > 1) {
+            (contentSpreadForProgress.toFloat() / (contentSpreadsCount - 1)).coerceIn(0f, 1f)
         } else 0f
         val overallPercent = (((chapterIndex + intraChapterProgress) / totalChapters.coerceAtLeast(1)) * 100).toInt().coerceIn(0, 100)
 
-        val remainingWords = remember(pages, pagerState.currentPage, isTwoColumn) {
-            val startPage = if (isTwoColumn) pagerState.currentPage * 2 else pagerState.currentPage
+        val remainingWords = remember(pages, contentSpreadForProgress, isTwoColumn) {
+            val startPage = if (isTwoColumn) contentSpreadForProgress * 2 else contentSpreadForProgress
             var words = 0
             for (p in startPage until pages.size) {
                 val pBlocks = pages.getOrNull(p) ?: continue
@@ -1929,11 +1996,11 @@ fun ChapterPagingView(
 
         LaunchedEffect(pagerState.currentPage) {
             val pageBlocks = if (isTwoColumn) {
-                val p1 = pagerState.currentPage * 2
+                val p1 = contentSpreadForProgress * 2
                 val p2 = p1 + 1
                 (pages.getOrNull(p1) ?: emptyList()) + (pages.getOrNull(p2) ?: emptyList())
             } else {
-                pages.getOrNull(pagerState.currentPage) ?: emptyList()
+                pages.getOrNull(contentSpreadForProgress) ?: emptyList()
             }
             val wordsCount = pageBlocks.sumOf { (_, b) ->
                 b.text.split(Regex("\\s+")).count { it.isNotBlank() }
@@ -1948,11 +2015,11 @@ fun ChapterPagingView(
             1 -> strings.minutesLeftInChapter(minutesLeft)
             else -> {
                 if (isTwoColumn) {
-                    val p1 = pagerState.currentPage * 2 + 1
-                    val p2 = (pagerState.currentPage * 2 + 2).coerceAtMost(pages.size)
+                    val p1 = contentSpreadForProgress * 2 + 1
+                    val p2 = (contentSpreadForProgress * 2 + 2).coerceAtMost(pages.size)
                     if (p1 == p2) "${strings.page} $p1 ${strings.ofPages} ${pages.size}" else "${strings.page} $p1–$p2 ${strings.ofPages} ${pages.size}"
                 } else {
-                    "${strings.page} ${pagerState.currentPage + 1} ${strings.ofPages} ${pages.size}"
+                    "${strings.page} ${contentSpreadForProgress + 1} ${strings.ofPages} ${pages.size}"
                 }
             }
         }
@@ -2124,9 +2191,10 @@ private fun paginateBlocks(
                     fontFamily = resolvedFontFamily,
                     fontStyle = FontStyle.Italic,
                     textAlign = TextAlign.End,
-                    hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None
+                    hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
+                    lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
                 )
-                val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = epigraphWidthPx))
+                val layout = textMeasurer.measure(formatTypography(block.text), style, constraints = Constraints(maxWidth = epigraphWidthPx))
                 var totalHeight = layout.size.height + with(density) { 16.dp.toPx() } // 4dp top + 12dp bottom
                 if (!block.subText.isNullOrBlank()) {
                     val subStyle = TextStyle(
@@ -2151,9 +2219,10 @@ private fun paginateBlocks(
                     lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 0.95f).sp,
                     fontFamily = resolvedFontFamily,
                     fontStyle = FontStyle.Italic,
-                    hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None
+                    hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
+                    lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
                 )
-                val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = verseWidthPx))
+                val layout = textMeasurer.measure(formatTypography(block.text), style, constraints = Constraints(maxWidth = verseWidthPx))
                 val totalHeight = layout.size.height + with(density) { 18.dp.toPx() } // 6dp top + 12dp bottom
                 val effectiveMax = getEffectiveMaxHeightPx()
                 if (currentHeightPx + totalHeight > effectiveMax && currentPage.isNotEmpty()) {
@@ -2163,7 +2232,7 @@ private fun paginateBlocks(
                 currentHeightPx += totalHeight
             }
             BlockType.PARAGRAPH -> {
-                var remainingText = block.text.trim()
+                var remainingText = formatTypography(block.text.trim())
                 var isContinuation = false
                 var loopGuard = 0
 
@@ -2176,7 +2245,8 @@ private fun paginateBlocks(
                         lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
                         fontFamily = resolvedFontFamily,
                         textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp),
-                        hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None
+                        hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
+                        lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
                     )
 
                     val layoutResult = textMeasurer.measure(
@@ -2428,11 +2498,14 @@ fun RenderBlock(
                 fontFamily = resolvedFontFamily,
                 color = MaterialTheme.colorScheme.onBackground,
                 textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp),
-                hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None
+                hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
+                lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
             )
 
+            val formattedText = remember(block.text) { formatTypography(block.text) }
+
             InteractiveText(
-                rawText = block.text,
+                rawText = formattedText,
                 style = paragraphStyle,
                 searchQuery = searchQuery,
                 footnotes = footnotes,
@@ -2694,4 +2767,283 @@ fun TtsControlBar(
             }
         }
     }
+}
+
+// ------------------------------------------------------------------------------------------------
+// TYPOGRAPHY FORMATTING HELPER
+// ------------------------------------------------------------------------------------------------
+
+fun formatTypography(text: String): String {
+    if (text.isEmpty()) return text
+    var result = text
+    // Dialogue dashes at line start: "- " or "-- " or "— " -> "—\u00A0"
+    result = result.replace(Regex("(^|(?<=\\n))[-—–]\\s+"), "—\u00A0")
+    // Sentence dashes inside text: attach to previous word with non-breaking space
+    result = result.replace(Regex("(?<=\\S)\\s+[-—–]\\s+"), "\u00A0— ")
+    return result
+}
+
+// ------------------------------------------------------------------------------------------------
+// CHAPTER TRANSITION SPREAD (NATIVE PAGE FLIP TO PREV / NEXT CHAPTER)
+// ------------------------------------------------------------------------------------------------
+
+@Composable
+fun ChapterTransitionSpread(
+    isNext: Boolean,
+    chapterTitle: String,
+    chapterNumber: Int,
+    settings: ReaderSettings,
+    resolvedFontFamily: FontFamily
+) {
+    val strings = LocalAppStrings.current
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp, vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = if (isNext) Icons.Default.SkipNext else Icons.Default.SkipPrevious,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+            modifier = Modifier.size(40.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = if (isNext) strings.next.uppercase() else strings.previous.uppercase(),
+            style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.5.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "${strings.chapters} $chapterNumber",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        if (chapterTitle.isNotBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = chapterTitle,
+                style = MaterialTheme.typography.bodyLarge,
+                fontFamily = resolvedFontFamily,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// INTERACTIVE BOOK INFO DIALOG (HEADER TAP)
+// ------------------------------------------------------------------------------------------------
+
+@Composable
+fun BookInfoDialog(
+    book: com.aura.reader.data.model.Book,
+    currentChapter: com.aura.reader.data.model.Chapter?,
+    currentChapterIndex: Int,
+    totalChapters: Int,
+    currentPage: Int,
+    totalPages: Int,
+    progressPercent: Int,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    val coverBitmap = remember(book.coverBase64) {
+        book.coverBase64?.let { base64 ->
+            try {
+                val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(strings.close)
+            }
+        },
+        title = {
+            Text(
+                text = strings.bookInfoTitle,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Book Cover
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier
+                        .size(width = 120.dp, height = 175.dp)
+                        .padding(bottom = 16.dp)
+                ) {
+                    if (coverBitmap != null) {
+                        Image(
+                            bitmap = coverBitmap,
+                            contentDescription = book.title,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoStories,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                // Title
+                Text(
+                    text = book.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+
+                // Author
+                if (book.author.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = book.author,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Progress Bar & Info Card
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = strings.progress,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "$progressPercent%",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        LinearProgressIndicator(
+                            progress = { progressPercent / 100f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Chapter info
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = strings.chapters,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "${currentChapterIndex + 1} / $totalChapters",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        if (currentChapter != null && currentChapter.title.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = currentChapter.title,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        if (totalPages > 0) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = strings.pages,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${currentPage + 1} / $totalPages",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = strings.format,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = book.format.name.uppercase(),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        shape = RoundedCornerShape(24.dp)
+    )
 }

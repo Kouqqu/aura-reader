@@ -107,6 +107,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation("androidx.compose.ui:ui-text-google-fonts")
 
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences)
