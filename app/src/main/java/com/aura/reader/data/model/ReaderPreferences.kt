@@ -20,8 +20,7 @@ enum class ReaderFontFamily {
 enum class PageTurnAnimation {
     SLIDE,
     INSTANT,
-    CURL,
-    REALISTIC_CURL
+    CURL
 }
 
 enum class TwoColumnMode {

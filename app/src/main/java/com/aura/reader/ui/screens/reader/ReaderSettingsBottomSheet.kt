@@ -322,7 +322,7 @@ fun ReaderSettingsBottomSheet(
                 // Specific Font Typeface Dropdown
                 val fontChoices = when (settings.fontFamily) {
                     ReaderFontFamily.SERIF -> listOf(strings.fontDefault, "Literata", "PT Serif", "Lora")
-                    ReaderFontFamily.SANS_SERIF -> listOf(strings.fontDefault, "Inter")
+                    ReaderFontFamily.SANS_SERIF -> listOf(strings.fontDefault, "Google Sans", "Inter")
                     ReaderFontFamily.MONOSPACE -> listOf(strings.fontDefault, "JetBrains Mono")
                     ReaderFontFamily.SYSTEM_DEFAULT -> listOf(strings.fontDefault)
                 }
@@ -456,11 +456,6 @@ fun ReaderSettingsBottomSheet(
                             selected = settings.pageAnimation == PageTurnAnimation.CURL,
                             onClick = { onPageAnimationChange(PageTurnAnimation.CURL) },
                             label = { Text(strings.pageAnimationCurl, maxLines = 1, softWrap = false) }
-                        )
-                        FilterChip(
-                            selected = settings.pageAnimation == PageTurnAnimation.REALISTIC_CURL,
-                            onClick = { onPageAnimationChange(PageTurnAnimation.REALISTIC_CURL) },
-                            label = { Text(strings.pageAnimationRealistic, maxLines = 1, softWrap = false) }
                         )
                     }
 
