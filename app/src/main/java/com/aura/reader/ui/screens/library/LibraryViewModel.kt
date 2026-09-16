@@ -159,6 +159,19 @@ class LibraryViewModel(
     private val _activeCollectionFilter = MutableStateFlow(ActiveCollectionFilter(CollectionFilterType.ALL))
     val activeCollectionFilter: StateFlow<ActiveCollectionFilter> = _activeCollectionFilter.asStateFlow()
 
+    private val _customBookOrder = MutableStateFlow<List<String>>(emptyList())
+    val customBookOrder: StateFlow<List<String>> = _customBookOrder.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            preferencesManager.customBookOrder.collect { savedOrder ->
+                if (_customBookOrder.value.isEmpty() && savedOrder.isNotEmpty()) {
+                    _customBookOrder.value = savedOrder
+                }
+            }
+        }
+    }
+
     val librarySortOrder: StateFlow<LibrarySortOption> = preferencesManager.librarySortOrder
         .map {
             try { LibrarySortOption.valueOf(it) } catch (e: Exception) { LibrarySortOption.RECENT }
@@ -172,15 +185,31 @@ class LibraryViewModel(
     }
 
     fun moveBookCustomOrder(bookId: String, direction: Int, currentBooks: List<Book>) {
-        val list = currentBooks.map { it.id }.toMutableList()
-        val idx = list.indexOf(bookId)
+        val currentOrder = if (_customBookOrder.value.isNotEmpty()) {
+            _customBookOrder.value.toMutableList()
+        } else {
+            currentBooks.map { it.id }.toMutableList()
+        }
+        for (b in currentBooks) {
+            if (!currentOrder.contains(b.id)) {
+                currentOrder.add(b.id)
+            }
+        }
+        val idx = currentOrder.indexOf(bookId)
         if (idx != -1) {
-            val targetIdx = (idx + direction).coerceIn(0, list.size - 1)
+            var targetIdx = idx + direction
+            if (targetIdx >= currentOrder.size && idx + 1 < currentOrder.size) {
+                targetIdx = idx + 1
+            } else if (targetIdx < 0 && idx - 1 >= 0) {
+                targetIdx = idx - 1
+            }
+            targetIdx = targetIdx.coerceIn(0, currentOrder.size - 1)
             if (targetIdx != idx) {
-                val item = list.removeAt(idx)
-                list.add(targetIdx, item)
+                val item = currentOrder.removeAt(idx)
+                currentOrder.add(targetIdx, item)
+                _customBookOrder.value = currentOrder
                 viewModelScope.launch {
-                    preferencesManager.saveCustomBookOrder(list)
+                    preferencesManager.saveCustomBookOrder(currentOrder)
                 }
             }
         }
@@ -189,9 +218,12 @@ class LibraryViewModel(
     fun startReorderMode(currentBooks: List<Book>) {
         viewModelScope.launch {
             preferencesManager.setLibrarySortOrder(LibrarySortOption.CUSTOM.name)
-            val currentOrder = preferencesManager.customBookOrder.first()
-            if (currentOrder.isEmpty() && currentBooks.isNotEmpty()) {
-                preferencesManager.saveCustomBookOrder(currentBooks.map { it.id })
+        }
+        if (_customBookOrder.value.isEmpty() && currentBooks.isNotEmpty()) {
+            val initial = currentBooks.map { it.id }
+            _customBookOrder.value = initial
+            viewModelScope.launch {
+                preferencesManager.saveCustomBookOrder(initial)
             }
         }
     }
@@ -268,7 +300,7 @@ class LibraryViewModel(
         _searchQuery,
         _activeCollectionFilter,
         preferencesManager.librarySortOrder,
-        preferencesManager.customBookOrder
+        _customBookOrder
     ) { books, query, filter, sortStr, customOrderList ->
         val q = query.trim()
         val searchFiltered = if (q.isEmpty()) {

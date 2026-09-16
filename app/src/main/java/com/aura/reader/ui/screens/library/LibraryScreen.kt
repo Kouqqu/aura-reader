@@ -11,6 +11,10 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 
 import com.aura.reader.ui.components.ParallaxCoverViewer
 import com.aura.reader.util.BookShareUtils
@@ -186,12 +190,14 @@ fun LibraryScreen(
     var isReorderMode by remember { mutableStateOf(false) }
     var currentlyDraggedBookId by remember { mutableStateOf<String?>(null) }
     var currentDragOffset by remember { mutableStateOf(Offset.Zero) }
+    var accumulatedDragOffset by remember { mutableStateOf(Offset.Zero) }
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
     BackHandler(enabled = isReorderMode) {
         isReorderMode = false
         currentlyDraggedBookId = null
         currentDragOffset = Offset.Zero
+        accumulatedDragOffset = Offset.Zero
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "ios_wobble")
@@ -534,14 +540,16 @@ fun LibraryScreen(
                     onOpenSample = { viewModel.openSampleBook() }
                 )
             } else {
-                LazyColumn(
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(if (libraryViewMode == "GRID") 2 else 1),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // Instant Update Notification Banner
                     if (updateInfo != null && updateInfo!!.isAvailable && updateNotificationsEnabled) {
-                        item {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
                             Card(
                                 shape = RoundedCornerShape(20.dp),
                                 colors = CardDefaults.cardColors(
@@ -595,7 +603,7 @@ fun LibraryScreen(
 
                     // Daily Reading Stats (Toggleable in Settings)
                     if (readingStatsEnabled) {
-                        item {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
                                 color = MaterialTheme.colorScheme.secondaryContainer,
@@ -643,7 +651,7 @@ fun LibraryScreen(
                     }
 
                     // Collections Filter Chips Row
-                    item {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -710,14 +718,20 @@ fun LibraryScreen(
                     }
 
                     val currentHeroBook = recentBooks.firstOrNull()
-                    val displayedRecentBooks = if (currentHeroBook != null && searchQuery.isBlank() && activeCollectionFilter.type == CollectionFilterType.ALL) {
+                    val showHeroCard = currentHeroBook != null &&
+                            searchQuery.isBlank() &&
+                            activeCollectionFilter.type == CollectionFilterType.ALL &&
+                            librarySortOrder != LibrarySortOption.CUSTOM &&
+                            !isReorderMode
+
+                    val displayedRecentBooks = if (showHeroCard && currentHeroBook != null) {
                         filteredRecentBooks.filter { it.id != currentHeroBook.id }
                     } else {
                         filteredRecentBooks
                     }
 
-                    if (currentHeroBook != null && searchQuery.isBlank() && activeCollectionFilter.type == CollectionFilterType.ALL) {
-                        item(key = "currently_reading_hero") {
+                    if (showHeroCard && currentHeroBook != null) {
+                        item(key = "currently_reading_hero", span = { GridItemSpan(maxLineSpan) }) {
                             CurrentlyReadingHeroCard(
                                 book = currentHeroBook,
                                 onBookClick = onBookSelected,
@@ -733,7 +747,7 @@ fun LibraryScreen(
                         }
                     }
 
-                    item {
+                    item(key = "section_header", span = { GridItemSpan(maxLineSpan) }) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -833,8 +847,7 @@ fun LibraryScreen(
                                         DropdownMenuItem(
                                             text = { Text(strings.sortCustomOrder) },
                                             onClick = {
-                                                viewModel.startReorderMode(displayedRecentBooks)
-                                                isReorderMode = true
+                                                viewModel.setLibrarySortOrder(LibrarySortOption.CUSTOM)
                                                 showSortMenu = false
                                             },
                                             leadingIcon = {
@@ -850,7 +863,7 @@ fun LibraryScreen(
                     }
 
                     if (displayedRecentBooks.isEmpty() && searchQuery.isNotBlank()) {
-                        item {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
                             Text(
                                 text = strings.noSearchResultsFound(searchQuery),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -860,91 +873,69 @@ fun LibraryScreen(
                         }
                     }
 
-                    if (libraryViewMode == "GRID") {
-                        val chunkedBooks = displayedRecentBooks.chunked(2)
-                        itemsIndexed(chunkedBooks, key = { _, chunk -> chunk.joinToString("_") { it.id } }) { rowIndex, rowBooks ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                rowBooks.forEachIndexed { colIndex, book ->
-                                    val itemIndex = rowIndex * 2 + colIndex
-                                    BookGridCard(
-                                        book = book,
-                                        index = itemIndex,
-                                        isReorderMode = isReorderMode,
-                                        wobbleAngle = wobbleAngle,
-                                        wobbleOffset = wobbleOffset,
-                                        currentlyDraggedBookId = currentlyDraggedBookId,
-                                        currentDragOffset = currentDragOffset,
-                                        onDragStart = {
-                                            isReorderMode = true
-                                            viewModel.startReorderMode(displayedRecentBooks)
-                                            currentlyDraggedBookId = book.id
-                                            currentDragOffset = Offset.Zero
-                                        },
-                                        onDrag = { dragAmount ->
-                                            val newOffset = currentDragOffset + dragAmount
-                                            val thresholdX = with(density) { 70.dp.toPx() }
-                                            val thresholdY = with(density) { 110.dp.toPx() }
-                                            if (newOffset.x > thresholdX) {
-                                                viewModel.moveBookCustomOrder(book.id, 1, displayedRecentBooks)
-                                                currentDragOffset = Offset(newOffset.x - thresholdX, newOffset.y)
-                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            } else if (newOffset.x < -thresholdX) {
-                                                viewModel.moveBookCustomOrder(book.id, -1, displayedRecentBooks)
-                                                currentDragOffset = Offset(newOffset.x + thresholdX, newOffset.y)
-                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            } else if (newOffset.y > thresholdY) {
-                                                viewModel.moveBookCustomOrder(book.id, 2, displayedRecentBooks)
-                                                currentDragOffset = Offset(newOffset.x, newOffset.y - thresholdY)
-                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            } else if (newOffset.y < -thresholdY) {
-                                                viewModel.moveBookCustomOrder(book.id, -2, displayedRecentBooks)
-                                                currentDragOffset = Offset(newOffset.x, newOffset.y + thresholdY)
-                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            } else {
-                                                currentDragOffset = newOffset
-                                            }
-                                        },
-                                        onDragEnd = {
-                                            currentlyDraggedBookId = null
-                                            currentDragOffset = Offset.Zero
-                                        },
-                                        onClick = {
-                                            onBookSelected(book)
-                                        },
-                                        onDelete = {
-                                            bookToDelete = book
-                                        },
-                                        onToggleFavorite = {
-                                            viewModel.toggleFavorite(book.id)
-                                        },
-                                        onAddToCollection = {
-                                            bookForCollections = book
-                                        },
-                                        onSetProgress = { prog ->
-                                            viewModel.setBookReadingProgress(book.id, prog)
-                                        },
-                                        onCoverClick = {
-                                            inspectingCoverBook = book
-                                        },
-                                        onShare = {
-                                            BookShareUtils.shareBookFile(context, book)
-                                        },
-                                        onChangeCover = {
-                                            bookForCoverChange = book
-                                        },
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                                if (rowBooks.size == 1) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
-                            }
-                        }
-                    } else {
-                        itemsIndexed(displayedRecentBooks, key = { _, it -> it.id }) { index, book ->
+                    gridItemsIndexed(
+                        items = displayedRecentBooks,
+                        key = { _, book -> book.id }
+                    ) { index, book ->
+                        if (libraryViewMode == "GRID") {
+                            BookGridCard(
+                                book = book,
+                                index = index,
+                                isReorderMode = isReorderMode,
+                                wobbleAngle = wobbleAngle,
+                                wobbleOffset = wobbleOffset,
+                                currentlyDraggedBookId = currentlyDraggedBookId,
+                                currentDragOffset = currentDragOffset,
+                                onDragStart = {
+                                    isReorderMode = true
+                                    viewModel.startReorderMode(displayedRecentBooks)
+                                    currentlyDraggedBookId = book.id
+                                    currentDragOffset = Offset.Zero
+                                    accumulatedDragOffset = Offset.Zero
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                },
+                                onDrag = { dragAmount ->
+                                    currentDragOffset += dragAmount
+                                    accumulatedDragOffset += dragAmount
+                                    val thresholdX = with(density) { 75.dp.toPx() }
+                                    val thresholdY = with(density) { 100.dp.toPx() }
+                                    if (accumulatedDragOffset.x > thresholdX) {
+                                        viewModel.moveBookCustomOrder(book.id, 1, displayedRecentBooks)
+                                        accumulatedDragOffset = Offset(accumulatedDragOffset.x - thresholdX, accumulatedDragOffset.y)
+                                        currentDragOffset = Offset(currentDragOffset.x - thresholdX, currentDragOffset.y)
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    } else if (accumulatedDragOffset.x < -thresholdX) {
+                                        viewModel.moveBookCustomOrder(book.id, -1, displayedRecentBooks)
+                                        accumulatedDragOffset = Offset(accumulatedDragOffset.x + thresholdX, accumulatedDragOffset.y)
+                                        currentDragOffset = Offset(currentDragOffset.x + thresholdX, currentDragOffset.y)
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    } else if (accumulatedDragOffset.y > thresholdY) {
+                                        viewModel.moveBookCustomOrder(book.id, 2, displayedRecentBooks)
+                                        accumulatedDragOffset = Offset(accumulatedDragOffset.x, accumulatedDragOffset.y - thresholdY)
+                                        currentDragOffset = Offset(currentDragOffset.x, currentDragOffset.y - thresholdY)
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    } else if (accumulatedDragOffset.y < -thresholdY) {
+                                        viewModel.moveBookCustomOrder(book.id, -2, displayedRecentBooks)
+                                        accumulatedDragOffset = Offset(accumulatedDragOffset.x, accumulatedDragOffset.y + thresholdY)
+                                        currentDragOffset = Offset(currentDragOffset.x, currentDragOffset.y + thresholdY)
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    }
+                                },
+                                onDragEnd = {
+                                    currentlyDraggedBookId = null
+                                    currentDragOffset = Offset.Zero
+                                    accumulatedDragOffset = Offset.Zero
+                                },
+                                onClick = { onBookSelected(book) },
+                                onDelete = { bookToDelete = book },
+                                onToggleFavorite = { viewModel.toggleFavorite(book.id) },
+                                onAddToCollection = { bookForCollections = book },
+                                onSetProgress = { prog -> viewModel.setBookReadingProgress(book.id, prog) },
+                                onCoverClick = { inspectingCoverBook = book },
+                                onShare = { BookShareUtils.shareBookFile(context, book) },
+                                onChangeCover = { bookForCoverChange = book }
+                            )
+                        } else {
                             BookCard(
                                 book = book,
                                 index = index,
@@ -958,55 +949,43 @@ fun LibraryScreen(
                                     viewModel.startReorderMode(displayedRecentBooks)
                                     currentlyDraggedBookId = book.id
                                     currentDragOffset = Offset.Zero
+                                    accumulatedDragOffset = Offset.Zero
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 },
                                 onDrag = { dragAmount ->
-                                    val newOffset = currentDragOffset + dragAmount
+                                    currentDragOffset += dragAmount
+                                    accumulatedDragOffset += dragAmount
                                     val thresholdY = with(density) { 68.dp.toPx() }
-                                    if (newOffset.y > thresholdY) {
+                                    if (accumulatedDragOffset.y > thresholdY) {
                                         viewModel.moveBookCustomOrder(book.id, 1, displayedRecentBooks)
-                                        currentDragOffset = Offset(newOffset.x, newOffset.y - thresholdY)
+                                        accumulatedDragOffset = Offset(accumulatedDragOffset.x, accumulatedDragOffset.y - thresholdY)
+                                        currentDragOffset = Offset(currentDragOffset.x, currentDragOffset.y - thresholdY)
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    } else if (newOffset.y < -thresholdY) {
+                                    } else if (accumulatedDragOffset.y < -thresholdY) {
                                         viewModel.moveBookCustomOrder(book.id, -1, displayedRecentBooks)
-                                        currentDragOffset = Offset(newOffset.x, newOffset.y + thresholdY)
+                                        accumulatedDragOffset = Offset(accumulatedDragOffset.x, accumulatedDragOffset.y + thresholdY)
+                                        currentDragOffset = Offset(currentDragOffset.x, currentDragOffset.y + thresholdY)
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    } else {
-                                        currentDragOffset = newOffset
                                     }
                                 },
                                 onDragEnd = {
                                     currentlyDraggedBookId = null
                                     currentDragOffset = Offset.Zero
+                                    accumulatedDragOffset = Offset.Zero
                                 },
-                                onClick = {
-                                    onBookSelected(book)
-                                },
-                                onDelete = {
-                                    bookToDelete = book
-                                },
-                                onToggleFavorite = {
-                                    viewModel.toggleFavorite(book.id)
-                                },
-                                onAddToCollection = {
-                                    bookForCollections = book
-                                },
-                                onSetProgress = { prog ->
-                                    viewModel.setBookReadingProgress(book.id, prog)
-                                },
-                                onCoverClick = {
-                                    inspectingCoverBook = book
-                                },
-                                onShare = {
-                                    BookShareUtils.shareBookFile(context, book)
-                                },
-                                onChangeCover = {
-                                    bookForCoverChange = book
-                                }
+                                onClick = { onBookSelected(book) },
+                                onDelete = { bookToDelete = book },
+                                onToggleFavorite = { viewModel.toggleFavorite(book.id) },
+                                onAddToCollection = { bookForCollections = book },
+                                onSetProgress = { prog -> viewModel.setBookReadingProgress(book.id, prog) },
+                                onCoverClick = { inspectingCoverBook = book },
+                                onShare = { BookShareUtils.shareBookFile(context, book) },
+                                onChangeCover = { bookForCoverChange = book }
                             )
                         }
                     }
 
-                    item {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
                         Spacer(modifier = Modifier.height(72.dp)) // padding for FAB
                     }
                 }
@@ -1358,49 +1337,27 @@ fun BookCard(
                     this.shadowElevation = 16f
                 }
             }
-            .pointerInput(isReorderMode) {
-                if (isReorderMode) {
-                    detectDragGestures(
-                        onDragStart = {
-                            onDragStart()
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        },
-                        onDragEnd = { onDragEnd() },
-                        onDragCancel = { onDragEnd() },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            onDrag(dragAmount)
-                        }
-                    )
-                } else {
-                    detectDragGesturesAfterLongPress(
-                        onDragStart = {
-                            onDragStart()
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        },
-                        onDragEnd = { onDragEnd() },
-                        onDragCancel = { onDragEnd() },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            onDrag(dragAmount)
-                        }
-                    )
-                }
+            .pointerInput(book.id) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = {
+                        onDragStart()
+                    },
+                    onDragEnd = { onDragEnd() },
+                    onDragCancel = { onDragEnd() },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        onDrag(dragAmount)
+                    }
+                )
             }
             .clip(RoundedCornerShape(16.dp))
-            .combinedClickable(
-                onClick = {
-                    if (isReorderMode) {
-                        showMenu = true
-                    } else {
-                        onClick()
-                    }
-                },
-                onLongClick = {
-                    onDragStart()
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            .clickable {
+                if (isReorderMode) {
+                    showMenu = true
+                } else {
+                    onClick()
                 }
-            ),
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDraggingThis) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainerLow
@@ -1805,49 +1762,27 @@ fun BookGridCard(
                     this.shadowElevation = 16f
                 }
             }
-            .pointerInput(isReorderMode) {
-                if (isReorderMode) {
-                    detectDragGestures(
-                        onDragStart = {
-                            onDragStart()
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        },
-                        onDragEnd = { onDragEnd() },
-                        onDragCancel = { onDragEnd() },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            onDrag(dragAmount)
-                        }
-                    )
-                } else {
-                    detectDragGesturesAfterLongPress(
-                        onDragStart = {
-                            onDragStart()
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        },
-                        onDragEnd = { onDragEnd() },
-                        onDragCancel = { onDragEnd() },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            onDrag(dragAmount)
-                        }
-                    )
-                }
+            .pointerInput(book.id) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = {
+                        onDragStart()
+                    },
+                    onDragEnd = { onDragEnd() },
+                    onDragCancel = { onDragEnd() },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        onDrag(dragAmount)
+                    }
+                )
             }
             .clip(RoundedCornerShape(16.dp))
-            .combinedClickable(
-                onClick = {
-                    if (isReorderMode) {
-                        showMenu = true
-                    } else {
-                        onClick()
-                    }
-                },
-                onLongClick = {
-                    onDragStart()
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            .clickable {
+                if (isReorderMode) {
+                    showMenu = true
+                } else {
+                    onClick()
                 }
-            ),
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDraggingThis) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainerLow

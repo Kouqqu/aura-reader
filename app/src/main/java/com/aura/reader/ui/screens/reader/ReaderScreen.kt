@@ -1969,11 +1969,21 @@ private fun paginateBlocks(
 
     val safetyBufferPx = with(density) { 14.dp.toPx() }
     val maxHeightPx = (with(density) { contentHeightDp.dp.toPx() } - safetyBufferPx).coerceAtLeast(100f)
+    val firstPageExtraBufferPx = with(density) { 48.dp.toPx() }
     val paragraphSpacingPx = with(density) { 8.dp.toPx() }
 
     val pages = mutableListOf<List<Pair<Int, FormattedBlock>>>()
     var currentPage = mutableListOf<Pair<Int, FormattedBlock>>()
     var currentHeightPx = 0f
+
+    fun getEffectiveMaxHeightPx(): Float {
+        val isFirstPage = pages.isEmpty() || currentPage.any { it.second.type == BlockType.TITLE }
+        return if (isFirstPage) {
+            (maxHeightPx - firstPageExtraBufferPx).coerceAtLeast(100f)
+        } else {
+            maxHeightPx
+        }
+    }
 
     fun flushPage() {
         if (currentPage.isNotEmpty()) {
@@ -2000,7 +2010,8 @@ private fun paginateBlocks(
                 val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = maxWidthPx))
                 val titlePaddingPx = with(density) { 22.dp.toPx() } // 8dp top + 14dp bottom
                 val totalTitleHeight = layout.size.height + titlePaddingPx
-                if (currentHeightPx > maxHeightPx * 0.45f || (currentHeightPx + totalTitleHeight > maxHeightPx && currentPage.isNotEmpty())) {
+                val effectiveMax = getEffectiveMaxHeightPx()
+                if (currentHeightPx > effectiveMax * 0.45f || (currentHeightPx + totalTitleHeight > effectiveMax && currentPage.isNotEmpty())) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
@@ -2017,7 +2028,8 @@ private fun paginateBlocks(
                 val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = maxWidthPx))
                 val subPaddingPx = with(density) { 14.dp.toPx() } // 14dp bottom
                 val totalSubHeight = layout.size.height + subPaddingPx
-                if (currentHeightPx > maxHeightPx * 0.6f || (currentHeightPx + totalSubHeight > maxHeightPx && currentPage.isNotEmpty())) {
+                val effectiveMax = getEffectiveMaxHeightPx()
+                if (currentHeightPx > effectiveMax * 0.6f || (currentHeightPx + totalSubHeight > effectiveMax && currentPage.isNotEmpty())) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
@@ -2025,7 +2037,8 @@ private fun paginateBlocks(
             }
             BlockType.DIVIDER -> {
                 val dividerHeightPx = with(density) { 16.dp.toPx() }
-                if (currentHeightPx + dividerHeightPx > maxHeightPx && currentPage.isNotEmpty()) {
+                val effectiveMax = getEffectiveMaxHeightPx()
+                if (currentHeightPx + dividerHeightPx > effectiveMax && currentPage.isNotEmpty()) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
@@ -2043,7 +2056,8 @@ private fun paginateBlocks(
                 val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = epigraphWidthPx))
                 val epigraphPaddingPx = with(density) { 16.dp.toPx() }
                 val totalHeight = layout.size.height + epigraphPaddingPx
-                if (currentHeightPx + totalHeight > maxHeightPx && currentPage.isNotEmpty()) {
+                val effectiveMax = getEffectiveMaxHeightPx()
+                if (currentHeightPx + totalHeight > effectiveMax && currentPage.isNotEmpty()) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
@@ -2055,7 +2069,8 @@ private fun paginateBlocks(
                 var loopGuard = 0
 
                 while (remainingText.isNotEmpty() && loopGuard++ < 1000) {
-                    val availableHeightPx = maxHeightPx - currentHeightPx
+                    val effectiveMax = getEffectiveMaxHeightPx()
+                    val availableHeightPx = effectiveMax - currentHeightPx
 
                     val style = TextStyle(
                         fontSize = settings.fontSizeSp.sp,
