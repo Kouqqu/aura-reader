@@ -131,7 +131,7 @@ class CurlRenderer : GLSurfaceView.Renderer {
             drawUnderPage()
         }
 
-        if (textureFrontId != 0) {
+        if (isCurling && textureFrontId != 0) {
             drawCurledPage()
         }
     }

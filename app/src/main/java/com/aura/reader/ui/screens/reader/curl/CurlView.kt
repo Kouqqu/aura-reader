@@ -39,7 +39,8 @@ class CurlView @JvmOverloads constructor(
 
     init {
         setEGLContextClientVersion(2)
-        setZOrderOnTop(true)
+        setEGLConfigChooser(8, 8, 8, 8, 16, 0)
+        setZOrderMediaOverlay(true)
         holder.setFormat(PixelFormat.TRANSLUCENT)
         setRenderer(renderer)
         renderMode = RENDERMODE_WHEN_DIRTY

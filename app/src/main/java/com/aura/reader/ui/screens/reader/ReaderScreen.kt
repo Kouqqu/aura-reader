@@ -1761,7 +1761,14 @@ fun ChapterPagingView(
 
         val localView = LocalView.current
         var isCurlingActive by remember { mutableStateOf(false) }
+        var curlFrontBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+        var curlUnderBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+        var curlIsNext by remember { mutableStateOf(true) }
+        var curlProgrammatic by remember { mutableStateOf(false) }
+        var curlTouchX by remember { mutableFloatStateOf(0f) }
+        var curlTouchY by remember { mutableFloatStateOf(0f) }
         var curlViewRef by remember { mutableStateOf<CurlView?>(null) }
+
         val backgroundColorArgb = MaterialTheme.colorScheme.background.toArgb()
         val textColorArgb = MaterialTheme.colorScheme.onBackground.toArgb()
 
@@ -1771,8 +1778,39 @@ fun ChapterPagingView(
 
         val startCurlTurn: (isNext: Boolean, programmatic: Boolean) -> Unit = { isNext, programmatic ->
             val canTurn = if (isNext) pagerState.currentPage < totalPagerSpreads - 1 else pagerState.currentPage > 0
-            if (canTurn && curlViewRef != null) {
-                val frontBmp = PageBitmapRenderer.captureViewToBitmap(localView)
+            if (canTurn) {
+                val currentSpreadIdx = pagerState.currentPage - prevPageOffset
+                val currentBlocks = if (currentSpreadIdx in 0 until contentSpreadsCount) {
+                    if (isTwoColumn) pages.getOrNull(currentSpreadIdx * 2) ?: emptyList()
+                    else pages.getOrNull(currentSpreadIdx) ?: emptyList()
+                } else emptyList()
+
+                val currentChapterTitle = if (hasPrev && pagerState.currentPage == 0) {
+                    prevChapter?.title
+                } else if (hasNext && pagerState.currentPage == totalPagerSpreads - 1) {
+                    nextChapter?.title
+                } else null
+
+                val viewW = localView.width.coerceAtLeast(1080)
+                val viewH = localView.height.coerceAtLeast(1920)
+
+                val frontBmp = try {
+                    PageBitmapRenderer.captureViewToBitmap(localView)
+                } catch (e: Throwable) {
+                    null
+                } ?: PageBitmapRenderer.renderPageToBitmap(
+                    width = viewW,
+                    height = viewH,
+                    pageBlocks = currentBlocks,
+                    settings = settings,
+                    backgroundColor = backgroundColorArgb,
+                    textColor = textColorArgb,
+                    topPaddingPx = topPaddingPx,
+                    bottomPaddingPx = bottomPaddingPx,
+                    horizontalPaddingPx = horizontalPaddingPx,
+                    chapterTitle = currentChapterTitle
+                )
+
                 val targetSpreadIdx = if (isNext) pagerState.currentPage + 1 else pagerState.currentPage - 1
                 val targetContentIdx = targetSpreadIdx - prevPageOffset
 
@@ -1781,15 +1819,15 @@ fun ChapterPagingView(
                     else pages.getOrNull(targetContentIdx) ?: emptyList()
                 } else emptyList()
 
-                val chapterTitle = if (hasPrev && targetSpreadIdx == 0) {
+                val targetChapterTitle = if (hasPrev && targetSpreadIdx == 0) {
                     prevChapter?.title
                 } else if (hasNext && targetSpreadIdx == totalPagerSpreads - 1) {
                     nextChapter?.title
                 } else null
 
                 val underBmp = PageBitmapRenderer.renderPageToBitmap(
-                    width = localView.width,
-                    height = localView.height,
+                    width = viewW,
+                    height = viewH,
                     pageBlocks = targetBlocks,
                     settings = settings,
                     backgroundColor = backgroundColorArgb,
@@ -1797,20 +1835,14 @@ fun ChapterPagingView(
                     topPaddingPx = topPaddingPx,
                     bottomPaddingPx = bottomPaddingPx,
                     horizontalPaddingPx = horizontalPaddingPx,
-                    chapterTitle = chapterTitle
+                    chapterTitle = targetChapterTitle
                 )
 
-                curlViewRef?.setPages(frontBmp, underBmp)
+                curlFrontBitmap = frontBmp
+                curlUnderBitmap = underBmp
+                curlIsNext = isNext
+                curlProgrammatic = programmatic
                 isCurlingActive = true
-
-                if (programmatic) {
-                    curlViewRef?.startCurlAnimation(isNext) {
-                        coroutineScope.launch {
-                            pagerState.scrollToPage(targetSpreadIdx)
-                            isCurlingActive = false
-                        }
-                    }
-                }
             }
         }
 
@@ -1834,8 +1866,9 @@ fun ChapterPagingView(
                                 val canTurn = if (isNext) pagerState.currentPage < totalPagerSpreads - 1 else pagerState.currentPage > 0
                                 if (canTurn) {
                                     dragStarted = true
+                                    curlTouchX = dragStartX
+                                    curlTouchY = dragStartY
                                     startCurlTurn(isNext, false)
-                                    curlViewRef?.startInteractiveCurl(dragStartX, dragStartY, isNext)
                                 }
                             }
                         }
@@ -2060,7 +2093,7 @@ fun ChapterPagingView(
             }
         }
 
-        if (settings.pageAnimation == PageTurnAnimation.REALISTIC_CURL) {
+        if (settings.pageAnimation == PageTurnAnimation.REALISTIC_CURL && isCurlingActive) {
             AndroidView(
                 factory = { ctx ->
                     CurlView(ctx).apply {
@@ -2072,19 +2105,29 @@ fun ChapterPagingView(
                         }
                         this.onSettleComplete = {
                             isCurlingActive = false
+                            curlFrontBitmap = null
+                            curlUnderBitmap = null
                         }
                         this.onToggleControls = {
                             onToggleControls()
                         }
+                        setPages(curlFrontBitmap, curlUnderBitmap)
+                        if (curlProgrammatic) {
+                            startCurlAnimation(curlIsNext)
+                        } else {
+                            startInteractiveCurl(curlTouchX, curlTouchY, curlIsNext)
+                        }
                         curlViewRef = this
+                    }
+                },
+                update = { view ->
+                    if (curlFrontBitmap != null && curlUnderBitmap != null) {
+                        view.setPages(curlFrontBitmap, curlUnderBitmap)
                     }
                 },
                 modifier = Modifier
                     .fillMaxSize()
                     .zIndex(10f)
-                    .graphicsLayer {
-                        alpha = if (isCurlingActive) 1f else 0f
-                    }
             )
         }
 
