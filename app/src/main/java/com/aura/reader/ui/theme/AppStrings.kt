@@ -196,6 +196,7 @@ interface Strings {
     val pageAnimationSlide: String
     val pageAnimationInstant: String
     val pageAnimationCurl: String
+    val pageAnimationRealistic: String
 
     val twoColumnSpreadSectionTitle: String
     val twoColumnSpreadSubtitle: String
@@ -519,7 +520,8 @@ class RuStrings : Strings {
     override val pageAnimationSectionTitle = "Анимация перелистывания"
     override val pageAnimationSlide = "Сдвиг"
     override val pageAnimationInstant = "Мгновенно"
-    override val pageAnimationCurl = "Реалистичное"
+    override val pageAnimationCurl = "Разворот 3D"
+    override val pageAnimationRealistic = "Реалистичный (GL)"
 
     override val twoColumnSpreadSectionTitle = "Разворот книги (две страницы)"
     override val twoColumnSpreadSubtitle = "Автоматически на планшетах и экранах Fold"
@@ -830,7 +832,8 @@ class EnStrings : Strings {
     override val pageAnimationSectionTitle = "Page turn animation"
     override val pageAnimationSlide = "Slide"
     override val pageAnimationInstant = "Instant"
-    override val pageAnimationCurl = "Realistic"
+    override val pageAnimationCurl = "Curl 3D"
+    override val pageAnimationRealistic = "Realistic (GL)"
 
     override val twoColumnSpreadSectionTitle = "Two-page spread"
     override val twoColumnSpreadSubtitle = "Automatic on tablets and Fold screens"
@@ -1141,7 +1144,8 @@ class UkStrings : Strings {
     override val pageAnimationSectionTitle = "Анімація гортання"
     override val pageAnimationSlide = "Зсув"
     override val pageAnimationInstant = "Миттєво"
-    override val pageAnimationCurl = "Реалістичне"
+    override val pageAnimationCurl = "Розгортання 3D"
+    override val pageAnimationRealistic = "Реалістичне (GL)"
 
     override val twoColumnSpreadSectionTitle = "Книжковий розворот (дві сторінки)"
     override val twoColumnSpreadSubtitle = "Автоматично на планшетах і екранах Fold"
@@ -1452,7 +1456,8 @@ class BeStrings : Strings {
     override val pageAnimationSectionTitle = "Анімацыя гартання"
     override val pageAnimationSlide = "Зрух"
     override val pageAnimationInstant = "Імгненна"
-    override val pageAnimationCurl = "Рэалістычнае"
+    override val pageAnimationCurl = "Разгортванне 3D"
+    override val pageAnimationRealistic = "Рэалістычнае (GL)"
 
     override val twoColumnSpreadSectionTitle = "Кніжны разварот (дзве старонкі)"
     override val twoColumnSpreadSubtitle = "Аўтаматычна на планшэтах і экранах Fold"
@@ -1763,7 +1768,8 @@ class PlStrings : Strings {
     override val pageAnimationSectionTitle = "Animacja przewracania stron"
     override val pageAnimationSlide = "Przesunięcie"
     override val pageAnimationInstant = "Błyskawicznie"
-    override val pageAnimationCurl = "Realistyczne"
+    override val pageAnimationCurl = "Obrót 3D"
+    override val pageAnimationRealistic = "Realistyczne (GL)"
 
     override val twoColumnSpreadSectionTitle = "Rozkładówka książki (dwie strony)"
     override val twoColumnSpreadSubtitle = "Automatycznie na tabletach i ekranach Fold"

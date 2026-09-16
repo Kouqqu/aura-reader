@@ -1826,6 +1826,51 @@ fun ChapterPagingView(
                             }
                         }
                 }
+                PageTurnAnimation.REALISTIC_CURL -> {
+                    Modifier
+                        .graphicsLayer {
+                            translationX = pageOffset * size.width
+                            transformOrigin = TransformOrigin(
+                                pivotFractionX = if (pageOffset > 0) 0.02f else 0.98f,
+                                pivotFractionY = 0.5f
+                            )
+                            val rotation = pageOffset * -160f
+                            rotationY = rotation.coerceIn(-160f, 160f)
+                            cameraDistance = 16f * density.density
+                            shadowElevation = if (pageOffset.absoluteValue > 0.02f) 16f else 0f
+                        }
+                        .graphicsLayer {
+                            alpha = if (pageOffset.absoluteValue >= 0.5f) 0f else 1f
+                        }
+                        .drawWithContent {
+                            drawContent()
+                            if (pageOffset != 0f) {
+                                val shadowAlpha = (pageOffset.absoluteValue * 0.75f).coerceIn(0f, 0.7f)
+                                val brush = if (pageOffset > 0) {
+                                    Brush.horizontalGradient(
+                                        colors = listOf(
+                                            Color.Black.copy(alpha = shadowAlpha),
+                                            Color.Black.copy(alpha = shadowAlpha * 0.4f),
+                                            Color.Transparent
+                                        ),
+                                        startX = 0f,
+                                        endX = size.width * 0.7f
+                                    )
+                                } else {
+                                    Brush.horizontalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color.Black.copy(alpha = shadowAlpha * 0.4f),
+                                            Color.Black.copy(alpha = shadowAlpha)
+                                        ),
+                                        startX = size.width * 0.3f,
+                                        endX = size.width
+                                    )
+                                }
+                                drawRect(brush = brush)
+                            }
+                        }
+                }
                 PageTurnAnimation.SLIDE -> Modifier
                 PageTurnAnimation.INSTANT -> Modifier
             }

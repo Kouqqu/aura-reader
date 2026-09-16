@@ -457,6 +457,11 @@ fun ReaderSettingsBottomSheet(
                             onClick = { onPageAnimationChange(PageTurnAnimation.CURL) },
                             label = { Text(strings.pageAnimationCurl, maxLines = 1, softWrap = false) }
                         )
+                        FilterChip(
+                            selected = settings.pageAnimation == PageTurnAnimation.REALISTIC_CURL,
+                            onClick = { onPageAnimationChange(PageTurnAnimation.REALISTIC_CURL) },
+                            label = { Text(strings.pageAnimationRealistic, maxLines = 1, softWrap = false) }
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
