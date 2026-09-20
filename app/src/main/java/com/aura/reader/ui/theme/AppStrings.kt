@@ -357,6 +357,18 @@ interface Strings {
     val resetReadingSpeedConfirmTitle: String
     val resetReadingSpeedConfirmMessage: String
     val resetReadingSpeedSuccess: String
+
+    // Search scopes and categorized results
+    val searchScopeAll: String
+    val searchScopeBooks: String
+    val searchScopeSeries: String
+    val searchScopeAuthors: String
+    val foundSeriesHeader: String
+    val foundAuthorsHeader: String
+    val foundBooksHeader: String
+    fun foundSeriesCount(count: Int): String
+    fun foundAuthorsCount(count: Int): String
+    fun foundBooksCount(count: Int): String
 }
 
 
@@ -688,6 +700,17 @@ class RuStrings : Strings {
     override val resetReadingSpeedConfirmTitle = "Сбросить скорость чтения?"
     override val resetReadingSpeedConfirmMessage = "Персональный темп чтения будет сброшен до исходного. Оценка оставшегося времени до конца главы начнет рассчитываться заново."
     override val resetReadingSpeedSuccess = "Скорость чтения сброшена"
+
+    override val searchScopeAll = "Всё"
+    override val searchScopeBooks = "Книги"
+    override val searchScopeSeries = "Серии"
+    override val searchScopeAuthors = "Авторы"
+    override val foundSeriesHeader = "Найденные серии"
+    override val foundAuthorsHeader = "Найденные писатели"
+    override val foundBooksHeader = "Найденные книги"
+    override fun foundSeriesCount(count: Int) = "Найденные серии ($count)"
+    override fun foundAuthorsCount(count: Int) = "Найденные писатели ($count)"
+    override fun foundBooksCount(count: Int) = "Найденные книги ($count)"
 }
 
 class EnStrings : Strings {
@@ -1018,6 +1041,17 @@ class EnStrings : Strings {
     override val resetReadingSpeedConfirmTitle = "Reset reading speed?"
     override val resetReadingSpeedConfirmMessage = "Personalized reading pace will be reset to default. Estimated time left in chapter will recalculate from scratch."
     override val resetReadingSpeedSuccess = "Reading speed reset"
+
+    override val searchScopeAll = "All"
+    override val searchScopeBooks = "Books"
+    override val searchScopeSeries = "Series"
+    override val searchScopeAuthors = "Authors"
+    override val foundSeriesHeader = "Found Series"
+    override val foundAuthorsHeader = "Found Authors"
+    override val foundBooksHeader = "Found Books"
+    override fun foundSeriesCount(count: Int) = "Found Series ($count)"
+    override fun foundAuthorsCount(count: Int) = "Found Authors ($count)"
+    override fun foundBooksCount(count: Int) = "Found Books ($count)"
 }
 
 class UkStrings : Strings {
@@ -1348,6 +1382,17 @@ class UkStrings : Strings {
     override val resetReadingSpeedConfirmTitle = "Скинути швидкість читання?"
     override val resetReadingSpeedConfirmMessage = "Персональний темп читання буде скинутий до початкового. Оцінка часу до кінця розділу почне розраховуватися заново."
     override val resetReadingSpeedSuccess = "Швидкість читання скинуто"
+
+    override val searchScopeAll = "Все"
+    override val searchScopeBooks = "Книги"
+    override val searchScopeSeries = "Серії"
+    override val searchScopeAuthors = "Автори"
+    override val foundSeriesHeader = "Знайдені серії"
+    override val foundAuthorsHeader = "Знайдені автори"
+    override val foundBooksHeader = "Знайдені книги"
+    override fun foundSeriesCount(count: Int) = "Знайдені серії ($count)"
+    override fun foundAuthorsCount(count: Int) = "Знайдені автори ($count)"
+    override fun foundBooksCount(count: Int) = "Знайдені книги ($count)"
 }
 
 class BeStrings : Strings {
@@ -1678,6 +1723,17 @@ class BeStrings : Strings {
     override val resetReadingSpeedConfirmTitle = "Скінуць хуткасць чытання?"
     override val resetReadingSpeedConfirmMessage = "Персанальны тэмп чытання будзе скінуты да пачатковага. Ацэнка часу да канца раздзела пачне разлічвацца нанова."
     override val resetReadingSpeedSuccess = "Хуткасць чытання скінута"
+
+    override val searchScopeAll = "Усё"
+    override val searchScopeBooks = "Кнігі"
+    override val searchScopeSeries = "Серыі"
+    override val searchScopeAuthors = "Аўтары"
+    override val foundSeriesHeader = "Знойдзеныя серыі"
+    override val foundAuthorsHeader = "Знойдзеныя аўтары"
+    override val foundBooksHeader = "Знойдзеныя кнігі"
+    override fun foundSeriesCount(count: Int) = "Знойдзеныя серыі ($count)"
+    override fun foundAuthorsCount(count: Int) = "Знойдзеныя аўтары ($count)"
+    override fun foundBooksCount(count: Int) = "Знойдзеныя кнігі ($count)"
 }
 
 class PlStrings : Strings {
@@ -2007,6 +2063,17 @@ class PlStrings : Strings {
     override val resetReadingSpeedConfirmTitle = "Zresetować prędkość czytania?"
     override val resetReadingSpeedConfirmMessage = "Wskaźnik tempa czytania zostanie zresetowany do domyślnego. Szacowany czas do końca rozdziału zostanie przeliczony na nowo."
     override val resetReadingSpeedSuccess = "Prędkość czytania zresetowana"
+
+    override val searchScopeAll = "Wszystko"
+    override val searchScopeBooks = "Książki"
+    override val searchScopeSeries = "Serie"
+    override val searchScopeAuthors = "Autorzy"
+    override val foundSeriesHeader = "Znalezione serie"
+    override val foundAuthorsHeader = "Znalezieni autorzy"
+    override val foundBooksHeader = "Znalezione książki"
+    override fun foundSeriesCount(count: Int) = "Znalezione serie ($count)"
+    override fun foundAuthorsCount(count: Int) = "Znalezieni autorzy ($count)"
+    override fun foundBooksCount(count: Int) = "Znalezione książki ($count)"
 }
 
 class CsStrings : Strings {
@@ -2315,6 +2382,17 @@ class CsStrings : Strings {
     override val resetReadingSpeedConfirmTitle = "Obnovit rychlost čtení?"
     override val resetReadingSpeedConfirmMessage = "Osobní tempo čtení bude obnoveno na výchozí. Odhad zbývajícího času do konce kapitoly se začne počítat znovu."
     override val resetReadingSpeedSuccess = "Rychlost čtení byla obnovena"
+
+    override val searchScopeAll = "Vše"
+    override val searchScopeBooks = "Knihy"
+    override val searchScopeSeries = "Série"
+    override val searchScopeAuthors = "Autoři"
+    override val foundSeriesHeader = "Nalezené série"
+    override val foundAuthorsHeader = "Nalezení autoři"
+    override val foundBooksHeader = "Nalezené knihy"
+    override fun foundSeriesCount(count: Int) = "Nalezené série ($count)"
+    override fun foundAuthorsCount(count: Int) = "Nalezení autoři ($count)"
+    override fun foundBooksCount(count: Int) = "Nalezené knihy ($count)"
 }
 
 fun getStrings(language: AppLanguage): Strings = when (language) {

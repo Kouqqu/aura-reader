@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.BookFormat
 import com.aura.reader.data.model.OpdsBook
+import com.aura.reader.data.model.OpdsSearchResult
+import com.aura.reader.data.model.OpdsSearchType
 import com.aura.reader.data.opds.OpdsService
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.repository.BookRepository
@@ -33,7 +35,11 @@ enum class CatalogSortOption {
 sealed interface OpdsUiState {
     object Idle : OpdsUiState
     object Loading : OpdsUiState
-    data class Success(val books: List<OpdsBook>, val currentTitle: String = "") : OpdsUiState
+    data class Success(
+        val books: List<OpdsBook>,
+        val currentTitle: String = "",
+        val searchResult: OpdsSearchResult? = null
+    ) : OpdsUiState
     data class Error(val message: String, val isConnectionError: Boolean = false) : OpdsUiState
 }
 
@@ -83,6 +89,17 @@ class OpdsViewModel(
         _searchQuery.value = query
     }
 
+    private val _searchScope = MutableStateFlow(OpdsSearchType.ALL)
+    val searchScope: StateFlow<OpdsSearchType> = _searchScope.asStateFlow()
+
+    fun setSearchScope(scope: OpdsSearchType) {
+        if (_searchScope.value == scope) return
+        _searchScope.value = scope
+        if (_searchQuery.value.isNotBlank() && currentEntry.query != null) {
+            executeSearch(_searchQuery.value, scope)
+        }
+    }
+
     val searchHistory: StateFlow<List<String>> = preferencesManager.catalogSearchHistory
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -118,6 +135,7 @@ class OpdsViewModel(
     data class CatalogHistoryEntry(
         val path: String? = null,
         val query: String? = null,
+        val searchScope: OpdsSearchType = OpdsSearchType.ALL,
         val title: String,
         val isHome: Boolean = false
     )
@@ -146,20 +164,21 @@ class OpdsViewModel(
         }
     }
 
-    fun search(query: String = _searchQuery.value) {
+    fun search(query: String = _searchQuery.value, scope: OpdsSearchType = _searchScope.value) {
         val q = query.trim()
         if (q.isEmpty()) return
         _searchQuery.value = q
+        _searchScope.value = scope
         viewModelScope.launch {
             preferencesManager.saveCatalogSearchQuery(q)
         }
 
-        if (currentEntry.query != q) {
+        if (currentEntry.query != q || currentEntry.searchScope != scope) {
             navStack.add(currentEntry)
             _canGoBack.value = true
         }
-        currentEntry = CatalogHistoryEntry(query = q, title = "Результаты поиска: $q")
-        executeSearch(q)
+        currentEntry = CatalogHistoryEntry(query = q, searchScope = scope, title = "Результаты поиска: $q")
+        executeSearch(q, scope)
     }
 
     fun loadCategory(path: String, categoryTitle: String) {
@@ -182,7 +201,8 @@ class OpdsViewModel(
             lastAction = null
         } else if (prev.query != null) {
             _searchQuery.value = prev.query
-            executeSearch(prev.query)
+            _searchScope.value = prev.searchScope
+            executeSearch(prev.query, prev.searchScope)
         } else {
             _searchQuery.value = ""
             executeCategory(prev.path ?: "/opds/new", prev.title)
@@ -217,14 +237,24 @@ class OpdsViewModel(
         }
     }
 
-    private fun executeSearch(q: String) {
-        lastAction = { executeSearch(q) }
+    private fun executeSearch(q: String, scope: OpdsSearchType = _searchScope.value) {
+        lastAction = { executeSearch(q, scope) }
         viewModelScope.launch {
             _uiState.value = OpdsUiState.Loading
             val currentBase = baseUrl.value
-            val result = OpdsService.searchBooks(q, currentBase)
-            result.onSuccess { list ->
-                _uiState.value = OpdsUiState.Success(list, "Результаты поиска: $q")
+            val result = OpdsService.searchCatalog(q, scope, currentBase)
+            result.onSuccess { searchRes ->
+                val flatBooks = when (scope) {
+                    OpdsSearchType.ALL -> searchRes.books + searchRes.series + searchRes.authors
+                    OpdsSearchType.BOOKS -> searchRes.books
+                    OpdsSearchType.SERIES -> searchRes.series
+                    OpdsSearchType.AUTHORS -> searchRes.authors
+                }
+                _uiState.value = OpdsUiState.Success(
+                    books = flatBooks,
+                    currentTitle = "Результаты поиска: $q",
+                    searchResult = searchRes
+                )
             }.onFailure { error ->
                 val isConn = OpdsService.isConnectionError(error)
                 _uiState.value = OpdsUiState.Error(

@@ -4,7 +4,10 @@ import android.content.Context
 import android.util.Xml
 import com.aura.reader.data.model.BookFormat
 import com.aura.reader.data.model.OpdsBook
+import com.aura.reader.data.model.OpdsSearchResult
+import com.aura.reader.data.model.OpdsSearchType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
@@ -56,29 +59,153 @@ object OpdsService {
         }
     }
 
-    suspend fun searchBooks(query: String, baseUrl: String = DEFAULT_BASE_URL): Result<List<OpdsBook>> = withContext(Dispatchers.IO) {
-        try {
-            val cleanBase = baseUrl.trimEnd('/')
-            val encodedQuery = URLEncoder.encode(query.trim(), "UTF-8")
-            val searchUrl = "$cleanBase/search?searchTerm=$encodedQuery"
-            val httpUrl = searchUrl.toHttpUrlOrNull()
-                ?: return@withContext Result.failure(Exception("Некорректный адрес поиска"))
-
+    fun executeFetchFeed(url: String): List<OpdsBook> {
+        return try {
+            val httpUrl = url.toHttpUrlOrNull() ?: return emptyList()
             val request = Request.Builder()
                 .url(httpUrl)
                 .header("User-Agent", USER_AGENT)
                 .build()
-
             val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                return@withContext Result.failure(Exception("HTTP ${response.code}: ${response.message}"))
-            }
+            if (!response.isSuccessful) return emptyList()
+            val body = response.body ?: return emptyList()
+            parseFeed(body.byteStream(), url)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 
-            val body = response.body ?: return@withContext Result.failure(Exception("Пустой ответ от сервера"))
-            val list = parseFeed(body.byteStream(), searchUrl)
-            Result.success(list)
+    suspend fun searchCatalog(
+        query: String,
+        searchType: OpdsSearchType = OpdsSearchType.ALL,
+        baseUrl: String = DEFAULT_BASE_URL
+    ): Result<OpdsSearchResult> = withContext(Dispatchers.IO) {
+        try {
+            val cleanBase = baseUrl.trimEnd('/')
+            val trimmedQuery = query.trim()
+            if (trimmedQuery.isEmpty()) {
+                return@withContext Result.success(OpdsSearchResult(query = ""))
+            }
+            val encodedQuery = URLEncoder.encode(trimmedQuery, "UTF-8")
+
+            when (searchType) {
+                OpdsSearchType.BOOKS -> {
+                    val books = executeFetchFeed("$cleanBase/search?searchTerm=$encodedQuery&searchType=books")
+                    val fallbackBooks = if (books.isEmpty()) executeFetchFeed("$cleanBase/search?searchTerm=$encodedQuery") else emptyList()
+                    val finalBooks = if (books.isNotEmpty()) books else fallbackBooks.filter { !it.isCategory }
+                    Result.success(OpdsSearchResult(query = trimmedQuery, books = finalBooks))
+                }
+                OpdsSearchType.SERIES -> {
+                    val series = executeFetchFeed("$cleanBase/search?searchTerm=$encodedQuery&searchType=sequences")
+                        .map { it.copy(isSeries = true, isCategory = true) }
+                    Result.success(OpdsSearchResult(query = trimmedQuery, series = series))
+                }
+                OpdsSearchType.AUTHORS -> {
+                    val authors = executeFetchFeed("$cleanBase/search?searchTerm=$encodedQuery&searchType=authors")
+                        .map { it.copy(isAuthorCategory = true, isCategory = true) }
+                    Result.success(OpdsSearchResult(query = trimmedQuery, authors = authors))
+                }
+                OpdsSearchType.ALL -> {
+                    val tokens = trimmedQuery.split(Regex("""\s+""")).filter { it.length >= 2 }
+
+                    val booksDeferred = async { executeFetchFeed("$cleanBase/search?searchTerm=$encodedQuery&searchType=books") }
+                    val seriesDeferred = async {
+                        executeFetchFeed("$cleanBase/search?searchTerm=$encodedQuery&searchType=sequences")
+                            .map { it.copy(isSeries = true, isCategory = true) }
+                    }
+                    val authorsDeferred = async {
+                        executeFetchFeed("$cleanBase/search?searchTerm=$encodedQuery&searchType=authors")
+                            .map { it.copy(isAuthorCategory = true, isCategory = true) }
+                    }
+
+                    var books = booksDeferred.await()
+                    var series = seriesDeferred.await()
+                    var authors = authorsDeferred.await()
+
+                    // If direct multi-word search yielded 0 books, run smart multi-token queries
+                    if (tokens.size >= 2) {
+                        if (books.isEmpty()) {
+                            for (token in tokens) {
+                                val enc = URLEncoder.encode(token, "UTF-8")
+                                val subBooks = executeFetchFeed("$cleanBase/search?searchTerm=$enc&searchType=books")
+                                if (subBooks.isNotEmpty()) {
+                                    books = subBooks
+                                    break
+                                }
+                            }
+                        }
+
+                        if (authors.isEmpty()) {
+                            for (token in tokens) {
+                                val enc = URLEncoder.encode(token, "UTF-8")
+                                val subAuthors = executeFetchFeed("$cleanBase/search?searchTerm=$enc&searchType=authors")
+                                    .map { it.copy(isAuthorCategory = true, isCategory = true) }
+                                if (subAuthors.isNotEmpty()) {
+                                    authors = subAuthors
+                                    break
+                                }
+                            }
+                        }
+
+                        if (series.isEmpty()) {
+                            for (token in tokens) {
+                                val enc = URLEncoder.encode(token, "UTF-8")
+                                val subSeries = executeFetchFeed("$cleanBase/search?searchTerm=$enc&searchType=sequences")
+                                    .map { it.copy(isSeries = true, isCategory = true) }
+                                if (subSeries.isNotEmpty()) {
+                                    series = subSeries
+                                    break
+                                }
+                            }
+                        }
+
+                        // Smart ranking: books matching author and title tokens get highest priority
+                        if (books.isNotEmpty()) {
+                            books = books.sortedByDescending { book ->
+                                var score = 0
+                                for (token in tokens) {
+                                    val tLower = token.lowercase(Locale.ROOT)
+                                    if (book.author.lowercase(Locale.ROOT).contains(tLower)) score += 10
+                                    if (book.title.lowercase(Locale.ROOT).contains(tLower)) score += 5
+                                }
+                                score
+                            }
+                        }
+                    }
+
+                    // Fallback for generic non-Flibusta OPDS catalogs
+                    if (books.isEmpty() && series.isEmpty() && authors.isEmpty()) {
+                        val rawFeed = executeFetchFeed("$cleanBase/search?searchTerm=$encodedQuery")
+                        val catItems = rawFeed.filter { it.isCategory }
+                        val bookItems = rawFeed.filter { !it.isCategory }
+                        Result.success(
+                            OpdsSearchResult(
+                                query = trimmedQuery,
+                                books = bookItems,
+                                series = catItems.filter { it.title.contains("сери", ignoreCase = true) },
+                                authors = catItems.filter { it.title.contains("автор", ignoreCase = true) }
+                            )
+                        )
+                    } else {
+                        Result.success(
+                            OpdsSearchResult(
+                                query = trimmedQuery,
+                                books = books.filter { !it.isCategory },
+                                series = series,
+                                authors = authors
+                            )
+                        )
+                    }
+                }
+            }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    suspend fun searchBooks(query: String, baseUrl: String = DEFAULT_BASE_URL): Result<List<OpdsBook>> {
+        return searchCatalog(query, OpdsSearchType.ALL, baseUrl).map { result ->
+            if (result.books.isNotEmpty()) result.books else (result.series + result.authors)
         }
     }
 
@@ -276,6 +403,24 @@ object OpdsService {
                                 val cleanedAnnotation = currentAnnotation.replace(META_CLEAN_REGEX, "").trim()
                                 val finalDownloadSize = currentDownloadSize ?: parsedSize
 
+                                val countMatch = Regex("""\((\d+)\s*(?:книг|книги|книга|books?)\)""", RegexOption.IGNORE_CASE).find(currentTitle)
+                                    ?: Regex("""(\d+)\s+(?:книг|книги|книга|books?)""", RegexOption.IGNORE_CASE).find(currentAnnotation)
+                                val parsedItemCount = countMatch?.groupValues?.get(1)?.toIntOrNull()
+
+                                val isSeriesCategory = isCat && (
+                                    feedUrl.contains("searchType=sequences", ignoreCase = true) ||
+                                    currentCategoryPath?.contains("/sequence", ignoreCase = true) == true ||
+                                    currentCategoryPath?.contains("/s/", ignoreCase = true) == true ||
+                                    currentTitle.startsWith("Серия:", ignoreCase = true)
+                                )
+
+                                val isAuthorCat = isCat && (
+                                    feedUrl.contains("searchType=authors", ignoreCase = true) ||
+                                    currentCategoryPath?.contains("/author", ignoreCase = true) == true ||
+                                    currentCategoryPath?.contains("/a/", ignoreCase = true) == true ||
+                                    currentTitle.startsWith("Автор:", ignoreCase = true)
+                                )
+
                                 results.add(
                                     OpdsBook(
                                         id = id,
@@ -293,7 +438,10 @@ object OpdsService {
                                         year = parsedYear,
                                         language = parsedLang,
                                         formatInfo = parsedFormat,
-                                        downloadsCount = parsedDownloads
+                                        downloadsCount = parsedDownloads,
+                                        isSeries = isSeriesCategory,
+                                        isAuthorCategory = isAuthorCat,
+                                        itemCount = parsedItemCount
                                     )
                                 )
                             }

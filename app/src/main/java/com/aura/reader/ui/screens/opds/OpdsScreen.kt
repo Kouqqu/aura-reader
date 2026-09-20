@@ -56,6 +56,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Surface
+import androidx.compose.ui.text.style.TextOverflow
+import com.aura.reader.data.model.OpdsSearchType
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -119,6 +124,7 @@ fun OpdsScreen(
     val sortOption by viewModel.sortOption.collectAsState()
     val canGoBack by viewModel.canGoBack.collectAsState()
     val vpnNoticeDismissed by viewModel.vpnNoticeDismissed.collectAsState()
+    val searchScope by viewModel.searchScope.collectAsState()
     var isSearchFocused by remember { mutableStateOf(false) }
     var inspectingCoverBook by remember { mutableStateOf<OpdsBook?>(null) }
 
@@ -333,6 +339,40 @@ fun OpdsScreen(
                     TextButton(onClick = { viewModel.clearHistory() }) {
                         Text(strings.clear, style = MaterialTheme.typography.bodySmall)
                     }
+                }
+            }
+
+            // Search Scope Filter Chips (All, Books, Series, Authors)
+            val isSearchActive = searchQuery.isNotBlank() || (uiState is OpdsUiState.Success && (uiState as OpdsUiState.Success).searchResult != null)
+            AnimatedVisibility(visible = isSearchActive) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = searchScope == OpdsSearchType.ALL,
+                        onClick = { viewModel.setSearchScope(OpdsSearchType.ALL) },
+                        label = { Text(strings.searchScopeAll) }
+                    )
+                    FilterChip(
+                        selected = searchScope == OpdsSearchType.BOOKS,
+                        onClick = { viewModel.setSearchScope(OpdsSearchType.BOOKS) },
+                        label = { Text(strings.searchScopeBooks) }
+                    )
+                    FilterChip(
+                        selected = searchScope == OpdsSearchType.SERIES,
+                        onClick = { viewModel.setSearchScope(OpdsSearchType.SERIES) },
+                        label = { Text(strings.searchScopeSeries) }
+                    )
+                    FilterChip(
+                        selected = searchScope == OpdsSearchType.AUTHORS,
+                        onClick = { viewModel.setSearchScope(OpdsSearchType.AUTHORS) },
+                        label = { Text(strings.searchScopeAuthors) }
+                    )
                 }
             }
 
@@ -585,9 +625,8 @@ fun OpdsScreen(
                                 )
                             }
                         } else {
-                            val sortedBooks = remember(state.books, sortOption) {
-                                viewModel.getSortedBooks(state.books, sortOption)
-                            }
+                            val res = state.searchResult
+                            val isAllSearch = res != null && searchScope == OpdsSearchType.ALL
 
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
@@ -595,7 +634,7 @@ fun OpdsScreen(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 if (state.currentTitle.isNotBlank()) {
-                                    item {
+                                    item(key = "search_title_header") {
                                         Text(
                                             text = state.currentTitle,
                                             style = MaterialTheme.typography.titleSmall,
@@ -606,31 +645,182 @@ fun OpdsScreen(
                                     }
                                 }
 
-                                itemsIndexed(sortedBooks, key = { index, book -> "${book.id}_${book.title}_$index" }) { index, book ->
-                                    val progress = activeDownloads[book.id]
-                                    val downloaded = downloadedBooks[book.id]
-
-                                    OpdsBookCard(
-                                        book = book,
-                                        downloadProgress = progress,
-                                        downloadedBook = downloaded,
-                                        onClick = {
-                                            if (book.isCategory && book.categoryPath != null) {
-                                                viewModel.loadCategory(book.categoryPath, book.title)
-                                            } else {
-                                                viewModel.selectBookForDetails(book)
+                                if (isAllSearch && res != null) {
+                                    // 1. Found Series Section
+                                    if (res.series.isNotEmpty()) {
+                                        item(key = "header_found_series") {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(top = 8.dp, bottom = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.AutoStories,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Text(
+                                                    text = strings.foundSeriesCount(res.series.size),
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
                                             }
-                                        },
-                                        onCoverClick = {
-                                            inspectingCoverBook = book
-                                        },
-                                        onDownloadFb2 = {
-                                            viewModel.downloadBook(context, book, BookFormat.FB2)
-                                        },
-                                        onOpenBook = { b ->
-                                            onOpenBook(b)
                                         }
-                                    )
+
+                                        items(res.series, key = { "series_${it.id}_${it.title}" }) { seriesItem ->
+                                            OpdsCategoryItemCard(
+                                                item = seriesItem,
+                                                isSeries = true,
+                                                onClick = {
+                                                    if (seriesItem.categoryPath != null) {
+                                                        viewModel.loadCategory(seriesItem.categoryPath, seriesItem.title)
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    // 2. Found Authors Section
+                                    if (res.authors.isNotEmpty()) {
+                                        item(key = "header_found_authors") {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(top = 12.dp, bottom = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Person,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Text(
+                                                    text = strings.foundAuthorsCount(res.authors.size),
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+
+                                        items(res.authors, key = { "author_${it.id}_${it.title}" }) { authorItem ->
+                                            OpdsCategoryItemCard(
+                                                item = authorItem,
+                                                isSeries = false,
+                                                onClick = {
+                                                    if (authorItem.categoryPath != null) {
+                                                        viewModel.loadCategory(authorItem.categoryPath, authorItem.title)
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    // 3. Found Books Section
+                                    if (res.books.isNotEmpty()) {
+                                        item(key = "header_found_books") {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(top = 12.dp, bottom = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.MenuBook,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Text(
+                                                    text = strings.foundBooksCount(res.books.size),
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+
+                                        val sortedBooks = remember(res.books, sortOption) {
+                                            viewModel.getSortedBooks(res.books, sortOption)
+                                        }
+
+                                        itemsIndexed(sortedBooks, key = { index, book -> "${book.id}_${book.title}_$index" }) { index, book ->
+                                            val progress = activeDownloads[book.id]
+                                            val downloaded = downloadedBooks[book.id]
+
+                                            OpdsBookCard(
+                                                book = book,
+                                                downloadProgress = progress,
+                                                downloadedBook = downloaded,
+                                                onClick = {
+                                                    if (book.isCategory && book.categoryPath != null) {
+                                                        viewModel.loadCategory(book.categoryPath, book.title)
+                                                    } else {
+                                                        viewModel.selectBookForDetails(book)
+                                                    }
+                                                },
+                                                onCoverClick = {
+                                                    inspectingCoverBook = book
+                                                },
+                                                onDownloadFb2 = {
+                                                    viewModel.downloadBook(context, book, BookFormat.FB2)
+                                                },
+                                                onOpenBook = { b ->
+                                                    onOpenBook(b)
+                                                }
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    val sortedBooks = remember(state.books, sortOption) {
+                                        viewModel.getSortedBooks(state.books, sortOption)
+                                    }
+
+                                    itemsIndexed(sortedBooks, key = { index, book -> "${book.id}_${book.title}_$index" }) { index, book ->
+                                        val progress = activeDownloads[book.id]
+                                        val downloaded = downloadedBooks[book.id]
+
+                                        if (book.isSeries || book.isAuthorCategory) {
+                                            OpdsCategoryItemCard(
+                                                item = book,
+                                                isSeries = book.isSeries,
+                                                onClick = {
+                                                    if (book.categoryPath != null) {
+                                                        viewModel.loadCategory(book.categoryPath, book.title)
+                                                    }
+                                                }
+                                            )
+                                        } else {
+                                            OpdsBookCard(
+                                                book = book,
+                                                downloadProgress = progress,
+                                                downloadedBook = downloaded,
+                                                onClick = {
+                                                    if (book.isCategory && book.categoryPath != null) {
+                                                        viewModel.loadCategory(book.categoryPath, book.title)
+                                                    } else {
+                                                        viewModel.selectBookForDetails(book)
+                                                    }
+                                                },
+                                                onCoverClick = {
+                                                    inspectingCoverBook = book
+                                                },
+                                                onDownloadFb2 = {
+                                                    viewModel.downloadBook(context, book, BookFormat.FB2)
+                                                },
+                                                onOpenBook = { b ->
+                                                    onOpenBook(b)
+                                                }
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1468,3 +1658,75 @@ fun OpdsHomeCategoryCard(
         }
     }
 }
+
+@Composable
+fun OpdsCategoryItemCard(
+    item: OpdsBook,
+    isSeries: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = if (isSeries) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (isSeries) Icons.Default.AutoStories else Icons.Default.Person,
+                        contentDescription = null,
+                        tint = if (isSeries) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                val countText = item.itemCount?.let { "$it книг" } ?: ""
+                val subtitle = if (countText.isNotBlank()) countText else item.annotation
+                if (subtitle.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
