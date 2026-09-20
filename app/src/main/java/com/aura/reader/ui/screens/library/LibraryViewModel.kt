@@ -35,6 +35,7 @@ enum class LibrarySortOption {
     RECENT,
     TITLE,
     AUTHOR,
+    SERIES,
     CUSTOM
 }
 
@@ -42,6 +43,7 @@ enum class CollectionFilterType {
     ALL,
     READING,
     FAVORITES,
+    SERIES,
     UNREAD,
     FINISHED,
     CUSTOM
@@ -425,6 +427,7 @@ class LibraryViewModel(
             books.filter {
                 it.title.contains(q, ignoreCase = true) ||
                 it.author.contains(q, ignoreCase = true) ||
+                (it.series?.contains(q, ignoreCase = true) == true) ||
                 it.format.name.equals(q, ignoreCase = true)
             }
         }
@@ -433,6 +436,7 @@ class LibraryViewModel(
             CollectionFilterType.ALL -> searchFiltered
             CollectionFilterType.READING -> searchFiltered.filter { it.progressPercent in 1..99 }
             CollectionFilterType.FAVORITES -> searchFiltered.filter { it.isFavorite }
+            CollectionFilterType.SERIES -> searchFiltered.filter { !it.series.isNullOrBlank() }
             CollectionFilterType.UNREAD -> searchFiltered.filter { it.progressPercent == 0 }
             CollectionFilterType.FINISHED -> searchFiltered.filter { it.progressPercent == 100 }
             CollectionFilterType.CUSTOM -> {
@@ -446,6 +450,14 @@ class LibraryViewModel(
             LibrarySortOption.RECENT -> collectionFiltered.sortedByDescending { it.lastReadTimestamp }
             LibrarySortOption.TITLE -> collectionFiltered.sortedBy { it.title.lowercase() }
             LibrarySortOption.AUTHOR -> collectionFiltered.sortedBy { it.author.lowercase() }
+            LibrarySortOption.SERIES -> {
+                collectionFiltered.sortedWith(
+                    compareBy<Book> { it.series.isNullOrBlank() }
+                        .thenBy { it.series?.lowercase() ?: "" }
+                        .thenBy { it.seriesNumber ?: Int.MAX_VALUE }
+                        .thenBy { it.title.lowercase() }
+                )
+            }
             LibrarySortOption.CUSTOM -> {
                 if (customOrderList.isEmpty()) {
                     collectionFiltered
@@ -564,7 +576,7 @@ class LibraryViewModel(
                     try {
                         dir.walkTopDown().maxDepth(3).forEach { file ->
                             val name = file.name.lowercase()
-                            if (file.isFile && (name.endsWith(".fb2") || name.endsWith(".fb2.zip") || name.endsWith(".epub") || name.endsWith(".txt") || name.endsWith(".pdf"))) {
+                            if (file.isFile && (name.endsWith(".fb2") || name.endsWith(".fb2.zip") || name.endsWith(".epub") || name.endsWith(".txt") || name.endsWith(".pdf") || name.endsWith(".mobi") || name.endsWith(".cbz"))) {
                                 if (!list.any { it.absolutePath == file.absolutePath }) {
                                     list.add(file)
                                 }
@@ -713,7 +725,7 @@ class LibraryViewModel(
                 scanFolderRecursive(file, result, maxDepth - 1)
             } else if (file.isFile) {
                 val name = file.name?.lowercase() ?: ""
-                if (name.endsWith(".fb2") || name.endsWith(".fb2.zip") || name.endsWith(".epub") || name.endsWith(".txt") || name.endsWith(".pdf")) {
+                if (name.endsWith(".fb2") || name.endsWith(".fb2.zip") || name.endsWith(".epub") || name.endsWith(".txt") || name.endsWith(".pdf") || name.endsWith(".mobi") || name.endsWith(".cbz")) {
                     result.add(file.uri)
                 }
             }

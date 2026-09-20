@@ -253,6 +253,8 @@ fun ReaderScreen(
         } ?: false
     }
 
+    val nextBookInSeries by viewModel.nextBookInSeries.collectAsState()
+    var showNextInSeriesDialog by remember { mutableStateOf(false) }
     var showControls by remember { mutableStateOf(true) }
     var showBookInfoDialog by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
@@ -413,6 +415,11 @@ fun ReaderScreen(
                                 },
                                 onUpdateProgress = { blockIdx, totalBlocks ->
                                     viewModel.updateScrollProgress(blockIdx, totalBlocks)
+                                },
+                                onBookFinished = {
+                                    if (nextBookInSeries != null) {
+                                        showNextInSeriesDialog = true
+                                    }
                                 }
                             )
                         }
@@ -471,7 +478,9 @@ fun ReaderScreen(
                                         if (pageIndex == currentChapterIndex) {
                                             viewModel.updateScrollProgress(firstVisible, totalItems)
                                         }
-                                    }
+                                    },
+                                    nextBookInSeries = nextBookInSeries,
+                                    onOpenNextBook = { viewModel.openNextBookInSeries(it) }
                                 )
                             }
                         }
@@ -1142,6 +1151,45 @@ fun ReaderScreen(
                 )
             }
 
+            if (showNextInSeriesDialog && nextBookInSeries != null) {
+                val nextBook = nextBookInSeries!!
+                AlertDialog(
+                    onDismissRequest = { showNextInSeriesDialog = false },
+                    title = {
+                        Text(
+                            text = if (!currentBook?.series.isNullOrBlank()) "${strings.seriesLabel}: ${currentBook?.series}" else strings.nextInSeriesAction,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = strings.nextInSeriesPrompt(nextBook.title),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showNextInSeriesDialog = false
+                                viewModel.openNextBookInSeries(nextBook)
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(strings.nextInSeriesAction)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { showNextInSeriesDialog = false }
+                        ) {
+                            Text(strings.close)
+                        }
+                    },
+                    shape = RoundedCornerShape(20.dp)
+                )
+            }
+
             selectedFootnote?.let { (ref, content) ->
                 FootnoteDialog(
                     refLabel = ref,
@@ -1393,6 +1441,8 @@ fun ChapterContentView(
     onToggleControls: () -> Unit,
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onSaveQuote: (String) -> Unit,
+    nextBookInSeries: Book? = null,
+    onOpenNextBook: (Book) -> Unit = {},
     onPrevChapter: () -> Unit,
     onNextChapter: () -> Unit,
     onUpdateProgress: (Int, Int) -> Unit
@@ -1517,6 +1567,41 @@ fun ChapterContentView(
                             )
                         }
                     }
+
+                    if (pageIndex == chaptersCount - 1 && nextBookInSeries != null) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onOpenNextBook(nextBookInSeries) }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = strings.nextInSeriesPrompt(nextBookInSeries.title),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    FilledTonalButton(
+                                        onClick = { onOpenNextBook(nextBookInSeries) },
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Text(strings.nextInSeriesAction)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(64.dp))
                 }
             }
@@ -1555,7 +1640,8 @@ fun ChapterPagingView(
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onSaveQuote: (String) -> Unit,
     onPageChange: (Int, Int) -> Unit,
-    onUpdateProgress: (Int, Int) -> Unit
+    onUpdateProgress: (Int, Int) -> Unit,
+    onBookFinished: () -> Unit = {}
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenHeightDp = maxHeight.value
@@ -1687,6 +1773,8 @@ fun ChapterPagingView(
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     }
                     onNextChapter()
+                } else if (!hasNext && settled == totalPagerSpreads - 1) {
+                    onBookFinished()
                 }
             }
         }
@@ -2445,69 +2533,95 @@ fun RenderBlock(
             Spacer(modifier = Modifier.height(16.dp))
         }
         BlockType.IMAGE -> {
-            val isSystemDark = isSystemInDarkTheme()
-            val isDark = settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.DARK ||
-                    settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.AMOLED ||
-                    (settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.SYSTEM_DYNAMIC && isSystemDark)
-            val shouldApplyLightCard = settings.lightImageBackground && isDark
-            val imageCardBg = if (shouldApplyLightCard) {
-                Color(0xFFF5F4F0)
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 14.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onToggleControls() },
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = imageCardBg
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = if (shouldApplyLightCard) 3.dp else 2.dp),
-                    modifier = Modifier.fillMaxWidth()
+            val isComicOrPdf = block.subText?.contains(" / ") == true || block.subText?.startsWith("Страница ") == true
+            if (isComicOrPdf) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onToggleControls() },
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(File(block.text))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = block.subText,
+                        contentScale = ContentScale.FillWidth,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(if (shouldApplyLightCard) 12.dp else 0.dp),
-                        contentAlignment = Alignment.Center
+                            .clip(RoundedCornerShape(4.dp))
+                    )
+                }
+            } else {
+                val isSystemDark = isSystemInDarkTheme()
+                val isDark = settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.DARK ||
+                        settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.AMOLED ||
+                        (settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.SYSTEM_DYNAMIC && isSystemDark)
+                val shouldApplyLightCard = settings.lightImageBackground && isDark
+                val imageCardBg = if (shouldApplyLightCard) {
+                    Color(0xFFF5F4F0)
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerLow
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 14.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onToggleControls() },
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = imageCardBg
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = if (shouldApplyLightCard) 3.dp else 2.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(File(block.text))
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = block.subText,
-                            contentScale = ContentScale.FillWidth,
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(if (shouldApplyLightCard) 8.dp else 16.dp))
-                                .then(
-                                    if (shouldApplyLightCard) {
-                                        Modifier.background(Color.White)
-                                    } else Modifier
-                                )
+                                .padding(if (shouldApplyLightCard) 12.dp else 0.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(File(block.text))
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = block.subText,
+                                contentScale = ContentScale.FillWidth,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(if (shouldApplyLightCard) 8.dp else 16.dp))
+                                    .then(
+                                        if (shouldApplyLightCard) {
+                                            Modifier.background(Color.White)
+                                        } else Modifier
+                                    )
+                            )
+                        }
+                    }
+                    if (!block.subText.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = block.subText,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontStyle = FontStyle.Italic,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 16.dp)
                         )
                     }
-                }
-                if (!block.subText.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = block.subText,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontStyle = FontStyle.Italic,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
                 }
             }
         }
@@ -2965,6 +3079,28 @@ fun BookInfoDialog(
                     )
                 }
 
+                if (!book.series.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                    ) {
+                        val seriesText = if (book.seriesNumber != null) {
+                            "${strings.seriesLabel}: ${book.series} • #${book.seriesNumber}"
+                        } else {
+                            "${strings.seriesLabel}: ${book.series}"
+                        }
+                        Text(
+                            text = seriesText,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Progress Bar & Info Card
@@ -3060,7 +3196,7 @@ fun BookInfoDialog(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = book.format.name.uppercase(),
+                                text = if (book.format == com.aura.reader.data.model.BookFormat.CBZ) strings.cbzFormat else book.format.name.uppercase(),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary

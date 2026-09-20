@@ -81,6 +81,40 @@ object EpubParser {
             ?: fileName.removeSuffix(".epub")
         val author = opfDoc.getElementsByTagName("dc:creator").item(0)?.textContent?.trim() ?: ""
 
+        var series: String? = null
+        var seriesNumber: Int? = null
+
+        val metaNodes = opfDoc.getElementsByTagName("meta")
+        for (i in 0 until metaNodes.length) {
+            val meta = metaNodes.item(i) as? Element ?: continue
+            val nameAttr = meta.getAttribute("name")
+            val contentAttr = meta.getAttribute("content")
+            val propertyAttr = meta.getAttribute("property")
+
+            // Calibre / EPUB2 conventions
+            if (nameAttr.equals("calibre:series", ignoreCase = true) && !contentAttr.isNullOrBlank()) {
+                series = contentAttr.trim()
+            }
+            if (nameAttr.equals("calibre:series_index", ignoreCase = true) && !contentAttr.isNullOrBlank()) {
+                seriesNumber = contentAttr.trim().toDoubleOrNull()?.toInt() ?: contentAttr.trim().toIntOrNull()
+            }
+
+            // EPUB3 conventions
+            if (propertyAttr.equals("belongs-to-collection", ignoreCase = true)) {
+                val text = meta.textContent?.trim()
+                if (!text.isNullOrBlank() && series == null) {
+                    series = text
+                }
+            }
+            if (propertyAttr.equals("group-position", ignoreCase = true)) {
+                val text = meta.textContent?.trim()
+                val num = text?.toDoubleOrNull()?.toInt() ?: text?.toIntOrNull()
+                if (num != null && seriesNumber == null) {
+                    seriesNumber = num
+                }
+            }
+        }
+
         // Manifest: id -> href & mediaType
         val manifestItems = opfDoc.getElementsByTagName("item")
         val idToHref = mutableMapOf<String, String>()
@@ -340,7 +374,9 @@ object EpubParser {
                 )
             ),
             footnotes = footnotes,
-            progressPercent = 0
+            progressPercent = 0,
+            series = series,
+            seriesNumber = seriesNumber
         )
     }
 

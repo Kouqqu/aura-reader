@@ -9,6 +9,7 @@ import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.repository.BookRepository
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +33,35 @@ class ReaderViewModel(
 
     val appLanguage: StateFlow<com.aura.reader.ui.theme.AppLanguage> = preferencesManager.appLanguage
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.aura.reader.ui.theme.AppLanguage.RU)
+
+    val nextBookInSeries: StateFlow<Book?> = combine(
+        bookRepository.currentBook,
+        bookRepository.recentBooks
+    ) { current, recents ->
+        if (current == null || current.series.isNullOrBlank()) null
+        else {
+            val currentNum = current.seriesNumber
+            if (currentNum != null) {
+                recents.find {
+                    it.id != current.id &&
+                    it.series.equals(current.series, ignoreCase = true) &&
+                    it.seriesNumber == currentNum + 1
+                }
+            } else {
+                null
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun openNextBookInSeries(nextBook: Book) {
+        viewModelScope.launch {
+            val result = bookRepository.openBook(nextBook)
+            result.onSuccess { opened ->
+                _currentChapterIndex.value = opened.currentChapterIndex
+                _savedScrollOffset.value = opened.currentScrollOffset
+            }
+        }
+    }
 
     private val _currentChapterIndex = MutableStateFlow(0)
     val currentChapterIndex: StateFlow<Int> = _currentChapterIndex.asStateFlow()

@@ -7,7 +7,8 @@ enum class BookFormat {
     EPUB,
     TXT,
     PDF,
-    MOBI
+    MOBI,
+    CBZ
 }
 
 enum class BlockType {
@@ -51,7 +52,9 @@ data class Book(
     val progressPercent: Int = 0,
     val lastReadTimestamp: Long = System.currentTimeMillis(),
     val isFavorite: Boolean = false,
-    val collections: List<String> = emptyList()
+    val collections: List<String> = emptyList(),
+    val series: String? = null,
+    val seriesNumber: Int? = null
 )
 
 @Immutable

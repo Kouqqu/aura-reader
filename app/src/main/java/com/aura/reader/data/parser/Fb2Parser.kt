@@ -34,6 +34,8 @@ object Fb2Parser {
 
         var title = fileName.removeSuffix(".fb2").removeSuffix(".zip")
         var author = ""
+        var series: String? = null
+        var seriesNumber: Int? = null
         var coverId: String? = null
         val binaries = mutableMapOf<String, String>()
         val chapters = mutableListOf<Chapter>()
@@ -124,6 +126,16 @@ object Fb2Parser {
                 XmlPullParser.START_TAG -> {
                     when (tagName) {
                         "title-info" -> inTitleInfo = true
+                        "sequence" -> {
+                            if (inTitleInfo && series == null) {
+                                val sName = parser.getAttributeValue(null, "name")?.trim()
+                                val sNum = parser.getAttributeValue(null, "number")?.trim()?.toIntOrNull()
+                                if (!sName.isNullOrBlank()) {
+                                    series = sName
+                                    seriesNumber = sNum
+                                }
+                            }
+                        }
                         "book-title" -> {
                             if (inTitleInfo) {
                                 val t = parser.nextText()
@@ -407,7 +419,9 @@ object Fb2Parser {
                 )
             ),
             footnotes = footnotes,
-            progressPercent = 0
+            progressPercent = 0,
+            series = series,
+            seriesNumber = seriesNumber
         )
     }
 

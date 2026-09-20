@@ -95,6 +95,7 @@ interface Strings {
     val sortByPopularity: String
     val sortByTitle: String
     val sortByAuthor: String
+    val sortBySeries: String
     val catNew: String
     val catPopular: String
     val catAuthors: String
@@ -110,6 +111,12 @@ interface Strings {
     val colFavorites: String
     val colUnread: String
     val colFinished: String
+    val colSeries: String
+    val seriesLabel: String
+    fun bookNumberInSeries(num: Int): String
+    fun nextInSeriesPrompt(title: String): String
+    val nextInSeriesAction: String
+    val cbzFormat: String
     val newCollection: String
     val createCollectionDialogTitle: String
     val collectionNamePlaceholder: String
@@ -356,7 +363,7 @@ interface Strings {
 class RuStrings : Strings {
     override val chooseAddMethod = "Добавить книги в библиотеку"
     override val selectFiles = "Выбрать файлы"
-    override val selectFilesSubtitle = "Файлы .fb2, .epub, .pdf, .txt"
+    override val selectFilesSubtitle = "Файлы .fb2, .epub, .pdf, .txt, .cbz"
     override val scanFolder = "Сканировать папку"
     override val scanFolderSubtitle = "Рекурсивный поиск всех книг в папке устройства"
     override val selectThirdParty = "Сторонний проводник"
@@ -366,8 +373,8 @@ class RuStrings : Strings {
     override val sortTitle = "Сортировка"
     override val sortByDefault = "По умолчанию"
     override val sortByRecent = "Недавние"
-    override val sortByPopularDesc = "Самые популярные 🔥"
-    override val sortByPopularAsc = "Менее популярные 📉"
+    override val sortByPopularDesc = "Больше читателей ⭐"
+    override val sortByPopularAsc = "Меньше читателей"
     override val sortByTitleAsc = "По названию (А → Я)"
     override val sortByTitleDesc = "По названию (Я → А)"
     override val sortByAuthorAsc = "По автору (А → Я)"
@@ -377,6 +384,7 @@ class RuStrings : Strings {
     override val sortByPopularity = "По популярности"
     override val sortByTitle = "По названию"
     override val sortByAuthor = "По автору"
+    override val sortBySeries = "По сериям"
     override val catNew = "🔥 Новинки"
     override val catPopular = "⭐ Популярное"
     override val catAuthors = "✍️ Авторы"
@@ -392,6 +400,12 @@ class RuStrings : Strings {
     override val colFavorites = "Избранное"
     override val colUnread = "К прочтению"
     override val colFinished = "Прочитано"
+    override val colSeries = "Серии"
+    override val seriesLabel = "Серия"
+    override fun bookNumberInSeries(num: Int) = "Книга #$num"
+    override fun nextInSeriesPrompt(title: String) = "Вы завершили эту книгу. Открыть следующую часть «$title»?"
+    override val nextInSeriesAction = "Читать далее"
+    override val cbzFormat = "Комикс / Манга (CBZ)"
     override val newCollection = "Полка"
     override val createCollectionDialogTitle = "Новая коллекция"
     override val collectionNamePlaceholder = "Название полки"
@@ -679,7 +693,7 @@ class RuStrings : Strings {
 class EnStrings : Strings {
     override val chooseAddMethod = "Add books to library"
     override val selectFiles = "Select files"
-    override val selectFilesSubtitle = ".fb2, .epub, .fb2.zip files"
+    override val selectFilesSubtitle = ".fb2, .epub, .pdf, .txt, .cbz files"
     override val scanFolder = "Scan folder"
     override val scanFolderSubtitle = "Recursive search for books in device folder"
     override val selectThirdParty = "Third-party file manager"
@@ -700,6 +714,7 @@ class EnStrings : Strings {
     override val sortByPopularity = "Popularity"
     override val sortByTitle = "By Title"
     override val sortByAuthor = "By Author"
+    override val sortBySeries = "By Series"
     override val catNew = "🔥 New"
     override val catPopular = "⭐ Popular"
     override val catAuthors = "✍️ Authors"
@@ -715,6 +730,12 @@ class EnStrings : Strings {
     override val colFavorites = "Favorites"
     override val colUnread = "To Read"
     override val colFinished = "Completed"
+    override val colSeries = "Series"
+    override val seriesLabel = "Series"
+    override fun bookNumberInSeries(num: Int) = "Book #$num"
+    override fun nextInSeriesPrompt(title: String) = "You finished this book. Open the next book \"$title\"?"
+    override val nextInSeriesAction = "Read Next"
+    override val cbzFormat = "Comic / Manga (CBZ)"
     override val newCollection = "Shelf"
     override val createCollectionDialogTitle = "New Collection"
     override val collectionNamePlaceholder = "Shelf name"
@@ -1002,7 +1023,7 @@ class EnStrings : Strings {
 class UkStrings : Strings {
     override val chooseAddMethod = "Додати книги до бібліотеки"
     override val selectFiles = "Обрати файли"
-    override val selectFilesSubtitle = "Файли .fb2, .epub, .pdf, .txt"
+    override val selectFilesSubtitle = "Файли .fb2, .epub, .pdf, .txt, .cbz"
     override val scanFolder = "Сканувати папку"
     override val scanFolderSubtitle = "Рекурсивний пошук усіх книг у папці пристрою"
     override val selectThirdParty = "Сторонній провідник"
@@ -1023,6 +1044,7 @@ class UkStrings : Strings {
     override val sortByPopularity = "За популярністю"
     override val sortByTitle = "За назвою"
     override val sortByAuthor = "За автором"
+    override val sortBySeries = "За серіями"
     override val catNew = "🔥 Новинки"
     override val catPopular = "⭐ Популярне"
     override val catAuthors = "✍️ Автори"
@@ -1038,6 +1060,12 @@ class UkStrings : Strings {
     override val colFavorites = "Обране"
     override val colUnread = "До читання"
     override val colFinished = "Прочитано"
+    override val colSeries = "Серії"
+    override val seriesLabel = "Серія"
+    override fun bookNumberInSeries(num: Int) = "Книга #$num"
+    override fun nextInSeriesPrompt(title: String) = "Ви завершили цю книгу. Відкрити наступну частину «$title»?"
+    override val nextInSeriesAction = "Читати далі"
+    override val cbzFormat = "Комікс / Манга (CBZ)"
     override val newCollection = "Полиця"
     override val createCollectionDialogTitle = "Нова колекція"
     override val collectionNamePlaceholder = "Назва полиці"
@@ -1325,7 +1353,7 @@ class UkStrings : Strings {
 class BeStrings : Strings {
     override val chooseAddMethod = "Дадаць кнігі ў бібліятэку"
     override val selectFiles = "Абраць файлы"
-    override val selectFilesSubtitle = "Файлы .fb2, .epub, .pdf, .txt"
+    override val selectFilesSubtitle = "Файлы .fb2, .epub, .pdf, .txt, .cbz"
     override val scanFolder = "Сканаваць папку"
     override val scanFolderSubtitle = "Рэкурсіўны пошук усіх кніг у папцы прылады"
     override val selectThirdParty = "Сторонні праваднік"
@@ -1346,6 +1374,7 @@ class BeStrings : Strings {
     override val sortByPopularity = "Па папулярнасці"
     override val sortByTitle = "Па назве"
     override val sortByAuthor = "Па аўтару"
+    override val sortBySeries = "Па серыях"
     override val catNew = "🔥 Навінкі"
     override val catPopular = "⭐ Папулярнае"
     override val catAuthors = "✍️ Аўтары"
@@ -1361,6 +1390,12 @@ class BeStrings : Strings {
     override val colFavorites = "Выбранае"
     override val colUnread = "Да чытання"
     override val colFinished = "Прачытана"
+    override val colSeries = "Серыі"
+    override val seriesLabel = "Серыя"
+    override fun bookNumberInSeries(num: Int) = "Кніга #$num"
+    override fun nextInSeriesPrompt(title: String) = "Вы скончылі гэтую кнігу. Адкрыць наступную частку «$title»?"
+    override val nextInSeriesAction = "Чытаць далей"
+    override val cbzFormat = "Комікс / Манга (CBZ)"
     override val newCollection = "Паліца"
     override val createCollectionDialogTitle = "Новая калекцыя"
     override val collectionNamePlaceholder = "Назва паліцы"
@@ -1648,7 +1683,7 @@ class BeStrings : Strings {
 class PlStrings : Strings {
     override val chooseAddMethod = "Dodaj książki do biblioteki"
     override val selectFiles = "Wybierz pliki"
-    override val selectFilesSubtitle = "Pliki .fb2, .epub, .pdf, .txt"
+    override val selectFilesSubtitle = "Pliki .fb2, .epub, .pdf, .txt, .cbz"
     override val scanFolder = "Skanuj folder"
     override val scanFolderSubtitle = "Rekurencyjne wyszukiwanie książek w folderze urządzenia"
     override val selectThirdParty = "Menedżer plików innej firmy"
@@ -1669,6 +1704,7 @@ class PlStrings : Strings {
     override val sortByPopularity = "Według popularności"
     override val sortByTitle = "Według tytułu"
     override val sortByAuthor = "Według autora"
+    override val sortBySeries = "Według serii"
     override val catNew = "🔥 Nowości"
     override val catPopular = "⭐ Popularne"
     override val catAuthors = "✍️ Autorzy"
@@ -1684,6 +1720,12 @@ class PlStrings : Strings {
     override val colFavorites = "Ulubione"
     override val colUnread = "Do przeczytania"
     override val colFinished = "Przeczytane"
+    override val colSeries = "Serie"
+    override val seriesLabel = "Seria"
+    override fun bookNumberInSeries(num: Int) = "Księga #$num"
+    override fun nextInSeriesPrompt(title: String) = "Ukończyłeś tę książkę. Czy chcesz otworzyć kolejną część: „$title”?"
+    override val nextInSeriesAction = "Czytaj dalej"
+    override val cbzFormat = "Komiks / Manga (CBZ)"
     override val newCollection = "Półka"
     override val createCollectionDialogTitle = "Nowa kolekcja"
     override val collectionNamePlaceholder = "Nazwa półki"
@@ -2002,7 +2044,7 @@ class CsStrings : Strings {
     override fun noSearchResultsFound(query: String) = "Pro dotaz «$query» nebylo nic nalezeno"
     override val chooseAddMethod = "Přidat knihy do knihovny"
     override val selectFiles = "Vybrat soubory"
-    override val selectFilesSubtitle = "Soubory .fb2, .epub, .pdf, .txt"
+    override val selectFilesSubtitle = "Soubory .fb2, .epub, .pdf, .txt, .cbz"
     override val scanFolder = "Skenovat složku"
     override val scanFolderSubtitle = "Rekurzivní vyhledávání knih ve složce zařízení"
     override val opdsCatalog = "Katalog OPDS"
@@ -2043,6 +2085,7 @@ class CsStrings : Strings {
     override val sortByPopularity = "Podle oblíbenosti"
     override val sortByTitle = "Podle názvu"
     override val sortByAuthor = "Podle autora"
+    override val sortBySeries = "Podle sérií"
     override val catNew = "Nové"
     override val catPopular = "Oblíbené"
     override val catAuthors = "Autoři"
@@ -2058,6 +2101,12 @@ class CsStrings : Strings {
     override val colFavorites = "Oblíbené"
     override val colUnread = "Nepřečtené"
     override val colFinished = "Přečtené"
+    override val colSeries = "Série"
+    override val seriesLabel = "Série"
+    override fun bookNumberInSeries(num: Int) = "Kniha #$num"
+    override fun nextInSeriesPrompt(title: String) = "Dokončili jste tuto knihu. Otevřít další díl „$title“?"
+    override val nextInSeriesAction = "Číst dál"
+    override val cbzFormat = "Komiks / Manga (CBZ)"
     override val newCollection = "Nová sbírka"
     override val createCollectionDialogTitle = "Vytvořit sbírku"
     override val collectionNamePlaceholder = "Název sbírky"

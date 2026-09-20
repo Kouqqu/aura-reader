@@ -686,6 +686,16 @@ fun LibraryScreen(
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FINISHED)) },
                                 label = { Text(strings.colFinished) }
                             )
+                            val hasAnySeries = remember(recentBooks) {
+                                recentBooks.any { !it.series.isNullOrBlank() }
+                            }
+                            if (hasAnySeries) {
+                                FilterChip(
+                                    selected = activeCollectionFilter.type == CollectionFilterType.SERIES,
+                                    onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.SERIES)) },
+                                    label = { Text(strings.colSeries) }
+                                )
+                            }
                             for (colName in userCollections) {
                                 val isSelected = activeCollectionFilter.type == CollectionFilterType.CUSTOM && activeCollectionFilter.customName == colName
                                 FilterChip(
@@ -756,6 +766,7 @@ fun LibraryScreen(
                                     LibrarySortOption.RECENT -> strings.recentBooks
                                     LibrarySortOption.TITLE -> strings.sortByTitle
                                     LibrarySortOption.AUTHOR -> strings.sortByAuthor
+                                    LibrarySortOption.SERIES -> strings.sortBySeries
                                     LibrarySortOption.CUSTOM -> strings.sortCustomOrder
                                 }
                             }
@@ -772,6 +783,7 @@ fun LibraryScreen(
                                         LibrarySortOption.RECENT -> strings.sortByRecent
                                         LibrarySortOption.TITLE -> strings.sortByTitle
                                         LibrarySortOption.AUTHOR -> strings.sortByAuthor
+                                        LibrarySortOption.SERIES -> strings.sortBySeries
                                         LibrarySortOption.CUSTOM -> strings.sortCustomOrder
                                     }
                                     Surface(
@@ -834,6 +846,18 @@ fun LibraryScreen(
                                             },
                                             leadingIcon = {
                                                 if (librarySortOrder == LibrarySortOption.AUTHOR) {
+                                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(strings.sortBySeries) },
+                                            onClick = {
+                                                viewModel.setLibrarySortOrder(LibrarySortOption.SERIES)
+                                                showSortMenu = false
+                                            },
+                                            leadingIcon = {
+                                                if (librarySortOrder == LibrarySortOption.SERIES) {
                                                     Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                 }
                                             }
@@ -1539,6 +1563,23 @@ fun BookCard(
                     )
                 }
 
+                if (!book.series.isNullOrBlank()) {
+                    val seriesText = if (book.seriesNumber != null) {
+                        "${book.series} • #${book.seriesNumber}"
+                    } else {
+                        book.series!!
+                    }
+                    Text(
+                        text = seriesText,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Column {
@@ -1846,6 +1887,25 @@ fun BookGridCard(
                         .clickable { onCoverClick() }
                 )
 
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp)
+                ) {
+                    Text(
+                        text = book.format.name.uppercase(),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                    )
+                }
+
                 if (book.isFavorite) {
                     Surface(
                         shape = CircleShape,
@@ -1896,14 +1956,33 @@ fun BookGridCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            Text(
-                text = book.author,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 2.dp)
-            )
+            if (book.author.isNotBlank()) {
+                Text(
+                    text = book.author,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+
+            if (!book.series.isNullOrBlank()) {
+                val seriesText = if (book.seriesNumber != null) {
+                    "${book.series} • #${book.seriesNumber}"
+                } else {
+                    book.series!!
+                }
+                Text(
+                    text = seriesText,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 1.dp)
+                )
+            }
 
             DropdownMenu(
                 expanded = showMenu,

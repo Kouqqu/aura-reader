@@ -56,7 +56,9 @@ class BookRepository(
                             progressPercent = obj.optInt("progressPercent", 0),
                             lastReadTimestamp = obj.optLong("lastReadTimestamp", System.currentTimeMillis()),
                             isFavorite = obj.optBoolean("isFavorite", false),
-                            collections = collectionsList
+                            collections = collectionsList,
+                            series = if (obj.has("series") && !obj.isNull("series")) obj.getString("series") else null,
+                            seriesNumber = if (obj.has("seriesNumber") && !obj.isNull("seriesNumber")) obj.getInt("seriesNumber") else null
                         )
                     )
                 }
@@ -82,6 +84,8 @@ class BookRepository(
                 put("progressPercent", b.progressPercent)
                 put("lastReadTimestamp", b.lastReadTimestamp)
                 put("isFavorite", b.isFavorite)
+                put("series", b.series)
+                put("seriesNumber", b.seriesNumber)
                 val cArr = JSONArray()
                 for (c in b.collections) cArr.put(c)
                 put("collections", cArr)
@@ -125,6 +129,8 @@ class BookRepository(
                 id = bookToOpen.id,
                 title = if (bookToOpen.title.isNotBlank()) bookToOpen.title else book.title,
                 author = if (bookToOpen.author.isNotBlank()) bookToOpen.author else book.author,
+                series = bookToOpen.series ?: book.series,
+                seriesNumber = bookToOpen.seriesNumber ?: book.seriesNumber,
                 currentChapterIndex = bookToOpen.currentChapterIndex,
                 currentScrollOffset = bookToOpen.currentScrollOffset,
                 progressPercent = bookToOpen.progressPercent
@@ -216,6 +222,14 @@ class BookRepository(
                         fileName
                     )
                 }
+                fileName.endsWith(".cbz", ignoreCase = true) -> {
+                    com.aura.reader.data.parser.CbzParser.parse(
+                        java.io.ByteArrayInputStream(bytes),
+                        uri.toString(),
+                        fileName,
+                        imagesDir
+                    )
+                }
                 fileName.endsWith(".mobi", ignoreCase = true) || (bytes.size >= 68 && bytes[60] == 'B'.code.toByte() && bytes[61] == 'O'.code.toByte() && bytes[62] == 'O'.code.toByte() && bytes[63] == 'K'.code.toByte()) -> {
                     com.aura.reader.data.parser.MobiParser.parse(
                         java.io.ByteArrayInputStream(bytes),
@@ -227,6 +241,7 @@ class BookRepository(
                     var hasMetaInf = false
                     var hasFb2 = false
                     var hasTxt = false
+                    var hasImages = false
                     var entryName = ""
                     try {
                         val zis = java.util.zip.ZipInputStream(java.io.ByteArrayInputStream(bytes))
@@ -244,6 +259,9 @@ class BookRepository(
                             if (lower.endsWith(".txt")) {
                                 hasTxt = true
                                 entryName = e.name
+                            }
+                            if (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") || lower.endsWith(".webp") || lower.endsWith(".gif")) {
+                                hasImages = true
                             }
                             e = zis.nextEntry
                         }
@@ -269,7 +287,15 @@ class BookRepository(
                                 entryName
                             )
                         }
-                        else -> throw IllegalArgumentException("Архив «$fileName» не содержит поддерживаемых книг (FB2, EPUB, TXT).")
+                        hasImages || fileName.endsWith(".cbz", ignoreCase = true) -> {
+                            com.aura.reader.data.parser.CbzParser.parse(
+                                java.io.ByteArrayInputStream(bytes),
+                                uri.toString(),
+                                fileName,
+                                imagesDir
+                            )
+                        }
+                        else -> throw IllegalArgumentException("Архив «$fileName» не содержит поддерживаемых книг (FB2, EPUB, TXT, CBZ).")
                     }
                 }
                 else -> {
@@ -386,6 +412,7 @@ class BookRepository(
             targetNames.add("$bookTitle.fb2")
             targetNames.add("$bookTitle.epub")
             targetNames.add("$bookTitle.fb2.zip")
+            targetNames.add("$bookTitle.cbz")
             targetNames.add("$bookTitle.pdf")
             targetNames.add("$bookTitle.mobi")
             targetNames.add("$bookTitle.txt")
@@ -525,7 +552,9 @@ class BookRepository(
                 name.endsWith(".fb2.zip") ||
                 name.endsWith(".epub") ||
                 name.endsWith(".txt") ||
-                name.endsWith(".pdf")
+                name.endsWith(".pdf") ||
+                name.endsWith(".mobi") ||
+                name.endsWith(".cbz")
     }
 
     suspend fun removeBook(bookId: String) = withContext(Dispatchers.IO) {
