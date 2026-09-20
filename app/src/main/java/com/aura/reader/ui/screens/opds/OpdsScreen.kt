@@ -58,8 +58,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Surface
-import androidx.compose.ui.text.style.TextOverflow
 import com.aura.reader.data.model.OpdsSearchType
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -627,6 +625,12 @@ fun OpdsScreen(
                         } else {
                             val res = state.searchResult
                             val isAllSearch = res != null && searchScope == OpdsSearchType.ALL
+                            val sortedSearchResultBooks = remember(res?.books, sortOption) {
+                                if (res != null) viewModel.getSortedBooks(res.books, sortOption) else emptyList()
+                            }
+                            val sortedStateBooks = remember(state.books, sortOption) {
+                                viewModel.getSortedBooks(state.books, sortOption)
+                            }
 
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
@@ -747,11 +751,7 @@ fun OpdsScreen(
                                             }
                                         }
 
-                                        val sortedBooks = remember(res.books, sortOption) {
-                                            viewModel.getSortedBooks(res.books, sortOption)
-                                        }
-
-                                        itemsIndexed(sortedBooks, key = { index, book -> "${book.id}_${book.title}_$index" }) { index, book ->
+                                        itemsIndexed(sortedSearchResultBooks, key = { index, book -> "${book.id}_${book.title}_$index" }) { index, book ->
                                             val progress = activeDownloads[book.id]
                                             val downloaded = downloadedBooks[book.id]
 
@@ -779,11 +779,7 @@ fun OpdsScreen(
                                         }
                                     }
                                 } else {
-                                    val sortedBooks = remember(state.books, sortOption) {
-                                        viewModel.getSortedBooks(state.books, sortOption)
-                                    }
-
-                                    itemsIndexed(sortedBooks, key = { index, book -> "${book.id}_${book.title}_$index" }) { index, book ->
+                                    itemsIndexed(sortedStateBooks, key = { index, book -> "${book.id}_${book.title}_$index" }) { index, book ->
                                         val progress = activeDownloads[book.id]
                                         val downloaded = downloadedBooks[book.id]
 

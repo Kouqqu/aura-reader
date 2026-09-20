@@ -340,7 +340,7 @@ object MobiParser {
 
         val utf8 = String(bytes, StandardCharsets.UTF_8)
         val hasCyrillic = utf8.any { it in '\u0400'..'\u04FF' }
-        val invalidCount = utf8.count { it == '' }
+        val invalidCount = utf8.count { it == '\uFFFD' }
         val invalidRatio = invalidCount.toDouble() / maxOf(1, utf8.length)
 
         if (hasCyrillic && invalidRatio < 0.01) {
