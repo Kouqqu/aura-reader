@@ -724,7 +724,7 @@ fun SettingsBottomSheet(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = strings.readingSpeedSettingSubtitle,
+                                text = strings.resetReadingSpeedSubtitle,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
