@@ -179,6 +179,17 @@ class LibraryViewModel(
         viewModelScope.launch { preferencesManager.resetReadingStats() }
     }
 
+    val appFont: StateFlow<String> = preferencesManager.appFont
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "DEFAULT")
+
+    fun setAppFont(font: String) {
+        viewModelScope.launch { preferencesManager.setAppFont(font) }
+    }
+
+    fun resetReadingSpeed() {
+        viewModelScope.launch { preferencesManager.resetAverageWpm() }
+    }
+
     fun setCustomOpdsEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setCustomOpdsEnabled(enabled) }
     }

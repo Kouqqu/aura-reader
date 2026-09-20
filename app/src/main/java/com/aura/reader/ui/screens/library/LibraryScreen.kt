@@ -241,6 +241,7 @@ fun LibraryScreen(
     val catalogBaseUrl by viewModel.catalogBaseUrl.collectAsState()
     val developerModeEnabled by viewModel.developerModeEnabled.collectAsState()
     val updateChannel by viewModel.updateChannel.collectAsState()
+    val appFont by viewModel.appFont.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -1265,7 +1266,10 @@ fun LibraryScreen(
             onOpenReaderThemeSettings = {
                 showSettingsSheet = false
                 showReaderThemeSheet = true
-            }
+            },
+            appFont = appFont,
+            onAppFontChange = { viewModel.setAppFont(it) },
+            onResetReadingSpeed = { viewModel.resetReadingSpeed() }
         )
     }
 

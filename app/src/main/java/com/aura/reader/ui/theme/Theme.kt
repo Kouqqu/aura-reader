@@ -8,7 +8,11 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import com.aura.reader.R
 import com.aura.reader.data.model.ReaderThemeMode
 
 private val LightColorScheme = lightColorScheme(
@@ -83,10 +87,19 @@ private val AmoledColorScheme = darkColorScheme(
 fun AuraReaderTheme(
     themeMode: ReaderThemeMode = ReaderThemeMode.DARK,
     materialYou: Boolean = false,
+    appFont: String = "DEFAULT",
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
     val hasDynamic = materialYou && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+    val typography = remember(appFont) {
+        val fontFamily = when (appFont) {
+            "GOOGLE_SANS" -> FontFamily(Font(R.font.google_sans_regular))
+            else -> FontFamily.Default
+        }
+        createAppTypography(fontFamily)
+    }
 
     val colorScheme = when (themeMode) {
         ReaderThemeMode.LIGHT -> {
@@ -142,7 +155,7 @@ fun AuraReaderTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = typography,
         content = content
     )
 }

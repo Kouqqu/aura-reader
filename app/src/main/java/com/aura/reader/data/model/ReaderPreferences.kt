@@ -43,6 +43,9 @@ data class ReaderSettings(
     val pageAnimation: PageTurnAnimation = PageTurnAnimation.SLIDE,
     val hapticFeedbackEnabled: Boolean = true,
     val fontName: String = "",
+    val serifFontName: String = "",
+    val sansSerifFontName: String = "",
+    val monospaceFontName: String = "",
     val syncThemesWithApp: Boolean = false,
     val appThemeMode: ReaderThemeMode = ReaderThemeMode.SYSTEM_DYNAMIC
 )

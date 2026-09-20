@@ -80,6 +80,20 @@ class PreferencesManager(private val context: Context) {
         val LIBRARY_SORT_ORDER_KEY = stringPreferencesKey("library_sort_order")
         val CUSTOM_BOOK_ORDER_KEY = stringPreferencesKey("custom_book_order_json")
         val SKIPPED_UPDATE_VERSION_KEY = stringPreferencesKey("skipped_update_version")
+        val APP_FONT_KEY = stringPreferencesKey("app_ui_font")
+        val SERIF_FONT_NAME_KEY = stringPreferencesKey("serif_font_name")
+        val SANS_SERIF_FONT_NAME_KEY = stringPreferencesKey("sans_serif_font_name")
+        val MONOSPACE_FONT_NAME_KEY = stringPreferencesKey("monospace_font_name")
+    }
+
+    val appFont: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[APP_FONT_KEY] ?: "DEFAULT"
+    }
+
+    suspend fun setAppFont(font: String) {
+        context.dataStore.edit { prefs ->
+            prefs[APP_FONT_KEY] = font
+        }
     }
 
     val libraryViewMode: Flow<String> = context.dataStore.data.map { prefs ->
@@ -171,6 +185,9 @@ class PreferencesManager(private val context: Context) {
         }
 
         val fontName = prefs[FONT_NAME_KEY] ?: ""
+        val serifFontName = prefs[SERIF_FONT_NAME_KEY] ?: ""
+        val sansSerifFontName = prefs[SANS_SERIF_FONT_NAME_KEY] ?: ""
+        val monospaceFontName = prefs[MONOSPACE_FONT_NAME_KEY] ?: ""
         val syncThemesWithApp = prefs[SYNC_THEMES_WITH_APP_KEY] ?: false
         val appThemeModeStr = prefs[APP_THEME_MODE_KEY] ?: ReaderThemeMode.SYSTEM_DYNAMIC.name
 
@@ -193,6 +210,9 @@ class PreferencesManager(private val context: Context) {
             pageAnimation = pageAnimation,
             hapticFeedbackEnabled = hapticFeedbackEnabled,
             fontName = fontName,
+            serifFontName = serifFontName,
+            sansSerifFontName = sansSerifFontName,
+            monospaceFontName = monospaceFontName,
             syncThemesWithApp = syncThemesWithApp,
             appThemeMode = appThemeMode
         )
@@ -241,12 +261,31 @@ class PreferencesManager(private val context: Context) {
     suspend fun updateFontName(fontName: String) {
         context.dataStore.edit { prefs ->
             prefs[FONT_NAME_KEY] = fontName
+            val currentFamilyStr = prefs[FONT_FAMILY_KEY] ?: ReaderFontFamily.SERIF.name
+            val currentFamily = try {
+                ReaderFontFamily.valueOf(currentFamilyStr)
+            } catch (e: Exception) {
+                ReaderFontFamily.SERIF
+            }
+            when (currentFamily) {
+                ReaderFontFamily.SERIF -> prefs[SERIF_FONT_NAME_KEY] = fontName
+                ReaderFontFamily.SANS_SERIF -> prefs[SANS_SERIF_FONT_NAME_KEY] = fontName
+                ReaderFontFamily.MONOSPACE -> prefs[MONOSPACE_FONT_NAME_KEY] = fontName
+                ReaderFontFamily.SYSTEM_DEFAULT -> {}
+            }
         }
     }
 
     suspend fun updateFontFamily(fontFamily: ReaderFontFamily) {
         context.dataStore.edit { prefs ->
             prefs[FONT_FAMILY_KEY] = fontFamily.name
+            val rememberedFont = when (fontFamily) {
+                ReaderFontFamily.SERIF -> prefs[SERIF_FONT_NAME_KEY] ?: ""
+                ReaderFontFamily.SANS_SERIF -> prefs[SANS_SERIF_FONT_NAME_KEY] ?: ""
+                ReaderFontFamily.MONOSPACE -> prefs[MONOSPACE_FONT_NAME_KEY] ?: ""
+                ReaderFontFamily.SYSTEM_DEFAULT -> ""
+            }
+            prefs[FONT_NAME_KEY] = rememberedFont
         }
     }
 
@@ -420,6 +459,12 @@ class PreferencesManager(private val context: Context) {
     suspend fun updateAverageWpm(wpm: Float) {
         context.dataStore.edit { prefs ->
             prefs[AVERAGE_WPM_KEY] = wpm.coerceIn(80f, 600f)
+        }
+    }
+
+    suspend fun resetAverageWpm() {
+        context.dataStore.edit { prefs ->
+            prefs[AVERAGE_WPM_KEY] = 200f
         }
     }
 

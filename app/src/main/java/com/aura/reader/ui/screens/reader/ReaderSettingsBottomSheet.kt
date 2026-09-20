@@ -286,7 +286,6 @@ fun ReaderSettingsBottomSheet(
                         selected = settings.fontFamily == ReaderFontFamily.SERIF,
                         onClick = {
                             onFontFamilyChange(ReaderFontFamily.SERIF)
-                            onFontNameChange("")
                         },
                         label = { Text(strings.fontFamilySerif) },
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.SERIF) {
@@ -298,7 +297,6 @@ fun ReaderSettingsBottomSheet(
                         selected = settings.fontFamily == ReaderFontFamily.SANS_SERIF,
                         onClick = {
                             onFontFamilyChange(ReaderFontFamily.SANS_SERIF)
-                            onFontNameChange("")
                         },
                         label = { Text(strings.fontFamilySansSerif) },
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.SANS_SERIF) {
@@ -310,7 +308,6 @@ fun ReaderSettingsBottomSheet(
                         selected = settings.fontFamily == ReaderFontFamily.MONOSPACE,
                         onClick = {
                             onFontFamilyChange(ReaderFontFamily.MONOSPACE)
-                            onFontNameChange("")
                         },
                         label = { Text(strings.fontFamilyMonospace) },
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.MONOSPACE) {

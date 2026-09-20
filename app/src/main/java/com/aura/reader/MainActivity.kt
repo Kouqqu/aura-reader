@@ -61,13 +61,17 @@ class MainActivity : ComponentActivity() {
             val materialYouEnabled by preferencesManager.materialYouEnabled.collectAsState(
                 initial = false
             )
+            val appFont by preferencesManager.appFont.collectAsState(
+                initial = "DEFAULT"
+            )
 
             CompositionLocalProvider(
                 LocalAppStrings provides getStrings(appLanguage)
             ) {
                 AuraReaderTheme(
                     themeMode = settings.appThemeMode,
-                    materialYou = materialYouEnabled
+                    materialYou = materialYouEnabled,
+                    appFont = appFont
                 ) {
                     val navController = rememberNavController()
                     AuraNavGraph(

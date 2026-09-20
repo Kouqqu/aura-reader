@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -112,7 +113,10 @@ fun SettingsBottomSheet(
     syncThemesWithApp: Boolean = false,
     onSyncThemesChange: (Boolean) -> Unit = {},
     onReaderThemeChange: (ReaderThemeMode) -> Unit = {},
-    onOpenReaderThemeSettings: () -> Unit = {}
+    onOpenReaderThemeSettings: () -> Unit = {},
+    appFont: String = "DEFAULT",
+    onAppFontChange: (String) -> Unit = {},
+    onResetReadingSpeed: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
@@ -570,6 +574,57 @@ fun SettingsBottomSheet(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(20.dp))
 
+            // App Font Section
+            Text(
+                text = strings.appFontTitle,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = strings.appFontSubtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = appFont == "DEFAULT",
+                    onClick = { onAppFontChange("DEFAULT") },
+                    label = { Text(strings.appFontDefault) },
+                    leadingIcon = if (appFont == "DEFAULT") {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else null,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                )
+
+                FilterChip(
+                    selected = appFont == "GOOGLE_SANS",
+                    onClick = { onAppFontChange("GOOGLE_SANS") },
+                    label = { Text(strings.appFontGoogleSans) },
+                    leadingIcon = if (appFont == "GOOGLE_SANS") {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else null,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Spacer(modifier = Modifier.height(20.dp))
+
             // 3. Additional Features Section (Reading stats & Custom catalog)
             Text(
                 text = strings.additionalFeaturesSectionTitle,
@@ -614,6 +669,26 @@ fun SettingsBottomSheet(
                                 checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
                             )
                         )
+                    }
+
+                    if (readingStatsEnabled) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedButton(
+                            onClick = {
+                                onResetReadingSpeed()
+                                Toast.makeText(context, strings.resetReadingSpeedSuccess, Toast.LENGTH_SHORT).show()
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Speed,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(strings.resetReadingSpeedTitle)
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
