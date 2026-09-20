@@ -207,6 +207,11 @@ import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.ui.theme.AuraReaderTheme
 import kotlinx.coroutines.launch
 import java.io.File
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import androidx.compose.ui.hapticfeedback.HapticFeedback
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -900,47 +905,57 @@ fun ReaderScreen(
                                         IconButton(
                                             onClick = {
                                                 if (currentPagingPage > 0) {
-                                                    requestPagingPage = currentPagingPage - 1
+                                                    val target = currentPagingPage - 1
+                                                    lastPageSliderStep = target
+                                                    if (settings.hapticFeedbackEnabled) {
+                                                        performSliderTick(context, haptic)
+                                                    }
+                                                    requestPagingPage = target
                                                 }
                                             },
                                             enabled = currentPagingPage > 0,
                                             modifier = Modifier.size(36.dp)
-                                        ) {
-                                            Icon(Icons.Default.ChevronLeft, contentDescription = strings.prevPage)
-                                        }
+                                         ) {
+                                             Icon(Icons.Default.ChevronLeft, contentDescription = strings.prevPage)
+                                         }
 
-                                        Slider(
-                                            value = currentPagingPage.toFloat().coerceIn(0f, (totalPagingPages - 1).coerceAtLeast(0).toFloat()),
-                                            onValueChange = { newVal ->
-                                                val step = newVal.toInt()
-                                                if (step != lastPageSliderStep) {
-                                                    lastPageSliderStep = step
-                                                    if (settings.hapticFeedbackEnabled) {
-                                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                    }
-                                                }
-                                                requestPagingPage = step
-                                            },
-                                            valueRange = 0f..(totalPagingPages - 1).coerceAtLeast(1).toFloat(),
-                                            steps = (totalPagingPages - 2).coerceAtLeast(0),
-                                            modifier = Modifier.weight(1f),
-                                            colors = SliderDefaults.colors(
-                                                thumbColor = MaterialTheme.colorScheme.primary,
-                                                activeTrackColor = MaterialTheme.colorScheme.primary
-                                            )
-                                        )
+                                         Slider(
+                                             value = currentPagingPage.toFloat().coerceIn(0f, (totalPagingPages - 1).coerceAtLeast(0).toFloat()),
+                                             onValueChange = { newVal ->
+                                                 val step = newVal.toInt()
+                                                 if (step != lastPageSliderStep) {
+                                                     lastPageSliderStep = step
+                                                     if (settings.hapticFeedbackEnabled) {
+                                                         performSliderTick(context, haptic)
+                                                     }
+                                                 }
+                                                 requestPagingPage = step
+                                             },
+                                             valueRange = 0f..(totalPagingPages - 1).coerceAtLeast(1).toFloat(),
+                                             steps = (totalPagingPages - 2).coerceAtLeast(0),
+                                             modifier = Modifier.weight(1f),
+                                             colors = SliderDefaults.colors(
+                                                 thumbColor = MaterialTheme.colorScheme.primary,
+                                                 activeTrackColor = MaterialTheme.colorScheme.primary
+                                             )
+                                         )
 
-                                        IconButton(
-                                            onClick = {
-                                                if (currentPagingPage < totalPagingPages - 1) {
-                                                    requestPagingPage = currentPagingPage + 1
-                                                }
-                                            },
-                                            enabled = currentPagingPage < totalPagingPages - 1,
-                                            modifier = Modifier.size(36.dp)
-                                        ) {
-                                            Icon(Icons.Default.ChevronRight, contentDescription = strings.nextPage)
-                                        }
+                                         IconButton(
+                                             onClick = {
+                                                 if (currentPagingPage < totalPagingPages - 1) {
+                                                     val target = currentPagingPage + 1
+                                                     lastPageSliderStep = target
+                                                     if (settings.hapticFeedbackEnabled) {
+                                                         performSliderTick(context, haptic)
+                                                     }
+                                                     requestPagingPage = target
+                                                 }
+                                             },
+                                             enabled = currentPagingPage < totalPagingPages - 1,
+                                             modifier = Modifier.size(36.dp)
+                                         ) {
+                                             Icon(Icons.Default.ChevronRight, contentDescription = strings.nextPage)
+                                         }
                                     }
 
                                     Text(
@@ -1019,7 +1034,7 @@ fun ReaderScreen(
                                                 if (step != lastChapterSliderStep) {
                                                     lastChapterSliderStep = step
                                                     if (settings.hapticFeedbackEnabled) {
-                                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                        performSliderTick(context, haptic)
                                                     }
                                                 }
                                                 viewModel.setChapter(step)
@@ -1818,11 +1833,9 @@ fun ChapterPagingView(
                 val targetSpread = if (isTwoColumn) targetPage / 2 else targetPage
                 val targetPagerSpread = prevPageOffset + targetSpread
                 if (targetPagerSpread in prevPageOffset until (prevPageOffset + contentSpreadsCount) && targetPagerSpread != pagerState.currentPage) {
-                    if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
-                        pagerState.scrollToPage(targetPagerSpread)
-                    } else {
-                        pagerState.animateScrollToPage(targetPagerSpread)
-                    }
+                    lastHapticSpread = targetSpread
+                    lastHapticOffset = targetPagerSpread.toFloat()
+                    pagerState.scrollToPage(targetPagerSpread)
                 }
                 onConsumeTargetPage()
             }
@@ -3211,4 +3224,17 @@ fun BookInfoDialog(
         },
         shape = RoundedCornerShape(24.dp)
     )
+}
+
+private fun performSliderTick(context: Context, haptic: HapticFeedback) {
+    try {
+        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && vibrator?.hasVibrator() == true) {
+            vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
+        } else {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        }
+    } catch (_: Exception) {
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+    }
 }

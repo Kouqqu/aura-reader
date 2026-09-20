@@ -9,7 +9,10 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Build
 import android.util.Base64
+import android.view.Surface
+import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -113,6 +116,7 @@ fun ParallaxCoverViewer(
 
     DisposableEffect(Unit) {
         val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+        val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
         val sensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
             ?: sensorManager?.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
             ?: sensorManager?.getDefaultSensor(Sensor.TYPE_GRAVITY)
@@ -120,15 +124,45 @@ fun ParallaxCoverViewer(
 
         val listener = object : SensorEventListener {
             val rotationMatrix = FloatArray(9)
+            val remappedMatrix = FloatArray(9)
             val orientation = FloatArray(3)
             var basePitch: Float? = null
             var baseRoll: Float? = null
+            var lastRotation: Int = -1
 
             override fun onSensorChanged(event: SensorEvent) {
+                val displayRotation = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    try {
+                        context.display?.rotation ?: Surface.ROTATION_0
+                    } catch (_: Exception) {
+                        @Suppress("DEPRECATION")
+                        windowManager?.defaultDisplay?.rotation ?: Surface.ROTATION_0
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    windowManager?.defaultDisplay?.rotation ?: Surface.ROTATION_0
+                }
+
+                if (displayRotation != lastRotation) {
+                    basePitch = null
+                    baseRoll = null
+                    lastRotation = displayRotation
+                }
+
                 when (event.sensor.type) {
                     Sensor.TYPE_ROTATION_VECTOR, Sensor.TYPE_GAME_ROTATION_VECTOR -> {
                         SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-                        SensorManager.getOrientation(rotationMatrix, orientation)
+
+                        // Remap coordinate system to match display rotation
+                        val (axisX, axisY) = when (displayRotation) {
+                            Surface.ROTATION_90 -> SensorManager.AXIS_Y to SensorManager.AXIS_MINUS_X
+                            Surface.ROTATION_180 -> SensorManager.AXIS_MINUS_X to SensorManager.AXIS_MINUS_Y
+                            Surface.ROTATION_270 -> SensorManager.AXIS_MINUS_Y to SensorManager.AXIS_X
+                            else -> SensorManager.AXIS_X to SensorManager.AXIS_Y
+                        }
+                        SensorManager.remapCoordinateSystem(rotationMatrix, axisX, axisY, remappedMatrix)
+                        SensorManager.getOrientation(remappedMatrix, orientation)
+
                         val p = Math.toDegrees(orientation[1].toDouble()).toFloat()
                         val r = Math.toDegrees(orientation[2].toDouble()).toFloat()
                         if (basePitch == null) {
@@ -139,8 +173,14 @@ fun ParallaxCoverViewer(
                         rawRoll = ((r - (baseRoll ?: 0f))).coerceIn(-22f, 22f)
                     }
                     Sensor.TYPE_GRAVITY, Sensor.TYPE_ACCELEROMETER -> {
-                        val gx = event.values[0]
-                        val gy = event.values[1]
+                        val rawGx = event.values[0]
+                        val rawGy = event.values[1]
+                        val (gx, gy) = when (displayRotation) {
+                            Surface.ROTATION_90 -> -rawGy to rawGx
+                            Surface.ROTATION_180 -> -rawGx to -rawGy
+                            Surface.ROTATION_270 -> rawGy to -rawGx
+                            else -> rawGx to rawGy
+                        }
                         rawRoll = (gx / 9.8f * 20f).coerceIn(-22f, 22f)
                         rawPitch = ((gy - 4.5f) / 9.8f * 20f).coerceIn(-22f, 22f)
                     }
