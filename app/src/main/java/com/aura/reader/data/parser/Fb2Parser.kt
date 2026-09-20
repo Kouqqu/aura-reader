@@ -77,24 +77,10 @@ object Fb2Parser {
                     .filter { it.isNotBlank() }
                     .joinToString(": ")
 
-                val resolvedTitle = if (fullTitle.isNotBlank()) {
-                    fullTitle
-                } else {
-                    // Try to find a TITLE block
-                    val titleBlock = currentBlocks.firstOrNull { it.type == BlockType.TITLE }
-                    if (titleBlock != null) {
-                        titleBlock.text
-                    } else if (inNotesBody) {
-                        "Примечания и комментарии"
-                    } else {
-                        val firstP = currentBlocks.firstOrNull { it.type == BlockType.PARAGRAPH }?.text ?: ""
-                        if (isLikelyHeading(firstP)) {
-                            firstP
-                        } else {
-                            "Глава ${chapters.size + 1}"
-                        }
-                    }
-                }
+                val titleBlock = currentBlocks.firstOrNull { it.type == BlockType.TITLE }
+                val firstP = currentBlocks.firstOrNull { it.type == BlockType.PARAGRAPH }?.text ?: ""
+                val hasExplicitTitle = fullTitle.isNotBlank() || (titleBlock != null && titleBlock.text.isNotBlank())
+                val isHeadingParagraph = isLikelyHeading(firstP)
 
                 // Build plain text fallback for backward compatibility
                 val plainText = currentBlocks.joinToString("\n\n") { block ->
@@ -104,15 +90,31 @@ object Fb2Parser {
                     }
                 }
 
-                chapters.add(
-                    Chapter(
-                        id = UUID.randomUUID().toString(),
-                        title = resolvedTitle,
-                        content = plainText,
-                        blocks = ArrayList(currentBlocks),
-                        order = chapters.size
+                if (!hasExplicitTitle && !isHeadingParagraph && chapters.isNotEmpty() && !inNotesBody) {
+                    // Untitled sub-section or illustration: merge seamlessly into the previous chapter!
+                    val prev = chapters.removeAt(chapters.size - 1)
+                    val mergedBlocks = prev.blocks + currentBlocks
+                    val mergedContent = if (prev.content.isNotBlank()) prev.content + "\n\n" + plainText else plainText
+                    chapters.add(prev.copy(blocks = mergedBlocks, content = mergedContent))
+                } else {
+                    val resolvedTitle = when {
+                        fullTitle.isNotBlank() -> fullTitle
+                        titleBlock != null && titleBlock.text.isNotBlank() -> titleBlock.text
+                        inNotesBody -> "Примечания и комментарии"
+                        isHeadingParagraph -> firstP
+                        else -> title.ifBlank { "Книга" }
+                    }
+
+                    chapters.add(
+                        Chapter(
+                            id = UUID.randomUUID().toString(),
+                            title = resolvedTitle,
+                            content = plainText,
+                            blocks = ArrayList(currentBlocks),
+                            order = chapters.size
+                        )
                     )
-                )
+                }
 
                 currentBlocks.clear()
                 currentSectionTitleLines.clear()
@@ -203,12 +205,17 @@ object Fb2Parser {
                                 currentNoteTitle = ""
                                 currentNoteText.setLength(0)
                             } else if (inBody) {
-                                flushChapter()
+                                if (sectionDepth == 0 && currentBlocks.isNotEmpty()) {
+                                    flushChapter()
+                                }
                                 sectionDepth++
                             }
                         }
                         "title" -> {
                             if (inBody) {
+                                if (!inNotesBody && currentBlocks.isNotEmpty()) {
+                                    flushChapter()
+                                }
                                 inTitle = true
                             }
                         }
@@ -350,11 +357,15 @@ object Fb2Parser {
                                     }
                                 }
                             } else if (inBody) {
-                                flushChapter()
                                 if (sectionDepth > 0) sectionDepth--
                             }
                         }
-                        "body" -> inBody = false
+                        "body" -> {
+                            if (inBody && !inNotesBody) {
+                                flushChapter()
+                            }
+                            inBody = false
+                        }
                     }
                 }
             }
@@ -426,18 +437,32 @@ object Fb2Parser {
     }
 
     private fun isLikelyHeading(line: String): Boolean {
-        if (line.length > 80 || line.isBlank()) return false
-        val lower = line.lowercase()
-        return lower.startsWith("глава") ||
-                lower.startsWith("часть") ||
-                lower.startsWith("пролог") ||
-                lower.startsWith("эпилог") ||
-                lower.startsWith("введение") ||
-                lower.startsWith("предисловие") ||
-                lower.startsWith("послесловие") ||
-                lower.startsWith("chapter") ||
-                lower.startsWith("act") ||
-                line.matches(Regex("^[IVXLCDM]+\\.?.*")) ||
-                line.matches(Regex("^\\d+\\.?.*"))
+        val trimmed = line.trim()
+        if (trimmed.isEmpty() || trimmed.length > 80) return false
+        val lower = trimmed.lowercase()
+        if (lower.startsWith("глава") ||
+            lower.startsWith("часть") ||
+            lower.startsWith("раздел") ||
+            lower.startsWith("книга") ||
+            lower.startsWith("пролог") ||
+            lower.startsWith("эпилог") ||
+            lower.startsWith("введение") ||
+            lower.startsWith("предисловие") ||
+            lower.startsWith("послесловие") ||
+            lower.startsWith("chapter") ||
+            lower.startsWith("part") ||
+            lower.startsWith("prologue") ||
+            lower.startsWith("epilogue") ||
+            lower.startsWith("act")
+        ) {
+            return true
+        }
+        if (trimmed.matches(Regex("""^[IVXLCDM]+(?:\.|\:|\s+|$).{0,60}$""", RegexOption.IGNORE_CASE))) {
+            return true
+        }
+        if (trimmed.matches(Regex("""^\d{1,4}(?:\.|\:|\s+|$)[^\.\!\?]{0,60}$"""))) {
+            return true
+        }
+        return false
     }
 }

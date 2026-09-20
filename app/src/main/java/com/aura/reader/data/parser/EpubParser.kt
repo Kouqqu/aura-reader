@@ -220,23 +220,25 @@ object EpubParser {
 
             val body = jsoupDoc.body()
 
-            // 1) Determine title:
+            // 1) Determine title & whether this spine item starts a real chapter:
             val cleanHref = chHref.substringAfterLast("/")
-            var chapterTitle = tocTitles[chHref] ?: tocTitles[cleanHref]
+            val explicitTocTitle = tocTitles[chHref] ?: tocTitles[cleanHref]
 
             // If not in TOC, check <body> headings (avoiding <head><title>)
-            if (chapterTitle == null) {
-                val headingEl = body.select("h1, h2, h3, [class*='chapter'], [class*='title']").firstOrNull { el ->
+            val headingEl = if (explicitTocTitle == null) {
+                body.select("h1, h2, h3, [class*='chapter'], [class*='title']").firstOrNull { el ->
                     val txt = el.text().trim()
                     txt.isNotBlank() && !txt.equals(title, ignoreCase = true) && !txt.equals(author, ignoreCase = true)
                 }
-                chapterTitle = headingEl?.text()?.trim()
-            }
+            } else null
+            val explicitHeadingTitle = headingEl?.text()?.trim()
 
-            // Detect special preliminary/intro pages instead of naming them "Глава X"
             val rawText = body.text().trim()
-            val hasOnlyImage = body.select("img, svg, image").isNotEmpty() && rawText.length < 50
-            val isIntroOrCopyright = rawText.length < 250 && (
+            val firstP = body.select("p").firstOrNull()?.text()?.trim() ?: ""
+            val isHeadingParagraph = isLikelyHeading(firstP)
+
+            // Front-matter recognition ONLY for the beginning of the book before first real chapter
+            val isInitialFrontMatter = chapters.isEmpty() && (
                     cleanHref.contains("cover", ignoreCase = true) ||
                     cleanHref.contains("title", ignoreCase = true) ||
                     cleanHref.contains("copy", ignoreCase = true) ||
@@ -244,18 +246,20 @@ object EpubParser {
                     cleanHref.contains("info", ignoreCase = true)
             )
 
-            if (chapterTitle == null) {
-                chapterTitle = when {
-                    hasOnlyImage || cleanHref.contains("cover", ignoreCase = true) -> "Обложка"
-                    cleanHref.contains("title", ignoreCase = true) -> "Титул"
-                    cleanHref.contains("copy", ignoreCase = true) -> "Информация об издании"
-                    cleanHref.contains("annot", ignoreCase = true) -> "Аннотация"
-                    else -> {
-                        // Check first short paragraph
-                        val firstP = body.select("p").firstOrNull()?.text()?.trim() ?: ""
-                        if (isLikelyHeading(firstP)) firstP else "Глава ${order + 1}"
-                    }
-                }
+            val startsNewChapter = explicitTocTitle != null ||
+                    explicitHeadingTitle != null ||
+                    isHeadingParagraph ||
+                    chapters.isEmpty()
+
+            val resolvedTitle = when {
+                explicitTocTitle != null -> explicitTocTitle
+                explicitHeadingTitle != null -> explicitHeadingTitle
+                isHeadingParagraph -> firstP
+                isInitialFrontMatter && cleanHref.contains("cover", ignoreCase = true) -> "Обложка"
+                isInitialFrontMatter && cleanHref.contains("title", ignoreCase = true) -> "Титул"
+                isInitialFrontMatter && cleanHref.contains("copy", ignoreCase = true) -> "Информация об издании"
+                isInitialFrontMatter && cleanHref.contains("annot", ignoreCase = true) -> "Аннотация"
+                else -> title.ifBlank { "Книга" }
             }
 
             // 2) Parse blocks from HTML (Headings, Subtitles, Epigraphs, Paragraphs)
@@ -346,15 +350,24 @@ object EpubParser {
             }
 
             if (blocks.isNotEmpty()) {
-                chapters.add(
-                    Chapter(
-                        id = UUID.randomUUID().toString(),
-                        title = chapterTitle,
-                        content = rawText,
-                        blocks = blocks,
-                        order = order++
+                if (startsNewChapter || chapters.isEmpty()) {
+                    chapters.add(
+                        Chapter(
+                            id = UUID.randomUUID().toString(),
+                            title = resolvedTitle,
+                            content = rawText,
+                            blocks = blocks,
+                            order = chapters.size
+                        )
                     )
-                )
+                } else {
+                    // It is an unheaded illustration, continuation, or sub-part:
+                    // Merge smoothly into the previous chapter!
+                    val prev = chapters.removeAt(chapters.size - 1)
+                    val mergedBlocks = prev.blocks + blocks
+                    val mergedContent = if (prev.content.isNotBlank()) prev.content + "\n\n" + rawText else rawText
+                    chapters.add(prev.copy(blocks = mergedBlocks, content = mergedContent))
+                }
             }
         }
 
@@ -381,18 +394,33 @@ object EpubParser {
     }
 
     private fun isLikelyHeading(line: String): Boolean {
-        if (line.length > 80 || line.isBlank()) return false
-        val lower = line.lowercase()
-        return lower.startsWith("глава") ||
-                lower.startsWith("часть") ||
-                lower.startsWith("пролог") ||
-                lower.startsWith("эпилог") ||
-                lower.startsWith("введение") ||
-                lower.startsWith("предисловие") ||
-                lower.startsWith("chapter") ||
-                lower.startsWith("act") ||
-                line.matches(Regex("^[IVXLCDM]+\\.?.*")) ||
-                line.matches(Regex("^\\d+\\.?.*"))
+        val trimmed = line.trim()
+        if (trimmed.isEmpty() || trimmed.length > 80) return false
+        val lower = trimmed.lowercase()
+        if (lower.startsWith("глава") ||
+            lower.startsWith("часть") ||
+            lower.startsWith("раздел") ||
+            lower.startsWith("книга") ||
+            lower.startsWith("пролог") ||
+            lower.startsWith("эпилог") ||
+            lower.startsWith("введение") ||
+            lower.startsWith("предисловие") ||
+            lower.startsWith("послесловие") ||
+            lower.startsWith("chapter") ||
+            lower.startsWith("part") ||
+            lower.startsWith("prologue") ||
+            lower.startsWith("epilogue") ||
+            lower.startsWith("act")
+        ) {
+            return true
+        }
+        if (trimmed.matches(Regex("""^[IVXLCDM]+(?:\.|\:|\s+|$).{0,60}$""", RegexOption.IGNORE_CASE))) {
+            return true
+        }
+        if (trimmed.matches(Regex("""^\d{1,4}(?:\.|\:|\s+|$)[^\.\!\?]{0,60}$"""))) {
+            return true
+        }
+        return false
     }
 
     private fun resolvePath(baseDir: String, relativePath: String): String {

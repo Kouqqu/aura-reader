@@ -385,30 +385,35 @@ object MobiParser {
         val rawSections = if (parts.isNotEmpty()) parts else listOf(text)
 
         val chapters = mutableListOf<Chapter>()
-        var chapterOrder = 0
 
-        for ((idx, sec) in rawSections.withIndex()) {
+        for (sec in rawSections) {
             val lines = sec.lines().map { it.trim() }.filter { it.isNotEmpty() }
             if (lines.isEmpty()) continue
 
-            val title = if (lines.first().length <= 60 && (lines.first().startsWith("Глава", ignoreCase = true) || lines.first().startsWith("Chapter", ignoreCase = true) || lines.size > 1)) {
-                lines.first()
-            } else {
-                if (rawSections.size > 1) "Часть " + (idx + 1) else defaultTitle
-            }
+            val firstLine = lines.first()
+            val isHeading = isLikelyHeading(firstLine)
 
             val blocks = lines.map { FormattedBlock(BlockType.PARAGRAPH, it) }
             val fullContent = blocks.joinToString("\n\n") { it.text }
 
-            chapters.add(
-                Chapter(
-                    id = UUID.randomUUID().toString(),
-                    title = title,
-                    content = fullContent,
-                    blocks = blocks,
-                    order = chapterOrder++
+            if (isHeading || chapters.isEmpty()) {
+                val chapterTitle = if (isHeading) firstLine else defaultTitle
+                chapters.add(
+                    Chapter(
+                        id = UUID.randomUUID().toString(),
+                        title = chapterTitle,
+                        content = fullContent,
+                        blocks = blocks,
+                        order = chapters.size
+                    )
                 )
-            )
+            } else {
+                // Continuation of previous chapter without artificial splitting
+                val prev = chapters.removeAt(chapters.size - 1)
+                val mergedBlocks = prev.blocks + FormattedBlock(BlockType.DIVIDER, "") + blocks
+                val mergedContent = prev.content + "\n\n" + fullContent
+                chapters.add(prev.copy(blocks = mergedBlocks, content = mergedContent))
+            }
         }
 
         if (chapters.isEmpty()) {
@@ -424,6 +429,36 @@ object MobiParser {
         }
 
         return chapters
+    }
+
+    private fun isLikelyHeading(line: String): Boolean {
+        val trimmed = line.trim()
+        if (trimmed.isEmpty() || trimmed.length > 80) return false
+        val lower = trimmed.lowercase()
+        if (lower.startsWith("глава") ||
+            lower.startsWith("часть") ||
+            lower.startsWith("раздел") ||
+            lower.startsWith("книга") ||
+            lower.startsWith("пролог") ||
+            lower.startsWith("эпилог") ||
+            lower.startsWith("введение") ||
+            lower.startsWith("предисловие") ||
+            lower.startsWith("послесловие") ||
+            lower.startsWith("chapter") ||
+            lower.startsWith("part") ||
+            lower.startsWith("prologue") ||
+            lower.startsWith("epilogue") ||
+            lower.startsWith("act")
+        ) {
+            return true
+        }
+        if (trimmed.matches(Regex("""^[IVXLCDM]+(?:\.|\:|\s+|$).{0,60}$""", RegexOption.IGNORE_CASE))) {
+            return true
+        }
+        if (trimmed.matches(Regex("""^\d{1,4}(?:\.|\:|\s+|$)[^\.\!\?]{0,60}$"""))) {
+            return true
+        }
+        return false
     }
 
     private class HuffCdicDecompressor(
