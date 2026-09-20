@@ -6,10 +6,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 
+import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.Quote
 import com.aura.reader.ui.theme.Strings
 import com.aura.reader.util.BookShareUtils
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 
@@ -1569,13 +1571,14 @@ fun ChapterContentView(
                     }
 
                     if (pageIndex == chaptersCount - 1 && nextBookInSeries != null) {
+                        val nextBook = nextBookInSeries
                         Spacer(modifier = Modifier.height(16.dp))
                         Card(
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onOpenNextBook(nextBookInSeries) }
+                                .clickable { onOpenNextBook(nextBook) }
                         ) {
                             Row(
                                 modifier = Modifier.padding(16.dp),
@@ -1583,19 +1586,19 @@ fun ChapterContentView(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = strings.nextInSeriesPrompt(nextBookInSeries.title),
+                                        text = strings.nextInSeriesPrompt(nextBook.title),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                     Spacer(modifier = Modifier.height(10.dp))
                                     FilledTonalButton(
-                                        onClick = { onOpenNextBook(nextBookInSeries) },
+                                        onClick = { onOpenNextBook(nextBook) },
                                         shape = RoundedCornerShape(10.dp)
                                     ) {
                                         Text(strings.nextInSeriesAction)
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
                                     }
                                 }
                             }

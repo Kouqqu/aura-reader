@@ -93,6 +93,7 @@ object BookShareUtils {
                     BookFormat.PDF -> "application/pdf"
                     BookFormat.TXT -> "text/plain"
                     BookFormat.MOBI -> "application/x-mobipocket-ebook"
+                    BookFormat.CBZ -> "application/vnd.comicbook+zip"
                 }
 
                 val shareIntent = Intent(Intent.ACTION_SEND).apply {

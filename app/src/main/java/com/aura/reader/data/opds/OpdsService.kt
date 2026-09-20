@@ -332,6 +332,7 @@ object OpdsService {
                 BookFormat.PDF -> "pdf"
                 BookFormat.MOBI -> "mobi"
                 BookFormat.TXT -> "txt"
+                BookFormat.CBZ -> "cbz"
             }
             val destFile = File(booksDir, "${safeBaseName}_${safeBookId}.$ext")
 
@@ -379,7 +380,7 @@ object OpdsService {
                 header[0] == 0x50.toByte() && header[1] == 0x4B.toByte() && header[2] == 0x03.toByte() && header[3] == 0x04.toByte()
             }
 
-            if (isZip && format != BookFormat.EPUB) {
+            if (isZip && format != BookFormat.EPUB && format != BookFormat.CBZ) {
                 // Auto-unpack ZIP archive on the fly if it wraps fb2, pdf, or mobi
                 val targetExt = when (format) {
                     BookFormat.FB2 -> ".fb2"
