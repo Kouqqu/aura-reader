@@ -252,6 +252,32 @@ fun SettingsBottomSheet(
         )
     }
 
+    var showResetSpeedConfirmDialog by remember { mutableStateOf(false) }
+
+    if (showResetSpeedConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetSpeedConfirmDialog = false },
+            title = { Text(strings.resetReadingSpeedConfirmTitle, fontWeight = FontWeight.Bold) },
+            text = { Text(strings.resetReadingSpeedConfirmMessage, style = MaterialTheme.typography.bodyMedium) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onResetReadingSpeed()
+                        showResetSpeedConfirmDialog = false
+                        Toast.makeText(context, strings.resetReadingSpeedSuccess, Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Text(strings.resetReadingSpeedTitle)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetSpeedConfirmDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -634,6 +660,7 @@ fun SettingsBottomSheet(
             )
             Spacer(modifier = Modifier.height(10.dp))
 
+            // Feature 1: Reading Stats Card
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
@@ -642,7 +669,6 @@ fun SettingsBottomSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    // Feature 1: Reading Stats
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -670,32 +696,76 @@ fun SettingsBottomSheet(
                             )
                         )
                     }
+                }
+            }
 
-                    if (readingStatsEnabled) {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedButton(
-                            onClick = {
-                                onResetReadingSpeed()
-                                Toast.makeText(context, strings.resetReadingSpeedSuccess, Toast.LENGTH_SHORT).show()
-                            },
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Speed,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Feature 2: Reading Speed Reset Card (For bottom banner in book)
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                text = strings.readingSpeedSettingTitle,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(strings.resetReadingSpeedTitle)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = strings.readingSpeedSettingSubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
+                        Icon(
+                            imageVector = Icons.Default.Speed,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // Feature 2: Custom OPDS Catalog
+                    OutlinedButton(
+                        onClick = { showResetSpeedConfirmDialog = true },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Speed,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(strings.resetReadingSpeedTitle)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Feature 3: Custom OPDS Catalog Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,

@@ -1099,7 +1099,8 @@ fun ReaderScreen(
                     onTwoColumnModeChange = { viewModel.setTwoColumnMode(it) },
                     onPageAnimationChange = { viewModel.setPageAnimation(it) },
                     onHapticFeedbackChange = { viewModel.setHapticFeedbackEnabled(it) },
-                    onFontNameChange = { viewModel.setFontName(it) }
+                    onFontNameChange = { viewModel.setFontName(it) },
+                    onResetReadingSpeed = { viewModel.resetReadingSpeed() }
                 )
             }
 

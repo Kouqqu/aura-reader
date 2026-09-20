@@ -408,4 +408,10 @@ class ReaderViewModel(
             )
         }
     }
+
+    fun resetReadingSpeed() {
+        viewModelScope.launch {
+            preferencesManager.resetAverageWpm()
+        }
+    }
 }

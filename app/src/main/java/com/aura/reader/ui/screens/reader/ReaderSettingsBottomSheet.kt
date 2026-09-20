@@ -72,6 +72,13 @@ import com.aura.reader.ui.theme.AmoledBackground
 import com.aura.reader.ui.theme.AmoledText
 import com.aura.reader.ui.theme.SepiaBackground
 import com.aura.reader.ui.theme.SepiaText
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,15 +97,42 @@ fun ReaderSettingsBottomSheet(
     onTwoColumnModeChange: (TwoColumnMode) -> Unit = {},
     onPageAnimationChange: (PageTurnAnimation) -> Unit = {},
     onHapticFeedbackChange: (Boolean) -> Unit = {},
-    onFontNameChange: (String) -> Unit = {}
+    onFontNameChange: (String) -> Unit = {},
+    onResetReadingSpeed: (() -> Unit)? = null
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val strings = LocalAppStrings.current
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     var sheetCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var burstTriggerKey by remember { mutableStateOf(0L) }
     var burstOrigin by remember { mutableStateOf(Offset.Zero) }
     var burstColors by remember { mutableStateOf<List<Color>>(emptyList()) }
+    var showResetSpeedConfirmDialog by remember { mutableStateOf(false) }
+
+    if (showResetSpeedConfirmDialog && onResetReadingSpeed != null) {
+        AlertDialog(
+            onDismissRequest = { showResetSpeedConfirmDialog = false },
+            title = { Text(strings.resetReadingSpeedConfirmTitle, fontWeight = FontWeight.Bold) },
+            text = { Text(strings.resetReadingSpeedConfirmMessage, style = MaterialTheme.typography.bodyMedium) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onResetReadingSpeed()
+                        showResetSpeedConfirmDialog = false
+                        Toast.makeText(context, strings.resetReadingSpeedSuccess, Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Text(strings.resetReadingSpeedTitle)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetSpeedConfirmDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -579,6 +613,23 @@ fun ReaderSettingsBottomSheet(
                         checked = settings.lightImageBackground,
                         onCheckedChange = onLightImageBackgroundChange
                     )
+                }
+
+                if (onResetReadingSpeed != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedButton(
+                        onClick = { showResetSpeedConfirmDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Speed,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(strings.resetReadingSpeedTitle)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

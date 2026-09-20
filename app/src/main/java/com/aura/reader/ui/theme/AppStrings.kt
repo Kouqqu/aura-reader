@@ -344,8 +344,11 @@ interface Strings {
     val appFontSubtitle: String
     val appFontDefault: String
     val appFontGoogleSans: String
+    val readingSpeedSettingTitle: String
     val resetReadingSpeedTitle: String
     val resetReadingSpeedSubtitle: String
+    val resetReadingSpeedConfirmTitle: String
+    val resetReadingSpeedConfirmMessage: String
     val resetReadingSpeedSuccess: String
 }
 
@@ -665,9 +668,12 @@ class RuStrings : Strings {
     override val appFontSubtitle = "Шрифт элементов интерфейса"
     override val appFontDefault = "По умолчанию"
     override val appFontGoogleSans = "Google Sans"
+    override val readingSpeedSettingTitle = "Скорость чтения"
     override val resetReadingSpeedTitle = "Сбросить скорость чтения"
-    override val resetReadingSpeedSubtitle = "Вернуть среднюю скорость к 200 сл/мин"
-    override val resetReadingSpeedSuccess = "Скорость чтения сброшена (200 сл/мин)"
+    override val resetReadingSpeedSubtitle = "Сброс персонального темпа для расчета времени главы на нижней плашке"
+    override val resetReadingSpeedConfirmTitle = "Сбросить скорость чтения?"
+    override val resetReadingSpeedConfirmMessage = "Персональный темп чтения будет сброшен до исходного. Оценка оставшегося времени до конца главы начнет рассчитываться заново."
+    override val resetReadingSpeedSuccess = "Скорость чтения сброшена"
 }
 
 class EnStrings : Strings {
@@ -985,9 +991,12 @@ class EnStrings : Strings {
     override val appFontSubtitle = "Font used for UI elements"
     override val appFontDefault = "System Default"
     override val appFontGoogleSans = "Google Sans"
+    override val readingSpeedSettingTitle = "Reading Speed"
     override val resetReadingSpeedTitle = "Reset reading speed"
-    override val resetReadingSpeedSubtitle = "Reset average speed to 200 wpm"
-    override val resetReadingSpeedSuccess = "Reading speed reset (200 wpm)"
+    override val resetReadingSpeedSubtitle = "Reset personalized pace for chapter time calculation on the bottom bar"
+    override val resetReadingSpeedConfirmTitle = "Reset reading speed?"
+    override val resetReadingSpeedConfirmMessage = "Personalized reading pace will be reset to default. Estimated time left in chapter will recalculate from scratch."
+    override val resetReadingSpeedSuccess = "Reading speed reset"
 }
 
 class UkStrings : Strings {
@@ -1305,9 +1314,12 @@ class UkStrings : Strings {
     override val appFontSubtitle = "Шрифт елементів інтерфейсу"
     override val appFontDefault = "За замовчуванням"
     override val appFontGoogleSans = "Google Sans"
+    override val readingSpeedSettingTitle = "Швидкість читання"
     override val resetReadingSpeedTitle = "Скинути швидкість читання"
-    override val resetReadingSpeedSubtitle = "Повернути середню швидкість до 200 сл/хв"
-    override val resetReadingSpeedSuccess = "Швидкість читання скинуто (200 сл/хв)"
+    override val resetReadingSpeedSubtitle = "Скидання персонального темпу для розрахунку часу розділу на нижній плашці"
+    override val resetReadingSpeedConfirmTitle = "Скинути швидкість читання?"
+    override val resetReadingSpeedConfirmMessage = "Персональний темп читання буде скинутий до початкового. Оцінка часу до кінця розділу почне розраховуватися заново."
+    override val resetReadingSpeedSuccess = "Швидкість читання скинуто"
 }
 
 class BeStrings : Strings {
@@ -1625,9 +1637,12 @@ class BeStrings : Strings {
     override val appFontSubtitle = "Шрыфт элементаў інтэрфейсу"
     override val appFontDefault = "Па змаўчанні"
     override val appFontGoogleSans = "Google Sans"
+    override val readingSpeedSettingTitle = "Хуткасць чытання"
     override val resetReadingSpeedTitle = "Скінуць хуткасць чытання"
-    override val resetReadingSpeedSubtitle = "Вярнуць сярэднюю хуткасць да 200 сл/хв"
-    override val resetReadingSpeedSuccess = "Хуткасць чытання скінута (200 сл/хв)"
+    override val resetReadingSpeedSubtitle = "Скід персанальнага тэмпу для разліку часу раздзела на ніжняй планцы"
+    override val resetReadingSpeedConfirmTitle = "Скінуць хуткасць чытання?"
+    override val resetReadingSpeedConfirmMessage = "Персанальны тэмп чытання будзе скінуты да пачатковага. Ацэнка часу да канца раздзела пачне разлічвацца нанова."
+    override val resetReadingSpeedSuccess = "Хуткасць чытання скінута"
 }
 
 class PlStrings : Strings {
@@ -1944,9 +1959,12 @@ class PlStrings : Strings {
     override val appFontSubtitle = "Czcionka elementów interfejsu"
     override val appFontDefault = "Domyślna"
     override val appFontGoogleSans = "Google Sans"
+    override val readingSpeedSettingTitle = "Prędkość czytania"
     override val resetReadingSpeedTitle = "Zresetuj prędkość czytania"
-    override val resetReadingSpeedSubtitle = "Przywróć średnią prędkość 200 słów/min"
-    override val resetReadingSpeedSuccess = "Prędkość czytania została zresetowana (200 słów/min)"
+    override val resetReadingSpeedSubtitle = "Resetowanie tempa do obliczania czasu rozdziału na dolnym pasku"
+    override val resetReadingSpeedConfirmTitle = "Zresetować prędkość czytania?"
+    override val resetReadingSpeedConfirmMessage = "Wskaźnik tempa czytania zostanie zresetowany do domyślnego. Szacowany czas do końca rozdziału zostanie przeliczony na nowo."
+    override val resetReadingSpeedSuccess = "Prędkość czytania zresetowana"
 }
 
 class CsStrings : Strings {
@@ -2242,9 +2260,12 @@ class CsStrings : Strings {
     override val appFontSubtitle = "Písmo prvků rozhraní"
     override val appFontDefault = "Výchozí"
     override val appFontGoogleSans = "Google Sans"
+    override val readingSpeedSettingTitle = "Rychlost čtení"
     override val resetReadingSpeedTitle = "Obnovit rychlost čtení"
-    override val resetReadingSpeedSubtitle = "Vrátit průměrnou rychlost na 200 slov/min"
-    override val resetReadingSpeedSuccess = "Rychlost čtení byla obnovena (200 slov/min)"
+    override val resetReadingSpeedSubtitle = "Obnovení osobního tempa pro výpočet času kapitoly na spodním panelu"
+    override val resetReadingSpeedConfirmTitle = "Obnovit rychlost čtení?"
+    override val resetReadingSpeedConfirmMessage = "Osobní tempo čtení bude obnoveno na výchozí. Odhad zbývajícího času do konce kapitoly se začne počítat znovu."
+    override val resetReadingSpeedSuccess = "Rychlost čtení byla obnovena"
 }
 
 fun getStrings(language: AppLanguage): Strings = when (language) {

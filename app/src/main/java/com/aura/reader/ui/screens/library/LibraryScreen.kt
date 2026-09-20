@@ -1289,7 +1289,8 @@ fun LibraryScreen(
             onAutoHyphenationChange = { viewModel.updateAutoHyphenation(it) },
             onTwoColumnModeChange = { viewModel.updateTwoColumnMode(it) },
             onPageAnimationChange = { viewModel.updatePageAnimation(it) },
-            onHapticFeedbackChange = { viewModel.updateHapticFeedback(it) }
+            onHapticFeedbackChange = { viewModel.updateHapticFeedback(it) },
+            onResetReadingSpeed = { viewModel.resetReadingSpeed() }
         )
     }
 
