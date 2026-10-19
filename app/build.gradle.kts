@@ -118,6 +118,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.androidx.documentfile)
     implementation("androidx.palette:palette-ktx:1.0.0")
+    implementation("com.telemetrydeck:kotlin-sdk:6.3.0")
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

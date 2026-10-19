@@ -154,6 +154,8 @@ interface Strings {
     val updatesSectionTitle: String
     val updateNotificationsToggle: String
     val updateNotificationsSubtitle: String
+    val anonymousAnalyticsToggle: String
+    val anonymousAnalyticsSubtitle: String
     val checkUpdatesNow: String
     val checkingUpdates: String
     val upToDate: String
@@ -509,6 +511,8 @@ class RuStrings : Strings {
     override val updatesSectionTitle = "Обновления"
     override val updateNotificationsToggle = "Уведомлять об обновлениях"
     override val updateNotificationsSubtitle = "Показывать баннер при появлении новой версии"
+    override val anonymousAnalyticsToggle = "Анонимная статистика"
+    override val anonymousAnalyticsSubtitle = "Помогает автору знать число читателей. Без личных данных."
     override val checkUpdatesNow = "Проверить обновления"
     override val checkingUpdates = "Проверка обновлений..."
     override val upToDate = "У вас установлена последняя версия"
@@ -850,6 +854,8 @@ class EnStrings : Strings {
     override val updatesSectionTitle = "Updates"
     override val updateNotificationsToggle = "Update notifications"
     override val updateNotificationsSubtitle = "Show banner when a new version is available"
+    override val anonymousAnalyticsToggle = "Anonymous statistics"
+    override val anonymousAnalyticsSubtitle = "Helps the author know the reader count. No personal data."
     override val checkUpdatesNow = "Check for updates"
     override val checkingUpdates = "Checking for updates..."
     override val upToDate = "You have the latest version"
@@ -1191,6 +1197,8 @@ class UkStrings : Strings {
     override val updatesSectionTitle = "Оновлення"
     override val updateNotificationsToggle = "Сповіщати про оновлення"
     override val updateNotificationsSubtitle = "Показувати банер при виході нової версії"
+    override val anonymousAnalyticsToggle = "Анонімна статистика"
+    override val anonymousAnalyticsSubtitle = "Допомагає автору знати кількість читачів. Без особистих даних."
     override val checkUpdatesNow = "Перевірити оновлення"
     override val checkingUpdates = "Перевірка оновлень..."
     override val upToDate = "У вас встановлено найновішу версію"
@@ -1532,6 +1540,8 @@ class BeStrings : Strings {
     override val updatesSectionTitle = "Абнаўленні"
     override val updateNotificationsToggle = "Паведамляць пра абнаўленні"
     override val updateNotificationsSubtitle = "Паказваць банер пры з'яўленні новай версіі"
+    override val anonymousAnalyticsToggle = "Ананімная статыстыка"
+    override val anonymousAnalyticsSubtitle = "Дапамагае аўтару ведаць колькасць чытачоў. Без асабістых дадзеных."
     override val checkUpdatesNow = "Праверыць абнаўленні"
     override val checkingUpdates = "Праверка абнаўленняў..."
     override val upToDate = "У вас усталявана апошняя версія"
@@ -1873,6 +1883,8 @@ class PlStrings : Strings {
     override val updatesSectionTitle = "Aktualizacje"
     override val updateNotificationsToggle = "Powiadomienia o aktualizacjach"
     override val updateNotificationsSubtitle = "Pokaż baner, gdy dostępna jest nowa wersja"
+    override val anonymousAnalyticsToggle = "Anonimowe statystyki"
+    override val anonymousAnalyticsSubtitle = "Pomaga autorowi poznać liczbę czytelników. Bez danych osobowych."
     override val checkUpdatesNow = "Sprawdź aktualizacje"
     override val checkingUpdates = "Sprawdzanie aktualizacji..."
     override val upToDate = "Masz najnowszą wersję"
@@ -2208,6 +2220,8 @@ class CsStrings : Strings {
     override val updatesSectionTitle = "O aplikaci a aktualizace"
     override val updateNotificationsToggle = "Upozornění na aktualizace"
     override val updateNotificationsSubtitle = "Upozornit při vydání nové verze"
+    override val anonymousAnalyticsToggle = "Anonymní statistika"
+    override val anonymousAnalyticsSubtitle = "Pomáhá autorovi znát počet čtenářů. Bez osobních údajů."
     override val checkUpdatesNow = "Zkontrolovat aktualizace"
     override val checkingUpdates = "Kontrola aktualizací..."
     override val upToDate = "Máte nejnovější verzi"

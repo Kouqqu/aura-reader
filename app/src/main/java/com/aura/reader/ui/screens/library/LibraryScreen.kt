@@ -232,6 +232,7 @@ fun LibraryScreen(
     val readerSettings by viewModel.readerSettings.collectAsState()
     val appLanguage by viewModel.appLanguage.collectAsState()
     val updateNotificationsEnabled by viewModel.updateNotificationsEnabled.collectAsState()
+    val anonymousAnalyticsEnabled by viewModel.anonymousAnalyticsEnabled.collectAsState()
     val readingStatsEnabled by viewModel.readingStatsEnabled.collectAsState()
     val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
     val userCollections by viewModel.userCollections.collectAsState()
@@ -1251,12 +1252,14 @@ fun LibraryScreen(
             currentTheme = readerSettings.appThemeMode,
             currentLanguage = appLanguage,
             updateNotificationsEnabled = updateNotificationsEnabled,
+            anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
             readingStatsEnabled = readingStatsEnabled,
             materialYouEnabled = materialYouEnabled,
             onDismiss = { showSettingsSheet = false },
             onThemeChange = { viewModel.setAppThemeMode(it) },
             onLanguageChange = { viewModel.setAppLanguage(it) },
             onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
+            onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
             onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
             onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
             customOpdsEnabled = customOpdsEnabled,

@@ -21,6 +21,9 @@ import com.aura.reader.ui.theme.AppLanguage
 import com.aura.reader.ui.theme.LocalAppStrings
 import com.aura.reader.ui.theme.getStrings
 
+import androidx.lifecycle.lifecycleScope
+import com.aura.reader.data.analytics.AnalyticsManager
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var preferencesManager: PreferencesManager
@@ -47,6 +50,13 @@ class MainActivity : ComponentActivity() {
         libraryViewModel = LibraryViewModel(bookRepository, preferencesManager)
         readerViewModel = ReaderViewModel(bookRepository, preferencesManager)
         opdsViewModel = com.aura.reader.ui.screens.opds.OpdsViewModel(bookRepository, preferencesManager)
+
+        // Track anonymous app metrics if enabled
+        AnalyticsManager.trackAppLaunch(
+            context = applicationContext,
+            preferencesManager = preferencesManager,
+            scope = lifecycleScope
+        )
 
         // Handle opening a book from external intent (e.g. file manager)
         handleIncomingIntent(intent)
