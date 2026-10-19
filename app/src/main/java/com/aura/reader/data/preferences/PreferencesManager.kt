@@ -84,6 +84,8 @@ class PreferencesManager(private val context: Context) {
         val SERIF_FONT_NAME_KEY = stringPreferencesKey("serif_font_name")
         val SANS_SERIF_FONT_NAME_KEY = stringPreferencesKey("sans_serif_font_name")
         val MONOSPACE_FONT_NAME_KEY = stringPreferencesKey("monospace_font_name")
+        val ANONYMOUS_ANALYTICS_KEY = booleanPreferencesKey("anonymous_analytics_enabled")
+        val HAS_TRACKED_FIRST_OPEN_KEY = booleanPreferencesKey("has_tracked_first_open")
     }
 
     val appFont: Flow<String> = context.dataStore.data.map { prefs ->
@@ -144,6 +146,26 @@ class PreferencesManager(private val context: Context) {
     suspend fun setUpdateNotificationsEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[UPDATE_NOTIFICATIONS_KEY] = enabled
+        }
+    }
+
+    val anonymousAnalyticsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[ANONYMOUS_ANALYTICS_KEY] ?: true
+    }
+
+    suspend fun setAnonymousAnalyticsEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[ANONYMOUS_ANALYTICS_KEY] = enabled
+        }
+    }
+
+    val hasTrackedFirstOpen: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[HAS_TRACKED_FIRST_OPEN_KEY] ?: false
+    }
+
+    suspend fun setHasTrackedFirstOpen(tracked: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[HAS_TRACKED_FIRST_OPEN_KEY] = tracked
         }
     }
 

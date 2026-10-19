@@ -91,10 +91,12 @@ fun SettingsBottomSheet(
     updateNotificationsEnabled: Boolean,
     readingStatsEnabled: Boolean,
     materialYouEnabled: Boolean,
+    anonymousAnalyticsEnabled: Boolean = true,
     onDismiss: () -> Unit,
     onThemeChange: (ReaderThemeMode) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     onToggleUpdateNotifications: (Boolean) -> Unit,
+    onToggleAnonymousAnalytics: (Boolean) -> Unit = {},
     onToggleReadingStats: (Boolean) -> Unit,
     onToggleMaterialYou: (Boolean) -> Unit,
     onCheckUpdates: () -> Unit,
@@ -871,6 +873,36 @@ fun SettingsBottomSheet(
                         Switch(
                             checked = updateNotificationsEnabled,
                             onCheckedChange = onToggleUpdateNotifications,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                text = strings.anonymousAnalyticsToggle,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = strings.anonymousAnalyticsSubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = anonymousAnalyticsEnabled,
+                            onCheckedChange = onToggleAnonymousAnalytics,
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = MaterialTheme.colorScheme.primary,
                                 checkedTrackColor = MaterialTheme.colorScheme.primaryContainer

@@ -75,6 +75,9 @@ class LibraryViewModel(
     val updateNotificationsEnabled: StateFlow<Boolean> = preferencesManager.updateNotificationsEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val anonymousAnalyticsEnabled: StateFlow<Boolean> = preferencesManager.anonymousAnalyticsEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     val readingStatsEnabled: StateFlow<Boolean> = preferencesManager.readingStatsEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
@@ -151,6 +154,10 @@ class LibraryViewModel(
 
     fun setUpdateNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setUpdateNotificationsEnabled(enabled) }
+    }
+
+    fun setAnonymousAnalyticsEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setAnonymousAnalyticsEnabled(enabled) }
     }
 
     fun setReadingStatsEnabled(enabled: Boolean) {
