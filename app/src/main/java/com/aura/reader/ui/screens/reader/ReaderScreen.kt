@@ -1215,20 +1215,8 @@ fun ReaderScreen(
                 )
             }
 
-            // Scrim to dismiss selection toolbar when tapping anywhere on the screen
+            // Selection toolbar popup (no full-screen scrim so selection handles can be freely dragged)
             if (selectedQuoteCopyAction != null && selectionRect != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            selectionResetKey++
-                            customTextToolbar.hide()
-                        }
-                )
-
                 val density = LocalDensity.current
                 val rect = selectionRect!!
 
@@ -1265,7 +1253,7 @@ fun ReaderScreen(
                     properties = PopupProperties(
                         focusable = false,
                         dismissOnBackPress = true,
-                        dismissOnClickOutside = true
+                        dismissOnClickOutside = false
                     )
                 ) {
                     Surface(
