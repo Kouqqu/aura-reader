@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.FabPosition
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.components.FloatingNavigationIsland
+import com.aura.reader.ui.components.MornyeFilterChip
 import com.aura.reader.ui.components.ParallaxCoverViewer
 import com.aura.reader.util.BookShareUtils
 import androidx.compose.material.icons.filled.Share
@@ -516,6 +517,8 @@ fun LibraryScreen(
             } else {
                 FloatingNavigationIsland(
                     designStyle = readerSettings.appDesignStyle,
+                    clarity = readerSettings.glassClarity,
+                    selectedTab = 0,
                     onMyBooksClick = {
                         scope.launch { gridState.animateScrollToItem(0) }
                     },
@@ -766,6 +769,8 @@ fun LibraryScreen(
                                 onCoverClick = { inspectingCoverBook = currentHeroBook },
                                 onShare = { BookShareUtils.shareBookFile(context, currentHeroBook) },
                                 onChangeCover = { bookForCoverChange = currentHeroBook },
+                                isGlass = readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS,
+                                clarity = readerSettings.glassClarity,
                                 modifier = Modifier.padding(bottom = 6.dp)
                             )
                         }
@@ -1263,6 +1268,8 @@ fun LibraryScreen(
             },
             appDesignStyle = readerSettings.appDesignStyle,
             onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
+            glassClarity = readerSettings.glassClarity,
+            onGlassClarityChange = { viewModel.setGlassClarity(it) },
             appFont = appFont,
             onAppFontChange = { viewModel.setAppFont(it) },
             onResetReadingSpeed = { viewModel.resetReadingSpeed() }

@@ -93,7 +93,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aura.reader.R
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import com.aura.reader.data.model.AppDesignStyle
+import com.aura.reader.ui.components.NavigationIslandPreviewCard
+import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.opds.OpdsService
 import com.aura.reader.ui.components.PixelFullScreenBurst
@@ -141,6 +145,8 @@ fun SettingsBottomSheet(
     onOpenReaderThemeSettings: () -> Unit = {},
     appDesignStyle: AppDesignStyle = AppDesignStyle.MATERIAL,
     onAppDesignStyleChange: (AppDesignStyle) -> Unit = {},
+    glassClarity: Float = 0.85f,
+    onGlassClarityChange: (Float) -> Unit = {},
     appFont: String = "DEFAULT",
     onAppFontChange: (String) -> Unit = {},
     onResetReadingSpeed: () -> Unit = {}
@@ -379,7 +385,9 @@ fun SettingsBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        containerColor = if (appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
+            if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF0D0E12) else Color(0xFFF2F3F8)
+        } else MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         modifier = Modifier
             .statusBarsPadding()
@@ -421,7 +429,7 @@ fun SettingsBottomSheet(
 
             val isSysDark = isSystemInDarkTheme()
 
-            // 0. Design Style Section (Material 3 vs Liquid Glass)
+            // 0. Design Style Section (Material 3 vs Mornye Liquid Glass)
             Text(
                 text = strings.designStyleTitle,
                 style = MaterialTheme.typography.titleSmall,
@@ -430,46 +438,223 @@ fun SettingsBottomSheet(
                 modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
 
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
-                        if (isSysDark) Color(0x991E2028) else Color(0xB8FFFFFF)
-                    } else MaterialTheme.colorScheme.surfaceContainer
-                ),
-                border = if (appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
-                    BorderStroke(
-                        1.2.dp,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Option 1: Material 3
+                val isMatSelected = appDesignStyle == AppDesignStyle.MATERIAL
+                Card(
+                    onClick = { onAppDesignStyleChange(AppDesignStyle.MATERIAL) },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isMatSelected) {
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
+                        } else {
+                            if (isSysDark) Color(0x661E2028) else Color(0x66FFFFFF)
+                        }
+                    ),
+                    border = BorderStroke(
+                        if (isMatSelected) 2.dp else 1.dp,
+                        if (isMatSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = if (isSysDark) 0.15f else 0.45f)
+                    ),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Palette,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            if (isMatSelected) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = strings.designStyleMaterial,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isMatSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = strings.designStyleDescMaterial,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = (if (isMatSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface).copy(alpha = 0.70f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                // Option 2: Liquid Glass (Mornye / Apple)
+                val isGlassSelected = appDesignStyle == AppDesignStyle.LIQUID_GLASS
+                Card(
+                    onClick = { onAppDesignStyleChange(AppDesignStyle.LIQUID_GLASS) },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isGlassSelected) {
+                            if (isSysDark) Color(0xA6202432) else Color(0xD9FFFFFF)
+                        } else {
+                            if (isSysDark) Color(0x661E2028) else Color(0x66FFFFFF)
+                        }
+                    ),
+                    border = BorderStroke(
+                        if (isGlassSelected) 2.dp else 1.dp,
+                        if (isGlassSelected) {
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = if (isSysDark) 0.85f else 0.95f),
+                                    Color.White.copy(alpha = 0.20f)
+                                )
+                            )
+                        } else {
+                            SolidColor(Color.White.copy(alpha = if (isSysDark) 0.15f else 0.45f))
+                        }
+                    ),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                                modifier = Modifier.height(22.dp)
+                            ) {
+                                Text(
+                                    text = "iOS",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = strings.designStyleLiquidGlass,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = strings.designStyleDescLiquidGlass,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Live Interactive Preview of the Island
+            NavigationIslandPreviewCard(
+                designStyle = appDesignStyle,
+                clarity = glassClarity
+            )
+
+            // Glass Clarity slider (only shown when Liquid Glass is active)
+            if (appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSysDark) Color(0x66181A22) else Color(0x80FFFFFF)
+                    ),
+                    border = BorderStroke(
+                        1.dp,
                         Brush.verticalGradient(
                             listOf(
-                                Color.White.copy(alpha = if (isSysDark) 0.35f else 0.75f),
+                                Color.White.copy(alpha = if (isSysDark) 0.35f else 0.65f),
                                 Color.White.copy(alpha = 0.08f)
                             )
                         )
-                    )
-                } else null,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    ExpressiveStylePill(
-                        label = strings.designStyleMaterial,
-                        icon = Icons.Default.Palette,
-                        isSelected = appDesignStyle == AppDesignStyle.MATERIAL,
-                        onClick = { onAppDesignStyleChange(AppDesignStyle.MATERIAL) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    ExpressiveStylePill(
-                        label = strings.designStyleLiquidGlass,
-                        icon = Icons.Default.AutoAwesome,
-                        isSelected = appDesignStyle == AppDesignStyle.LIQUID_GLASS,
-                        onClick = { onAppDesignStyleChange(AppDesignStyle.LIQUID_GLASS) },
-                        modifier = Modifier.weight(1f)
-                    )
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = strings.glassClarityTitle,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "${(glassClarity * 100).toInt()}%",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = strings.glassClarityDesc,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Slider(
+                            value = glassClarity,
+                            onValueChange = onGlassClarityChange,
+                            valueRange = 0.20f..1.00f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                            )
+                        )
+                    }
                 }
             }
 

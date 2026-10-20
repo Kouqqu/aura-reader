@@ -53,5 +53,6 @@ data class ReaderSettings(
     val monospaceFontName: String = "",
     val syncThemesWithApp: Boolean = false,
     val appThemeMode: ReaderThemeMode = ReaderThemeMode.SYSTEM_DYNAMIC,
-    val appDesignStyle: AppDesignStyle = AppDesignStyle.MATERIAL
+    val appDesignStyle: AppDesignStyle = AppDesignStyle.MATERIAL,
+    val glassClarity: Float = 0.85f
 )

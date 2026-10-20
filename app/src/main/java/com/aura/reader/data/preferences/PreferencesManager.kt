@@ -88,6 +88,7 @@ class PreferencesManager(private val context: Context) {
         val ANONYMOUS_ANALYTICS_KEY = booleanPreferencesKey("anonymous_analytics_enabled")
         val HAS_TRACKED_FIRST_OPEN_KEY = booleanPreferencesKey("has_tracked_first_open")
         val APP_DESIGN_STYLE_KEY = stringPreferencesKey("app_design_style")
+        val GLASS_CLARITY_KEY = floatPreferencesKey("glass_clarity")
     }
 
     val appFont: Flow<String> = context.dataStore.data.map { prefs ->
@@ -246,7 +247,8 @@ class PreferencesManager(private val context: Context) {
             monospaceFontName = monospaceFontName,
             syncThemesWithApp = syncThemesWithApp,
             appThemeMode = appThemeMode,
-            appDesignStyle = appDesignStyle
+            appDesignStyle = appDesignStyle,
+            glassClarity = prefs[GLASS_CLARITY_KEY] ?: 0.85f
         )
     }
 
@@ -274,6 +276,12 @@ class PreferencesManager(private val context: Context) {
     suspend fun setAppDesignStyle(style: AppDesignStyle) {
         context.dataStore.edit { prefs ->
             prefs[APP_DESIGN_STYLE_KEY] = style.name
+        }
+    }
+
+    suspend fun setGlassClarity(clarity: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[GLASS_CLARITY_KEY] = clarity.coerceIn(0.2f, 1.0f)
         }
     }
 

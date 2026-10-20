@@ -4,7 +4,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -68,6 +70,8 @@ fun CurrentlyReadingHeroCard(
     onCoverClick: (Book) -> Unit = {},
     onShare: () -> Unit = {},
     onChangeCover: () -> Unit = {},
+    isGlass: Boolean = false,
+    clarity: Float = 0.85f,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
@@ -108,12 +112,24 @@ fun CurrentlyReadingHeroCard(
     val primaryAccent = accentColor ?: MaterialTheme.colorScheme.primary
     val cardBg = dominantColor ?: MaterialTheme.colorScheme.primaryContainer
 
+    val isSysDark = isSystemInDarkTheme()
+    val specularRim = Brush.verticalGradient(
+        0.00f to Color.White.copy(alpha = if (isSysDark) 0.65f else 0.88f),
+        0.14f to Color.White.copy(alpha = if (isSysDark) 0.20f else 0.35f),
+        0.50f to Color.Transparent,
+        0.86f to Color.White.copy(alpha = if (isSysDark) 0.12f else 0.22f),
+        1.00f to Color.White.copy(alpha = if (isSysDark) 0.35f else 0.55f)
+    )
+
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = if (isGlass) {
+                if (isSysDark) Color(0x66161822) else Color(0xB8FFFFFF)
+            } else MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        border = if (isGlass) BorderStroke(1.2.dp, specularRim) else null,
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isGlass) 8.dp else 4.dp),
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))

@@ -32,9 +32,15 @@ interface Strings {
     val later: String
 
     val navMyBooks: String
+    val navAddBook: String
     val designStyleTitle: String
     val designStyleMaterial: String
     val designStyleLiquidGlass: String
+    val designStyleDescMaterial: String
+    val designStyleDescLiquidGlass: String
+    val previewNavigationIsland: String
+    val glassClarityTitle: String
+    val glassClarityDesc: String
     val libraryTitle: String
     val addBooks: String
     val emptyLibraryTitle: String
@@ -379,10 +385,16 @@ interface Strings {
 
 
 class RuStrings : Strings {
-    override val navMyBooks: String = "Книги"
-    override val designStyleTitle: String = "Стиль оформления"
+    override val navMyBooks: String = "Мои книги"
+    override val navAddBook: String = "Добавить"
+    override val designStyleTitle: String = "Стиль приложения"
     override val designStyleMaterial: String = "Material 3"
     override val designStyleLiquidGlass: String = "Liquid Glass"
+    override val designStyleDescMaterial: String = "Google Material You с динамическими цветами"
+    override val designStyleDescLiquidGlass: String = "Стеклянный дизайн в стиле iOS и Mornye: прозрачность, глубина и отблески"
+    override val previewNavigationIsland: String = "Предпросмотр острова навигации"
+    override val glassClarityTitle: String = "Прозрачность стекла"
+    override val glassClarityDesc: String = "Регулировка прозрачности и глубины панелей и навигации"
     override val chooseAddMethod = "Добавить книги в библиотеку"
     override val selectFiles = "Выбрать файлы"
     override val selectFilesSubtitle = "Файлы .fb2, .epub, .pdf, .txt, .cbz"
@@ -726,10 +738,16 @@ class RuStrings : Strings {
 }
 
 class EnStrings : Strings {
-    override val navMyBooks: String = "Books"
+    override val navMyBooks: String = "My Books"
+    override val navAddBook: String = "Add"
     override val designStyleTitle: String = "Design Style"
     override val designStyleMaterial: String = "Material 3"
     override val designStyleLiquidGlass: String = "Liquid Glass"
+    override val designStyleDescMaterial: String = "Google Material You with dynamic wallpaper colors"
+    override val designStyleDescLiquidGlass: String = "Apple iOS and Mornye frosted glass design with specular highlights"
+    override val previewNavigationIsland: String = "Navigation Island Preview"
+    override val glassClarityTitle: String = "Glass Clarity"
+    override val glassClarityDesc: String = "Adjust transparency and depth of glass surfaces"
     override val chooseAddMethod = "Add books to library"
     override val selectFiles = "Select files"
     override val selectFilesSubtitle = ".fb2, .epub, .pdf, .txt, .cbz files"
@@ -1073,10 +1091,16 @@ class EnStrings : Strings {
 }
 
 class UkStrings : Strings {
-    override val navMyBooks: String = "Книги"
+    override val navMyBooks: String = "Мої книги"
+    override val navAddBook: String = "Додати"
     override val designStyleTitle: String = "Стиль оформлення"
     override val designStyleMaterial: String = "Material 3"
     override val designStyleLiquidGlass: String = "Liquid Glass"
+    override val designStyleDescMaterial: String = "Google Material You з динамічними кольорами"
+    override val designStyleDescLiquidGlass: String = "Скляний дизайн у стилі iOS та Mornye: прозорість та відблиски"
+    override val previewNavigationIsland: String = "Попередній перегляд острова навігації"
+    override val glassClarityTitle: String = "Прозорість скла"
+    override val glassClarityDesc: String = "Налаштування прозорості та глибини панелей"
     override val chooseAddMethod = "Додати книги до бібліотеки"
     override val selectFiles = "Обрати файли"
     override val selectFilesSubtitle = "Файли .fb2, .epub, .pdf, .txt, .cbz"
@@ -1420,10 +1444,16 @@ class UkStrings : Strings {
 }
 
 class BeStrings : Strings {
-    override val navMyBooks: String = "Кнігі"
+    override val navMyBooks: String = "Мае кнігі"
+    override val navAddBook: String = "Дадаць"
     override val designStyleTitle: String = "Стыль афармлення"
     override val designStyleMaterial: String = "Material 3"
     override val designStyleLiquidGlass: String = "Liquid Glass"
+    override val designStyleDescMaterial: String = "Google Material You з дынамічнымі колерамі"
+    override val designStyleDescLiquidGlass: String = "Шкляны дызайн у стылі iOS і Mornye: празрыстасць і водбліскі"
+    override val previewNavigationIsland: String = "Папярэдні прагляд астраўка навігацыі"
+    override val glassClarityTitle: String = "Празрыстасць шкла"
+    override val glassClarityDesc: String = "Рэгуляванне празрыстасці і глыбіні панэляў"
     override val chooseAddMethod = "Дадаць кнігі ў бібліятэку"
     override val selectFiles = "Абраць файлы"
     override val selectFilesSubtitle = "Файлы .fb2, .epub, .pdf, .txt, .cbz"
@@ -1767,10 +1797,16 @@ class BeStrings : Strings {
 }
 
 class PlStrings : Strings {
-    override val navMyBooks: String = "Książki"
-    override val designStyleTitle: String = "Styl wyglądu"
+    override val navMyBooks: String = "Moje książki"
+    override val navAddBook: String = "Dodaj"
+    override val designStyleTitle: String = "Styl aplikacji"
     override val designStyleMaterial: String = "Material 3"
     override val designStyleLiquidGlass: String = "Liquid Glass"
+    override val designStyleDescMaterial: String = "Styl Google Material You z dynamicznymi kolorami"
+    override val designStyleDescLiquidGlass: String = "Szklany design w stylu iOS i Mornye: przezroczystość i refleksy"
+    override val previewNavigationIsland: String = "Podgląd wyspy nawigacyjnej"
+    override val glassClarityTitle: String = "Przezroczystość szkła"
+    override val glassClarityDesc: String = "Regulacja przezroczystości i głębi paneli"
     override val chooseAddMethod = "Dodaj książki do biblioteki"
     override val selectFiles = "Wybierz pliki"
     override val selectFilesSubtitle = "Pliki .fb2, .epub, .pdf, .txt, .cbz"
@@ -2113,10 +2149,16 @@ class PlStrings : Strings {
 }
 
 class CsStrings : Strings {
-    override val navMyBooks: String = "Knihy"
-    override val designStyleTitle: String = "Styl vzhledu"
+    override val navMyBooks: String = "Moje knihy"
+    override val navAddBook: String = "Přidat"
+    override val designStyleTitle: String = "Styl aplikace"
     override val designStyleMaterial: String = "Material 3"
     override val designStyleLiquidGlass: String = "Liquid Glass"
+    override val designStyleDescMaterial: String = "Styl Google Material You s dynamickými barvami"
+    override val designStyleDescLiquidGlass: String = "Skleněný design ve stylu iOS a Mornye: průhlednost a odlesky"
+    override val previewNavigationIsland: String = "Náhled navigačního ostrova"
+    override val glassClarityTitle: String = "Průhlednost skla"
+    override val glassClarityDesc: String = "Nastavení průhlednosti a hloubky panelů"
     override val appName = "Aura Reader"
     override val cancel = "Zrušit"
     override val delete = "Smazat"

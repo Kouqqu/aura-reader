@@ -105,6 +105,10 @@ class LibraryViewModel(
         viewModelScope.launch { preferencesManager.setAppDesignStyle(style) }
     }
 
+    fun setGlassClarity(clarity: Float) {
+        viewModelScope.launch { preferencesManager.setGlassClarity(clarity) }
+    }
+
     fun setAppThemeMode(themeMode: ReaderThemeMode) {
         viewModelScope.launch { preferencesManager.updateAppThemeMode(themeMode) }
     }
