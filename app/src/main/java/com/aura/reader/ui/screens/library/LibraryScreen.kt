@@ -77,7 +77,9 @@ import android.util.Base64
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -217,10 +219,6 @@ fun LibraryScreen(
 
     var currentMainTab by rememberSaveable { mutableIntStateOf(0) }
 
-    BackHandler(enabled = showAddBooksSheet) {
-        showAddBooksSheet = false
-    }
-
     BackHandler(enabled = currentMainTab == 2) {
         currentMainTab = 0
     }
@@ -271,6 +269,9 @@ fun LibraryScreen(
     val scope = rememberCoroutineScope()
     val gridState = rememberLazyGridState()
     var showAddBooksSheet by remember { mutableStateOf(false) }
+    BackHandler(enabled = showAddBooksSheet) {
+        showAddBooksSheet = false
+    }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showReaderThemeSheet by remember { mutableStateOf(false) }
     var bookToDelete by remember { mutableStateOf<Book?>(null) }
