@@ -66,8 +66,8 @@ import com.aura.reader.ui.theme.LocalAppStrings
 import kotlin.math.abs
 
 /**
- * Authentic Apple / Mornye-inspired Liquid Glass Surface.
- * Default transparency is high (~25-30% opacity) for a genuine frosted glass look.
+ * Authentic Apple iOS-inspired Liquid Glass Surface.
+ * Balanced translucent frosted glass with delicate specular rim highlights.
  */
 @Composable
 fun LiquidGlassSurface(
@@ -80,32 +80,32 @@ fun LiquidGlassSurface(
     shadowElevation: Dp = 16.dp,
     content: @Composable () -> Unit
 ) {
-    // Translucent glass fill: high transparency so content behind is clearly visible
+    // Translucent glass fill: delicate frosted glass background
     val baseFill = tintColor ?: if (isDark) {
-        Color(0x3D101116) // ~24% opacity frosted dark obsidian
+        Color(0x2A141824) // ~16% opacity frosted obsidian
     } else {
-        Color(0x55FFFFFF) // ~33% opacity frosted light glass
+        Color(0x65FFFFFF) // ~40% opacity frosted light glass
     }
 
     // Top-to-bottom optical refraction sheen
     val surfaceSheen = Brush.verticalGradient(
         listOf(
-            Color.White.copy(alpha = if (isDark) 0.08f * highlightIntensity else 0.14f * highlightIntensity),
+            Color.White.copy(alpha = if (isDark) 0.05f * highlightIntensity else 0.10f * highlightIntensity),
             Color.Transparent,
-            Color.Black.copy(alpha = if (isDark) 0.06f else 0.02f)
+            Color.Black.copy(alpha = if (isDark) 0.04f else 0.01f)
         )
     )
 
-    // Specular highlight rim border (Mornye 5-stop lighting gradient)
+    // Delicate specular highlight rim border (lighter, softer Apple glass lighting)
     val specularRim = Brush.verticalGradient(
-        0.00f to Color.White.copy(alpha = if (isDark) 0.65f * highlightIntensity else 0.88f * highlightIntensity),
-        0.14f to Color.White.copy(alpha = if (isDark) 0.22f * highlightIntensity else 0.35f * highlightIntensity),
+        0.00f to Color.White.copy(alpha = if (isDark) 0.32f * highlightIntensity else 0.45f * highlightIntensity),
+        0.15f to Color.White.copy(alpha = if (isDark) 0.12f * highlightIntensity else 0.18f * highlightIntensity),
         0.50f to Color.Transparent,
-        0.86f to Color.White.copy(alpha = if (isDark) 0.12f * highlightIntensity else 0.20f * highlightIntensity),
-        1.00f to Color.White.copy(alpha = if (isDark) 0.38f * highlightIntensity else 0.50f * highlightIntensity)
+        0.85f to Color.White.copy(alpha = if (isDark) 0.04f * highlightIntensity else 0.06f * highlightIntensity),
+        1.00f to Color.White.copy(alpha = if (isDark) 0.18f * highlightIntensity else 0.25f * highlightIntensity)
     )
 
-    val shadowAlpha = if (isDark) 0.35f else 0.12f
+    val shadowAlpha = if (isDark) 0.30f else 0.10f
 
     Box(
         modifier = modifier
@@ -137,17 +137,11 @@ fun LiquidGlassSurface(
             .background(surfaceSheen)
             .drawBehind {
                 val outline = shape.createOutline(size, layoutDirection, this)
-                // Contact edge
-                drawOutline(
-                    outline = outline,
-                    color = Color.Black.copy(alpha = if (isDark) 0.40f else 0.10f),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 0.6.dp.toPx())
-                )
-                // Specular rim
+                // Delicate specular rim
                 drawOutline(
                     outline = outline,
                     brush = specularRim,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.0.dp.toPx())
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 0.85.dp.toPx())
                 )
             }
     ) {
@@ -158,7 +152,7 @@ fun LiquidGlassSurface(
 /**
  * Floating Navigation Island dock.
  * In [AppDesignStyle.LIQUID_GLASS]:
- * Matches Mornye's floating dock with animated sliding active selection lens ([MornyeSelectionPill]).
+ * iOS-inspired floating dock with animated sliding active selection lens and optical refraction.
  * In [AppDesignStyle.MATERIAL]:
  * Material 3 Expressive pill container.
  */
@@ -177,7 +171,7 @@ fun FloatingNavigationIsland(
     val isGlass = designStyle == AppDesignStyle.LIQUID_GLASS
 
     if (isGlass) {
-        // LIQUID GLASS (Apple / Mornye) STYLE
+        // LIQUID GLASS (Apple iOS) STYLE
         val density = LocalDensity.current
         val haptic = LocalHapticFeedback.current
 
@@ -185,6 +179,7 @@ fun FloatingNavigationIsland(
             shape = RoundedCornerShape(32.dp),
             isDark = isDark,
             shadowElevation = 18.dp,
+            tintColor = if (isDark) Color(0xD012151D) else Color(0xEEFFFFFF),
             modifier = modifier
                 .height(64.dp)
                 .width(330.dp)
@@ -215,17 +210,17 @@ fun FloatingNavigationIsland(
                             stiffness = Spring.StiffnessMediumLow
                         )
                     },
-                    label = "mornyeLensSlide"
+                    label = "liquidLensSlide"
                 )
 
-                // Lens dynamic swelling scale when pressed / dragged (liquid physics)
+                // Lens dynamic swelling scale when pressed / dragged (liquid bubble physics)
                 val lensScaleX by animateFloatAsState(
-                    targetValue = if (isDragging) 1.08f else 1.0f,
+                    targetValue = if (isDragging) 1.15f else 1.0f,
                     animationSpec = spring(stiffness = Spring.StiffnessMedium),
                     label = "lensScaleX"
                 )
                 val lensScaleY by animateFloatAsState(
-                    targetValue = if (isDragging) 1.06f else 1.0f,
+                    targetValue = if (isDragging) 1.10f else 1.0f,
                     animationSpec = spring(stiffness = Spring.StiffnessMedium),
                     label = "lensScaleY"
                 )
@@ -261,7 +256,7 @@ fun FloatingNavigationIsland(
                             )
                         }
                 ) {
-                    // The Mornye Sliding Active Pill Lens with crisp white specular outline & glow
+                    // The Sliding Active Pill Lens with subtle specular outline & translucent refractive body
                     Box(
                         modifier = Modifier
                             .offset(x = with(density) { animatedLensOffsetPx.toDp() })
@@ -274,7 +269,7 @@ fun FloatingNavigationIsland(
                             }
                             .clip(RoundedCornerShape(26.dp))
                             .background(
-                                if (isDark) Color(0x38FFFFFF) else Color(0x45000000)
+                                if (isDark) Color(0x28FFFFFF) else Color(0x35000000)
                             )
                             .drawBehind {
                                 val outline = RoundedCornerShape(26.dp).createOutline(size, layoutDirection, this)
@@ -282,21 +277,28 @@ fun FloatingNavigationIsland(
                                     outline = outline,
                                     brush = Brush.verticalGradient(
                                         listOf(
-                                            Color.White.copy(alpha = if (isDark) 0.88f else 0.95f),
-                                            Color.White.copy(alpha = 0.25f)
+                                            Color.White.copy(alpha = if (isDark) 0.40f else 0.55f),
+                                            Color.White.copy(alpha = 0.08f)
                                         )
                                     ),
-                                    style = androidx.compose.ui.graphics.drawscope.Stroke(1.2.dp.toPx())
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(0.9.dp.toPx())
                                 )
                             }
                     )
 
-                    // Proximity calculation for continuous optical refraction over tabs
+                    // Continuous optical refraction calculation over tabs (cosine bell curve magnification + deflection)
                     val currentLensCenterPx = animatedLensOffsetPx + tabWidthPx / 2f
-                    fun proximityForSlot(slotIndex: Int): Float {
+                    fun opticalRefractionForSlot(slotIndex: Int): Triple<Float, Float, Float> {
                         val slotCenterPx = (slotIndex + 0.5f) * tabWidthPx
                         val dist = abs(currentLensCenterPx - slotCenterPx)
-                        return (1f - (dist / tabWidthPx)).coerceIn(0f, 1f)
+                        val norm = (dist / tabWidthPx).coerceIn(0f, 1f)
+                        // Smooth cosine bell curve
+                        val prox = (0.5f * (1f + kotlin.math.cos(norm * Math.PI.toFloat()))).toFloat()
+                        // Snell's law optical deflection towards center of lens
+                        val shiftX = ((slotCenterPx - currentLensCenterPx) * 0.08f * prox)
+                        // Dynamic convex magnification
+                        val scale = 1.0f + 0.16f * prox
+                        return Triple(prox, scale, shiftX)
                     }
 
                     val activeColor = MaterialTheme.colorScheme.primary
@@ -308,15 +310,15 @@ fun FloatingNavigationIsland(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Tab 0: My Books
-                        val prox0 = proximityForSlot(0)
-                        val scale0 = 1.0f + 0.12f * prox0
+                        val (prox0, scale0, shiftX0) = opticalRefractionForSlot(0)
                         val color0 = lerp(inactiveColor, activeColor, prox0)
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .expressiveClickable(scaleDown = 0.94f, onClick = onMyBooksClick),
+                                .clip(RoundedCornerShape(26.dp))
+                                .expressiveClickable(scaleDown = 0.92f, onClick = onMyBooksClick),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -325,6 +327,7 @@ fun FloatingNavigationIsland(
                                 modifier = Modifier.graphicsLayer {
                                     scaleX = scale0
                                     scaleY = scale0
+                                    translationX = shiftX0
                                 }
                             ) {
                                 Icon(
@@ -346,14 +349,14 @@ fun FloatingNavigationIsland(
                         }
 
                         // Tab 1: Add Book
-                        val prox1 = proximityForSlot(1)
-                        val scale1 = 1.0f + 0.12f * prox1
+                        val (prox1, scale1, shiftX1) = opticalRefractionForSlot(1)
                         val color1 = lerp(inactiveColor, activeColor, prox1)
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
+                                .clip(RoundedCornerShape(26.dp))
                                 .expressiveClickable(scaleDown = 0.90f, onClick = onAddBookClick),
                             contentAlignment = Alignment.Center
                         ) {
@@ -363,6 +366,7 @@ fun FloatingNavigationIsland(
                                 modifier = Modifier.graphicsLayer {
                                     scaleX = scale1
                                     scaleY = scale1
+                                    translationX = shiftX1
                                 }
                             ) {
                                 Icon(
@@ -384,15 +388,15 @@ fun FloatingNavigationIsland(
                         }
 
                         // Tab 2: Settings
-                        val prox2 = proximityForSlot(2)
-                        val scale2 = 1.0f + 0.12f * prox2
+                        val (prox2, scale2, shiftX2) = opticalRefractionForSlot(2)
                         val color2 = lerp(inactiveColor, activeColor, prox2)
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .expressiveClickable(scaleDown = 0.94f, onClick = onSettingsClick),
+                                .clip(RoundedCornerShape(26.dp))
+                                .expressiveClickable(scaleDown = 0.92f, onClick = onSettingsClick),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -401,6 +405,7 @@ fun FloatingNavigationIsland(
                                 modifier = Modifier.graphicsLayer {
                                     scaleX = scale2
                                     scaleY = scale2
+                                    translationX = shiftX2
                                 }
                             ) {
                                 Icon(
@@ -543,10 +548,10 @@ fun FloatingNavigationIsland(
 }
 
 /**
- * Frosted Glass Filter Chip matching Mornye's [MornyeFilterChip].
+ * Frosted Glass Filter Chip matching iOS Liquid Glass.
  */
 @Composable
-fun MornyeFilterChip(
+fun LiquidGlassFilterChip(
     selected: Boolean,
     onClick: () -> Unit,
     label: @Composable () -> Unit,
@@ -572,8 +577,8 @@ fun MornyeFilterChip(
                 0.8.dp,
                 Brush.verticalGradient(
                     listOf(
-                        Color.White.copy(alpha = if (isDark) 0.35f else 0.70f),
-                        Color.White.copy(alpha = 0.08f)
+                        Color.White.copy(alpha = if (isDark) 0.28f else 0.50f),
+                        Color.White.copy(alpha = 0.06f)
                     )
                 )
             )
@@ -591,7 +596,8 @@ fun MornyeFilterChip(
                         style = androidx.compose.ui.graphics.drawscope.Stroke(border.width.toPx())
                     )
                 }
-                .expressiveClickable(onClick = onClick)
+                .clip(CircleShape)
+                .expressiveClickable(scaleDown = 0.94f, onClick = onClick)
                 .padding(horizontal = 14.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -622,10 +628,10 @@ fun MornyeFilterChip(
 }
 
 /**
- * Card surface that adapts between Material 3 container and Mornye Liquid Glass.
+ * Card surface that adapts between Material 3 container and iOS Liquid Glass.
  */
 @Composable
-fun MornyeGlassCard(
+fun LiquidGlassCard(
     modifier: Modifier = Modifier,
     isGlass: Boolean = false,
     clarity: Float = 0.85f,

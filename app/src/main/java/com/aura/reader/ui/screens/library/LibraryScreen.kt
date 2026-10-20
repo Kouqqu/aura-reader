@@ -23,8 +23,8 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.FabPosition
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.components.FloatingNavigationIsland
-import com.aura.reader.ui.components.MornyeFilterChip
-import com.aura.reader.ui.components.MornyeGlassCard
+import com.aura.reader.ui.components.LiquidGlassFilterChip
+import com.aura.reader.ui.components.LiquidGlassCard
 import com.aura.reader.ui.components.ParallaxCoverViewer
 import com.aura.reader.util.BookShareUtils
 import androidx.compose.material.icons.filled.Share
@@ -514,19 +514,6 @@ fun LibraryScreen(
                                     contentDescription = strings.searchInLibrary
                                 )
                             }
-                            // Settings Sheet
-                            IconButton(onClick = {
-                                if (readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
-                                    currentMainTab = 2
-                                } else {
-                                    showSettingsSheet = true
-                                }
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Settings,
-                                    contentDescription = strings.settingsTitle
-                                )
-                            }
                         },
                         scrollBehavior = scrollBehavior,
                         colors = TopAppBarDefaults.topAppBarColors(
@@ -667,7 +654,7 @@ fun LibraryScreen(
                     // Instant Update Notification Banner
                     if (updateInfo != null && updateInfo!!.isAvailable && updateNotificationsEnabled) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            MornyeGlassCard(
+                            LiquidGlassCard(
                                 isGlass = isGlass,
                                 shape = RoundedCornerShape(20.dp),
                                 modifier = Modifier.fillMaxWidth()
@@ -718,7 +705,7 @@ fun LibraryScreen(
                     // Daily Reading Stats (Toggleable in Settings)
                     if (readingStatsEnabled) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            MornyeGlassCard(
+                            LiquidGlassCard(
                                 isGlass = isGlass,
                                 shape = RoundedCornerShape(20.dp),
                                 modifier = Modifier
@@ -773,19 +760,19 @@ fun LibraryScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            MornyeFilterChip(
+                            LiquidGlassFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.ALL,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.ALL)) },
                                 label = { Text(strings.colAll) },
                                 isGlass = isGlass
                             )
-                            MornyeFilterChip(
+                            LiquidGlassFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.READING,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.READING)) },
                                 label = { Text(strings.colReading) },
                                 isGlass = isGlass
                             )
-                            MornyeFilterChip(
+                            LiquidGlassFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.FAVORITES,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FAVORITES)) },
                                 leadingIcon = {
@@ -799,13 +786,13 @@ fun LibraryScreen(
                                 label = { Text(strings.colFavorites) },
                                 isGlass = isGlass
                             )
-                            MornyeFilterChip(
+                            LiquidGlassFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.UNREAD,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.UNREAD)) },
                                 label = { Text(strings.colUnread) },
                                 isGlass = isGlass
                             )
-                            MornyeFilterChip(
+                            LiquidGlassFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.FINISHED,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FINISHED)) },
                                 label = { Text(strings.colFinished) },
@@ -815,7 +802,7 @@ fun LibraryScreen(
                                 recentBooks.any { !it.series.isNullOrBlank() }
                             }
                             if (hasAnySeries) {
-                                MornyeFilterChip(
+                                LiquidGlassFilterChip(
                                     selected = activeCollectionFilter.type == CollectionFilterType.SERIES,
                                     onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.SERIES)) },
                                     label = { Text(strings.colSeries) },
@@ -824,7 +811,7 @@ fun LibraryScreen(
                             }
                             for (colName in userCollections) {
                                 val isSelected = activeCollectionFilter.type == CollectionFilterType.CUSTOM && activeCollectionFilter.customName == colName
-                                MornyeFilterChip(
+                                LiquidGlassFilterChip(
                                     selected = isSelected,
                                     onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.CUSTOM, colName)) },
                                     trailingIcon = {
@@ -840,7 +827,7 @@ fun LibraryScreen(
                                     isGlass = isGlass
                                 )
                             }
-                            MornyeFilterChip(
+                            LiquidGlassFilterChip(
                                 selected = false,
                                 onClick = { showNewCollectionDialog = true },
                                 leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp)) },
@@ -1510,7 +1497,7 @@ fun BookCard(
             .clip(RoundedCornerShape(20.dp))
             .clickable(
                 interactionSource = cardInteractionSource,
-                indication = LocalIndication.current
+                indication = if (isGlass) null else LocalIndication.current
             ) {
                 if (isReorderMode) {
                     showMenu = true
@@ -1521,7 +1508,7 @@ fun BookCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
-                if (isSystemInDarkTheme()) Color(0x331C1E26) else Color(0x70FFFFFF)
+                if (isSystemInDarkTheme()) Color(0x281C1E26) else Color(0x65FFFFFF)
             } else if (isDraggingThis) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
             } else {
@@ -1531,10 +1518,10 @@ fun BookCard(
         border = if (isGlass) {
             val isDark = isSystemInDarkTheme()
             BorderStroke(
-                1.dp,
+                0.85.dp,
                 Brush.verticalGradient(
                     listOf(
-                        Color.White.copy(alpha = if (isDark) 0.25f else 0.65f),
+                        Color.White.copy(alpha = if (isDark) 0.22f else 0.45f),
                         Color.White.copy(alpha = 0.04f)
                     )
                 )
@@ -1993,7 +1980,7 @@ fun BookGridCard(
             .clip(RoundedCornerShape(20.dp))
             .clickable(
                 interactionSource = gridInteractionSource,
-                indication = LocalIndication.current
+                indication = if (isGlass) null else LocalIndication.current
             ) {
                 if (isReorderMode) {
                     showMenu = true
@@ -2004,7 +1991,7 @@ fun BookGridCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
-                if (isSystemInDarkTheme()) Color(0x331C1E26) else Color(0x70FFFFFF)
+                if (isSystemInDarkTheme()) Color(0x281C1E26) else Color(0x65FFFFFF)
             } else if (isDraggingThis) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
             } else {
@@ -2014,10 +2001,10 @@ fun BookGridCard(
         border = if (isGlass) {
             val isDark = isSystemInDarkTheme()
             BorderStroke(
-                1.dp,
+                0.85.dp,
                 Brush.verticalGradient(
                     listOf(
-                        Color.White.copy(alpha = if (isDark) 0.25f else 0.65f),
+                        Color.White.copy(alpha = if (isDark) 0.22f else 0.45f),
                         Color.White.copy(alpha = 0.04f)
                     )
                 )

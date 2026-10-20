@@ -72,6 +72,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -105,12 +107,15 @@ import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.opds.OpdsService
 import com.aura.reader.ui.components.PixelFullScreenBurst
 import com.aura.reader.ui.components.expressiveBounce
+import com.aura.reader.ui.components.expressiveClickable
 import com.aura.reader.ui.theme.AmoledBackground
 import com.aura.reader.ui.theme.AmoledText
 import com.aura.reader.ui.theme.AppLanguage
 import com.aura.reader.ui.theme.LocalAppStrings
 import com.aura.reader.ui.theme.SepiaBackground
 import com.aura.reader.ui.theme.SepiaText
+
+private val LocalIsLiquidGlass = compositionLocalOf { false }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 
@@ -401,28 +406,49 @@ fun SettingsBottomSheet(
                 // Header
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier
                         .fillMaxWidth()
                         .then(if (isFullScreen) Modifier.padding(top = 16.dp, bottom = 4.dp) else Modifier)
                 ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = strings.settingsTitle,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = strings.settingsTitle,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    if (isFullScreen) {
+                        Surface(
+                            onClick = onDismiss,
+                            shape = CircleShape,
+                            color = if (isSystemInDarkTheme()) Color(0x25FFFFFF) else Color(0x18000000),
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = strings.cancel,
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
 
             Spacer(modifier = Modifier.height(20.dp))
 
             val isSysDark = isSystemInDarkTheme()
+            val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
 
             // 0. Design Style Section (Material 3 vs Liquid Glass)
             Text(
@@ -480,7 +506,7 @@ fun SettingsBottomSheet(
                     }
                 }
 
-                // Option 2: Liquid Glass (Apple / Mornye)
+                // Option 2: Liquid Glass (iOS style)
                 val isGlassSelected = appDesignStyle == AppDesignStyle.LIQUID_GLASS
                 Card(
                     onClick = { onAppDesignStyleChange(AppDesignStyle.LIQUID_GLASS) },
@@ -571,13 +597,7 @@ fun SettingsBottomSheet(
             )
 
             // Segmented Theme Switcher Card
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            val themeCardContent: @Composable () -> Unit = {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -645,6 +665,26 @@ fun SettingsBottomSheet(
                         )
                     }
                 }
+            }
+
+            if (isGlass) {
+                LiquidGlassSurface(
+                    shape = RoundedCornerShape(24.dp),
+                    isDark = isSysDark,
+                    shadowElevation = 8.dp,
+                    tintColor = if (isSysDark) Color(0x301D212E) else Color(0x85FFFFFF),
+                    modifier = Modifier.fillMaxWidth(),
+                    content = themeCardContent
+                )
+            } else {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    content = { themeCardContent() }
+                )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -1166,35 +1206,39 @@ fun SettingsBottomSheet(
         }
     }
 
-    if (isFullScreen) {
-        val isSysDark = isSystemInDarkTheme()
-        val screenBg = if (appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
-            if (isSysDark) Color(0xFF000000) else Color(0xFFF2F3F8)
+    val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
+
+    CompositionLocalProvider(LocalIsLiquidGlass provides isGlass) {
+        if (isFullScreen) {
+            val isSysDark = isSystemInDarkTheme()
+            val screenBg = if (isGlass) {
+                if (isSysDark) Color(0xFF000000) else Color(0xFFF2F3F8)
+            } else {
+                MaterialTheme.colorScheme.background
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(screenBg)
+                    .statusBarsPadding()
+            ) {
+                sheetContent()
+            }
         } else {
-            MaterialTheme.colorScheme.background
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(screenBg)
-                .statusBarsPadding()
-        ) {
-            sheetContent()
-        }
-    } else {
-        ModalBottomSheet(
-            onDismissRequest = onDismiss,
-            sheetState = sheetState,
-            dragHandle = { BottomSheetDefaults.DragHandle() },
-            containerColor = if (appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
-                if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF0D0E12) else Color(0xFFF2F3F8)
-            } else MaterialTheme.colorScheme.surfaceContainerHigh,
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(top = 24.dp)
-        ) {
-            sheetContent()
+            ModalBottomSheet(
+                onDismissRequest = onDismiss,
+                sheetState = sheetState,
+                dragHandle = { BottomSheetDefaults.DragHandle() },
+                containerColor = if (isGlass) {
+                    if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF0D0E12) else Color(0xFFF2F3F8)
+                } else MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(top = 24.dp)
+            ) {
+                sheetContent()
+            }
         }
     }
 }
@@ -1214,11 +1258,29 @@ private fun ExpressiveThemePill(
     var pillCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
+    val isGlass = LocalIsLiquidGlass.current
+    val isDark = isSystemInDarkTheme()
 
-    val containerColor = if (isSelected) previewBgColor else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
+    val containerColor = if (isSelected) {
+        previewBgColor
+    } else {
+        if (isGlass) {
+            Color.White.copy(alpha = if (isDark) 0.06f else 0.40f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
+        }
+    }
     val contentColor = if (isSelected) previewTextColor else MaterialTheme.colorScheme.onSurfaceVariant
-    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
-    val borderWidth = if (isSelected) 2.dp else 1.dp
+    val borderColor = if (isSelected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        if (isGlass) {
+            Color.White.copy(alpha = if (isDark) 0.18f else 0.45f)
+        } else {
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+        }
+    }
+    val borderWidth = if (isSelected) 2.dp else 0.85.dp
 
     Surface(
         onClick = {
@@ -1273,9 +1335,16 @@ private fun SettingsIconBox(
     containerColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
     contentDescription: String? = null
 ) {
+    val isGlass = LocalIsLiquidGlass.current
+    val isDark = isSystemInDarkTheme()
+    val bg = if (isGlass) {
+        if (isDark) Color(0x35283448) else Color(0x18000000)
+    } else {
+        containerColor
+    }
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = containerColor,
+        color = bg,
         modifier = Modifier.size(38.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -1296,9 +1365,16 @@ private fun SettingsPainterIconBox(
     containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
     contentDescription: String? = null
 ) {
+    val isGlass = LocalIsLiquidGlass.current
+    val isDark = isSystemInDarkTheme()
+    val bg = if (isGlass) {
+        if (isDark) Color(0x35283448) else Color(0x18000000)
+    } else {
+        containerColor
+    }
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = containerColor,
+        color = bg,
         modifier = Modifier.size(38.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -1322,8 +1398,14 @@ private fun ExpressiveStylePill(
 ) {
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
+    val isGlass = LocalIsLiquidGlass.current
+    val isDark = isSystemInDarkTheme()
 
-    val containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
+    val containerColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        if (isGlass) Color.White.copy(alpha = if (isDark) 0.08f else 0.45f) else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
+    }
     val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
     val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
     val borderWidth = if (isSelected) 1.5.dp else 1.dp
@@ -1371,21 +1453,43 @@ private fun ExpressiveSettingsGroup(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        modifier = modifier.fillMaxWidth(),
-        content = content
-    )
+    val isGlass = LocalIsLiquidGlass.current
+    if (isGlass) {
+        val isDark = isSystemInDarkTheme()
+        LiquidGlassSurface(
+            shape = RoundedCornerShape(22.dp),
+            isDark = isDark,
+            shadowElevation = 8.dp,
+            tintColor = if (isDark) Color(0x301D212E) else Color(0x85FFFFFF),
+            modifier = modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                content = content
+            )
+        }
+    } else {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            modifier = modifier.fillMaxWidth(),
+            content = content
+        )
+    }
 }
 
 @Composable
 private fun ExpressiveDivider() {
+    val isGlass = LocalIsLiquidGlass.current
     HorizontalDivider(
         modifier = Modifier.padding(start = 66.dp, end = 16.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        color = if (isGlass) {
+            Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.08f else 0.15f)
+        } else {
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        }
     )
 }
 
@@ -1400,7 +1504,8 @@ private fun ExpressiveSettingsRow(
     val rowModifier = if (onClick != null) {
         Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clip(RoundedCornerShape(14.dp))
+            .expressiveClickable(scaleDown = 0.98f, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     } else {
         Modifier

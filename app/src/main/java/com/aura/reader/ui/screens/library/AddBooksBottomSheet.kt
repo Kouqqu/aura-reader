@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aura.reader.ui.components.expressiveClickable
 import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.ui.theme.LocalAppStrings
 
@@ -70,17 +71,18 @@ fun AddBooksBottomSheet(
                 ),
             contentAlignment = Alignment.BottomCenter
         ) {
-            // Subtle backdrop scrim behind the popup, above library content
+            // Deep backdrop scrim behind the popup to focus attention and dim underlying library content
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.36f))
+                    .background(Color.Black.copy(alpha = 0.65f))
             )
 
-            // Frosted Floating Glass Card
+            // Frosted Floating Glass Card with rich opaque backdrop so underlying text never bleeds through
             LiquidGlassSurface(
                 shape = RoundedCornerShape(28.dp),
                 shadowElevation = 24.dp,
+                tintColor = if (isDark) Color(0xF2161822) else Color(0xF6FFFFFF),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
@@ -238,17 +240,17 @@ private fun AddMethodItem(
 ) {
     val isDark = isSystemInDarkTheme()
     val containerColor = if (isGlass) {
-        if (isDark) Color(0x35FFFFFF) else Color(0x60FFFFFF)
+        if (isDark) Color(0x35232B3B) else Color(0x18000000)
     } else {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     }
     val border = if (isGlass) {
         BorderStroke(
-            1.dp,
+            0.85.dp,
             Brush.verticalGradient(
                 listOf(
-                    Color.White.copy(alpha = if (isDark) 0.35f else 0.70f),
-                    Color.White.copy(alpha = 0.08f)
+                    Color.White.copy(alpha = if (isDark) 0.22f else 0.45f),
+                    Color.White.copy(alpha = 0.04f)
                 )
             )
         )
@@ -258,7 +260,7 @@ private fun AddMethodItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = onClick),
+            .expressiveClickable(scaleDown = 0.96f, onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         color = containerColor,
         border = border

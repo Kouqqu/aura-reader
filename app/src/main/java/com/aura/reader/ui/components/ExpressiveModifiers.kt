@@ -43,11 +43,13 @@ fun Modifier.expressiveBounce(
 
 /**
  * Clickable modifier with Material 3 Expressive bouncy spring feedback and subtle haptic tick.
+ * [hasRipple] defaults to false to provide an authentic iOS / Liquid Glass press feel without square Android ripples.
  */
 fun Modifier.expressiveClickable(
     scaleDown: Float = 0.96f,
     enabled: Boolean = true,
     hapticFeedback: Boolean = true,
+    hasRipple: Boolean = false,
     onClick: () -> Unit
 ): Modifier = composed {
     val interactionSource = remember { MutableInteractionSource() }
@@ -70,7 +72,7 @@ fun Modifier.expressiveClickable(
         }
         .clickable(
             interactionSource = interactionSource,
-            indication = LocalIndication.current,
+            indication = if (hasRipple) LocalIndication.current else null,
             enabled = enabled
         ) {
             if (hapticFeedback) {
