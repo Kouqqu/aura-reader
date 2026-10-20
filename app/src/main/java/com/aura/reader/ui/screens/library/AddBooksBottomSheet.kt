@@ -53,12 +53,12 @@ fun AddBooksBottomSheet(
     onSelectFiles: () -> Unit,
     onScanFolder: () -> Unit,
     onOpenCatalog: () -> Unit,
-    isLiquidGlass: Boolean = false
+    isLiquidGlass: Boolean = false,
+    isDark: Boolean = isSystemInDarkTheme()
 ) {
     val strings = LocalAppStrings.current
 
     if (isLiquidGlass) {
-        val isDark = isSystemInDarkTheme()
         // Floating glass card anchored above the floating navigation island
         // Navigation dock at bottom remains 100% visible!
         Box(
@@ -236,9 +236,9 @@ private fun AddMethodItem(
     title: String,
     subtitle: String,
     isGlass: Boolean = false,
+    isDark: Boolean = isSystemInDarkTheme(),
     onClick: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
     val containerColor = if (isGlass) {
         if (isDark) Color(0x35232B3B) else Color(0x0C000000)
     } else {

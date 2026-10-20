@@ -69,11 +69,11 @@ fun ReadingStatsBottomSheet(
     statsData: ReadingStatsData,
     onDismiss: () -> Unit,
     onResetStats: () -> Unit = {},
-    isLiquidGlass: Boolean = false
+    isLiquidGlass: Boolean = false,
+    isDark: Boolean = isSystemInDarkTheme()
 ) {
     val strings = LocalAppStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val isDark = isSystemInDarkTheme()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -113,7 +113,7 @@ fun ReadingStatsBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Streak Card
-            StreakBanner(statsData = statsData, strings = strings, isGlass = isLiquidGlass)
+            StreakBanner(statsData = statsData, strings = strings, isGlass = isLiquidGlass, isDark = isDark)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -127,6 +127,7 @@ fun ReadingStatsBottomSheet(
                     value = strings.minutesRead(statsData.todayMinutes),
                     icon = Icons.Default.Schedule,
                     isGlass = isLiquidGlass,
+                    isDark = isDark,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
@@ -134,6 +135,7 @@ fun ReadingStatsBottomSheet(
                     value = strings.totalHoursAndMinutes(statsData.totalMinutes / 60, statsData.totalMinutes % 60),
                     icon = Icons.Default.CalendarMonth,
                     isGlass = isLiquidGlass,
+                    isDark = isDark,
                     modifier = Modifier.weight(1.2f)
                 )
                 StatCard(
@@ -141,6 +143,7 @@ fun ReadingStatsBottomSheet(
                     value = strings.minutesRead(statsData.dailyAverageMinutes),
                     icon = Icons.Default.BarChart,
                     isGlass = isLiquidGlass,
+                    isDark = isDark,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -248,9 +251,9 @@ fun ReadingStatsBottomSheet(
 private fun StreakBanner(
     statsData: ReadingStatsData,
     strings: Strings,
-    isGlass: Boolean = false
+    isGlass: Boolean = false,
+    isDark: Boolean = isSystemInDarkTheme()
 ) {
-    val isDark = isSystemInDarkTheme()
     val streak = statsData.currentStreakDays
     val hasStreak = streak > 0
 
@@ -325,9 +328,9 @@ private fun StatCard(
     value: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     isGlass: Boolean = false,
+    isDark: Boolean = isSystemInDarkTheme(),
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
     val cardContent: @Composable () -> Unit = {
         Column(
             modifier = Modifier.padding(12.dp),

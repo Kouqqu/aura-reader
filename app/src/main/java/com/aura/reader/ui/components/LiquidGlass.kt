@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -159,15 +160,15 @@ fun LiquidGlassSurface(
 @Composable
 fun FloatingNavigationIsland(
     designStyle: AppDesignStyle,
-    selectedTab: Int, // 0 = Books, 1 = Add, 2 = Settings
+    selectedTab: Int, // 0 = Books, 1 = Search, 2 = Settings
     onMyBooksClick: () -> Unit,
-    onAddBookClick: () -> Unit,
+    onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    isDark: Boolean = false,
     clarity: Float = 0.85f,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
-    val isDark = isSystemInDarkTheme()
     val isGlass = designStyle == AppDesignStyle.LIQUID_GLASS
 
     if (isGlass) {
@@ -176,13 +177,13 @@ fun FloatingNavigationIsland(
         val haptic = LocalHapticFeedback.current
 
         LiquidGlassSurface(
-            shape = RoundedCornerShape(32.dp),
+            shape = RoundedCornerShape(30.dp),
             isDark = isDark,
-            shadowElevation = 18.dp,
-            tintColor = if (isDark) Color(0xD012151D) else Color(0xEEFFFFFF),
+            shadowElevation = 16.dp,
+            tintColor = if (isDark) Color(0xBA141722) else Color(0xCCFFFFFF),
             modifier = modifier
-                .height(64.dp)
-                .width(330.dp)
+                .height(60.dp)
+                .width(254.dp)
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -242,7 +243,7 @@ fun FloatingNavigationIsland(
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     when (nearestSlot) {
                                         0 -> onMyBooksClick()
-                                        1 -> onAddBookClick()
+                                        1 -> onSearchClick()
                                         2 -> onSettingsClick()
                                     }
                                 },
@@ -261,23 +262,23 @@ fun FloatingNavigationIsland(
                         modifier = Modifier
                             .offset(x = with(density) { animatedLensOffsetPx.toDp() })
                             .width(tabWidth)
-                            .height(52.dp)
-                            .padding(horizontal = 4.dp)
+                            .height(48.dp)
+                            .padding(horizontal = 3.dp)
                             .graphicsLayer {
                                 scaleX = lensScaleX
                                 scaleY = lensScaleY
                             }
-                            .clip(RoundedCornerShape(26.dp))
+                            .clip(RoundedCornerShape(24.dp))
                             .background(
-                                if (isDark) Color(0x28FFFFFF) else Color(0x35000000)
+                                if (isDark) Color(0x28FFFFFF) else Color(0x20000000)
                             )
                             .drawBehind {
-                                val outline = RoundedCornerShape(26.dp).createOutline(size, layoutDirection, this)
+                                val outline = RoundedCornerShape(24.dp).createOutline(size, layoutDirection, this)
                                 drawOutline(
                                     outline = outline,
                                     brush = Brush.verticalGradient(
                                         listOf(
-                                            Color.White.copy(alpha = if (isDark) 0.40f else 0.55f),
+                                            Color.White.copy(alpha = if (isDark) 0.40f else 0.70f),
                                             Color.White.copy(alpha = 0.08f)
                                         )
                                     ),
@@ -302,7 +303,7 @@ fun FloatingNavigationIsland(
                     }
 
                     val activeColor = MaterialTheme.colorScheme.primary
-                    val inactiveColor = if (isDark) Color.White.copy(alpha = 0.80f) else Color.Black.copy(alpha = 0.70f)
+                    val inactiveColor = if (isDark) Color.White.copy(alpha = 0.80f) else Color(0xD01C1D24)
 
                     // The 3 tabs evenly distributed across the dock
                     Row(
@@ -317,7 +318,7 @@ fun FloatingNavigationIsland(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .clip(RoundedCornerShape(26.dp))
+                                .clip(RoundedCornerShape(24.dp))
                                 .expressiveClickable(scaleDown = 0.92f, onClick = onMyBooksClick),
                             contentAlignment = Alignment.Center
                         ) {
@@ -334,12 +335,12 @@ fun FloatingNavigationIsland(
                                     imageVector = Icons.Default.MenuBook,
                                     contentDescription = strings.navMyBooks,
                                     tint = color0,
-                                    modifier = Modifier.size(23.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = strings.navMyBooks,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
                                     fontWeight = if (prox0 > 0.5f) FontWeight.Bold else FontWeight.Medium,
                                     color = color0,
                                     maxLines = 1,
@@ -348,7 +349,7 @@ fun FloatingNavigationIsland(
                             }
                         }
 
-                        // Tab 1: Add Book
+                        // Tab 1: Search
                         val (prox1, scale1, shiftX1) = opticalRefractionForSlot(1)
                         val color1 = lerp(inactiveColor, activeColor, prox1)
 
@@ -356,8 +357,8 @@ fun FloatingNavigationIsland(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .clip(RoundedCornerShape(26.dp))
-                                .expressiveClickable(scaleDown = 0.90f, onClick = onAddBookClick),
+                                .clip(RoundedCornerShape(24.dp))
+                                .expressiveClickable(scaleDown = 0.90f, onClick = onSearchClick),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -370,15 +371,15 @@ fun FloatingNavigationIsland(
                                 }
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = strings.navAddBook,
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = strings.searchInLibrary,
                                     tint = color1,
-                                    modifier = Modifier.size(25.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = strings.navAddBook,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                    text = strings.searchInLibrary,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
                                     fontWeight = if (prox1 > 0.5f) FontWeight.Bold else FontWeight.Medium,
                                     color = color1,
                                     maxLines = 1,
@@ -395,7 +396,7 @@ fun FloatingNavigationIsland(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .clip(RoundedCornerShape(26.dp))
+                                .clip(RoundedCornerShape(24.dp))
                                 .expressiveClickable(scaleDown = 0.92f, onClick = onSettingsClick),
                             contentAlignment = Alignment.Center
                         ) {
@@ -412,12 +413,12 @@ fun FloatingNavigationIsland(
                                     imageVector = Icons.Default.Settings,
                                     contentDescription = strings.settingsTitle,
                                     tint = color2,
-                                    modifier = Modifier.size(23.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = strings.settingsTitle,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
                                     fontWeight = if (prox2 > 0.5f) FontWeight.Bold else FontWeight.Medium,
                                     color = color2,
                                     maxLines = 1,
@@ -430,7 +431,7 @@ fun FloatingNavigationIsland(
             }
         }
     } else {
-        // MATERIAL 3 EXPRESSIVE STYLE
+        // MATERIAL 3 EXPRESSIVE STYLE FALLBACK
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f),
@@ -485,22 +486,38 @@ fun FloatingNavigationIsland(
 
                 Spacer(modifier = Modifier.width(4.dp))
 
-                // Tab 1: Add (+)
+                // Tab 1: Search
+                val isSearchActive = selectedTab == 1
                 Surface(
-                    onClick = onAddBookClick,
+                    onClick = onSearchClick,
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
-                    shadowElevation = 3.dp,
+                    color = if (isSearchActive) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else Color.Transparent,
                     modifier = Modifier
-                        .size(46.dp)
-                        .expressiveClickable(scaleDown = 0.90f, onClick = onAddBookClick)
+                        .height(46.dp)
+                        .weight(1f)
+                        .expressiveClickable(scaleDown = 0.90f, onClick = onSearchClick)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = strings.navAddBook,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp)
+                            imageVector = Icons.Default.Search,
+                            contentDescription = strings.searchInLibrary,
+                            tint = if (isSearchActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = strings.searchInLibrary,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (isSearchActive) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSearchActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -548,6 +565,42 @@ fun FloatingNavigationIsland(
 }
 
 /**
+ * Circular Liquid Glass action button (+ icon) positioned next to the navigation island.
+ */
+@Composable
+fun FloatingAddGlassButton(
+    onClick: () -> Unit,
+    isDark: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    val haptic = LocalHapticFeedback.current
+    LiquidGlassSurface(
+        shape = CircleShape,
+        isDark = isDark,
+        shadowElevation = 14.dp,
+        tintColor = if (isDark) Color(0xBA141722) else Color(0xCCFFFFFF),
+        modifier = modifier
+            .size(54.dp)
+            .expressiveClickable(scaleDown = 0.90f) {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            }
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = LocalAppStrings.current.addBooks,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+    }
+}
+
+/**
  * Frosted Glass Filter Chip matching iOS Liquid Glass.
  */
 @Composable
@@ -557,16 +610,15 @@ fun LiquidGlassFilterChip(
     label: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     isGlass: Boolean = true,
+    isDark: Boolean = isSystemInDarkTheme(),
     leadingIcon: (@Composable () -> Unit)? = null,
     trailingIcon: (@Composable () -> Unit)? = null
 ) {
-    val isDark = isSystemInDarkTheme()
-
     if (isGlass) {
         val bg = if (selected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+            MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.25f else 0.18f)
         } else {
-            Color.White.copy(alpha = if (isDark) 0.08f else 0.45f)
+            if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.04f)
         }
 
         val primaryColor = MaterialTheme.colorScheme.primary
@@ -577,8 +629,8 @@ fun LiquidGlassFilterChip(
                 0.8.dp,
                 Brush.verticalGradient(
                     listOf(
-                        Color.White.copy(alpha = if (isDark) 0.28f else 0.50f),
-                        Color.White.copy(alpha = 0.06f)
+                        if (isDark) Color.White.copy(alpha = 0.28f) else Color.Black.copy(alpha = 0.08f),
+                        if (isDark) Color.White.copy(alpha = 0.06f) else Color.Transparent
                     )
                 )
             )
@@ -634,6 +686,7 @@ fun LiquidGlassFilterChip(
 fun LiquidGlassCard(
     modifier: Modifier = Modifier,
     isGlass: Boolean = false,
+    isDark: Boolean = isSystemInDarkTheme(),
     clarity: Float = 0.85f,
     shape: Shape = RoundedCornerShape(24.dp),
     content: @Composable () -> Unit
@@ -643,6 +696,7 @@ fun LiquidGlassCard(
             modifier = modifier,
             shape = shape,
             clarity = clarity,
+            isDark = isDark,
             content = content
         )
     } else {

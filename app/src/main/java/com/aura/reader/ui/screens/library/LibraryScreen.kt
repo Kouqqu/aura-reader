@@ -24,7 +24,9 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.FabPosition
 import com.aura.reader.data.model.AppDesignStyle
+import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.ui.components.FloatingNavigationIsland
+import com.aura.reader.ui.components.FloatingAddGlassButton
 import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.ui.components.LiquidGlassCard
 import com.aura.reader.ui.components.ParallaxCoverViewer
@@ -254,6 +256,12 @@ fun LibraryScreen(
     val foundFiles by viewModel.foundDeviceFiles.collectAsState()
     val readerSettings by viewModel.readerSettings.collectAsState()
     val isGlass = readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val sysDark = isSystemInDarkTheme()
+    val isThemeDark = when (readerSettings.appThemeMode) {
+        ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
+        ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
+        ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
+    }
     val appLanguage by viewModel.appLanguage.collectAsState()
     val updateNotificationsEnabled by viewModel.updateNotificationsEnabled.collectAsState()
     val anonymousAnalyticsEnabled by viewModel.anonymousAnalyticsEnabled.collectAsState()
@@ -274,6 +282,10 @@ fun LibraryScreen(
     var showAddBooksSheet by remember { mutableStateOf(false) }
     BackHandler(enabled = showAddBooksSheet) {
         showAddBooksSheet = false
+    }
+    var showAddBooksScreen by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = showAddBooksScreen) {
+        showAddBooksScreen = false
     }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showReaderThemeSheet by remember { mutableStateOf(false) }
@@ -443,7 +455,7 @@ fun LibraryScreen(
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            if (currentMainTab != 2) {
+            if (currentMainTab != 2 && (!showAddBooksScreen || !isGlass)) {
                 if (isSearchExpanded) {
                     TopAppBar(
                         title = {
@@ -510,15 +522,15 @@ fun LibraryScreen(
                                 )
                             }
 
-                            // Search Button
-                            IconButton(onClick = { isSearchExpanded = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = strings.searchInLibrary
-                                )
-                            }
-
                             if (!isGlass) {
+                                // Search Button in Material mode
+                                IconButton(onClick = { isSearchExpanded = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = strings.searchInLibrary
+                                    )
+                                }
+
                                 // Settings Button in Material mode
                                 IconButton(onClick = { showSettingsSheet = true }) {
                                     Icon(
@@ -532,7 +544,7 @@ fun LibraryScreen(
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.background,
                             scrolledContainerColor = if (isGlass) {
-                                if (isSystemInDarkTheme()) Color(0xB3000000) else Color(0xB3FFFFFF)
+                                if (isThemeDark) Color(0xB3000000) else Color(0xB3FFFFFF)
                             } else {
                                 MaterialTheme.colorScheme.surfaceContainer
                             }
@@ -552,52 +564,99 @@ fun LibraryScreen(
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             } else if (isGlass) {
-                FloatingNavigationIsland(
-                    designStyle = readerSettings.appDesignStyle,
-                    clarity = readerSettings.glassClarity,
-                    selectedTab = if (showAddBooksSheet) 1 else currentMainTab,
-                    onMyBooksClick = {
-                        if (showAddBooksSheet) {
-                            showAddBooksSheet = false
-                        }
-                        if (currentMainTab != 0) {
-                            currentMainTab = 0
-                        } else {
-                            scope.launch { gridState.animateScrollToItem(0) }
-                        }
-                    },
-                    onAddBookClick = { showAddBooksSheet = true },
-                    onSettingsClick = {
-                        if (showAddBooksSheet) {
-                            showAddBooksSheet = false
-                        }
-                        currentMainTab = 2
+                if (!showAddBooksScreen) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FloatingNavigationIsland(
+                            designStyle = readerSettings.appDesignStyle,
+                            clarity = readerSettings.glassClarity,
+                            selectedTab = when {
+                                currentMainTab == 2 -> 2
+                                isSearchExpanded -> 1
+                                else -> 0
+                            },
+                            isDark = isThemeDark,
+                            onMyBooksClick = {
+                                if (currentMainTab != 0) {
+                                    currentMainTab = 0
+                                }
+                                if (isSearchExpanded) {
+                                    isSearchExpanded = false
+                                    viewModel.setSearchQuery("")
+                                }
+                                scope.launch { gridState.animateScrollToItem(0) }
+                            },
+                            onSearchClick = {
+                                if (currentMainTab == 2) {
+                                    currentMainTab = 0
+                                }
+                                isSearchExpanded = !isSearchExpanded
+                                if (!isSearchExpanded) {
+                                    viewModel.setSearchQuery("")
+                                }
+                            },
+                            onSettingsClick = {
+                                if (isSearchExpanded) {
+                                    isSearchExpanded = false
+                                    viewModel.setSearchQuery("")
+                                }
+                                currentMainTab = 2
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        FloatingAddGlassButton(
+                            onClick = { showAddBooksScreen = true },
+                            isDark = isThemeDark
+                        )
                     }
-                )
+                }
             } else {
-                FloatingActionButton(
+                ExtendedFloatingActionButton(
+                    shape = RoundedCornerShape(20.dp),
                     onClick = { showAddBooksSheet = true },
-                    shape = CircleShape,
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text(strings.addBooks) },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = strings.addBooks
-                    )
-                }
+                )
             }
         },
         floatingActionButtonPosition = if (isGlass) FabPosition.Center else FabPosition.End,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        if (showAddBooksSheet) {
+        if (showAddBooksSheet && !isGlass) {
             AddBooksBottomSheet(
                 onDismiss = { showAddBooksSheet = false },
                 onSelectFiles = { launchFilePicker() },
                 onScanFolder = { openFolderLauncher.launch(null) },
                 onOpenCatalog = onOpenCatalog,
-                isLiquidGlass = isGlass
+                isLiquidGlass = false
+            )
+        }
+
+        if (showAddBooksScreen && isGlass) {
+            AddBooksScreen(
+                onBack = { showAddBooksScreen = false },
+                onSelectFiles = {
+                    showAddBooksScreen = false
+                    launchFilePicker()
+                },
+                onScanFolder = {
+                    showAddBooksScreen = false
+                    openFolderLauncher.launch(null)
+                },
+                onOpenCatalog = {
+                    showAddBooksScreen = false
+                    onOpenCatalog()
+                },
+                isDark = isThemeDark
             )
         }
 
@@ -677,6 +736,7 @@ fun LibraryScreen(
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             LiquidGlassCard(
                                 isGlass = isGlass,
+                                isDark = isThemeDark,
                                 shape = RoundedCornerShape(20.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -728,6 +788,7 @@ fun LibraryScreen(
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             LiquidGlassCard(
                                 isGlass = isGlass,
+                                isDark = isThemeDark,
                                 shape = RoundedCornerShape(20.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -785,13 +846,15 @@ fun LibraryScreen(
                                 selected = activeCollectionFilter.type == CollectionFilterType.ALL,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.ALL)) },
                                 label = { Text(strings.colAll) },
-                                isGlass = isGlass
+                                isGlass = isGlass,
+                                isDark = isThemeDark
                             )
                             LiquidGlassFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.READING,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.READING)) },
                                 label = { Text(strings.colReading) },
-                                isGlass = isGlass
+                                isGlass = isGlass,
+                                isDark = isThemeDark
                             )
                             LiquidGlassFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.FAVORITES,
@@ -805,19 +868,22 @@ fun LibraryScreen(
                                     )
                                 },
                                 label = { Text(strings.colFavorites) },
-                                isGlass = isGlass
+                                isGlass = isGlass,
+                                isDark = isThemeDark
                             )
                             LiquidGlassFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.UNREAD,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.UNREAD)) },
                                 label = { Text(strings.colUnread) },
-                                isGlass = isGlass
+                                isGlass = isGlass,
+                                isDark = isThemeDark
                             )
                             LiquidGlassFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.FINISHED,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FINISHED)) },
                                 label = { Text(strings.colFinished) },
-                                isGlass = isGlass
+                                isGlass = isGlass,
+                                isDark = isThemeDark
                             )
                             val hasAnySeries = remember(recentBooks) {
                                 recentBooks.any { !it.series.isNullOrBlank() }
@@ -827,7 +893,8 @@ fun LibraryScreen(
                                     selected = activeCollectionFilter.type == CollectionFilterType.SERIES,
                                     onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.SERIES)) },
                                     label = { Text(strings.colSeries) },
-                                    isGlass = isGlass
+                                    isGlass = isGlass,
+                                    isDark = isThemeDark
                                 )
                             }
                             for (colName in userCollections) {
@@ -845,7 +912,8 @@ fun LibraryScreen(
                                         )
                                     },
                                     label = { Text(colName) },
-                                    isGlass = isGlass
+                                    isGlass = isGlass,
+                                    isDark = isThemeDark
                                 )
                             }
                             LiquidGlassFilterChip(
@@ -853,7 +921,8 @@ fun LibraryScreen(
                                 onClick = { showNewCollectionDialog = true },
                                 leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp)) },
                                 label = { Text(strings.newCollection) },
-                                isGlass = isGlass
+                                isGlass = isGlass,
+                                isDark = isThemeDark
                             )
                         }
                     }
@@ -884,6 +953,7 @@ fun LibraryScreen(
                                 onShare = { BookShareUtils.shareBookFile(context, currentHeroBook) },
                                 onChangeCover = { bookForCoverChange = currentHeroBook },
                                 isGlass = readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS,
+                                isDark = isThemeDark,
                                 clarity = readerSettings.glassClarity,
                                 modifier = Modifier.padding(bottom = 6.dp)
                             )
@@ -954,14 +1024,14 @@ fun LibraryScreen(
                                         onDismissRequest = { showSortMenu = false },
                                         shape = RoundedCornerShape(20.dp),
                                         containerColor = if (isGlass) {
-                                            if (isSystemInDarkTheme()) Color(0xF2181C28) else Color(0xF8FFFFFF)
+                                            if (isThemeDark) Color(0xF2181C28) else Color(0xF8FFFFFF)
                                         } else MaterialTheme.colorScheme.surfaceContainerHigh,
                                         border = if (isGlass) {
                                             BorderStroke(
                                                 0.85.dp,
                                                 Brush.verticalGradient(
                                                     listOf(
-                                                        Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.35f else 0.70f),
+                                                        Color.White.copy(alpha = if (isThemeDark) 0.35f else 0.70f),
                                                         Color.White.copy(alpha = 0.05f)
                                                     )
                                                 )
@@ -1055,6 +1125,7 @@ fun LibraryScreen(
                                 book = book,
                                 index = index,
                                 isGlass = isGlass,
+                                isDark = isThemeDark,
                                 isReorderMode = isReorderMode,
                                 wobbleAngle = wobbleAngle,
                                 wobbleOffset = wobbleOffset,
@@ -1114,6 +1185,7 @@ fun LibraryScreen(
                                 book = book,
                                 index = index,
                                 isGlass = isGlass,
+                                isDark = isThemeDark,
                                 isReorderMode = isReorderMode,
                                 wobbleAngle = wobbleAngle,
                                 wobbleOffset = wobbleOffset,
@@ -1456,7 +1528,8 @@ fun LibraryScreen(
                 showReadingStatsSheet = false
                 viewModel.resetReadingStats()
             },
-            isLiquidGlass = isGlass
+            isLiquidGlass = isGlass,
+            isDark = isThemeDark
         )
     }
 }
@@ -1467,6 +1540,7 @@ fun BookCard(
     book: Book,
     index: Int = 0,
     isGlass: Boolean = false,
+    isDark: Boolean = isSystemInDarkTheme(),
     isReorderMode: Boolean = false,
     wobbleAngle: Float = 0f,
     wobbleOffset: Float = 0f,
@@ -1485,7 +1559,6 @@ fun BookCard(
     onChangeCover: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    val isDark = isSystemInDarkTheme()
     val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
 
@@ -1547,7 +1620,7 @@ fun BookCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
-                if (isSystemInDarkTheme()) Color(0x281C1E26) else Color(0x65FFFFFF)
+                if (isDark) Color(0x281C1E26) else Color(0x65FFFFFF)
             } else if (isDraggingThis) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
             } else {
@@ -1555,7 +1628,6 @@ fun BookCard(
             }
         ),
         border = if (isGlass) {
-            val isDark = isSystemInDarkTheme()
             BorderStroke(
                 0.85.dp,
                 Brush.verticalGradient(
@@ -1978,6 +2050,7 @@ fun BookGridCard(
     book: Book,
     index: Int = 0,
     isGlass: Boolean = false,
+    isDark: Boolean = isSystemInDarkTheme(),
     isReorderMode: Boolean = false,
     wobbleAngle: Float = 0f,
     wobbleOffset: Float = 0f,
@@ -1997,7 +2070,6 @@ fun BookGridCard(
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    val isDark = isSystemInDarkTheme()
     val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
 
@@ -2059,7 +2131,7 @@ fun BookGridCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
-                if (isSystemInDarkTheme()) Color(0x281C1E26) else Color(0x65FFFFFF)
+                if (isDark) Color(0x281C1E26) else Color(0x65FFFFFF)
             } else if (isDraggingThis) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
             } else {
@@ -2067,7 +2139,6 @@ fun BookGridCard(
             }
         ),
         border = if (isGlass) {
-            val isDark = isSystemInDarkTheme()
             BorderStroke(
                 0.85.dp,
                 Brush.verticalGradient(

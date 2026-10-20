@@ -429,23 +429,6 @@ fun SettingsBottomSheet(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                    if (isFullScreen) {
-                        Surface(
-                            onClick = onDismiss,
-                            shape = CircleShape,
-                            color = if (isSystemInDarkTheme()) Color(0x25FFFFFF) else Color(0x18000000),
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = strings.cancel,
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
                 }
 
             Spacer(modifier = Modifier.height(20.dp))
