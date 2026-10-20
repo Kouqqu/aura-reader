@@ -500,8 +500,9 @@ fun MornyeFilterChip(
             Color.White.copy(alpha = if (isDark) 0.08f else 0.45f)
         }
 
+        val primaryColor = MaterialTheme.colorScheme.primary
         val border = if (selected) {
-            BorderStroke(1.2.dp, MaterialTheme.colorScheme.primary)
+            BorderStroke(1.2.dp, primaryColor)
         } else {
             BorderStroke(
                 0.8.dp,
@@ -522,7 +523,7 @@ fun MornyeFilterChip(
                 .drawBehind {
                     drawOutline(
                         outline = CircleShape.createOutline(size, layoutDirection, this),
-                        brush = if (selected) SolidColor(MaterialTheme.colorScheme.primary) else border.brush,
+                        brush = if (selected) SolidColor(primaryColor) else border.brush,
                         style = androidx.compose.ui.graphics.drawscope.Stroke(border.width.toPx())
                     )
                 }

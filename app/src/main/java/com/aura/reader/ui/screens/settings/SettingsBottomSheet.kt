@@ -93,6 +93,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aura.reader.R
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import com.aura.reader.data.model.AppDesignStyle
