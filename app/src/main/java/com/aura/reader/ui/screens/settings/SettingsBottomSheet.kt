@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
@@ -158,6 +159,7 @@ fun SettingsBottomSheet(
     var showChannelDialog by remember { mutableStateOf(false) }
     var devPasswordInput by remember { mutableStateOf("") }
     var devPasswordError by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
 
     if (showChannelDialog) {
         var selectedChannel by remember { mutableStateOf(updateChannel) }
@@ -300,6 +302,75 @@ fun SettingsBottomSheet(
         )
     }
 
+    if (showLanguageDialog) {
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Translate,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(strings.languageSectionTitle, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AppLanguage.entries.forEach { lang ->
+                        val isSelected = currentLanguage == lang
+                        Surface(
+                            onClick = {
+                                onLanguageChange(lang)
+                                showLanguageDialog = false
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            border = if (isSelected) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = lang.title,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                )
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showLanguageDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -384,16 +455,6 @@ fun SettingsBottomSheet(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         ExpressiveThemePill(
-                            label = strings.themeSystem,
-                            icon = Icons.Default.BrightnessAuto,
-                            isSelected = currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC,
-                            previewBgColor = if (isSysDark) Color(0xFF252930) else Color(0xFFF0F3F6),
-                            previewTextColor = if (isSysDark) Color(0xFFE2E2E6) else Color(0xFF1D1B20),
-                            getSheetCoordinates = { sheetCoordinates },
-                            onClick = { origin -> handleThemeClick(ReaderThemeMode.SYSTEM_DYNAMIC, origin, if (isSysDark) darkColors else lightColors) },
-                            modifier = Modifier.weight(1f)
-                        )
-                        ExpressiveThemePill(
                             label = strings.themeLight,
                             icon = Icons.Default.LightMode,
                             isSelected = currentTheme == ReaderThemeMode.LIGHT,
@@ -413,12 +474,6 @@ fun SettingsBottomSheet(
                             onClick = { origin -> handleThemeClick(ReaderThemeMode.DARK, origin, darkColors) },
                             modifier = Modifier.weight(1f)
                         )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
                         ExpressiveThemePill(
                             label = strings.themeSepia,
                             icon = Icons.Default.MenuBook,
@@ -428,6 +483,22 @@ fun SettingsBottomSheet(
                             getSheetCoordinates = { sheetCoordinates },
                             onClick = { origin -> handleThemeClick(ReaderThemeMode.SEPIA, origin, sepiaColors) },
                             modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ExpressiveThemePill(
+                            label = strings.themeSystem,
+                            icon = Icons.Default.BrightnessAuto,
+                            isSelected = currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC,
+                            previewBgColor = if (isSysDark) Color(0xFF252930) else Color(0xFFF0F3F6),
+                            previewTextColor = if (isSysDark) Color(0xFFE2E2E6) else Color(0xFF1D1B20),
+                            getSheetCoordinates = { sheetCoordinates },
+                            onClick = { origin -> handleThemeClick(ReaderThemeMode.SYSTEM_DYNAMIC, origin, if (isSysDark) darkColors else lightColors) },
+                            modifier = Modifier.weight(1.35f)
                         )
                         ExpressiveThemePill(
                             label = strings.themeAmoled,
@@ -504,30 +575,37 @@ fun SettingsBottomSheet(
             )
 
             ExpressiveSettingsGroup {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        AppLanguage.entries.forEach { lang ->
-                            val selected = currentLanguage == lang
-                            FilterChip(
-                                selected = selected,
-                                onClick = { onLanguageChange(lang) },
-                                label = { Text(lang.title) },
-                                leadingIcon = if (selected) {
-                                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                                } else null,
-                                shape = RoundedCornerShape(12.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ExpressiveSettingsRow(
+                    title = strings.languageSectionTitle,
+                    subtitle = currentLanguage.title,
+                    icon = { SettingsIconBox(Icons.Default.Translate) },
+                    onClick = { showLanguageDialog = true },
+                    trailing = {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = currentLanguage.title,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
-                            )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
                     }
-                }
+                )
                 ExpressiveDivider()
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
