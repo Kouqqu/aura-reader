@@ -123,8 +123,8 @@ fun AddBooksScreen(
             // Method 3: Online OPDS catalog
             AddBookGlassCard(
                 icon = Icons.Default.CloudDownload,
-                title = strings.openCatalog,
-                subtitle = strings.openCatalogSubtitle,
+                title = strings.opdsCatalog,
+                subtitle = strings.opdsCatalogSubtitle,
                 isDark = isDark,
                 onClick = onOpenCatalog
             )
