@@ -1,3 +1,4 @@
+import com.aura.reader.ui.components.expressiveClickable
 package com.aura.reader.ui.screens.library
 
 import androidx.compose.ui.unit.sp
@@ -37,6 +38,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.LocalIndication
+
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.runtime.DisposableEffect
@@ -496,6 +500,7 @@ fun LibraryScreen(
         floatingActionButton = {
             if (isReorderMode) {
                 ExtendedFloatingActionButton(
+                    shape = RoundedCornerShape(20.dp),
                     onClick = { isReorderMode = false },
                     icon = { Icon(Icons.Default.Check, contentDescription = null) },
                     text = { Text(strings.done) },
@@ -504,6 +509,7 @@ fun LibraryScreen(
                 )
             } else {
                 ExtendedFloatingActionButton(
+                    shape = RoundedCornerShape(20.dp),
                     onClick = { showAddBooksSheet = true },
                     icon = { Icon(Icons.Default.Add, contentDescription = null) },
                     text = { Text(strings.addBooks) },
@@ -599,12 +605,12 @@ fun LibraryScreen(
                     if (readingStatsEnabled) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             Surface(
-                                shape = RoundedCornerShape(16.dp),
+                                shape = RoundedCornerShape(20.dp),
                                 color = MaterialTheme.colorScheme.secondaryContainer,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .clickable { showReadingStatsSheet = true }
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .expressiveClickable { showReadingStatsSheet = true }
                             ) {
                                 Row(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -654,16 +660,19 @@ fun LibraryScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             FilterChip(
+                                shape = RoundedCornerShape(12.dp),
                                 selected = activeCollectionFilter.type == CollectionFilterType.ALL,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.ALL)) },
                                 label = { Text(strings.colAll) }
                             )
                             FilterChip(
+                                shape = RoundedCornerShape(12.dp),
                                 selected = activeCollectionFilter.type == CollectionFilterType.READING,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.READING)) },
                                 label = { Text(strings.colReading) }
                             )
                             FilterChip(
+                                shape = RoundedCornerShape(12.dp),
                                 selected = activeCollectionFilter.type == CollectionFilterType.FAVORITES,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FAVORITES)) },
                                 leadingIcon = {
@@ -677,11 +686,13 @@ fun LibraryScreen(
                                 label = { Text(strings.colFavorites) }
                             )
                             FilterChip(
+                                shape = RoundedCornerShape(12.dp),
                                 selected = activeCollectionFilter.type == CollectionFilterType.UNREAD,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.UNREAD)) },
                                 label = { Text(strings.colUnread) }
                             )
                             FilterChip(
+                                shape = RoundedCornerShape(12.dp),
                                 selected = activeCollectionFilter.type == CollectionFilterType.FINISHED,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FINISHED)) },
                                 label = { Text(strings.colFinished) }
@@ -699,6 +710,7 @@ fun LibraryScreen(
                             for (colName in userCollections) {
                                 val isSelected = activeCollectionFilter.type == CollectionFilterType.CUSTOM && activeCollectionFilter.customName == colName
                                 FilterChip(
+                                    shape = RoundedCornerShape(12.dp),
                                     selected = isSelected,
                                     onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.CUSTOM, colName)) },
                                     trailingIcon = {
@@ -1329,12 +1341,25 @@ fun BookCard(
     val translationY = if (isDraggingThis) currentDragOffset.y else if (isReorderMode) (if (index % 2 == 0) wobbleOffset else -wobbleOffset) else 0f
     val translationX = if (isDraggingThis) currentDragOffset.x else 0f
 
+    val cardInteractionSource = remember { MutableInteractionSource() }
+    val isCardPressed by cardInteractionSource.collectIsPressedAsState()
+    val bounceScale by animateFloatAsState(
+        targetValue = if (isCardPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "cardBounce"
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .zIndex(if (isDraggingThis) 100f else 1f)
-            .scale(if (isDraggingThis) 1.05f else 1f)
             .graphicsLayer {
+                val currentScale = if (isDraggingThis) 1.05f else bounceScale
+                this.scaleX = currentScale
+                this.scaleY = currentScale
                 this.rotationZ = rotationZ
                 this.translationY = translationY
                 this.translationX = translationX
@@ -1355,15 +1380,18 @@ fun BookCard(
                     }
                 )
             }
-            .clip(RoundedCornerShape(16.dp))
-            .clickable {
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(
+                interactionSource = cardInteractionSource,
+                indication = LocalIndication.current
+            ) {
                 if (isReorderMode) {
                     showMenu = true
                 } else {
                     onClick()
                 }
             },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDraggingThis) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -1403,8 +1431,8 @@ fun BookCard(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
                             modifier = Modifier.padding(end = 6.dp)
                         ) {
                             Text(
@@ -1556,8 +1584,8 @@ fun BookCard(
                         progress = { (book.progressPercent / 100f).coerceIn(0f, 1f) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp)),
+                            .height(7.dp)
+                            .clip(CircleShape),
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
                     )
@@ -1777,12 +1805,25 @@ fun BookGridCard(
     val translationY = if (isDraggingThis) currentDragOffset.y else if (isReorderMode) (if (index % 2 == 0) wobbleOffset else -wobbleOffset) else 0f
     val translationX = if (isDraggingThis) currentDragOffset.x else 0f
 
+    val gridInteractionSource = remember { MutableInteractionSource() }
+    val isGridPressed by gridInteractionSource.collectIsPressedAsState()
+    val bounceScale by animateFloatAsState(
+        targetValue = if (isGridPressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "gridCardBounce"
+    )
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .zIndex(if (isDraggingThis) 100f else 1f)
-            .scale(if (isDraggingThis) 1.05f else 1f)
             .graphicsLayer {
+                val currentScale = if (isDraggingThis) 1.05f else bounceScale
+                this.scaleX = currentScale
+                this.scaleY = currentScale
                 this.rotationZ = rotationZ
                 this.translationY = translationY
                 this.translationX = translationX
@@ -1803,15 +1844,18 @@ fun BookGridCard(
                     }
                 )
             }
-            .clip(RoundedCornerShape(16.dp))
-            .clickable {
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(
+                interactionSource = gridInteractionSource,
+                indication = LocalIndication.current
+            ) {
                 if (isReorderMode) {
                     showMenu = true
                 } else {
                     onClick()
                 }
             },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDraggingThis) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -1824,8 +1868,8 @@ fun BookGridCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
-                    .clip(RoundedCornerShape(10.dp)),
+                    .height(184.dp)
+                    .clip(RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 BookCoverView(
@@ -1838,31 +1882,33 @@ fun BookGridCard(
                 )
 
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
+                    shadowElevation = 2.dp,
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(6.dp)
+                        .padding(8.dp)
                 ) {
                     Text(
                         text = book.format.name.uppercase(),
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
+                            letterSpacing = 0.6.sp
                         ),
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
                     )
                 }
 
                 if (book.isFavorite) {
                     Surface(
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
+                        shadowElevation = 2.dp,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(6.dp)
+                            .padding(8.dp)
                             .size(26.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -1870,7 +1916,7 @@ fun BookGridCard(
                                 Icons.Default.Favorite,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(15.dp)
                             )
                         }
                     }
@@ -1879,19 +1925,32 @@ fun BookGridCard(
                 val prog = book.progressPercent.coerceIn(0, 100)
                 if (prog > 0) {
                     Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                        shadowElevation = 2.dp,
                         modifier = Modifier
                             .align(Alignment.BottomStart)
-                            .padding(6.dp)
+                            .padding(8.dp)
                     ) {
-                        Text(
-                            text = "$prog%",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.5.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(5.dp)
+                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "$prog%",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }
