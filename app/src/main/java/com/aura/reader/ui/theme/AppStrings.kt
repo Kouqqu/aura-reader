@@ -379,6 +379,10 @@ interface Strings {
 
 
 class RuStrings : Strings {
+    override val navMyBooks: String = "Книги"
+    override val designStyleTitle: String = "Стиль оформления"
+    override val designStyleMaterial: String = "Material 3"
+    override val designStyleLiquidGlass: String = "Liquid Glass"
     override val chooseAddMethod = "Добавить книги в библиотеку"
     override val selectFiles = "Выбрать файлы"
     override val selectFilesSubtitle = "Файлы .fb2, .epub, .pdf, .txt, .cbz"
@@ -722,6 +726,10 @@ class RuStrings : Strings {
 }
 
 class EnStrings : Strings {
+    override val navMyBooks: String = "Books"
+    override val designStyleTitle: String = "Design Style"
+    override val designStyleMaterial: String = "Material 3"
+    override val designStyleLiquidGlass: String = "Liquid Glass"
     override val chooseAddMethod = "Add books to library"
     override val selectFiles = "Select files"
     override val selectFilesSubtitle = ".fb2, .epub, .pdf, .txt, .cbz files"
@@ -1065,6 +1073,10 @@ class EnStrings : Strings {
 }
 
 class UkStrings : Strings {
+    override val navMyBooks: String = "Книги"
+    override val designStyleTitle: String = "Стиль оформлення"
+    override val designStyleMaterial: String = "Material 3"
+    override val designStyleLiquidGlass: String = "Liquid Glass"
     override val chooseAddMethod = "Додати книги до бібліотеки"
     override val selectFiles = "Обрати файли"
     override val selectFilesSubtitle = "Файли .fb2, .epub, .pdf, .txt, .cbz"
@@ -1408,6 +1420,10 @@ class UkStrings : Strings {
 }
 
 class BeStrings : Strings {
+    override val navMyBooks: String = "Кнігі"
+    override val designStyleTitle: String = "Стыль афармлення"
+    override val designStyleMaterial: String = "Material 3"
+    override val designStyleLiquidGlass: String = "Liquid Glass"
     override val chooseAddMethod = "Дадаць кнігі ў бібліятэку"
     override val selectFiles = "Абраць файлы"
     override val selectFilesSubtitle = "Файлы .fb2, .epub, .pdf, .txt, .cbz"
@@ -1751,6 +1767,10 @@ class BeStrings : Strings {
 }
 
 class PlStrings : Strings {
+    override val navMyBooks: String = "Książki"
+    override val designStyleTitle: String = "Styl wyglądu"
+    override val designStyleMaterial: String = "Material 3"
+    override val designStyleLiquidGlass: String = "Liquid Glass"
     override val chooseAddMethod = "Dodaj książki do biblioteki"
     override val selectFiles = "Wybierz pliki"
     override val selectFilesSubtitle = "Pliki .fb2, .epub, .pdf, .txt, .cbz"
@@ -2093,6 +2113,10 @@ class PlStrings : Strings {
 }
 
 class CsStrings : Strings {
+    override val navMyBooks: String = "Knihy"
+    override val designStyleTitle: String = "Styl vzhledu"
+    override val designStyleMaterial: String = "Material 3"
+    override val designStyleLiquidGlass: String = "Liquid Glass"
     override val appName = "Aura Reader"
     override val cancel = "Zrušit"
     override val delete = "Smazat"
