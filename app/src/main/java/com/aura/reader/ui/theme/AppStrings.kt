@@ -137,6 +137,10 @@ interface Strings {
 
     val searchInLibrary: String
     val searchLibraryPlaceholder: String
+    val search: String
+    val searchHistory: String
+    val clearSearchHistory: String
+    val searchPromptSubtitle: String
 
     val backupSectionTitle: String
     val createBackupTitle: String
@@ -450,6 +454,10 @@ class RuStrings : Strings {
 
     override val searchInLibrary = "Поиск по библиотеке"
     override val searchLibraryPlaceholder = "Название, автор или формат..."
+    override val search = "Поиск"
+    override val searchHistory = "История поиска"
+    override val clearSearchHistory = "Очистить"
+    override val searchPromptSubtitle = "Ищите книги по названию, автору, серии или жанру"
 
     override val backupSectionTitle = "Резервное копирование и синхронизация"
     override val createBackupTitle = "Сохранить резервную копию"
@@ -803,6 +811,10 @@ class EnStrings : Strings {
 
     override val searchInLibrary = "Search library"
     override val searchLibraryPlaceholder = "Title, author or format..."
+    override val search = "Search"
+    override val searchHistory = "Search history"
+    override val clearSearchHistory = "Clear"
+    override val searchPromptSubtitle = "Search books by title, author, series or genre"
 
     override val backupSectionTitle = "Backup & Synchronization"
     override val createBackupTitle = "Export backup file"
@@ -1156,6 +1168,10 @@ class UkStrings : Strings {
 
     override val searchInLibrary = "Пошук у бібліотеці"
     override val searchLibraryPlaceholder = "Назва, автор або формат..."
+    override val search = "Пошук"
+    override val searchHistory = "Історія пошуку"
+    override val clearSearchHistory = "Очистити"
+    override val searchPromptSubtitle = "Шукайте книги за назвою, автором, серією або жанром"
 
     override val backupSectionTitle = "Резервне копіювання та синхронізація"
     override val createBackupTitle = "Зберегти резервну копію"
@@ -1509,6 +1525,10 @@ class BeStrings : Strings {
 
     override val searchInLibrary = "Пошук у бібліятэцы"
     override val searchLibraryPlaceholder = "Назва, аўтар ці фармат..."
+    override val search = "Пошук"
+    override val searchHistory = "Гісторыя пошуку"
+    override val clearSearchHistory = "Ачысціць"
+    override val searchPromptSubtitle = "Шукайце кнігі па назве, аўтару, серыі ці жанру"
 
     override val backupSectionTitle = "Рэзервовае капіраванне і сінхранізацыя"
     override val createBackupTitle = "Захаваць рэзервовую копію"
@@ -1862,6 +1882,10 @@ class PlStrings : Strings {
 
     override val searchInLibrary = "Szukaj w bibliotece"
     override val searchLibraryPlaceholder = "Tytuł, autor lub format..."
+    override val search = "Szukaj"
+    override val searchHistory = "Historia wyszukiwania"
+    override val clearSearchHistory = "Wyczyść"
+    override val searchPromptSubtitle = "Szukaj książek według tytułu, autora, serii lub gatunku"
 
     override val backupSectionTitle = "Kopia zapasowa i synchronizacja"
     override val createBackupTitle = "Zapisz kopię zapasową"
@@ -2265,6 +2289,10 @@ class CsStrings : Strings {
     override fun deleteCollectionConfirm(name: String) = "Opravdu chcete smazat sbírku «$name»?"
     override val searchInLibrary = "Hledat v knihovně"
     override val searchLibraryPlaceholder = "Název knihy nebo autor..."
+    override val search = "Hledat"
+    override val searchHistory = "Historie hledání"
+    override val clearSearchHistory = "Vymazat"
+    override val searchPromptSubtitle = "Hledejte knihy podle názvu, autora, série nebo žánru"
     override val backupSectionTitle = "Zálohování a synchronizace"
     override val createBackupTitle = "Vytvořit zálohu"
     override val createBackupSubtitle = "Uložit knihy, záložky, citáty a historii čtení"

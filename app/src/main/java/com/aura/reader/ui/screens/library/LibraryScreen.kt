@@ -224,7 +224,7 @@ fun LibraryScreen(
 
     var currentMainTab by rememberSaveable { mutableIntStateOf(0) }
 
-    BackHandler(enabled = currentMainTab == 2) {
+    BackHandler(enabled = isGlass && currentMainTab != 0 && !showAddBooksScreen) {
         currentMainTab = 0
     }
 
@@ -248,6 +248,7 @@ fun LibraryScreen(
         label = "wobbleOffset"
     )
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val librarySearchHistory by viewModel.librarySearchHistory.collectAsState()
     val todayMinutes by viewModel.todayReadingMinutes.collectAsState()
     val readingStatsData by viewModel.readingStatsData.collectAsState()
     var showReadingStatsSheet by remember { mutableStateOf(false) }
@@ -455,8 +456,8 @@ fun LibraryScreen(
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            if (currentMainTab != 2 && (!showAddBooksScreen || !isGlass)) {
-                if (isSearchExpanded) {
+            if (currentMainTab == 0 && (!showAddBooksScreen || !isGlass)) {
+                if (isSearchExpanded && !isGlass) {
                     TopAppBar(
                         title = {
                             OutlinedTextField(
@@ -575,36 +576,19 @@ fun LibraryScreen(
                         FloatingNavigationIsland(
                             designStyle = readerSettings.appDesignStyle,
                             clarity = readerSettings.glassClarity,
-                            selectedTab = when {
-                                currentMainTab == 2 -> 2
-                                isSearchExpanded -> 1
-                                else -> 0
-                            },
+                            selectedTab = currentMainTab,
                             isDark = isThemeDark,
                             onMyBooksClick = {
                                 if (currentMainTab != 0) {
                                     currentMainTab = 0
+                                } else {
+                                    scope.launch { gridState.animateScrollToItem(0) }
                                 }
-                                if (isSearchExpanded) {
-                                    isSearchExpanded = false
-                                    viewModel.setSearchQuery("")
-                                }
-                                scope.launch { gridState.animateScrollToItem(0) }
                             },
                             onSearchClick = {
-                                if (currentMainTab == 2) {
-                                    currentMainTab = 0
-                                }
-                                isSearchExpanded = !isSearchExpanded
-                                if (!isSearchExpanded) {
-                                    viewModel.setSearchQuery("")
-                                }
+                                currentMainTab = 1
                             },
                             onSettingsClick = {
-                                if (isSearchExpanded) {
-                                    isSearchExpanded = false
-                                    viewModel.setSearchQuery("")
-                                }
                                 currentMainTab = 2
                             }
                         )
@@ -658,9 +642,38 @@ fun LibraryScreen(
                 },
                 isDark = isThemeDark
             )
-        }
-
-        if (currentMainTab == 2 && readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
+        } else if (isGlass && currentMainTab == 1) {
+            LibrarySearchScreen(
+                searchQuery = searchQuery,
+                onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                searchHistory = librarySearchHistory,
+                onSelectHistoryQuery = { query ->
+                    viewModel.setSearchQuery(query)
+                },
+                onRemoveHistoryQuery = { query ->
+                    viewModel.removeLibrarySearchQuery(query)
+                },
+                onClearSearchHistory = {
+                    viewModel.clearLibrarySearchHistory()
+                },
+                onSaveSearchQuery = { query ->
+                    viewModel.saveLibrarySearchQuery(query)
+                },
+                books = recentBooks,
+                onBookClick = onBookSelected,
+                onDeleteBook = { book -> bookToDelete = book },
+                onToggleFavorite = { book -> viewModel.toggleFavorite(book.id) },
+                onAddToCollection = { book -> bookForCollections = book },
+                onSetProgress = { book, prog -> viewModel.setBookReadingProgress(book.id, prog) },
+                onCoverClick = { book -> inspectingCoverBook = book },
+                onShare = { book -> BookShareUtils.shareBookFile(context, book) },
+                onChangeCover = { book -> bookForCoverChange = book },
+                onBack = { currentMainTab = 0 },
+                libraryViewMode = libraryViewMode,
+                isDark = isThemeDark,
+                clarity = readerSettings.glassClarity
+            )
+        } else if (currentMainTab == 2 && readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
             SettingsBottomSheet(
                 currentTheme = readerSettings.appThemeMode,
                 currentLanguage = appLanguage,

@@ -226,6 +226,21 @@ class LibraryViewModel(
         _searchQuery.value = query
     }
 
+    val librarySearchHistory: StateFlow<List<String>> = preferencesManager.librarySearchHistory
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun saveLibrarySearchQuery(query: String) {
+        viewModelScope.launch { preferencesManager.saveLibrarySearchQuery(query) }
+    }
+
+    fun removeLibrarySearchQuery(query: String) {
+        viewModelScope.launch { preferencesManager.removeLibrarySearchQuery(query) }
+    }
+
+    fun clearLibrarySearchHistory() {
+        viewModelScope.launch { preferencesManager.clearLibrarySearchHistory() }
+    }
+
     val todayReadingMinutes: StateFlow<Int> = bookRepository.todayReadingMinutes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 

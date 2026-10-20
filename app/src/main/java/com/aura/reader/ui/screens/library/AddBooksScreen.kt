@@ -1,5 +1,7 @@
 package com.aura.reader.ui.screens.library
 
+import androidx.activity.compose.BackHandler
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,7 +53,9 @@ fun AddBooksScreen(
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
-    val screenBg = if (isDark) Color(0xFF0F1117) else Color(0xFFF2F3F8)
+    val screenBg = if (isDark) Color(0xFF0F1117) else Color(0xFFF4F5F9)
+
+    BackHandler { onBack() }
 
     Box(
         modifier = modifier

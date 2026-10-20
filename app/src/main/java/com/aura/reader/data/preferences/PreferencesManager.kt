@@ -70,6 +70,7 @@ class PreferencesManager(private val context: Context) {
         val READING_STATS_ENABLED_KEY = booleanPreferencesKey("reading_stats_enabled")
         val MATERIAL_YOU_ENABLED_KEY = booleanPreferencesKey("material_you_enabled")
         val OPDS_HISTORY_KEY = stringPreferencesKey("opds_search_history")
+        val LIBRARY_SEARCH_HISTORY_KEY = stringPreferencesKey("library_search_history")
         val OPDS_BASE_URL_KEY = stringPreferencesKey("opds_base_url")
         val CUSTOM_OPDS_ENABLED_KEY = booleanPreferencesKey("custom_opds_enabled")
         val USER_COLLECTIONS_KEY = stringPreferencesKey("user_collections_json")
@@ -698,6 +699,64 @@ class PreferencesManager(private val context: Context) {
     suspend fun clearCatalogSearchHistory() {
         context.dataStore.edit { prefs ->
             prefs.remove(OPDS_HISTORY_KEY)
+        }
+    }
+
+    val librarySearchHistory: Flow<List<String>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[LIBRARY_SEARCH_HISTORY_KEY] ?: return@map emptyList()
+        try {
+            val arr = JSONArray(raw)
+            val list = mutableListOf<String>()
+            for (i in 0 until arr.length()) list.add(arr.getString(i))
+            list
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun saveLibrarySearchQuery(query: String) {
+        val q = query.trim()
+        if (q.isBlank()) return
+        context.dataStore.edit { prefs ->
+            val raw = prefs[LIBRARY_SEARCH_HISTORY_KEY] ?: "[]"
+            val current = try {
+                val arr = JSONArray(raw)
+                val list = mutableListOf<String>()
+                for (i in 0 until arr.length()) list.add(arr.getString(i))
+                list
+            } catch (e: Exception) {
+                mutableListOf<String>()
+            }
+            current.remove(q)
+            current.add(0, q)
+            val trimmed = current.take(10)
+            val newArr = JSONArray()
+            for (item in trimmed) newArr.put(item)
+            prefs[LIBRARY_SEARCH_HISTORY_KEY] = newArr.toString()
+        }
+    }
+
+    suspend fun removeLibrarySearchQuery(query: String) {
+        context.dataStore.edit { prefs ->
+            val raw = prefs[LIBRARY_SEARCH_HISTORY_KEY] ?: "[]"
+            val current = try {
+                val arr = JSONArray(raw)
+                val list = mutableListOf<String>()
+                for (i in 0 until arr.length()) list.add(arr.getString(i))
+                list
+            } catch (e: Exception) {
+                mutableListOf<String>()
+            }
+            current.remove(query)
+            val newArr = JSONArray()
+            for (item in current) newArr.put(item)
+            prefs[LIBRARY_SEARCH_HISTORY_KEY] = newArr.toString()
+        }
+    }
+
+    suspend fun clearLibrarySearchHistory() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(LIBRARY_SEARCH_HISTORY_KEY)
         }
     }
 

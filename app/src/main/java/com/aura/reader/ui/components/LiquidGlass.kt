@@ -183,7 +183,7 @@ fun FloatingNavigationIsland(
             tintColor = if (isDark) Color(0xBA141722) else Color(0xCCFFFFFF),
             modifier = modifier
                 .height(60.dp)
-                .width(254.dp)
+                .width(276.dp)
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -372,13 +372,13 @@ fun FloatingNavigationIsland(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Search,
-                                    contentDescription = strings.searchInLibrary,
+                                    contentDescription = strings.search,
                                     tint = color1,
                                     modifier = Modifier.size(22.dp)
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = strings.searchInLibrary,
+                                    text = strings.search,
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
                                     fontWeight = if (prox1 > 0.5f) FontWeight.Bold else FontWeight.Medium,
                                     color = color1,
@@ -506,13 +506,13 @@ fun FloatingNavigationIsland(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = strings.searchInLibrary,
+                            contentDescription = strings.search,
                             tint = if (isSearchActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = strings.searchInLibrary,
+                            text = strings.search,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = if (isSearchActive) FontWeight.Bold else FontWeight.Medium,
                             color = if (isSearchActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
