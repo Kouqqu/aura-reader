@@ -125,6 +125,7 @@ class OpdsViewModel(
 
     private val _activeDownloads = MutableStateFlow<Map<String, Int>>(emptyMap())
     val activeDownloads: StateFlow<Map<String, Int>> = _activeDownloads.asStateFlow()
+    private val downloadJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
 
     private val _downloadedBooks = MutableStateFlow<Map<String, Book>>(emptyMap())
     val downloadedBooks: StateFlow<Map<String, Book>> = _downloadedBooks.asStateFlow()
@@ -281,33 +282,48 @@ class OpdsViewModel(
         if (downloadUrl.isNullOrBlank()) return
 
         val bookId = book.id
-        viewModelScope.launch {
-            _activeDownloads.value = _activeDownloads.value + (bookId to 0)
-            val result = OpdsService.downloadAndExtractBook(
-                context = context,
-                book = book,
-                format = format,
-                downloadUrl = downloadUrl,
-                onProgress = { progress ->
-                    _activeDownloads.value = _activeDownloads.value + (bookId to progress)
-                }
-            )
-
-            _activeDownloads.value = _activeDownloads.value - bookId
-
-            result.onSuccess { file ->
-                val openResult = bookRepository.openBookFromUri(Uri.fromFile(file))
-                openResult.onSuccess { loadedBook ->
-                    _downloadedBooks.value = _downloadedBooks.value + (bookId to loadedBook)
-                    onComplete?.invoke(loadedBook)
-                }
-            }.onFailure { e ->
-                _uiState.value = OpdsUiState.Error(
-                    message = "Ошибка загрузки: ${e.localizedMessage}",
-                    isConnectionError = OpdsService.isConnectionError(e)
+        val job = viewModelScope.launch {
+            try {
+                _activeDownloads.value = _activeDownloads.value + (bookId to 0)
+                val result = OpdsService.downloadAndExtractBook(
+                    context = context,
+                    book = book,
+                    format = format,
+                    downloadUrl = downloadUrl,
+                    onProgress = { progress ->
+                        _activeDownloads.value = _activeDownloads.value + (bookId to progress)
+                    }
                 )
+
+                _activeDownloads.value = _activeDownloads.value - bookId
+                downloadJobs.remove(bookId)
+
+                result.onSuccess { file ->
+                    val openResult = bookRepository.openBookFromUri(Uri.fromFile(file))
+                    openResult.onSuccess { loadedBook ->
+                        _downloadedBooks.value = _downloadedBooks.value + (bookId to loadedBook)
+                        onComplete?.invoke(loadedBook)
+                    }
+                }.onFailure { e ->
+                    if (e !is kotlinx.coroutines.CancellationException) {
+                        _uiState.value = OpdsUiState.Error(
+                            message = "Ошибка загрузки: ${e.localizedMessage}",
+                            isConnectionError = OpdsService.isConnectionError(e)
+                        )
+                    }
+                }
+            } finally {
+                _activeDownloads.value = _activeDownloads.value - bookId
+                downloadJobs.remove(bookId)
             }
         }
+        downloadJobs[bookId] = job
+    }
+
+    fun cancelDownload(bookId: String) {
+        downloadJobs[bookId]?.cancel()
+        downloadJobs.remove(bookId)
+        _activeDownloads.value = _activeDownloads.value - bookId
     }
 
     fun removeHistoryQuery(query: String) {

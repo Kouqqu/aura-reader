@@ -7,6 +7,9 @@ import com.aura.reader.data.model.OpdsBook
 import com.aura.reader.data.model.OpdsSearchResult
 import com.aura.reader.data.model.OpdsSearchType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -510,6 +513,10 @@ object OpdsService {
                 tempDownload.outputStream().use { output ->
                     var read = input.read(buffer)
                     while (read != -1) {
+                        if (!currentCoroutineContext().isActive) {
+                            tempDownload.delete()
+                            throw CancellationException("Download cancelled")
+                        }
                         output.write(buffer, 0, read)
                         bytesReadTotal += read
                         if (contentLength > 0) {

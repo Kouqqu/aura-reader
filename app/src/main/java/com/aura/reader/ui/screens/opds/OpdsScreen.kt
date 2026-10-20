@@ -32,6 +32,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import com.aura.reader.ui.components.WavyProgressIndicator
+import androidx.compose.material.icons.filled.Close
+
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.ChevronRight
@@ -848,7 +851,8 @@ fun OpdsBookCard(
     onClick: () -> Unit,
     onCoverClick: () -> Unit = {},
     onDownloadFb2: () -> Unit,
-    onOpenBook: (Book) -> Unit
+    onOpenBook: (Book) -> Unit,
+    onCancelDownload: (() -> Unit)? = null
 ) {
     val strings = LocalAppStrings.current
 
@@ -952,15 +956,12 @@ fun OpdsBookCard(
                 if (downloadProgress != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        LinearProgressIndicator(
-                            progress = { downloadProgress / 100f },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = MaterialTheme.colorScheme.primary
+                        WavyProgressIndicator(
+                            progress = downloadProgress / 100f,
+                            modifier = Modifier.weight(1f)
                         )
                         Text(
                             text = "$downloadProgress%",
@@ -968,6 +969,19 @@ fun OpdsBookCard(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
+                        if (onCancelDownload != null) {
+                            IconButton(
+                                onClick = onCancelDownload,
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = strings.cancel,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
                     }
                 } else if (!book.isCategory) {
                     FlowRow(
@@ -1365,28 +1379,40 @@ fun OpdsBookDetailsBottomSheet(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = strings.downloading,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "$downloadProgress%",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = strings.downloading,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "$downloadProgress%",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        IconButton(
+                            onClick = { viewModel.cancelDownload(book.id) },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = strings.cancel,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    LinearProgressIndicator(
-                        progress = { downloadProgress / 100f },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(4.dp)),
-                        color = MaterialTheme.colorScheme.primary
+                    Spacer(modifier = Modifier.height(8.dp))
+                    WavyProgressIndicator(
+                        progress = downloadProgress / 100f,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             } else if (downloadedBook != null) {
