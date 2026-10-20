@@ -1,5 +1,8 @@
 package com.aura.reader.ui.screens.reader
 
+import androidx.compose.foundation.BorderStroke
+import com.aura.reader.data.model.ReaderThemeMode
+
 import androidx.compose.material3.CircularProgressIndicator
 
 import androidx.compose.animation.core.tween

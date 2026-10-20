@@ -642,10 +642,10 @@ fun SettingsBottomSheet(
                             label = strings.themeSystem,
                             icon = Icons.Default.BrightnessAuto,
                             isSelected = currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC,
-                            previewBgColor = if (isSysDark) Color(0xFF252930) else Color(0xFFF0F3F6),
-                            previewTextColor = if (isSysDark) Color(0xFFE2E2E6) else Color(0xFF1D1B20),
+                            previewBgColor = if (sysDark) Color(0xFF252930) else Color(0xFFF0F3F6),
+                            previewTextColor = if (sysDark) Color(0xFFE2E2E6) else Color(0xFF1D1B20),
                             getSheetCoordinates = { sheetCoordinates },
-                            onClick = { origin -> handleThemeClick(ReaderThemeMode.SYSTEM_DYNAMIC, origin, if (isSysDark) darkColors else lightColors) },
+                            onClick = { origin -> handleThemeClick(ReaderThemeMode.SYSTEM_DYNAMIC, origin, if (sysDark) darkColors else lightColors) },
                             modifier = Modifier.weight(1.35f)
                         )
                         ExpressiveThemePill(

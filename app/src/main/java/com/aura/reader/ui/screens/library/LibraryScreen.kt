@@ -1,5 +1,7 @@
 package com.aura.reader.ui.screens.library
 
+import androidx.compose.material.icons.filled.CheckCircle
+
 import com.aura.reader.ui.components.expressiveClickable
 
 import androidx.compose.ui.unit.sp
@@ -581,7 +583,7 @@ fun LibraryScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = strings.addBook
+                        contentDescription = strings.addBooks
                     )
                 }
             }
@@ -1483,6 +1485,7 @@ fun BookCard(
     onChangeCover: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    val isDark = isSystemInDarkTheme()
     val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
 
@@ -1994,6 +1997,7 @@ fun BookGridCard(
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    val isDark = isSystemInDarkTheme()
     val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
 
