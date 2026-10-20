@@ -97,7 +97,7 @@ fun LibrarySearchScreen(
                 book.title.contains(trimmedQuery, ignoreCase = true) ||
                 book.author.contains(trimmedQuery, ignoreCase = true) ||
                 (book.series?.contains(trimmedQuery, ignoreCase = true) == true) ||
-                book.format.contains(trimmedQuery, ignoreCase = true) ||
+                book.format.name.contains(trimmedQuery, ignoreCase = true) ||
                 book.collections.any { it.contains(trimmedQuery, ignoreCase = true) }
             }
         }

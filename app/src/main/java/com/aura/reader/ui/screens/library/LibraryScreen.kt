@@ -224,10 +224,6 @@ fun LibraryScreen(
 
     var currentMainTab by rememberSaveable { mutableIntStateOf(0) }
 
-    BackHandler(enabled = isGlass && currentMainTab != 0 && !showAddBooksScreen) {
-        currentMainTab = 0
-    }
-
     val infiniteTransition = rememberInfiniteTransition(label = "ios_wobble")
     val wobbleAngle by infiniteTransition.animateFloat(
         initialValue = -1.8f,
@@ -287,6 +283,9 @@ fun LibraryScreen(
     var showAddBooksScreen by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = showAddBooksScreen) {
         showAddBooksScreen = false
+    }
+    BackHandler(enabled = isGlass && currentMainTab != 0 && !showAddBooksScreen) {
+        currentMainTab = 0
     }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showReaderThemeSheet by remember { mutableStateOf(false) }
