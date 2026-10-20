@@ -167,9 +167,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -210,6 +212,12 @@ fun LibraryScreen(
         currentlyDraggedBookId = null
         currentDragOffset = Offset.Zero
         accumulatedDragOffset = Offset.Zero
+    }
+
+    var currentMainTab by rememberSaveable { mutableIntStateOf(0) }
+
+    BackHandler(enabled = currentMainTab == 2) {
+        currentMainTab = 0
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "ios_wobble")
@@ -266,6 +274,16 @@ fun LibraryScreen(
     var showNewCollectionDialog by remember { mutableStateOf(false) }
     var bookForCollections by remember { mutableStateOf<Book?>(null) }
     var collectionToDelete by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(readerSettings.appDesignStyle) {
+        if (readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS && showSettingsSheet) {
+            showSettingsSheet = false
+            currentMainTab = 2
+        } else if (readerSettings.appDesignStyle != AppDesignStyle.LIQUID_GLASS && currentMainTab == 2) {
+            currentMainTab = 0
+            showSettingsSheet = true
+        }
+    }
 
     // Backup & Restore Launchers
     val exportBackupLauncher = rememberLauncherForActivityResult(
@@ -415,93 +433,101 @@ fun LibraryScreen(
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            if (isSearchExpanded) {
-                TopAppBar(
-                    title = {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { viewModel.setSearchQuery(it) },
-                            placeholder = { Text(strings.searchLibraryPlaceholder) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            isSearchExpanded = false
-                            viewModel.setSearchQuery("")
-                        }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = strings.cancel)
-                        }
-                    },
-                    actions = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                Icon(Icons.Default.Close, contentDescription = strings.clear)
+            if (currentMainTab != 2) {
+                if (isSearchExpanded) {
+                    TopAppBar(
+                        title = {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { viewModel.setSearchQuery(it) },
+                                placeholder = { Text(strings.searchLibraryPlaceholder) },
+                                singleLine = true,
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                isSearchExpanded = false
+                                viewModel.setSearchQuery("")
+                            }) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = strings.cancel)
                             }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
-                )
-            } else {
-                LargeTopAppBar(
-                    title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                modifier = Modifier.size(38.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    AuraLogoIcon(
-                                        modifier = Modifier.size(width = 20.dp, height = 24.dp),
-                                        bookColor = MaterialTheme.colorScheme.primary,
-                                        lineColor = MaterialTheme.colorScheme.primaryContainer
-                                    )
+                        },
+                        actions = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                    Icon(Icons.Default.Close, contentDescription = strings.clear)
                                 }
                             }
-                            Text(
-                                text = strings.appName,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    },
-                    actions = {
-                        // View Mode Switcher
-                        IconButton(onClick = { viewModel.toggleLibraryViewMode() }) {
-                            Icon(
-                                imageVector = if (libraryViewMode == "GRID") Icons.Default.ViewList else Icons.Default.GridView,
-                                contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid
-                            )
-                        }
-
-                        // Search Button
-                        IconButton(onClick = { isSearchExpanded = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = strings.searchInLibrary
-                            )
-                        }
-                        // Settings Sheet
-                        IconButton(onClick = { showSettingsSheet = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = strings.settingsTitle
-                            )
-                        }
-                    },
-                    scrollBehavior = scrollBehavior,
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
                     )
-                )
+                } else {
+                    LargeTopAppBar(
+                        title = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        AuraLogoIcon(
+                                            modifier = Modifier.size(width = 20.dp, height = 24.dp),
+                                            bookColor = MaterialTheme.colorScheme.primary,
+                                            lineColor = MaterialTheme.colorScheme.primaryContainer
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = strings.appName,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        },
+                        actions = {
+                            // View Mode Switcher
+                            IconButton(onClick = { viewModel.toggleLibraryViewMode() }) {
+                                Icon(
+                                    imageVector = if (libraryViewMode == "GRID") Icons.Default.ViewList else Icons.Default.GridView,
+                                    contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid
+                                )
+                            }
+
+                            // Search Button
+                            IconButton(onClick = { isSearchExpanded = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = strings.searchInLibrary
+                                )
+                            }
+                            // Settings Sheet
+                            IconButton(onClick = {
+                                if (readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
+                                    currentMainTab = 2
+                                } else {
+                                    showSettingsSheet = true
+                                }
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = strings.settingsTitle
+                                )
+                            }
+                        },
+                        scrollBehavior = scrollBehavior,
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.background,
+                            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                        )
+                    )
+                }
             }
         },
         floatingActionButton = {
@@ -518,12 +544,22 @@ fun LibraryScreen(
                 FloatingNavigationIsland(
                     designStyle = readerSettings.appDesignStyle,
                     clarity = readerSettings.glassClarity,
-                    selectedTab = 0,
+                    selectedTab = currentMainTab,
                     onMyBooksClick = {
-                        scope.launch { gridState.animateScrollToItem(0) }
+                        if (currentMainTab != 0) {
+                            currentMainTab = 0
+                        } else {
+                            scope.launch { gridState.animateScrollToItem(0) }
+                        }
                     },
                     onAddBookClick = { showAddBooksSheet = true },
-                    onSettingsClick = { showSettingsSheet = true }
+                    onSettingsClick = {
+                        if (readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
+                            currentMainTab = 2
+                        } else {
+                            showSettingsSheet = true
+                        }
+                    }
                 )
             }
         },
@@ -539,11 +575,63 @@ fun LibraryScreen(
             )
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
+        if (currentMainTab == 2 && readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
+            SettingsBottomSheet(
+                currentTheme = readerSettings.appThemeMode,
+                currentLanguage = appLanguage,
+                updateNotificationsEnabled = updateNotificationsEnabled,
+                anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
+                readingStatsEnabled = readingStatsEnabled,
+                materialYouEnabled = materialYouEnabled,
+                isFullScreen = true,
+                onDismiss = { currentMainTab = 0 },
+                onThemeChange = { viewModel.setAppThemeMode(it) },
+                onLanguageChange = { viewModel.setAppLanguage(it) },
+                onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
+                onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
+                onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
+                onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
+                customOpdsEnabled = customOpdsEnabled,
+                customOpdsUrl = catalogBaseUrl,
+                onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
+                onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
+                developerModeEnabled = developerModeEnabled,
+                updateChannel = updateChannel,
+                onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
+                onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
+                onCheckUpdates = {
+                    viewModel.checkForUpdates(manual = true, context = context)
+                },
+                onExportBackup = {
+                    exportBackupLauncher.launch("AuraReader_Backup_${System.currentTimeMillis()}.aurabackup")
+                },
+                onSendToGoogleDrive = {
+                    sendToGoogleDriveAction()
+                },
+                onRestoreBackup = {
+                    restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+                },
+                readerTheme = readerSettings.themeMode,
+                syncThemesWithApp = readerSettings.syncThemesWithApp,
+                onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
+                onReaderThemeChange = { viewModel.setThemeMode(it) },
+                onOpenReaderThemeSettings = {
+                    showReaderThemeSheet = true
+                },
+                appDesignStyle = readerSettings.appDesignStyle,
+                onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
+                glassClarity = readerSettings.glassClarity,
+                onGlassClarityChange = { viewModel.setGlassClarity(it) },
+                appFont = appFont,
+                onAppFontChange = { viewModel.setAppFont(it) },
+                onResetReadingSpeed = { viewModel.resetReadingSpeed() }
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
             if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
                 EmptyLibraryView(
                     onAddBooks = { showAddBooksSheet = true },
@@ -1046,6 +1134,7 @@ fun LibraryScreen(
             }
         }
     }
+}
 
     // In-App Update Dialog
     updateInfo?.let { info ->

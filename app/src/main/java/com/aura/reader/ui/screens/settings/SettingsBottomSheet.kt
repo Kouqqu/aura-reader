@@ -99,10 +99,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import com.aura.reader.data.model.AppDesignStyle
-import com.aura.reader.ui.components.NavigationIslandPreviewCard
 import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.opds.OpdsService
@@ -125,6 +122,7 @@ fun SettingsBottomSheet(
     readingStatsEnabled: Boolean,
     materialYouEnabled: Boolean,
     anonymousAnalyticsEnabled: Boolean = true,
+    isFullScreen: Boolean = false,
     onDismiss: () -> Unit,
     onThemeChange: (ReaderThemeMode) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
@@ -387,35 +385,26 @@ fun SettingsBottomSheet(
         )
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() },
-        containerColor = if (appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
-            if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF0D0E12) else Color(0xFFF2F3F8)
-        } else MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        modifier = Modifier
-            .statusBarsPadding()
-            .padding(top = 24.dp)
-    ) {
+    val sheetContent = @Composable {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .onGloballyPositioned { sheetCoordinates = it }
         ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 36.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            // Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = if (isFullScreen) 120.dp else 36.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
+                // Header
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(if (isFullScreen) Modifier.padding(top = 16.dp, bottom = 4.dp) else Modifier)
+                ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = null,
@@ -435,7 +424,7 @@ fun SettingsBottomSheet(
 
             val isSysDark = isSystemInDarkTheme()
 
-            // 0. Design Style Section (Material 3 vs Mornye Liquid Glass)
+            // 0. Design Style Section (Material 3 vs Liquid Glass)
             Text(
                 text = strings.designStyleTitle,
                 style = MaterialTheme.typography.titleSmall,
@@ -452,219 +441,113 @@ fun SettingsBottomSheet(
                 val isMatSelected = appDesignStyle == AppDesignStyle.MATERIAL
                 Card(
                     onClick = { onAppDesignStyleChange(AppDesignStyle.MATERIAL) },
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isMatSelected) {
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
+                            MaterialTheme.colorScheme.primaryContainer
                         } else {
-                            if (isSysDark) Color(0x661E2028) else Color(0x66FFFFFF)
+                            if (isSysDark) Color(0x33FFFFFF) else Color(0x18000000)
                         }
                     ),
                     border = BorderStroke(
-                        if (isMatSelected) 2.dp else 1.dp,
-                        if (isMatSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = if (isSysDark) 0.15f else 0.45f)
+                        if (isMatSelected) 1.5.dp else 1.dp,
+                        if (isMatSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = if (isSysDark) 0.15f else 0.40f)
                     ),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.Palette,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            if (isMatSelected) {
-                                Icon(
-                                    Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Icon(
+                            Icons.Default.Palette,
+                            contentDescription = null,
+                            tint = if (isMatSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = strings.designStyleMaterial,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = if (isMatSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = strings.designStyleDescMaterial,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = (if (isMatSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface).copy(alpha = 0.70f),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
                     }
                 }
 
-                // Option 2: Liquid Glass (Mornye / Apple)
+                // Option 2: Liquid Glass (Apple / Mornye)
                 val isGlassSelected = appDesignStyle == AppDesignStyle.LIQUID_GLASS
                 Card(
                     onClick = { onAppDesignStyleChange(AppDesignStyle.LIQUID_GLASS) },
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isGlassSelected) {
-                            if (isSysDark) Color(0xA6202432) else Color(0xD9FFFFFF)
+                            if (isSysDark) Color(0x551E2436) else Color(0xDDFFFFFF)
                         } else {
-                            if (isSysDark) Color(0x661E2028) else Color(0x66FFFFFF)
+                            if (isSysDark) Color(0x33FFFFFF) else Color(0x18000000)
                         }
                     ),
                     border = BorderStroke(
-                        if (isGlassSelected) 2.dp else 1.dp,
+                        if (isGlassSelected) 1.5.dp else 1.dp,
                         if (isGlassSelected) {
                             Brush.verticalGradient(
                                 listOf(
                                     Color.White.copy(alpha = if (isSysDark) 0.85f else 0.95f),
-                                    Color.White.copy(alpha = 0.20f)
+                                    Color.White.copy(alpha = 0.25f)
                                 )
                             )
                         } else {
-                            SolidColor(Color.White.copy(alpha = if (isSysDark) 0.15f else 0.45f))
+                            SolidColor(Color.White.copy(alpha = if (isSysDark) 0.15f else 0.40f))
                         }
                     ),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.AutoAwesome,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                                modifier = Modifier.height(22.dp)
-                            ) {
-                                Text(
-                                    text = "iOS",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Icon(
+                            Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = if (isGlassSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = strings.designStyleLiquidGlass,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = if (isGlassSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = strings.designStyleDescLiquidGlass,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Live Interactive Preview of the Island
-            NavigationIslandPreviewCard(
-                designStyle = appDesignStyle,
-                clarity = glassClarity
-            )
-
-            // Glass Clarity slider (only shown when Liquid Glass is active)
-            if (appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSysDark) Color(0x66181A22) else Color(0x80FFFFFF)
-                    ),
-                    border = BorderStroke(
-                        1.dp,
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = if (isSysDark) 0.35f else 0.65f),
-                                Color.White.copy(alpha = 0.08f)
-                            )
-                        )
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                            modifier = Modifier.height(20.dp)
                         ) {
                             Text(
-                                text = strings.glassClarityTitle,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "${(glassClarity * 100).toInt()}%",
-                                style = MaterialTheme.typography.labelMedium,
+                                text = "iOS",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = strings.glassClarityDesc,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Slider(
-                            value = glassClarity,
-                            onValueChange = onGlassClarityChange,
-                            valueRange = 0.20f..1.00f,
-                            colors = SliderDefaults.colors(
-                                thumbColor = MaterialTheme.colorScheme.primary,
-                                activeTrackColor = MaterialTheme.colorScheme.primary,
-                                inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
-                            )
-                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 1. Theme Section
             val lightColors = listOf(Color(0xFFFFF9E6), Color(0xFFFFE082), Color(0xFFF5F5F5), Color(0xFFE0E0E0), Color(0xFFFFFDE7), Color(0xFFFFFFFF))
@@ -1280,6 +1163,38 @@ fun SettingsBottomSheet(
                     modifier = Modifier.matchParentSize()
                 )
             }
+        }
+    }
+
+    if (isFullScreen) {
+        val isSysDark = isSystemInDarkTheme()
+        val screenBg = if (appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
+            if (isSysDark) Color(0xFF000000) else Color(0xFFF2F3F8)
+        } else {
+            MaterialTheme.colorScheme.background
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(screenBg)
+                .statusBarsPadding()
+        ) {
+            sheetContent()
+        }
+    } else {
+        ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            sheetState = sheetState,
+            dragHandle = { BottomSheetDefaults.DragHandle() },
+            containerColor = if (appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
+                if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF0D0E12) else Color(0xFFF2F3F8)
+            } else MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(top = 24.dp)
+        ) {
+            sheetContent()
         }
     }
 }
