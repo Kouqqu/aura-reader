@@ -1,5 +1,10 @@
 package com.aura.reader.ui.screens.library
 
+import androidx.compose.runtime.CompositionLocalProvider
+import com.aura.reader.ui.components.LocalHazeState
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+
 import androidx.compose.material.icons.filled.CheckCircle
 
 import com.aura.reader.ui.components.expressiveClickable
@@ -449,8 +454,10 @@ fun LibraryScreen(
     }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val hazeState = remember { HazeState() }
 
-    Scaffold(
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
+        Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -614,7 +621,12 @@ fun LibraryScreen(
         floatingActionButtonPosition = if (isGlass) FabPosition.Center else FabPosition.End,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        if (showAddBooksSheet && !isGlass) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .haze(hazeState)
+        ) {
+            if (showAddBooksSheet && !isGlass) {
             AddBooksBottomSheet(
                 onDismiss = { showAddBooksSheet = false },
                 onSelectFiles = { launchFilePicker() },
@@ -1261,6 +1273,7 @@ fun LibraryScreen(
                 }
             }
         }
+        }
     }
 }
 
@@ -1543,6 +1556,7 @@ fun LibraryScreen(
             isLiquidGlass = isGlass,
             isDark = isThemeDark
         )
+    }
     }
 }
 

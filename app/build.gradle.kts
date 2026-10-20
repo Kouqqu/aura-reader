@@ -12,8 +12,8 @@ android {
         applicationId = "com.aura.reader"
         minSdk = 26
         targetSdk = 35
-        versionCode = 68
-        versionName = "1.4.5-beta.12"
+        versionCode = 69
+        versionName = "1.4.5-beta.13"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -107,6 +107,8 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.haze)
+    implementation(libs.haze.materials)
     implementation("androidx.compose.ui:ui-text-google-fonts")
 
     implementation(libs.androidx.navigation.compose)

@@ -78,7 +78,8 @@ fun LibrarySearchScreen(
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
-    val screenBg = if (isDark) Color(0xFF0F1117) else Color(0xFFF5F6FA)
+    val screenBg = MaterialTheme.colorScheme.background
+    val isAmoled = isDark && screenBg == Color.Black
 
     BackHandler {
         if (searchQuery.isNotEmpty()) {
@@ -133,8 +134,12 @@ fun LibrarySearchScreen(
             LiquidGlassSurface(
                 shape = RoundedCornerShape(22.dp),
                 isDark = isDark,
-                shadowElevation = 8.dp,
-                tintColor = if (isDark) Color(0x601A1E2C) else Color(0xCCFFFFFF),
+                shadowElevation = if (isAmoled) 0.dp else 4.dp,
+                tintColor = if (isDark) {
+                    if (isAmoled) Color(0x22FFFFFF) else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.65f)
+                } else {
+                    Color(0xCCFFFFFF)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
@@ -148,7 +153,7 @@ fun LibrarySearchScreen(
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = null,
-                        tint = if (isDark) Color.White.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.60f),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
@@ -253,8 +258,12 @@ fun LibrarySearchScreen(
                         LiquidGlassSurface(
                             shape = CircleShape,
                             isDark = isDark,
-                            shadowElevation = 10.dp,
-                            tintColor = if (isDark) Color(0x401E2230) else Color(0xD0FFFFFF),
+                            shadowElevation = if (isAmoled) 0.dp else 4.dp,
+                            tintColor = if (isDark) {
+                                if (isAmoled) Color(0x20FFFFFF) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.50f)
+                            } else {
+                                Color(0xD0FFFFFF)
+                            },
                             modifier = Modifier.size(80.dp)
                         ) {
                             Box(
@@ -307,8 +316,12 @@ fun LibrarySearchScreen(
                             LiquidGlassSurface(
                                 shape = CircleShape,
                                 isDark = isDark,
-                                shadowElevation = 10.dp,
-                                tintColor = if (isDark) Color(0x401E2230) else Color(0xD0FFFFFF),
+                                shadowElevation = if (isAmoled) 0.dp else 4.dp,
+                                tintColor = if (isDark) {
+                                    if (isAmoled) Color(0x20FFFFFF) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.50f)
+                                } else {
+                                    Color(0xD0FFFFFF)
+                                },
                                 modifier = Modifier.size(80.dp)
                             ) {
                                 Box(
@@ -422,11 +435,16 @@ private fun SearchHistoryChip(
     onClick: () -> Unit,
     onRemove: () -> Unit
 ) {
+    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     LiquidGlassSurface(
         shape = RoundedCornerShape(16.dp),
         isDark = isDark,
-        shadowElevation = 2.dp,
-        tintColor = if (isDark) Color(0x35283448) else Color(0x95FFFFFF),
+        shadowElevation = if (isAmoled) 0.dp else 2.dp,
+        tintColor = if (isDark) {
+            if (isAmoled) Color(0x1CFFFFFF) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.50f)
+        } else {
+            Color(0x95FFFFFF)
+        },
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)

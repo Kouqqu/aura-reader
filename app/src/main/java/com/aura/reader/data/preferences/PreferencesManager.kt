@@ -217,11 +217,11 @@ class PreferencesManager(private val context: Context) {
         val syncThemesWithApp = prefs[SYNC_THEMES_WITH_APP_KEY] ?: false
         val appThemeModeStr = prefs[APP_THEME_MODE_KEY] ?: ReaderThemeMode.SYSTEM_DYNAMIC.name
 
-        val appDesignStyleStr = prefs[APP_DESIGN_STYLE_KEY] ?: AppDesignStyle.MATERIAL.name
+        val appDesignStyleStr = prefs[APP_DESIGN_STYLE_KEY] ?: AppDesignStyle.LIQUID_GLASS.name
         val appDesignStyle = try {
             AppDesignStyle.valueOf(appDesignStyleStr)
         } catch (e: Exception) {
-            AppDesignStyle.MATERIAL
+            AppDesignStyle.LIQUID_GLASS
         }
 
         val appThemeMode = try {

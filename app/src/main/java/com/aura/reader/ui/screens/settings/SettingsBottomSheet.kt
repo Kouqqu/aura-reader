@@ -155,7 +155,7 @@ fun SettingsBottomSheet(
     onSyncThemesChange: (Boolean) -> Unit = {},
     onReaderThemeChange: (ReaderThemeMode) -> Unit = {},
     onOpenReaderThemeSettings: () -> Unit = {},
-    appDesignStyle: AppDesignStyle = AppDesignStyle.MATERIAL,
+    appDesignStyle: AppDesignStyle = AppDesignStyle.LIQUID_GLASS,
     onAppDesignStyleChange: (AppDesignStyle) -> Unit = {},
     glassClarity: Float = 0.85f,
     onGlassClarityChange: (Float) -> Unit = {},

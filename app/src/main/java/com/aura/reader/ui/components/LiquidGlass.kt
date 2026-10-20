@@ -1,12 +1,17 @@
 package com.aura.reader.ui.components
 
+import android.graphics.RenderEffect
+import android.graphics.RuntimeShader
+import android.os.Build
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,12 +50,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -64,11 +81,116 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.theme.LocalAppStrings
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.materials.HazeMaterials
 import kotlin.math.abs
 
 /**
+ * CompositionLocal for ambient Haze backdrop blur across Liquid Glass surfaces.
+ */
+val LocalHazeState = compositionLocalOf<HazeState?> { null }
+
+// AGSL Refraction and Convex Optical Bevel Shader for Android 13+ (API 33+)
+private const val LIQUID_REFRACTION_AGSL = """
+    uniform shader composable;
+    uniform float2 uCenter;
+    uniform float2 uHalfSize;
+    uniform float uRadius;
+    uniform float uRefractionDepth;
+    uniform float uRefractionWidth;
+    uniform float uDispersion;
+    uniform float uIntensity;
+
+    half4 main(float2 fragCoord) {
+        if (uIntensity <= 0.005) {
+            return composable.eval(fragCoord);
+        }
+
+        float2 p = fragCoord - uCenter;
+        
+        // Medial horizontal spine of the capsule lens
+        float capLimit = max(0.0, uHalfSize.x - uRadius);
+        float2 spinePt = float2(clamp(p.x, -capLimit, capLimit), 0.0);
+        float2 delta = p - spinePt;
+        float dist = length(delta);
+        
+        // Signed distance to capsule boundary (negative inside)
+        float d = dist - uRadius;
+        if (d > 0.0) {
+            return composable.eval(fragCoord);
+        }
+        
+        // Curvature and refraction profile across bevel
+        float distInside = -d;
+        float bevelWidth = max(1.0, min(uRefractionWidth, uRadius));
+        float t = clamp(distInside / bevelWidth, 0.0, 1.0);
+        
+        // Center of the lens past the bevel remains pure and unwarped
+        if (t >= 0.99) {
+            return composable.eval(fragCoord);
+        }
+        
+        // Snell's lens deflection curve: smooth parabolic drop-off from rim to center
+        float slope = sqrt(max(0.0, 1.0 - t * t)) * uRefractionDepth * uIntensity;
+        float2 normal = (dist > 0.001) ? (delta / dist) : float2(0.0, 0.0);
+        float2 offset = -normal * (slope * bevelWidth);
+        
+        // Chromatic dispersion: subtle pixel separation strictly on the outermost rim (t < 0.25)
+        float rimFactor = (1.0 - smoothstep(0.0, 0.25, t)) * uIntensity;
+        float disp = rimFactor * uDispersion;
+        
+        half r = composable.eval(fragCoord + offset + normal * disp).r;
+        half g = composable.eval(fragCoord + offset).g;
+        half b = composable.eval(fragCoord + offset - normal * disp).b;
+        half a = composable.eval(fragCoord + offset).a;
+        
+        // Specular highlight glint on lens rim
+        float edgeSpecular = pow(1.0 - t, 2.5) * 0.08 * uIntensity;
+        
+        return half4(
+            clamp(r + edgeSpecular, 0.0, 1.0),
+            clamp(g + edgeSpecular, 0.0, 1.0),
+            clamp(b + edgeSpecular, 0.0, 1.0),
+            a
+        );
+    }
+"""
+
+fun Modifier.liquidRefraction(
+    centerPx: Offset,
+    sizePx: Size,
+    radiusPx: Float,
+    refractionDepth: Float = 0.22f,
+    refractionWidthPx: Float = 24f,
+    dispersion: Float = 1.25f,
+    intensity: Float = 1.0f
+): Modifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && intensity > 0.01f) {
+    this.graphicsLayer {
+        val halfW = (sizePx.width * 0.5f).coerceAtLeast(radiusPx)
+        val halfH = (sizePx.height * 0.5f).coerceAtLeast(radiusPx)
+        try {
+            val shader = RuntimeShader(LIQUID_REFRACTION_AGSL).apply {
+                setFloatUniform("uCenter", centerPx.x, centerPx.y)
+                setFloatUniform("uHalfSize", halfW, halfH)
+                setFloatUniform("uRadius", radiusPx)
+                setFloatUniform("uRefractionDepth", refractionDepth)
+                setFloatUniform("uRefractionWidth", refractionWidthPx)
+                setFloatUniform("uDispersion", dispersion)
+                setFloatUniform("uIntensity", intensity)
+            }
+            renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "composable").asComposeRenderEffect()
+        } catch (e: Exception) {
+            android.util.Log.e("LiquidGlass", "AGSL compilation failed", e)
+        }
+    }
+} else {
+    this
+}
+
+/**
  * Authentic Apple iOS-inspired Liquid Glass Surface.
- * Balanced translucent frosted glass with delicate specular rim highlights.
+ * Balanced translucent frosted glass with delicate specular rim highlights and optional Haze blur.
  */
 @Composable
 fun LiquidGlassSurface(
@@ -79,66 +201,60 @@ fun LiquidGlassSurface(
     highlightIntensity: Float = 1.0f,
     tintColor: Color? = null,
     shadowElevation: Dp = 16.dp,
+    hazeState: HazeState? = null,
     content: @Composable () -> Unit
 ) {
-    // Translucent glass fill: delicate frosted glass background
+    val hazeModifier = if (hazeState != null) {
+        Modifier.hazeChild(
+            state = hazeState,
+            shape = shape,
+            style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
+        )
+    } else Modifier
+
     val baseFill = tintColor ?: if (isDark) {
-        Color(0x2A141824) // ~16% opacity frosted obsidian
+        Color(0x22FFFFFF)
     } else {
-        Color(0x65FFFFFF) // ~40% opacity frosted light glass
+        Color(0x70FFFFFF)
     }
 
-    // Top-to-bottom optical refraction sheen
     val surfaceSheen = Brush.verticalGradient(
         listOf(
-            Color.White.copy(alpha = if (isDark) 0.05f * highlightIntensity else 0.10f * highlightIntensity),
+            Color.White.copy(alpha = if (isDark) 0.08f * highlightIntensity else 0.16f * highlightIntensity),
             Color.Transparent,
-            Color.Black.copy(alpha = if (isDark) 0.04f else 0.01f)
+            Color.Black.copy(alpha = if (isDark) 0.02f else 0.01f)
         )
     )
 
-    // Delicate specular highlight rim border (lighter, softer Apple glass lighting)
     val specularRim = Brush.verticalGradient(
-        0.00f to Color.White.copy(alpha = if (isDark) 0.32f * highlightIntensity else 0.45f * highlightIntensity),
-        0.15f to Color.White.copy(alpha = if (isDark) 0.12f * highlightIntensity else 0.18f * highlightIntensity),
+        0.00f to Color.White.copy(alpha = if (isDark) 0.45f * highlightIntensity else 0.65f * highlightIntensity),
+        0.18f to Color.White.copy(alpha = if (isDark) 0.15f * highlightIntensity else 0.22f * highlightIntensity),
         0.50f to Color.Transparent,
-        0.85f to Color.White.copy(alpha = if (isDark) 0.04f * highlightIntensity else 0.06f * highlightIntensity),
-        1.00f to Color.White.copy(alpha = if (isDark) 0.18f * highlightIntensity else 0.25f * highlightIntensity)
+        0.85f to Color.White.copy(alpha = if (isDark) 0.06f * highlightIntensity else 0.08f * highlightIntensity),
+        1.00f to Color.White.copy(alpha = if (isDark) 0.22f * highlightIntensity else 0.35f * highlightIntensity)
     )
 
-    val shadowAlpha = if (isDark) 0.30f else 0.10f
+    val effectiveElevation = if (isDark) 0.dp else shadowElevation.coerceAtMost(8.dp)
 
     Box(
         modifier = modifier
-            .drawBehind {
-                val outline = shape.createOutline(size, layoutDirection, this)
-                // Soft diffused ambient drop shadow
-                drawIntoCanvas { canvas ->
-                    val paint = Paint().apply {
-                        asFrameworkPaint().apply {
-                            color = android.graphics.Color.TRANSPARENT
-                            setShadowLayer(
-                                shadowElevation.toPx(),
-                                0f,
-                                (shadowElevation / 2.5f).toPx(),
-                                android.graphics.Color.argb(
-                                    (shadowAlpha * 255).toInt(),
-                                    0,
-                                    0,
-                                    0
-                                )
-                            )
-                        }
-                    }
-                    canvas.drawOutline(outline, paint)
-                }
-            }
+            .then(
+                if (effectiveElevation > 0.dp) {
+                    Modifier.shadow(
+                        elevation = effectiveElevation,
+                        shape = shape,
+                        clip = false,
+                        ambientColor = Color.Black.copy(alpha = 0.08f),
+                        spotColor = Color.Black.copy(alpha = 0.12f)
+                    )
+                } else Modifier
+            )
             .clip(shape)
+            .then(hazeModifier)
             .background(baseFill)
             .background(surfaceSheen)
             .drawBehind {
                 val outline = shape.createOutline(size, layoutDirection, this)
-                // Delicate specular rim
                 drawOutline(
                     outline = outline,
                     brush = specularRim,
@@ -153,7 +269,10 @@ fun LiquidGlassSurface(
 /**
  * Floating Navigation Island dock.
  * In [AppDesignStyle.LIQUID_GLASS]:
- * iOS-inspired floating dock with animated sliding active selection lens and optical refraction.
+ * Authentic visionOS / Mornye optical liquid dock with:
+ *  - Real-time spatial color masking (dual-layer slice).
+ *  - Dynamic liquid droplet swelling on drag / slide.
+ *  - Snell's convex bevel refraction shader.
  * In [AppDesignStyle.MATERIAL]:
  * Material 3 Expressive pill container.
  */
@@ -172,15 +291,16 @@ fun FloatingNavigationIsland(
     val isGlass = designStyle == AppDesignStyle.LIQUID_GLASS
 
     if (isGlass) {
-        // LIQUID GLASS (Apple iOS) STYLE
+        // LIQUID GLASS (Apple iOS / Mornye) STYLE
         val density = LocalDensity.current
         val haptic = LocalHapticFeedback.current
 
         LiquidGlassSurface(
             shape = RoundedCornerShape(30.dp),
             isDark = isDark,
-            shadowElevation = 16.dp,
-            tintColor = if (isDark) Color(0xBA141722) else Color(0xCCFFFFFF),
+            shadowElevation = if (isDark && MaterialTheme.colorScheme.background == Color.Black) 0.dp else 10.dp,
+            tintColor = null,
+            hazeState = LocalHazeState.current,
             modifier = modifier
                 .height(60.dp)
                 .width(276.dp)
@@ -193,7 +313,9 @@ fun FloatingNavigationIsland(
                 val tabWidth = maxWidth / 3
                 val tabWidthPx = with(density) { tabWidth.toPx() }
                 val maxDragXPx = tabWidthPx * 2f
+                val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
 
+                var isPressed by remember { mutableStateOf(false) }
                 var isDragging by remember { mutableStateOf(false) }
                 var dragOffsetPx by remember { mutableFloatStateOf(0f) }
 
@@ -214,22 +336,78 @@ fun FloatingNavigationIsland(
                     label = "liquidLensSlide"
                 )
 
-                // Lens dynamic swelling scale when pressed / dragged (liquid bubble physics)
+                // Snappy tactility: "нажал — большая, отпустил — обычная"
+                val isHolding = isPressed || isDragging
                 val lensScaleX by animateFloatAsState(
-                    targetValue = if (isDragging) 1.15f else 1.0f,
-                    animationSpec = spring(stiffness = Spring.StiffnessMedium),
+                    targetValue = if (isHolding) 1.18f else 1.0f,
+                    animationSpec = spring(
+                        dampingRatio = 0.70f,
+                        stiffness = 2800f
+                    ),
                     label = "lensScaleX"
                 )
                 val lensScaleY by animateFloatAsState(
-                    targetValue = if (isDragging) 1.10f else 1.0f,
-                    animationSpec = spring(stiffness = Spring.StiffnessMedium),
+                    targetValue = if (isHolding) 1.14f else 1.0f,
+                    animationSpec = spring(
+                        dampingRatio = 0.70f,
+                        stiffness = 2800f
+                    ),
                     label = "lensScaleY"
                 )
 
-                // Drag gesture detection across the entire floating dock
+                val offsetDelta = abs(animatedLensOffsetPx - restingOffsetPx)
+                val targetInteraction = if (isHolding || offsetDelta > 2.5f) 1.0f else 0.0f
+                val interactionStrength by animateFloatAsState(
+                    targetValue = targetInteraction,
+                    animationSpec = tween(durationMillis = 150),
+                    label = "interactionStrength"
+                )
+
+                // Physical Pill dimensions and positions
+                val basePillWidthPx = tabWidthPx - with(density) { 6.dp.toPx() }
+                val currentPillWidthPx = basePillWidthPx * lensScaleX
+                val basePillHeightPx = with(density) { 44.dp.toPx() }
+                val currentPillHeightPx = basePillHeightPx * lensScaleY
+
+                val pillCenterXPx = animatedLensOffsetPx + tabWidthPx / 2f
+                val containerHeightPx = with(density) { 48.dp.toPx() }
+                val pillCenterYPx = containerHeightPx / 2f
+
+                val pillLeftPx = pillCenterXPx - currentPillWidthPx / 2f
+                val pillRightPx = pillCenterXPx + currentPillWidthPx / 2f
+                val pillTopPx = pillCenterYPx - currentPillHeightPx / 2f
+                val pillBottomPx = pillCenterYPx + currentPillHeightPx / 2f
+                val pillRadiusPx = with(density) { 22.dp.toPx() } * lensScaleY
+                val pillRadiusDp = with(density) { pillRadiusPx.toDp() }
+
+                val activeColor = MaterialTheme.colorScheme.primary
+                val inactiveColor = if (isDark) Color.White.copy(alpha = 0.50f) else Color(0x991C1D24)
+
+                // Drag gesture and Tap detection across the dock
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        .pointerInput(tabWidthPx) {
+                            detectTapGestures(
+                                onPress = {
+                                    isPressed = true
+                                    try {
+                                        awaitRelease()
+                                    } finally {
+                                        isPressed = false
+                                    }
+                                },
+                                onTap = { offset ->
+                                    val slot = (offset.x / tabWidthPx).toInt().coerceIn(0, 2)
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    when (slot) {
+                                        0 -> onMyBooksClick()
+                                        1 -> onSearchClick()
+                                        2 -> onSettingsClick()
+                                    }
+                                }
+                            )
+                        }
                         .pointerInput(tabWidthPx) {
                             detectHorizontalDragGestures(
                                 onDragStart = { offset ->
@@ -257,175 +435,117 @@ fun FloatingNavigationIsland(
                             )
                         }
                 ) {
-                    // The Sliding Active Pill Lens with subtle specular outline & translucent refractive body
+                    // --- LAYER 1: Base Inactive Tab Row (rendered ONLY outside the pill, zero double-layer bleed) ---
                     Box(
                         modifier = Modifier
-                            .offset(x = with(density) { animatedLensOffsetPx.toDp() })
-                            .width(tabWidth)
-                            .height(48.dp)
-                            .padding(horizontal = 3.dp)
-                            .graphicsLayer {
-                                scaleX = lensScaleX
-                                scaleY = lensScaleY
+                            .fillMaxSize()
+                            .drawWithContent {
+                                val fullPath = Path().apply {
+                                    addRect(Rect(0f, 0f, size.width, size.height))
+                                }
+                                val pillPath = Path().apply {
+                                    addRoundRect(
+                                        RoundRect(
+                                            rect = Rect(pillLeftPx, pillTopPx, pillRightPx, pillBottomPx),
+                                            cornerRadius = CornerRadius(pillRadiusPx, pillRadiusPx)
+                                        )
+                                    )
+                                }
+                                val outsidePillPath = Path.combine(
+                                    operation = PathOperation.Difference,
+                                    path1 = fullPath,
+                                    path2 = pillPath
+                                )
+                                clipPath(outsidePillPath) {
+                                    this@drawWithContent.drawContent()
+                                }
                             }
-                            .clip(RoundedCornerShape(24.dp))
+                    ) {
+                        TabDockRow(
+                            strings = strings,
+                            textColor = inactiveColor,
+                            iconColor = inactiveColor,
+                            fontWeight = FontWeight.Medium,
+                            lensCenterPx = pillCenterXPx,
+                            tabWidthPx = tabWidthPx,
+                            activeScale = 1.0f
+                        )
+                    }
+
+                    // --- LAYER 2: Frosted Convex Glass Drop Capsule ---
+                    Box(
+                        modifier = Modifier
+                            .offset(
+                                x = with(density) { pillLeftPx.toDp() },
+                                y = with(density) { pillTopPx.toDp() }
+                            )
+                            .size(
+                                width = with(density) { currentPillWidthPx.toDp() },
+                                height = with(density) { currentPillHeightPx.toDp() }
+                            )
+                            .clip(RoundedCornerShape(pillRadiusDp))
                             .background(
-                                if (isDark) Color(0x28FFFFFF) else Color(0x20000000)
+                                if (isDark) {
+                                    if (isAmoled) Color(0x32FFFFFF) else Color(0x22FFFFFF)
+                                } else {
+                                    Color(0x75FFFFFF)
+                                }
                             )
                             .drawBehind {
-                                val outline = RoundedCornerShape(24.dp).createOutline(size, layoutDirection, this)
+                                val outline = RoundedCornerShape(pillRadiusDp).createOutline(size, layoutDirection, this)
+                                // Delicate visionOS specular highlight rim
                                 drawOutline(
                                     outline = outline,
                                     brush = Brush.verticalGradient(
                                         listOf(
-                                            Color.White.copy(alpha = if (isDark) 0.40f else 0.70f),
-                                            Color.White.copy(alpha = 0.08f)
+                                            Color.White.copy(alpha = if (isDark) 0.45f else 0.85f),
+                                            Color.White.copy(alpha = if (isDark) 0.05f else 0.20f)
                                         )
                                     ),
-                                    style = androidx.compose.ui.graphics.drawscope.Stroke(0.9.dp.toPx())
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(0.85.dp.toPx())
                                 )
                             }
                     )
 
-                    // Continuous optical refraction calculation over tabs (cosine bell curve magnification + deflection)
-                    val currentLensCenterPx = animatedLensOffsetPx + tabWidthPx / 2f
-                    fun opticalRefractionForSlot(slotIndex: Int): Triple<Float, Float, Float> {
-                        val slotCenterPx = (slotIndex + 0.5f) * tabWidthPx
-                        val dist = abs(currentLensCenterPx - slotCenterPx)
-                        val norm = (dist / tabWidthPx).coerceIn(0f, 1f)
-                        // Smooth cosine bell curve
-                        val prox = (0.5f * (1f + kotlin.math.cos(norm * Math.PI.toFloat()))).toFloat()
-                        // Snell's law optical deflection towards center of lens
-                        val shiftX = ((slotCenterPx - currentLensCenterPx) * 0.08f * prox)
-                        // Dynamic convex magnification
-                        val scale = 1.0f + 0.16f * prox
-                        return Triple(prox, scale, shiftX)
-                    }
-
-                    val activeColor = MaterialTheme.colorScheme.primary
-                    val inactiveColor = if (isDark) Color.White.copy(alpha = 0.80f) else Color(0xD01C1D24)
-
-                    // The 3 tabs evenly distributed across the dock
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically
+                    // --- LAYER 3: Active Accent Row with SPATIAL COLOR MASK & OPTICS ---
+                    // Rendered strictly INSIDE the pill capsule: zero underlying gray text bleed-through!
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            // 1. SPATIAL COLOR MASK: Slice & color strictly inside moving capsule
+                            .drawWithContent {
+                                val pillPath = Path().apply {
+                                    addRoundRect(
+                                        RoundRect(
+                                            rect = Rect(pillLeftPx, pillTopPx, pillRightPx, pillBottomPx),
+                                            cornerRadius = CornerRadius(pillRadiusPx, pillRadiusPx)
+                                        )
+                                    )
+                                }
+                                clipPath(pillPath) {
+                                    this@drawWithContent.drawContent()
+                                }
+                            }
+                            // 2. OPTICAL CONVEX REFRACTION SHADER (Snell's bevel rim deflection)
+                            .liquidRefraction(
+                                centerPx = Offset(pillCenterXPx, pillCenterYPx),
+                                sizePx = Size(currentPillWidthPx, currentPillHeightPx),
+                                radiusPx = pillRadiusPx,
+                                refractionDepth = 0.22f,
+                                refractionWidthPx = with(density) { 18.dp.toPx() },
+                                dispersion = 1.25f,
+                                intensity = interactionStrength
+                            )
                     ) {
-                        // Tab 0: My Books
-                        val (prox0, scale0, shiftX0) = opticalRefractionForSlot(0)
-                        val color0 = lerp(inactiveColor, activeColor, prox0)
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(24.dp))
-                                .expressiveClickable(scaleDown = 0.92f, onClick = onMyBooksClick),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.graphicsLayer {
-                                    scaleX = scale0
-                                    scaleY = scale0
-                                    translationX = shiftX0
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.MenuBook,
-                                    contentDescription = strings.navMyBooks,
-                                    tint = color0,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = strings.navMyBooks,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
-                                    fontWeight = if (prox0 > 0.5f) FontWeight.Bold else FontWeight.Medium,
-                                    color = color0,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-
-                        // Tab 1: Search
-                        val (prox1, scale1, shiftX1) = opticalRefractionForSlot(1)
-                        val color1 = lerp(inactiveColor, activeColor, prox1)
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(24.dp))
-                                .expressiveClickable(scaleDown = 0.90f, onClick = onSearchClick),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.graphicsLayer {
-                                    scaleX = scale1
-                                    scaleY = scale1
-                                    translationX = shiftX1
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = strings.search,
-                                    tint = color1,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = strings.search,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
-                                    fontWeight = if (prox1 > 0.5f) FontWeight.Bold else FontWeight.Medium,
-                                    color = color1,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-
-                        // Tab 2: Settings
-                        val (prox2, scale2, shiftX2) = opticalRefractionForSlot(2)
-                        val color2 = lerp(inactiveColor, activeColor, prox2)
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(24.dp))
-                                .expressiveClickable(scaleDown = 0.92f, onClick = onSettingsClick),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.graphicsLayer {
-                                    scaleX = scale2
-                                    scaleY = scale2
-                                    translationX = shiftX2
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Settings,
-                                    contentDescription = strings.settingsTitle,
-                                    tint = color2,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = strings.settingsTitle,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
-                                    fontWeight = if (prox2 > 0.5f) FontWeight.Bold else FontWeight.Medium,
-                                    color = color2,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
+                        TabDockRow(
+                            strings = strings,
+                            textColor = activeColor,
+                            iconColor = activeColor,
+                            fontWeight = FontWeight.Bold,
+                            lensCenterPx = pillCenterXPx,
+                            tabWidthPx = tabWidthPx,
+                            activeScale = 1.08f // Optical magnification under the lens
+                        )
                     }
                 }
             }
@@ -564,6 +684,75 @@ fun FloatingNavigationIsland(
     }
 }
 
+@Composable
+private fun TabDockRow(
+    strings: com.aura.reader.ui.theme.Strings,
+    textColor: Color,
+    iconColor: Color,
+    fontWeight: FontWeight,
+    lensCenterPx: Float,
+    tabWidthPx: Float,
+    activeScale: Float = 1.0f
+) {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        for (slotIndex in 0..2) {
+            val slotCenterPx = (slotIndex + 0.5f) * tabWidthPx
+            val dist = abs(lensCenterPx - slotCenterPx)
+            val norm = (dist / tabWidthPx).coerceIn(0f, 1f)
+            val proximity = (0.5f * (1f + kotlin.math.cos(norm * Math.PI.toFloat()))).toFloat()
+            val scale = 1.0f + (activeScale - 1.0f) * proximity
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = if (scale != 1.0f) {
+                        Modifier.graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                        }
+                    } else Modifier
+                ) {
+                    val icon = when (slotIndex) {
+                        0 -> Icons.Default.MenuBook
+                        1 -> Icons.Default.Search
+                        else -> Icons.Default.Settings
+                    }
+                    val label = when (slotIndex) {
+                        0 -> strings.navMyBooks
+                        1 -> strings.search
+                        else -> strings.settingsTitle
+                    }
+
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = label,
+                        tint = iconColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
+                        fontWeight = fontWeight,
+                        color = textColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
+}
+
 /**
  * Circular Liquid Glass action button (+ icon) positioned next to the navigation island.
  */
@@ -577,8 +766,9 @@ fun FloatingAddGlassButton(
     LiquidGlassSurface(
         shape = CircleShape,
         isDark = isDark,
-        shadowElevation = 14.dp,
-        tintColor = if (isDark) Color(0xBA141722) else Color(0xCCFFFFFF),
+        shadowElevation = if (isDark) 0.dp else 8.dp,
+        tintColor = if (isDark) Color(0x22FFFFFF) else Color(0x75FFFFFF),
+        hazeState = LocalHazeState.current,
         modifier = modifier
             .size(54.dp)
             .expressiveClickable(scaleDown = 0.90f) {
