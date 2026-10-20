@@ -75,14 +75,14 @@ fun AddBooksBottomSheet(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.65f))
+                    .background(Color.Black.copy(alpha = 0.78f))
             )
 
             // Frosted Floating Glass Card with rich opaque backdrop so underlying text never bleeds through
             LiquidGlassSurface(
                 shape = RoundedCornerShape(28.dp),
                 shadowElevation = 24.dp,
-                tintColor = if (isDark) Color(0xF2161822) else Color(0xF6FFFFFF),
+                tintColor = if (isDark) Color(0xFF141722) else Color(0xFFFFFFFF),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
@@ -240,7 +240,7 @@ private fun AddMethodItem(
 ) {
     val isDark = isSystemInDarkTheme()
     val containerColor = if (isGlass) {
-        if (isDark) Color(0x35232B3B) else Color(0x18000000)
+        if (isDark) Color(0x35232B3B) else Color(0x0C000000)
     } else {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     }
@@ -249,8 +249,8 @@ private fun AddMethodItem(
             0.85.dp,
             Brush.verticalGradient(
                 listOf(
-                    Color.White.copy(alpha = if (isDark) 0.22f else 0.45f),
-                    Color.White.copy(alpha = 0.04f)
+                    if (isDark) Color.White.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.12f),
+                    Color.Transparent
                 )
             )
         )

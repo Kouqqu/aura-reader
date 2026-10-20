@@ -117,6 +117,8 @@ import com.aura.reader.ui.theme.SepiaBackground
 import com.aura.reader.ui.theme.SepiaText
 
 private val LocalIsLiquidGlass = compositionLocalOf { false }
+private val LocalIsThemeDark = compositionLocalOf { true }
+private val LocalIsSepia = compositionLocalOf { false }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 
@@ -448,7 +450,13 @@ fun SettingsBottomSheet(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            val isSysDark = isSystemInDarkTheme()
+            val sysDark = isSystemInDarkTheme()
+            val isThemeDark = when (currentTheme) {
+                ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
+                ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
+                ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
+            }
+            val isSepia = currentTheme == ReaderThemeMode.SEPIA
             val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
 
             // 0. Design Style Section (Material 3 vs Liquid Glass)
@@ -473,12 +481,12 @@ fun SettingsBottomSheet(
                         containerColor = if (isMatSelected) {
                             MaterialTheme.colorScheme.primaryContainer
                         } else {
-                            if (isSysDark) Color(0x33FFFFFF) else Color(0x18000000)
+                            if (isThemeDark) Color(0x33FFFFFF) else Color(0x18000000)
                         }
                     ),
                     border = BorderStroke(
                         if (isMatSelected) 1.5.dp else 1.dp,
-                        if (isMatSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = if (isSysDark) 0.15f else 0.40f)
+                        if (isMatSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = if (isThemeDark) 0.15f else 0.40f)
                     ),
                     modifier = Modifier
                         .weight(1f)
@@ -507,16 +515,16 @@ fun SettingsBottomSheet(
                     }
                 }
 
-                // Option 2: Liquid Glass (iOS style)
+                // Option 2: Liquid Glass
                 val isGlassSelected = appDesignStyle == AppDesignStyle.LIQUID_GLASS
                 Card(
                     onClick = { onAppDesignStyleChange(AppDesignStyle.LIQUID_GLASS) },
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isGlassSelected) {
-                            if (isSysDark) Color(0x551E2436) else Color(0xDDFFFFFF)
+                            if (isThemeDark) Color(0x551E2436) else Color(0xDDFFFFFF)
                         } else {
-                            if (isSysDark) Color(0x33FFFFFF) else Color(0x18000000)
+                            if (isThemeDark) Color(0x33FFFFFF) else Color(0x18000000)
                         }
                     ),
                     border = BorderStroke(
@@ -524,12 +532,12 @@ fun SettingsBottomSheet(
                         if (isGlassSelected) {
                             Brush.verticalGradient(
                                 listOf(
-                                    Color.White.copy(alpha = if (isSysDark) 0.85f else 0.95f),
+                                    Color.White.copy(alpha = if (isThemeDark) 0.85f else 0.95f),
                                     Color.White.copy(alpha = 0.25f)
                                 )
                             )
                         } else {
-                            SolidColor(Color.White.copy(alpha = if (isSysDark) 0.15f else 0.40f))
+                            SolidColor(Color.White.copy(alpha = if (isThemeDark) 0.15f else 0.40f))
                         }
                     ),
                     modifier = Modifier
@@ -556,20 +564,6 @@ fun SettingsBottomSheet(
                             fontWeight = FontWeight.Bold,
                             color = if (isGlassSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                            modifier = Modifier.height(20.dp)
-                        ) {
-                            Text(
-                                text = "iOS",
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                            )
-                        }
                     }
                 }
             }
@@ -671,9 +665,9 @@ fun SettingsBottomSheet(
             if (isGlass) {
                 LiquidGlassSurface(
                     shape = RoundedCornerShape(24.dp),
-                    isDark = isSysDark,
+                    isDark = isThemeDark,
                     shadowElevation = 8.dp,
-                    tintColor = if (isSysDark) Color(0x301D212E) else Color(0x85FFFFFF),
+                    tintColor = if (isThemeDark) Color(0x301D212E) else if (isSepia) Color(0x60F4E8D6) else Color(0x85FFFFFF),
                     modifier = Modifier.fillMaxWidth(),
                     content = themeCardContent
                 )
@@ -1208,12 +1202,28 @@ fun SettingsBottomSheet(
     }
 
     val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val sysDark = isSystemInDarkTheme()
+    val isThemeDark = when (currentTheme) {
+        ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
+        ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
+        ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
+    }
+    val isSepia = currentTheme == ReaderThemeMode.SEPIA
 
-    CompositionLocalProvider(LocalIsLiquidGlass provides isGlass) {
+    CompositionLocalProvider(
+        LocalIsLiquidGlass provides isGlass,
+        LocalIsThemeDark provides isThemeDark,
+        LocalIsSepia provides isSepia
+    ) {
         if (isFullScreen) {
-            val isSysDark = isSystemInDarkTheme()
             val screenBg = if (isGlass) {
-                if (isSysDark) Color(0xFF000000) else Color(0xFFF2F3F8)
+                if (isSepia) {
+                    Color(0xFFFAF0E6)
+                } else if (isThemeDark) {
+                    if (currentTheme == ReaderThemeMode.AMOLED) Color(0xFF000000) else Color(0xFF0F1117)
+                } else {
+                    Color(0xFFF2F3F8)
+                }
             } else {
                 MaterialTheme.colorScheme.background
             }
@@ -1231,7 +1241,13 @@ fun SettingsBottomSheet(
                 sheetState = sheetState,
                 dragHandle = { BottomSheetDefaults.DragHandle() },
                 containerColor = if (isGlass) {
-                    if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF0D0E12) else Color(0xFFF2F3F8)
+                    if (isSepia) {
+                        Color(0xFFFAF0E6)
+                    } else if (isThemeDark) {
+                        if (currentTheme == ReaderThemeMode.AMOLED) Color(0xFF000000) else Color(0xFF141722)
+                    } else {
+                        Color(0xFFF2F3F8)
+                    }
                 } else MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                 modifier = Modifier
@@ -1260,13 +1276,13 @@ private fun ExpressiveThemePill(
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isGlass = LocalIsLiquidGlass.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalIsThemeDark.current
 
     val containerColor = if (isSelected) {
         previewBgColor
     } else {
         if (isGlass) {
-            Color.White.copy(alpha = if (isDark) 0.06f else 0.40f)
+            if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
         } else {
             MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
         }
@@ -1276,7 +1292,7 @@ private fun ExpressiveThemePill(
         MaterialTheme.colorScheme.primary
     } else {
         if (isGlass) {
-            Color.White.copy(alpha = if (isDark) 0.18f else 0.45f)
+            if (isDark) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f)
         } else {
             MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
         }
@@ -1337,9 +1353,9 @@ private fun SettingsIconBox(
     contentDescription: String? = null
 ) {
     val isGlass = LocalIsLiquidGlass.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalIsThemeDark.current
     val bg = if (isGlass) {
-        if (isDark) Color(0x35283448) else Color(0x18000000)
+        if (isDark) Color(0x35283448) else Color(0x10000000)
     } else {
         containerColor
     }
@@ -1367,9 +1383,9 @@ private fun SettingsPainterIconBox(
     contentDescription: String? = null
 ) {
     val isGlass = LocalIsLiquidGlass.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalIsThemeDark.current
     val bg = if (isGlass) {
-        if (isDark) Color(0x35283448) else Color(0x18000000)
+        if (isDark) Color(0x35283448) else Color(0x10000000)
     } else {
         containerColor
     }
@@ -1400,12 +1416,14 @@ private fun ExpressiveStylePill(
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isGlass = LocalIsLiquidGlass.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalIsThemeDark.current
 
     val containerColor = if (isSelected) {
         MaterialTheme.colorScheme.primaryContainer
     } else {
-        if (isGlass) Color.White.copy(alpha = if (isDark) 0.08f else 0.45f) else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
+        if (isGlass) {
+            if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+        } else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
     }
     val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
     val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
@@ -1456,12 +1474,13 @@ private fun ExpressiveSettingsGroup(
 ) {
     val isGlass = LocalIsLiquidGlass.current
     if (isGlass) {
-        val isDark = isSystemInDarkTheme()
+        val isDark = LocalIsThemeDark.current
+        val isSepia = LocalIsSepia.current
         LiquidGlassSurface(
             shape = RoundedCornerShape(22.dp),
             isDark = isDark,
             shadowElevation = 8.dp,
-            tintColor = if (isDark) Color(0x301D212E) else Color(0x85FFFFFF),
+            tintColor = if (isDark) Color(0x301D212E) else if (isSepia) Color(0x55F5EAD9) else Color(0x85FFFFFF),
             modifier = modifier.fillMaxWidth()
         ) {
             Column(
@@ -1487,7 +1506,7 @@ private fun ExpressiveDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(start = 66.dp, end = 16.dp),
         color = if (isGlass) {
-            Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.08f else 0.15f)
+            if (LocalIsThemeDark.current) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.08f)
         } else {
             MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
         }

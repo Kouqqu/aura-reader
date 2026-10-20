@@ -145,6 +145,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -514,6 +515,16 @@ fun LibraryScreen(
                                     contentDescription = strings.searchInLibrary
                                 )
                             }
+
+                            if (!isGlass) {
+                                // Settings Button in Material mode
+                                IconButton(onClick = { showSettingsSheet = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Settings,
+                                        contentDescription = strings.settingsTitle
+                                    )
+                                }
+                            }
                         },
                         scrollBehavior = scrollBehavior,
                         colors = TopAppBarDefaults.topAppBarColors(
@@ -538,7 +549,7 @@ fun LibraryScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
-            } else {
+            } else if (isGlass) {
                 FloatingNavigationIsland(
                     designStyle = readerSettings.appDesignStyle,
                     clarity = readerSettings.glassClarity,
@@ -558,16 +569,24 @@ fun LibraryScreen(
                         if (showAddBooksSheet) {
                             showAddBooksSheet = false
                         }
-                        if (readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
-                            currentMainTab = 2
-                        } else {
-                            showSettingsSheet = true
-                        }
+                        currentMainTab = 2
                     }
                 )
+            } else {
+                FloatingActionButton(
+                    onClick = { showAddBooksSheet = true },
+                    shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = strings.addBook
+                    )
+                }
             }
         },
-        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButtonPosition = if (isGlass) FabPosition.Center else FabPosition.End,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         if (showAddBooksSheet) {
@@ -930,7 +949,23 @@ fun LibraryScreen(
 
                                     DropdownMenu(
                                         expanded = showSortMenu,
-                                        onDismissRequest = { showSortMenu = false }
+                                        onDismissRequest = { showSortMenu = false },
+                                        shape = RoundedCornerShape(20.dp),
+                                        containerColor = if (isGlass) {
+                                            if (isSystemInDarkTheme()) Color(0xF2181C28) else Color(0xF8FFFFFF)
+                                        } else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        border = if (isGlass) {
+                                            BorderStroke(
+                                                0.85.dp,
+                                                Brush.verticalGradient(
+                                                    listOf(
+                                                        Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.35f else 0.70f),
+                                                        Color.White.copy(alpha = 0.05f)
+                                                    )
+                                                )
+                                            )
+                                        } else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+                                        shadowElevation = if (isGlass) 16.dp else 6.dp
                                     ) {
                                         DropdownMenuItem(
                                             text = { Text(strings.sortByRecent) },
@@ -1418,7 +1453,8 @@ fun LibraryScreen(
             onResetStats = {
                 showReadingStatsSheet = false
                 viewModel.resetReadingStats()
-            }
+            },
+            isLiquidGlass = isGlass
         )
     }
 }
@@ -1602,12 +1638,28 @@ fun BookCard(
                             }
                             DropdownMenu(
                                 expanded = showMenu,
-                                onDismissRequest = { showMenu = false }
+                                onDismissRequest = { showMenu = false },
+                                shape = RoundedCornerShape(20.dp),
+                                containerColor = if (isGlass) {
+                                    if (isDark) Color(0xF2181C28) else Color(0xF8FFFFFF)
+                                } else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                border = if (isGlass) {
+                                    BorderStroke(
+                                        0.85.dp,
+                                        Brush.verticalGradient(
+                                            listOf(
+                                                Color.White.copy(alpha = if (isDark) 0.35f else 0.70f),
+                                                Color.White.copy(alpha = 0.05f)
+                                            )
+                                        )
+                                    )
+                                } else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+                                shadowElevation = if (isGlass) 16.dp else 6.dp
                             ) {
                                 DropdownMenuItem(
                                     text = { Text(strings.shareBookFile) },
                                     leadingIcon = {
-                                        Icon(Icons.Default.Share, contentDescription = null)
+                                        Icon(Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     },
                                     onClick = {
                                         showMenu = false
@@ -1617,7 +1669,7 @@ fun BookCard(
                                 DropdownMenuItem(
                                     text = { Text(strings.changeCover) },
                                     leadingIcon = {
-                                        Icon(Icons.Default.Image, contentDescription = null)
+                                        Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     },
                                     onClick = {
                                         showMenu = false
@@ -1626,6 +1678,9 @@ fun BookCard(
                                 )
                                 DropdownMenuItem(
                                     text = { Text(strings.addToCollection) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    },
                                     onClick = {
                                         showMenu = false
                                         onAddToCollection()
@@ -1634,6 +1689,9 @@ fun BookCard(
                                 if (book.progressPercent < 100) {
                                     DropdownMenuItem(
                                         text = { Text(strings.markAsFinished) },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        },
                                         onClick = {
                                             showMenu = false
                                             onSetProgress(100)
@@ -1643,6 +1701,9 @@ fun BookCard(
                                 if (book.progressPercent > 0) {
                                     DropdownMenuItem(
                                         text = { Text(strings.resetProgress) },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        },
                                         onClick = {
                                             showMenu = false
                                             onSetProgress(0)
@@ -1652,6 +1713,9 @@ fun BookCard(
 
                                 DropdownMenuItem(
                                     text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                    },
                                     onClick = {
                                         showMenu = false
                                         onDelete()
@@ -2146,14 +2210,31 @@ fun BookGridCard(
 
             DropdownMenu(
                 expanded = showMenu,
-                onDismissRequest = { showMenu = false }
+                onDismissRequest = { showMenu = false },
+                shape = RoundedCornerShape(20.dp),
+                containerColor = if (isGlass) {
+                    if (isDark) Color(0xF2181C28) else Color(0xF8FFFFFF)
+                } else MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = if (isGlass) {
+                    BorderStroke(
+                        0.85.dp,
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = if (isDark) 0.35f else 0.70f),
+                                Color.White.copy(alpha = 0.05f)
+                            )
+                        )
+                    )
+                } else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+                shadowElevation = if (isGlass) 16.dp else 6.dp
             ) {
                 DropdownMenuItem(
                     text = { Text(if (book.isFavorite) strings.colFavorites else strings.addToCollection) },
                     leadingIcon = {
                         Icon(
                             if (book.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = null
+                            contentDescription = null,
+                            tint = if (book.isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                         )
                     },
                     onClick = {
@@ -2163,7 +2244,7 @@ fun BookGridCard(
                 )
                 DropdownMenuItem(
                     text = { Text(strings.addToCollection) },
-                    leadingIcon = { Icon(Icons.Default.FolderOpen, contentDescription = null) },
+                    leadingIcon = { Icon(Icons.Default.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     onClick = {
                         showMenu = false
                         onAddToCollection()
@@ -2171,7 +2252,7 @@ fun BookGridCard(
                 )
                 DropdownMenuItem(
                     text = { Text(strings.changeCover) },
-                    leadingIcon = { Icon(Icons.Default.Image, contentDescription = null) },
+                    leadingIcon = { Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     onClick = {
                         showMenu = false
                         onChangeCover()
@@ -2179,7 +2260,7 @@ fun BookGridCard(
                 )
                 DropdownMenuItem(
                     text = { Text(strings.shareBookFile) },
-                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     onClick = {
                         showMenu = false
                         onShare()

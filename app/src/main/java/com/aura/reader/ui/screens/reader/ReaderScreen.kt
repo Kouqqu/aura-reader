@@ -37,6 +37,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
+import com.aura.reader.data.model.AppDesignStyle
+import com.aura.reader.ui.components.LiquidGlassSurface
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Rect
@@ -250,6 +252,13 @@ fun ReaderScreen(
     val quotes by viewModel.quotes.collectAsState()
     val userWpm by viewModel.userAverageWpm.collectAsState()
     val ttsState by com.aura.reader.service.BookTtsService.ttsState.collectAsState()
+    val isGlass = settings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isThemeDark = when (settings.themeMode) {
+        ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
+        ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
+        ReaderThemeMode.SYSTEM_DYNAMIC -> isSystemInDarkTheme()
+    }
+    val isSepiaTheme = settings.themeMode == ReaderThemeMode.SEPIA
     val currentChapterQuotes = remember(quotes, book?.id, currentChapterIndex) {
         val bId = book?.id
         if (bId != null) quotes.filter { it.bookId == bId && it.chapterIndex == currentChapterIndex } else emptyList()
@@ -526,15 +535,7 @@ fun ReaderScreen(
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            val topBarContent: @Composable () -> Unit = {
                 if (isSearchActive) {
                     Row(
                         modifier = Modifier
@@ -747,7 +748,23 @@ fun ReaderScreen(
 
                             DropdownMenu(
                                 expanded = showReaderMenu,
-                                onDismissRequest = { showReaderMenu = false }
+                                onDismissRequest = { showReaderMenu = false },
+                                shape = RoundedCornerShape(20.dp),
+                                containerColor = if (isGlass) {
+                                    if (isThemeDark) Color(0xF2181C28) else Color(0xF8FFFFFF)
+                                } else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                border = if (isGlass) {
+                                    BorderStroke(
+                                        0.85.dp,
+                                        Brush.verticalGradient(
+                                            listOf(
+                                                Color.White.copy(alpha = if (isThemeDark) 0.35f else 0.70f),
+                                                Color.White.copy(alpha = 0.05f)
+                                            )
+                                        )
+                                    )
+                                } else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+                                shadowElevation = if (isGlass) 16.dp else 6.dp
                             ) {
                                 DropdownMenuItem(
                                     text = { Text(strings.ttsListenAction) },
@@ -807,6 +824,29 @@ fun ReaderScreen(
                     }
                 }
             }
+
+            if (isGlass) {
+                val topBarBg = if (isSepiaTheme) Color(0xF2FAF0E6) else if (isThemeDark) Color(0xE6141824) else Color(0xF2FFFFFF)
+                LiquidGlassSurface(
+                    shape = RoundedCornerShape(24.dp),
+                    shadowElevation = 10.dp,
+                    isDark = isThemeDark,
+                    tintColor = topBarBg,
+                    modifier = Modifier.fillMaxWidth(),
+                    content = topBarContent
+                )
+            } else {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    content = { topBarContent() }
+                )
+            }
         }
 
         // Bottom Controls Bar with Material 3 Expressive Floating Card
@@ -819,15 +859,7 @@ fun ReaderScreen(
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 20.dp)
         ) {
-                    Card(
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                    val bottomBarContent: @Composable () -> Unit = {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1067,6 +1099,29 @@ fun ReaderScreen(
                             }
                         }
                     }
+
+                    if (isGlass) {
+                        val bottomBarBg = if (isSepiaTheme) Color(0xF2FAF0E6) else if (isThemeDark) Color(0xE6141824) else Color(0xF2FFFFFF)
+                        LiquidGlassSurface(
+                            shape = RoundedCornerShape(24.dp),
+                            shadowElevation = 10.dp,
+                            isDark = isThemeDark,
+                            tintColor = bottomBarBg,
+                            modifier = Modifier.fillMaxWidth(),
+                            content = bottomBarContent
+                        )
+                    } else {
+                        Card(
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            content = { bottomBarContent() }
+                        )
+                    }
                 }
 
                 // Floating TTS Player Bar when active
@@ -1087,7 +1142,9 @@ fun ReaderScreen(
                         onNext = { com.aura.reader.service.BookTtsService.next(context) },
                         onStop = { com.aura.reader.service.BookTtsService.stop(context) },
                         onSpeedChange = { spd -> com.aura.reader.service.BookTtsService.setSpeed(context, spd) },
-                        onClick = { showTtsSheet = true }
+                        onClick = { showTtsSheet = true },
+                        isGlass = isGlass,
+                        isDark = isThemeDark
                     )
                 }
 
@@ -2785,19 +2842,11 @@ fun TtsControlBar(
     onStop: () -> Unit,
     onSpeedChange: (Float) -> Unit,
     onClick: () -> Unit = {},
+    isGlass: Boolean = false,
+    isDark: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.98f),
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-    ) {
+    val ttsContent: @Composable () -> Unit = {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -2905,6 +2954,33 @@ fun TtsControlBar(
                 )
             }
         }
+    }
+
+    if (isGlass) {
+        val ttsBg = if (isDark) Color(0xE6141824) else Color(0xF2FFFFFF)
+        LiquidGlassSurface(
+            shape = RoundedCornerShape(24.dp),
+            shadowElevation = 10.dp,
+            isDark = isDark,
+            tintColor = ttsBg,
+            modifier = modifier
+                .fillMaxWidth()
+                .clickable { onClick() },
+            content = ttsContent
+        )
+    } else {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.98f),
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            modifier = modifier
+                .fillMaxWidth()
+                .clickable { onClick() },
+            content = { ttsContent() }
+        )
     }
 }
 

@@ -59,6 +59,8 @@ import com.aura.reader.data.preferences.DayReadingStat
 import com.aura.reader.data.preferences.ReadingStatsData
 import com.aura.reader.ui.theme.LocalAppStrings
 import com.aura.reader.ui.theme.Strings
+import androidx.compose.foundation.isSystemInDarkTheme
+import com.aura.reader.ui.components.LiquidGlassSurface
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,16 +68,20 @@ import java.util.Calendar
 fun ReadingStatsBottomSheet(
     statsData: ReadingStatsData,
     onDismiss: () -> Unit,
-    onResetStats: () -> Unit = {}
+    onResetStats: () -> Unit = {},
+    isLiquidGlass: Boolean = false
 ) {
     val strings = LocalAppStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val isDark = isSystemInDarkTheme()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        containerColor = if (isLiquidGlass) {
+            if (isDark) Color(0xFF131622) else Color(0xFFF2F4F8)
+        } else MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     ) {
         Column(
@@ -107,7 +113,7 @@ fun ReadingStatsBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Streak Card
-            StreakBanner(statsData = statsData, strings = strings)
+            StreakBanner(statsData = statsData, strings = strings, isGlass = isLiquidGlass)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -120,18 +126,21 @@ fun ReadingStatsBottomSheet(
                     title = strings.readingTimeTodayCard,
                     value = strings.minutesRead(statsData.todayMinutes),
                     icon = Icons.Default.Schedule,
+                    isGlass = isLiquidGlass,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     title = strings.readingTimeTotalCard,
                     value = strings.totalHoursAndMinutes(statsData.totalMinutes / 60, statsData.totalMinutes % 60),
                     icon = Icons.Default.CalendarMonth,
+                    isGlass = isLiquidGlass,
                     modifier = Modifier.weight(1.2f)
                 )
                 StatCard(
                     title = strings.readingTimeAvgCard,
                     value = strings.minutesRead(statsData.dailyAverageMinutes),
                     icon = Icons.Default.BarChart,
+                    isGlass = isLiquidGlass,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -139,13 +148,7 @@ fun ReadingStatsBottomSheet(
             Spacer(modifier = Modifier.height(20.dp))
 
             // Weekly Activity Chart Card
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            val chartContent: @Composable () -> Unit = {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = strings.readingWeeklyActivityTitle,
@@ -160,6 +163,26 @@ fun ReadingStatsBottomSheet(
                         strings = strings
                     )
                 }
+            }
+
+            if (isLiquidGlass) {
+                LiquidGlassSurface(
+                    shape = RoundedCornerShape(20.dp),
+                    isDark = isDark,
+                    shadowElevation = 8.dp,
+                    tintColor = if (isDark) Color(0x301D212E) else Color(0x80FFFFFF),
+                    modifier = Modifier.fillMaxWidth(),
+                    content = chartContent
+                )
+            } else {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    content = { chartContent() }
+                )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -224,16 +247,14 @@ fun ReadingStatsBottomSheet(
 @Composable
 private fun StreakBanner(
     statsData: ReadingStatsData,
-    strings: Strings
+    strings: Strings,
+    isGlass: Boolean = false
 ) {
+    val isDark = isSystemInDarkTheme()
     val streak = statsData.currentStreakDays
     val hasStreak = streak > 0
 
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = if (hasStreak) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    val bannerContent: @Composable () -> Unit = {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -274,6 +295,28 @@ private fun StreakBanner(
             }
         }
     }
+
+    if (isGlass) {
+        LiquidGlassSurface(
+            shape = RoundedCornerShape(20.dp),
+            isDark = isDark,
+            shadowElevation = 8.dp,
+            tintColor = if (hasStreak) {
+                if (isDark) Color(0x35E65100) else Color(0x20FF9800)
+            } else {
+                if (isDark) Color(0x301D212E) else Color(0x80FFFFFF)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            content = bannerContent
+        )
+    } else {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = if (hasStreak) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier.fillMaxWidth(),
+            content = bannerContent
+        )
+    }
 }
 
 @Composable
@@ -281,15 +324,11 @@ private fun StatCard(
     title: String,
     value: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isGlass: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        modifier = modifier
-    ) {
+    val isDark = isSystemInDarkTheme()
+    val cardContent: @Composable () -> Unit = {
         Column(
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.Start
@@ -316,6 +355,26 @@ private fun StatCard(
                 maxLines = 1
             )
         }
+    }
+
+    if (isGlass) {
+        LiquidGlassSurface(
+            shape = RoundedCornerShape(16.dp),
+            isDark = isDark,
+            shadowElevation = 6.dp,
+            tintColor = if (isDark) Color(0x301D212E) else Color(0x80FFFFFF),
+            modifier = modifier,
+            content = cardContent
+        )
+    } else {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            modifier = modifier,
+            content = { cardContent() }
+        )
     }
 }
 
