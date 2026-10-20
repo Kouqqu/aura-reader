@@ -29,6 +29,11 @@ enum class TwoColumnMode {
     ALWAYS
 }
 
+enum class AppDesignStyle {
+    MATERIAL,       // Google Material 3 Expressive
+    LIQUID_GLASS    // Apple-style Frosted Liquid Glass
+}
+
 @Immutable
 data class ReaderSettings(
     val fontSizeSp: Float = 18f,
@@ -47,5 +52,6 @@ data class ReaderSettings(
     val sansSerifFontName: String = "",
     val monospaceFontName: String = "",
     val syncThemesWithApp: Boolean = false,
-    val appThemeMode: ReaderThemeMode = ReaderThemeMode.SYSTEM_DYNAMIC
+    val appThemeMode: ReaderThemeMode = ReaderThemeMode.SYSTEM_DYNAMIC,
+    val appDesignStyle: AppDesignStyle = AppDesignStyle.MATERIAL
 )

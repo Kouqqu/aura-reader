@@ -10,6 +10,7 @@ import com.aura.reader.data.model.Bookmark
 import com.aura.reader.data.model.PageTurnAnimation
 import com.aura.reader.data.model.Quote
 import com.aura.reader.data.model.ReaderFontFamily
+import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.model.TwoColumnMode
@@ -86,6 +87,7 @@ class PreferencesManager(private val context: Context) {
         val MONOSPACE_FONT_NAME_KEY = stringPreferencesKey("monospace_font_name")
         val ANONYMOUS_ANALYTICS_KEY = booleanPreferencesKey("anonymous_analytics_enabled")
         val HAS_TRACKED_FIRST_OPEN_KEY = booleanPreferencesKey("has_tracked_first_open")
+        val APP_DESIGN_STYLE_KEY = stringPreferencesKey("app_design_style")
     }
 
     val appFont: Flow<String> = context.dataStore.data.map { prefs ->
@@ -213,6 +215,13 @@ class PreferencesManager(private val context: Context) {
         val syncThemesWithApp = prefs[SYNC_THEMES_WITH_APP_KEY] ?: false
         val appThemeModeStr = prefs[APP_THEME_MODE_KEY] ?: ReaderThemeMode.SYSTEM_DYNAMIC.name
 
+        val appDesignStyleStr = prefs[APP_DESIGN_STYLE_KEY] ?: AppDesignStyle.MATERIAL.name
+        val appDesignStyle = try {
+            AppDesignStyle.valueOf(appDesignStyleStr)
+        } catch (e: Exception) {
+            AppDesignStyle.MATERIAL
+        }
+
         val appThemeMode = try {
             ReaderThemeMode.valueOf(appThemeModeStr)
         } catch (e: Exception) {
@@ -236,7 +245,8 @@ class PreferencesManager(private val context: Context) {
             sansSerifFontName = sansSerifFontName,
             monospaceFontName = monospaceFontName,
             syncThemesWithApp = syncThemesWithApp,
-            appThemeMode = appThemeMode
+            appThemeMode = appThemeMode,
+            appDesignStyle = appDesignStyle
         )
     }
 
@@ -258,6 +268,12 @@ class PreferencesManager(private val context: Context) {
             if (prefs[SYNC_THEMES_WITH_APP_KEY] == true) {
                 prefs[APP_THEME_MODE_KEY] = themeMode.name
             }
+        }
+    }
+
+    suspend fun setAppDesignStyle(style: AppDesignStyle) {
+        context.dataStore.edit { prefs ->
+            prefs[APP_DESIGN_STYLE_KEY] = style.name
         }
     }
 

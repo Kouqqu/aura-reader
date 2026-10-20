@@ -92,6 +92,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aura.reader.R
+import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.opds.OpdsService
 import com.aura.reader.ui.components.PixelFullScreenBurst
@@ -137,6 +138,8 @@ fun SettingsBottomSheet(
     onSyncThemesChange: (Boolean) -> Unit = {},
     onReaderThemeChange: (ReaderThemeMode) -> Unit = {},
     onOpenReaderThemeSettings: () -> Unit = {},
+    appDesignStyle: AppDesignStyle = AppDesignStyle.MATERIAL,
+    onAppDesignStyleChange: (AppDesignStyle) -> Unit = {},
     appFont: String = "DEFAULT",
     onAppFontChange: (String) -> Unit = {},
     onResetReadingSpeed: () -> Unit = {}
@@ -414,6 +417,60 @@ fun SettingsBottomSheet(
             }
 
             Spacer(modifier = Modifier.height(20.dp))
+
+            // 0. Design Style Section (Material 3 vs Liquid Glass)
+            Text(
+                text = strings.designStyleTitle,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            )
+
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
+                        if (isSysDark) Color(0x991E2028) else Color(0xB8FFFFFF)
+                    } else MaterialTheme.colorScheme.surfaceContainer
+                ),
+                border = if (appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
+                    BorderStroke(
+                        1.2.dp,
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = if (isSysDark) 0.35f else 0.75f),
+                                Color.White.copy(alpha = 0.08f)
+                            )
+                        )
+                    )
+                } else null,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ExpressiveStylePill(
+                        label = strings.designStyleMaterial,
+                        icon = Icons.Default.Palette,
+                        isSelected = appDesignStyle == AppDesignStyle.MATERIAL,
+                        onClick = { onAppDesignStyleChange(AppDesignStyle.MATERIAL) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    ExpressiveStylePill(
+                        label = strings.designStyleLiquidGlass,
+                        icon = Icons.Default.AutoAwesome,
+                        isSelected = appDesignStyle == AppDesignStyle.LIQUID_GLASS,
+                        onClick = { onAppDesignStyleChange(AppDesignStyle.LIQUID_GLASS) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             // 1. Theme Section
             val isSysDark = isSystemInDarkTheme()
@@ -1142,6 +1199,60 @@ private fun SettingsPainterIconBox(
                 contentDescription = contentDescription,
                 tint = tint,
                 modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExpressiveStylePill(
+    label: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptic = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+
+    val containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+    val borderWidth = if (isSelected) 1.5.dp else 1.dp
+
+    Surface(
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            onClick()
+        },
+        interactionSource = interactionSource,
+        shape = RoundedCornerShape(14.dp),
+        color = containerColor,
+        border = BorderStroke(borderWidth, borderColor),
+        modifier = modifier
+            .height(44.dp)
+            .expressiveBounce(interactionSource)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = label,
+                color = contentColor,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1
             )
         }
     }

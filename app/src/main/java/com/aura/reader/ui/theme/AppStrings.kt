@@ -31,6 +31,10 @@ interface Strings {
     val update: String
     val later: String
 
+    val navMyBooks: String
+    val designStyleTitle: String
+    val designStyleMaterial: String
+    val designStyleLiquidGlass: String
     val libraryTitle: String
     val addBooks: String
     val emptyLibraryTitle: String

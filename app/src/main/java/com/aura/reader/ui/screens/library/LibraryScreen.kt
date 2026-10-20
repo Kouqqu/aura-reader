@@ -19,6 +19,10 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material3.FabPosition
+import com.aura.reader.data.model.AppDesignStyle
+import com.aura.reader.ui.components.FloatingNavigationIsland
 import com.aura.reader.ui.components.ParallaxCoverViewer
 import com.aura.reader.util.BookShareUtils
 import androidx.compose.material.icons.filled.Share
@@ -250,6 +254,7 @@ fun LibraryScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val gridState = rememberLazyGridState()
     var showAddBooksSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showReaderThemeSheet by remember { mutableStateOf(false) }
@@ -509,16 +514,17 @@ fun LibraryScreen(
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
-                ExtendedFloatingActionButton(
-                    shape = RoundedCornerShape(20.dp),
-                    onClick = { showAddBooksSheet = true },
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text(strings.addBooks) },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                FloatingNavigationIsland(
+                    designStyle = readerSettings.appDesignStyle,
+                    onMyBooksClick = {
+                        scope.launch { gridState.animateScrollToItem(0) }
+                    },
+                    onAddBookClick = { showAddBooksSheet = true },
+                    onSettingsClick = { showSettingsSheet = true }
                 )
             }
         },
+        floatingActionButtonPosition = FabPosition.Center,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         if (showAddBooksSheet) {
@@ -543,8 +549,9 @@ fun LibraryScreen(
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(if (libraryViewMode == "GRID") 2 else 1),
+                    state = gridState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -1254,6 +1261,8 @@ fun LibraryScreen(
                 showSettingsSheet = false
                 showReaderThemeSheet = true
             },
+            appDesignStyle = readerSettings.appDesignStyle,
+            onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
             appFont = appFont,
             onAppFontChange = { viewModel.setAppFont(it) },
             onResetReadingSpeed = { viewModel.resetReadingSpeed() }

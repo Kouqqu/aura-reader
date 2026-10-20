@@ -26,6 +26,7 @@ import java.io.InputStream
 import java.io.OutputStream
 
 import com.aura.reader.data.model.ReaderSettings
+import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.ui.theme.AppLanguage
@@ -98,6 +99,10 @@ class LibraryViewModel(
 
     fun setThemeMode(themeMode: ReaderThemeMode) {
         viewModelScope.launch { preferencesManager.updateThemeMode(themeMode) }
+    }
+
+    fun setAppDesignStyle(style: AppDesignStyle) {
+        viewModelScope.launch { preferencesManager.setAppDesignStyle(style) }
     }
 
     fun setAppThemeMode(themeMode: ReaderThemeMode) {
