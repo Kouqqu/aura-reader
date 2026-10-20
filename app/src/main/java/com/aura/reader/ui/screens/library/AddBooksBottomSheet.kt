@@ -1,33 +1,48 @@
 package com.aura.reader.ui.screens.library
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.ui.theme.LocalAppStrings
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,62 +51,179 @@ fun AddBooksBottomSheet(
     onDismiss: () -> Unit,
     onSelectFiles: () -> Unit,
     onScanFolder: () -> Unit,
-    onOpenCatalog: () -> Unit
+    onOpenCatalog: () -> Unit,
+    isLiquidGlass: Boolean = false
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val strings = LocalAppStrings.current
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp
-    ) {
-        Column(
+    if (isLiquidGlass) {
+        val isDark = isSystemInDarkTheme()
+        // Floating glass card anchored above the floating navigation island
+        // Navigation dock at bottom remains 100% visible!
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismiss
+                ),
+            contentAlignment = Alignment.BottomCenter
         ) {
-            Text(
-                text = strings.chooseAddMethod,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 16.dp)
+            // Subtle backdrop scrim behind the popup, above library content
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.36f))
             )
 
-            AddMethodItem(
-                icon = Icons.Default.InsertDriveFile,
-                title = strings.selectFiles,
-                subtitle = strings.selectFilesSubtitle,
-                onClick = {
-                    onDismiss()
-                    onSelectFiles()
+            // Frosted Floating Glass Card
+            LiquidGlassSurface(
+                shape = RoundedCornerShape(28.dp),
+                shadowElevation = 24.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 88.dp) // Anchored directly above the navigation island!
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {} // Consume click so card itself doesn't dismiss
+                    )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = strings.chooseAddMethod,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Surface(
+                            onClick = onDismiss,
+                            shape = CircleShape,
+                            color = if (isDark) Color(0x30FFFFFF) else Color(0x20000000),
+                            modifier = Modifier.size(30.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = strings.cancel,
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    AddMethodItem(
+                        icon = Icons.Default.InsertDriveFile,
+                        title = strings.selectFiles,
+                        subtitle = strings.selectFilesSubtitle,
+                        isGlass = true,
+                        onClick = {
+                            onDismiss()
+                            onSelectFiles()
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    AddMethodItem(
+                        icon = Icons.Default.FolderOpen,
+                        title = strings.scanFolder,
+                        subtitle = strings.scanFolderSubtitle,
+                        isGlass = true,
+                        onClick = {
+                            onDismiss()
+                            onScanFolder()
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    AddMethodItem(
+                        icon = Icons.Default.CloudDownload,
+                        title = strings.opdsCatalog,
+                        subtitle = strings.opdsCatalogSubtitle,
+                        isGlass = true,
+                        onClick = {
+                            onDismiss()
+                            onOpenCatalog()
+                        }
+                    )
                 }
-            )
+            }
+        }
+    } else {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-            AddMethodItem(
-                icon = Icons.Default.FolderOpen,
-                title = strings.scanFolder,
-                subtitle = strings.scanFolderSubtitle,
-                onClick = {
-                    onDismiss()
-                    onScanFolder()
-                }
-            )
+        ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = strings.chooseAddMethod,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
 
-            AddMethodItem(
-                icon = Icons.Default.CloudDownload,
-                title = strings.opdsCatalog,
-                subtitle = strings.opdsCatalogSubtitle,
-                onClick = {
-                    onDismiss()
-                    onOpenCatalog()
-                }
-            )
+                AddMethodItem(
+                    icon = Icons.Default.InsertDriveFile,
+                    title = strings.selectFiles,
+                    subtitle = strings.selectFilesSubtitle,
+                    onClick = {
+                        onDismiss()
+                        onSelectFiles()
+                    }
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                AddMethodItem(
+                    icon = Icons.Default.FolderOpen,
+                    title = strings.scanFolder,
+                    subtitle = strings.scanFolderSubtitle,
+                    onClick = {
+                        onDismiss()
+                        onScanFolder()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                AddMethodItem(
+                    icon = Icons.Default.CloudDownload,
+                    title = strings.opdsCatalog,
+                    subtitle = strings.opdsCatalogSubtitle,
+                    onClick = {
+                        onDismiss()
+                        onOpenCatalog()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }
@@ -101,15 +233,35 @@ private fun AddMethodItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
+    isGlass: Boolean = false,
     onClick: () -> Unit
 ) {
+    val isDark = isSystemInDarkTheme()
+    val containerColor = if (isGlass) {
+        if (isDark) Color(0x35FFFFFF) else Color(0x60FFFFFF)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    }
+    val border = if (isGlass) {
+        BorderStroke(
+            1.dp,
+            Brush.verticalGradient(
+                listOf(
+                    Color.White.copy(alpha = if (isDark) 0.35f else 0.70f),
+                    Color.White.copy(alpha = 0.08f)
+                )
+            )
+        )
+    } else null
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        shape = RoundedCornerShape(18.dp),
+        color = containerColor,
+        border = border
     ) {
         Row(
             modifier = Modifier
@@ -122,7 +274,7 @@ private fun AddMethodItem(
                 color = MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier.size(44.dp)
             ) {
-                androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,

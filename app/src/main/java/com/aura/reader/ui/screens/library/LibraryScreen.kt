@@ -24,6 +24,7 @@ import androidx.compose.material3.FabPosition
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.components.FloatingNavigationIsland
 import com.aura.reader.ui.components.MornyeFilterChip
+import com.aura.reader.ui.components.MornyeGlassCard
 import com.aura.reader.ui.components.ParallaxCoverViewer
 import com.aura.reader.util.BookShareUtils
 import androidx.compose.material.icons.filled.Share
@@ -216,6 +217,10 @@ fun LibraryScreen(
 
     var currentMainTab by rememberSaveable { mutableIntStateOf(0) }
 
+    BackHandler(enabled = showAddBooksSheet) {
+        showAddBooksSheet = false
+    }
+
     BackHandler(enabled = currentMainTab == 2) {
         currentMainTab = 0
     }
@@ -247,6 +252,7 @@ fun LibraryScreen(
     val updateInfo by viewModel.updateInfo.collectAsState()
     val foundFiles by viewModel.foundDeviceFiles.collectAsState()
     val readerSettings by viewModel.readerSettings.collectAsState()
+    val isGlass = readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
     val appLanguage by viewModel.appLanguage.collectAsState()
     val updateNotificationsEnabled by viewModel.updateNotificationsEnabled.collectAsState()
     val anonymousAnalyticsEnabled by viewModel.anonymousAnalyticsEnabled.collectAsState()
@@ -523,8 +529,12 @@ fun LibraryScreen(
                         },
                         scrollBehavior = scrollBehavior,
                         colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.background,
-                            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                            containerColor = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.background,
+                            scrolledContainerColor = if (isGlass) {
+                                if (isSystemInDarkTheme()) Color(0xB3000000) else Color(0xB3FFFFFF)
+                            } else {
+                                MaterialTheme.colorScheme.surfaceContainer
+                            }
                         )
                     )
                 }
@@ -544,8 +554,11 @@ fun LibraryScreen(
                 FloatingNavigationIsland(
                     designStyle = readerSettings.appDesignStyle,
                     clarity = readerSettings.glassClarity,
-                    selectedTab = currentMainTab,
+                    selectedTab = if (showAddBooksSheet) 1 else currentMainTab,
                     onMyBooksClick = {
+                        if (showAddBooksSheet) {
+                            showAddBooksSheet = false
+                        }
                         if (currentMainTab != 0) {
                             currentMainTab = 0
                         } else {
@@ -554,6 +567,9 @@ fun LibraryScreen(
                     },
                     onAddBookClick = { showAddBooksSheet = true },
                     onSettingsClick = {
+                        if (showAddBooksSheet) {
+                            showAddBooksSheet = false
+                        }
                         if (readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
                             currentMainTab = 2
                         } else {
@@ -571,7 +587,8 @@ fun LibraryScreen(
                 onDismiss = { showAddBooksSheet = false },
                 onSelectFiles = { launchFilePicker() },
                 onScanFolder = { openFolderLauncher.launch(null) },
-                onOpenCatalog = onOpenCatalog
+                onOpenCatalog = onOpenCatalog,
+                isLiquidGlass = isGlass
             )
         }
 
@@ -649,12 +666,9 @@ fun LibraryScreen(
                     // Instant Update Notification Banner
                     if (updateInfo != null && updateInfo!!.isAvailable && updateNotificationsEnabled) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            Card(
+                            MornyeGlassCard(
+                                isGlass = isGlass,
                                 shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                                ),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
@@ -675,12 +689,12 @@ fun LibraryScreen(
                                             text = strings.updateAvailableTitle(updateInfo!!.latestVersion),
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
                                             text = strings.updateBannerSubtitle,
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(8.dp))
@@ -703,9 +717,9 @@ fun LibraryScreen(
                     // Daily Reading Stats (Toggleable in Settings)
                     if (readingStatsEnabled) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            Surface(
+                            MornyeGlassCard(
+                                isGlass = isGlass,
                                 shape = RoundedCornerShape(20.dp),
-                                color = MaterialTheme.colorScheme.secondaryContainer,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(20.dp))
@@ -718,7 +732,7 @@ fun LibraryScreen(
                                     Icon(
                                         imageVector = Icons.Default.Timer,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
@@ -726,7 +740,7 @@ fun LibraryScreen(
                                         text = if (todayMinutes > 0) "${strings.todayReadingTime}: ${strings.minutesRead(todayMinutes)}" else strings.readingStatsEmpty,
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.weight(1f)
                                     )
                                     if (readingStatsData.currentStreakDays > 0) {
@@ -734,14 +748,14 @@ fun LibraryScreen(
                                             text = "🔥 ${readingStatsData.currentStreakDays}",
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                            color = MaterialTheme.colorScheme.primary
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                     }
                                     Icon(
                                         imageVector = Icons.Default.ChevronRight,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
@@ -758,20 +772,19 @@ fun LibraryScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            FilterChip(
-                                shape = RoundedCornerShape(12.dp),
+                            MornyeFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.ALL,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.ALL)) },
-                                label = { Text(strings.colAll) }
+                                label = { Text(strings.colAll) },
+                                isGlass = isGlass
                             )
-                            FilterChip(
-                                shape = RoundedCornerShape(12.dp),
+                            MornyeFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.READING,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.READING)) },
-                                label = { Text(strings.colReading) }
+                                label = { Text(strings.colReading) },
+                                isGlass = isGlass
                             )
-                            FilterChip(
-                                shape = RoundedCornerShape(12.dp),
+                            MornyeFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.FAVORITES,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FAVORITES)) },
                                 leadingIcon = {
@@ -782,34 +795,35 @@ fun LibraryScreen(
                                         tint = MaterialTheme.colorScheme.error
                                     )
                                 },
-                                label = { Text(strings.colFavorites) }
+                                label = { Text(strings.colFavorites) },
+                                isGlass = isGlass
                             )
-                            FilterChip(
-                                shape = RoundedCornerShape(12.dp),
+                            MornyeFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.UNREAD,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.UNREAD)) },
-                                label = { Text(strings.colUnread) }
+                                label = { Text(strings.colUnread) },
+                                isGlass = isGlass
                             )
-                            FilterChip(
-                                shape = RoundedCornerShape(12.dp),
+                            MornyeFilterChip(
                                 selected = activeCollectionFilter.type == CollectionFilterType.FINISHED,
                                 onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FINISHED)) },
-                                label = { Text(strings.colFinished) }
+                                label = { Text(strings.colFinished) },
+                                isGlass = isGlass
                             )
                             val hasAnySeries = remember(recentBooks) {
                                 recentBooks.any { !it.series.isNullOrBlank() }
                             }
                             if (hasAnySeries) {
-                                FilterChip(
+                                MornyeFilterChip(
                                     selected = activeCollectionFilter.type == CollectionFilterType.SERIES,
                                     onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.SERIES)) },
-                                    label = { Text(strings.colSeries) }
+                                    label = { Text(strings.colSeries) },
+                                    isGlass = isGlass
                                 )
                             }
                             for (colName in userCollections) {
                                 val isSelected = activeCollectionFilter.type == CollectionFilterType.CUSTOM && activeCollectionFilter.customName == colName
-                                FilterChip(
-                                    shape = RoundedCornerShape(12.dp),
+                                MornyeFilterChip(
                                     selected = isSelected,
                                     onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.CUSTOM, colName)) },
                                     trailingIcon = {
@@ -821,13 +835,16 @@ fun LibraryScreen(
                                                 .clickable { collectionToDelete = colName }
                                         )
                                     },
-                                    label = { Text(colName) }
+                                    label = { Text(colName) },
+                                    isGlass = isGlass
                                 )
                             }
-                            AssistChip(
+                            MornyeFilterChip(
+                                selected = false,
                                 onClick = { showNewCollectionDialog = true },
                                 leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                                label = { Text(strings.newCollection) }
+                                label = { Text(strings.newCollection) },
+                                isGlass = isGlass
                             )
                         }
                     }
@@ -1012,6 +1029,7 @@ fun LibraryScreen(
                             BookGridCard(
                                 book = book,
                                 index = index,
+                                isGlass = isGlass,
                                 isReorderMode = isReorderMode,
                                 wobbleAngle = wobbleAngle,
                                 wobbleOffset = wobbleOffset,
@@ -1070,6 +1088,7 @@ fun LibraryScreen(
                             BookCard(
                                 book = book,
                                 index = index,
+                                isGlass = isGlass,
                                 isReorderMode = isReorderMode,
                                 wobbleAngle = wobbleAngle,
                                 wobbleOffset = wobbleOffset,
@@ -1421,6 +1440,7 @@ fun LibraryScreen(
 fun BookCard(
     book: Book,
     index: Int = 0,
+    isGlass: Boolean = false,
     isReorderMode: Boolean = false,
     wobbleAngle: Float = 0f,
     wobbleOffset: Float = 0f,
@@ -1499,8 +1519,26 @@ fun BookCard(
             },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDraggingThis) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainerLow
-        )
+            containerColor = if (isGlass) {
+                if (isSystemInDarkTheme()) Color(0x331C1E26) else Color(0x70FFFFFF)
+            } else if (isDraggingThis) {
+                MaterialTheme.colorScheme.surfaceContainerHighest
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            }
+        ),
+        border = if (isGlass) {
+            val isDark = isSystemInDarkTheme()
+            BorderStroke(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDark) 0.25f else 0.65f),
+                        Color.White.copy(alpha = 0.04f)
+                    )
+                )
+            )
+        } else null
     ) {
         Row(
             modifier = Modifier
@@ -1884,6 +1922,7 @@ fun AuraLogoIcon(
 fun BookGridCard(
     book: Book,
     index: Int = 0,
+    isGlass: Boolean = false,
     isReorderMode: Boolean = false,
     wobbleAngle: Float = 0f,
     wobbleOffset: Float = 0f,
@@ -1963,8 +2002,26 @@ fun BookGridCard(
             },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDraggingThis) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainerLow
-        )
+            containerColor = if (isGlass) {
+                if (isSystemInDarkTheme()) Color(0x331C1E26) else Color(0x70FFFFFF)
+            } else if (isDraggingThis) {
+                MaterialTheme.colorScheme.surfaceContainerHighest
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            }
+        ),
+        border = if (isGlass) {
+            val isDark = isSystemInDarkTheme()
+            BorderStroke(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDark) 0.25f else 0.65f),
+                        Color.White.copy(alpha = 0.04f)
+                    )
+                )
+            )
+        } else null
     ) {
         Column(
             modifier = Modifier
