@@ -1,18 +1,21 @@
 package com.aura.reader.ui.screens.settings
 
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.IconButton
-
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,17 +26,30 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SystemUpdate
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Contrast
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,11 +57,13 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -53,37 +71,39 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aura.reader.R
-import android.widget.Toast
-import androidx.compose.foundation.layout.Box
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.onGloballyPositioned
-import com.aura.reader.ui.components.PixelFullScreenBurst
-import com.aura.reader.ui.screens.reader.ThemeOptionButton
-import com.aura.reader.ui.theme.AmoledBackground
-import com.aura.reader.ui.theme.AmoledText
-import com.aura.reader.ui.theme.SepiaBackground
-import com.aura.reader.ui.theme.SepiaText
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.opds.OpdsService
+import com.aura.reader.ui.components.PixelFullScreenBurst
+import com.aura.reader.ui.components.expressiveBounce
+import com.aura.reader.ui.theme.AmoledBackground
+import com.aura.reader.ui.theme.AmoledText
 import com.aura.reader.ui.theme.AppLanguage
 import com.aura.reader.ui.theme.LocalAppStrings
+import com.aura.reader.ui.theme.SepiaBackground
+import com.aura.reader.ui.theme.SepiaText
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+
 @Composable
 fun SettingsBottomSheet(
     currentTheme: ReaderThemeMode,
@@ -325,14 +345,7 @@ fun SettingsBottomSheet(
             Spacer(modifier = Modifier.height(20.dp))
 
             // 1. Theme Section
-            Text(
-                text = strings.themeSectionTitle,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-
+            val isSysDark = isSystemInDarkTheme()
             val lightColors = listOf(Color(0xFFFFF9E6), Color(0xFFFFE082), Color(0xFFF5F5F5), Color(0xFFE0E0E0), Color(0xFFFFFDE7), Color(0xFFFFFFFF))
             val darkColors = listOf(Color(0xFFECEFF1), Color(0xFFCFD8DC), Color(0xFFB0BEC5), Color(0xFF90A4AE), Color(0xFF78909C), Color(0xFFFFFFFF))
             val sepiaColors = listOf(Color(0xFFFAF0E6), Color(0xFFD7CCC8), Color(0xFFBCAAA4), Color(0xFFFFE0B2), Color(0xFFEFEBE9), Color(0xFFFFFFFF))
@@ -345,350 +358,243 @@ fun SettingsBottomSheet(
                 onThemeChange(mode)
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                ThemeOptionButton(
-                    label = strings.themeLight,
-                    bgColor = Color(0xFFFFFFFF),
-                    textColor = Color(0xFF1D1B20),
-                    isSelected = currentTheme == ReaderThemeMode.LIGHT,
-                    hapticEnabled = true,
-                    getSheetCoordinates = { sheetCoordinates },
-                    modifier = Modifier.weight(1f),
-                    onClick = { origin -> handleThemeClick(ReaderThemeMode.LIGHT, origin, lightColors) }
-                )
-
-                ThemeOptionButton(
-                    label = strings.themeDark,
-                    bgColor = Color(0xFF1E2125),
-                    textColor = Color(0xFFE2E2E6),
-                    isSelected = currentTheme == ReaderThemeMode.DARK,
-                    hapticEnabled = true,
-                    getSheetCoordinates = { sheetCoordinates },
-                    modifier = Modifier.weight(1f),
-                    onClick = { origin -> handleThemeClick(ReaderThemeMode.DARK, origin, darkColors) }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                ThemeOptionButton(
-                    label = strings.themeSepia,
-                    bgColor = SepiaBackground,
-                    textColor = SepiaText,
-                    isSelected = currentTheme == ReaderThemeMode.SEPIA,
-                    hapticEnabled = true,
-                    getSheetCoordinates = { sheetCoordinates },
-                    modifier = Modifier.weight(1f),
-                    onClick = { origin -> handleThemeClick(ReaderThemeMode.SEPIA, origin, sepiaColors) }
-                )
-
-                ThemeOptionButton(
-                    label = strings.themeAmoled,
-                    bgColor = AmoledBackground,
-                    textColor = AmoledText,
-                    isSelected = currentTheme == ReaderThemeMode.AMOLED,
-                    hapticEnabled = true,
-                    getSheetCoordinates = { sheetCoordinates },
-                    modifier = Modifier.weight(1f),
-                    onClick = { origin -> handleThemeClick(ReaderThemeMode.AMOLED, origin, amoledColors) }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // System Auto-Theme Button
-            val isSysDark = androidx.compose.foundation.isSystemInDarkTheme()
-            ThemeOptionButton(
-                label = "${strings.themeSystem} (${if (isSysDark) strings.themeDark else strings.themeLight})",
-                bgColor = if (isSysDark) Color(0xFF252930) else Color(0xFFF0F3F6),
-                textColor = if (isSysDark) Color(0xFFE2E2E6) else Color(0xFF1D1B20),
-                isSelected = currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC,
-                hapticEnabled = true,
-                getSheetCoordinates = { sheetCoordinates },
-                modifier = Modifier.fillMaxWidth(),
-                onClick = { origin -> handleThemeClick(ReaderThemeMode.SYSTEM_DYNAMIC, origin, if (isSysDark) darkColors else lightColors) }
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Sync Themes Toggle Card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onSyncThemesChange(!syncThemesWithApp) },
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 12.dp)
-                    ) {
-                        Text(
-                            text = strings.syncThemesTitle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = strings.syncThemesSubtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = syncThemesWithApp,
-                        onCheckedChange = onSyncThemesChange
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Reader Theme Settings Navigation Button
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onOpenReaderThemeSettings() },
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MenuBook,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column {
-                            Text(
-                                text = strings.readerThemeSettingsTitle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = strings.readerThemeSettingsSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Material You Switch Card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onToggleMaterialYou(!materialYouEnabled) },
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 12.dp)
-                    ) {
-                        Text(
-                            text = strings.materialYouToggle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = strings.materialYouSubtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Switch(
-                        checked = materialYouEnabled,
-                        onCheckedChange = onToggleMaterialYou,
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.primary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 2. Language Section
             Text(
-                text = strings.languageSectionTitle,
+                text = strings.themeSectionTitle,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
-            Spacer(modifier = Modifier.height(10.dp))
 
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AppLanguage.entries.forEach { lang ->
-                    val selected = currentLanguage == lang
-                    FilterChip(
-                        selected = selected,
-                        onClick = { onLanguageChange(lang) },
-                        label = { Text(lang.title) },
-                        leadingIcon = if (selected) {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                        } else null,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // App Font Section
-            Text(
-                text = strings.appFontTitle,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = strings.appFontSubtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = appFont == "DEFAULT",
-                    onClick = { onAppFontChange("DEFAULT") },
-                    label = { Text(strings.appFontDefault) },
-                    leadingIcon = if (appFont == "DEFAULT") {
-                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                    } else null,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                )
-
-                FilterChip(
-                    selected = appFont == "GOOGLE_SANS",
-                    onClick = { onAppFontChange("GOOGLE_SANS") },
-                    label = { Text(strings.appFontGoogleSans) },
-                    leadingIcon = if (appFont == "GOOGLE_SANS") {
-                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                    } else null,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 3. Additional Features Section (Reading stats & Custom catalog)
-            Text(
-                text = strings.additionalFeaturesSectionTitle,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Feature 1: Reading Stats Card
+            // Segmented Theme Switcher Card
             Card(
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp)
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text(
-                                text = strings.readingStatsToggle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
+                        ExpressiveThemePill(
+                            label = strings.themeSystem,
+                            icon = Icons.Default.BrightnessAuto,
+                            isSelected = currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC,
+                            previewBgColor = if (isSysDark) Color(0xFF252930) else Color(0xFFF0F3F6),
+                            previewTextColor = if (isSysDark) Color(0xFFE2E2E6) else Color(0xFF1D1B20),
+                            getSheetCoordinates = { sheetCoordinates },
+                            onClick = { origin -> handleThemeClick(ReaderThemeMode.SYSTEM_DYNAMIC, origin, if (isSysDark) darkColors else lightColors) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        ExpressiveThemePill(
+                            label = strings.themeLight,
+                            icon = Icons.Default.LightMode,
+                            isSelected = currentTheme == ReaderThemeMode.LIGHT,
+                            previewBgColor = Color(0xFFFFFFFF),
+                            previewTextColor = Color(0xFF1D1B20),
+                            getSheetCoordinates = { sheetCoordinates },
+                            onClick = { origin -> handleThemeClick(ReaderThemeMode.LIGHT, origin, lightColors) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        ExpressiveThemePill(
+                            label = strings.themeDark,
+                            icon = Icons.Default.DarkMode,
+                            isSelected = currentTheme == ReaderThemeMode.DARK,
+                            previewBgColor = Color(0xFF1E2125),
+                            previewTextColor = Color(0xFFE2E2E6),
+                            getSheetCoordinates = { sheetCoordinates },
+                            onClick = { origin -> handleThemeClick(ReaderThemeMode.DARK, origin, darkColors) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ExpressiveThemePill(
+                            label = strings.themeSepia,
+                            icon = Icons.Default.MenuBook,
+                            isSelected = currentTheme == ReaderThemeMode.SEPIA,
+                            previewBgColor = SepiaBackground,
+                            previewTextColor = SepiaText,
+                            getSheetCoordinates = { sheetCoordinates },
+                            onClick = { origin -> handleThemeClick(ReaderThemeMode.SEPIA, origin, sepiaColors) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        ExpressiveThemePill(
+                            label = strings.themeAmoled,
+                            icon = Icons.Default.Contrast,
+                            isSelected = currentTheme == ReaderThemeMode.AMOLED,
+                            previewBgColor = AmoledBackground,
+                            previewTextColor = AmoledText,
+                            getSheetCoordinates = { sheetCoordinates },
+                            onClick = { origin -> handleThemeClick(ReaderThemeMode.AMOLED, origin, amoledColors) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Appearance Settings Group Card
+            ExpressiveSettingsGroup {
+                ExpressiveSettingsRow(
+                    title = strings.syncThemesTitle,
+                    subtitle = strings.syncThemesSubtitle,
+                    icon = { SettingsIconBox(Icons.Default.Palette) },
+                    onClick = { onSyncThemesChange(!syncThemesWithApp) },
+                    trailing = {
+                        Switch(
+                            checked = syncThemesWithApp,
+                            onCheckedChange = onSyncThemesChange
+                        )
+                    }
+                )
+                ExpressiveDivider()
+                ExpressiveSettingsRow(
+                    title = strings.readerThemeSettingsTitle,
+                    subtitle = strings.readerThemeSettingsSubtitle,
+                    icon = { SettingsIconBox(Icons.Default.MenuBook) },
+                    onClick = { onOpenReaderThemeSettings() },
+                    trailing = {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                )
+                ExpressiveDivider()
+                ExpressiveSettingsRow(
+                    title = strings.materialYouToggle,
+                    subtitle = strings.materialYouSubtitle,
+                    icon = { SettingsIconBox(Icons.Default.AutoAwesome) },
+                    onClick = { onToggleMaterialYou(!materialYouEnabled) },
+                    trailing = {
+                        Switch(
+                            checked = materialYouEnabled,
+                            onCheckedChange = onToggleMaterialYou,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
                             )
-                            Text(
-                                text = strings.readingStatsSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 2. Language & Fonts Section
+            Text(
+                text = strings.languageSectionTitle,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            )
+
+            ExpressiveSettingsGroup {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AppLanguage.entries.forEach { lang ->
+                            val selected = currentLanguage == lang
+                            FilterChip(
+                                selected = selected,
+                                onClick = { onLanguageChange(lang) },
+                                label = { Text(lang.title) },
+                                leadingIcon = if (selected) {
+                                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                } else null,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
                             )
                         }
+                    }
+                }
+                ExpressiveDivider()
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = strings.appFontTitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = strings.appFontSubtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = appFont == "DEFAULT",
+                            onClick = { onAppFontChange("DEFAULT") },
+                            label = { Text(strings.appFontDefault) },
+                            leadingIcon = if (appFont == "DEFAULT") {
+                                { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                            } else null,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        )
+
+                        FilterChip(
+                            selected = appFont == "GOOGLE_SANS",
+                            onClick = { onAppFontChange("GOOGLE_SANS") },
+                            label = { Text(strings.appFontGoogleSans) },
+                            leadingIcon = if (appFont == "GOOGLE_SANS") {
+                                { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                            } else null,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 3. Additional Features Section
+            Text(
+                text = strings.additionalFeaturesSectionTitle,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            )
+
+            ExpressiveSettingsGroup {
+                ExpressiveSettingsRow(
+                    title = strings.readingStatsToggle,
+                    subtitle = strings.readingStatsSubtitle,
+                    icon = { SettingsIconBox(Icons.Default.BarChart) },
+                    onClick = { onToggleReadingStats(!readingStatsEnabled) },
+                    trailing = {
                         Switch(
                             checked = readingStatsEnabled,
                             onCheckedChange = onToggleReadingStats,
@@ -698,52 +604,40 @@ fun SettingsBottomSheet(
                             )
                         )
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Feature 2: Reading Speed Reset Card (For bottom banner in book)
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+                )
+                ExpressiveDivider()
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text(
-                                text = strings.readingSpeedSettingTitle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = strings.resetReadingSpeedSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f).padding(end = 12.dp)
+                        ) {
+                            SettingsIconBox(Icons.Default.Speed)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = strings.readingSpeedSettingTitle,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = strings.resetReadingSpeedSubtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
-                        Icon(
-                            imageVector = Icons.Default.Speed,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
                     }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
+                    Spacer(modifier = Modifier.height(10.dp))
                     OutlinedButton(
                         onClick = { showResetSpeedConfirmDialog = true },
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(
@@ -755,36 +649,32 @@ fun SettingsBottomSheet(
                         Text(strings.resetReadingSpeedTitle)
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Feature 3: Custom OPDS Catalog Card
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+                ExpressiveDivider()
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text(
-                                text = strings.customOpdsToggle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = strings.customOpdsSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f).padding(end = 12.dp)
+                        ) {
+                            SettingsIconBox(Icons.Default.Dns)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = strings.customOpdsToggle,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = strings.customOpdsSubtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                         Switch(
                             checked = customOpdsEnabled,
@@ -795,16 +685,11 @@ fun SettingsBottomSheet(
                             )
                         )
                     }
-
                     if (customOpdsEnabled) {
                         Spacer(modifier = Modifier.height(14.dp))
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                        Spacer(modifier = Modifier.height(14.dp))
-
                         var urlText by remember(customOpdsUrl) {
                             mutableStateOf(if (customOpdsUrl == OpdsService.DEFAULT_BASE_URL || customOpdsUrl.contains("flibusta", ignoreCase = true)) "" else customOpdsUrl)
                         }
-
                         OutlinedTextField(
                             value = urlText,
                             onValueChange = {
@@ -831,45 +716,24 @@ fun SettingsBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 4. Updates Section
+            // 4. Updates & Analytics Section
             Text(
                 text = strings.updatesSectionTitle,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
-            Spacer(modifier = Modifier.height(10.dp))
 
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text(
-                                text = strings.updateNotificationsToggle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = strings.updateNotificationsSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+            ExpressiveSettingsGroup {
+                ExpressiveSettingsRow(
+                    title = strings.updateNotificationsToggle,
+                    subtitle = strings.updateNotificationsSubtitle,
+                    icon = { SettingsIconBox(Icons.Default.Notifications) },
+                    onClick = { onToggleUpdateNotifications(!updateNotificationsEnabled) },
+                    trailing = {
                         Switch(
                             checked = updateNotificationsEnabled,
                             onCheckedChange = onToggleUpdateNotifications,
@@ -879,27 +743,14 @@ fun SettingsBottomSheet(
                             )
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text(
-                                text = strings.anonymousAnalyticsToggle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = strings.anonymousAnalyticsSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                )
+                ExpressiveDivider()
+                ExpressiveSettingsRow(
+                    title = strings.anonymousAnalyticsToggle,
+                    subtitle = strings.anonymousAnalyticsSubtitle,
+                    icon = { SettingsIconBox(Icons.Default.Analytics) },
+                    onClick = { onToggleAnonymousAnalytics(!anonymousAnalyticsEnabled) },
+                    trailing = {
                         Switch(
                             checked = anonymousAnalyticsEnabled,
                             onCheckedChange = onToggleAnonymousAnalytics,
@@ -909,34 +760,41 @@ fun SettingsBottomSheet(
                             )
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
+                )
+                ExpressiveDivider()
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = strings.currentVersion(currentAppVersion),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.clickable {
-                                if (developerModeEnabled) {
-                                    showChannelDialog = true
-                                } else {
-                                    versionTapCount++
-                                    if (versionTapCount >= 7) {
-                                        versionTapCount = 0
-                                        showDevPasswordDialog = true
-                                    } else if (versionTapCount >= 3) {
-                                        val remaining = 7 - versionTapCount
-                                        Toast.makeText(context, "Осталось нажать $remaining раз(а)", Toast.LENGTH_SHORT).show()
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f).padding(end = 12.dp)
+                        ) {
+                            SettingsIconBox(Icons.Default.SystemUpdate)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = strings.currentVersion(currentAppVersion),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.clickable {
+                                    if (developerModeEnabled) {
+                                        showChannelDialog = true
+                                    } else {
+                                        versionTapCount++
+                                        if (versionTapCount >= 7) {
+                                            versionTapCount = 0
+                                            showDevPasswordDialog = true
+                                        } else if (versionTapCount >= 3) {
+                                            val remaining = 7 - versionTapCount
+                                            Toast.makeText(context, "$remaining", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
                                 }
-                            }
-                        )
-
+                            )
+                        }
                         OutlinedButton(
                             onClick = onCheckUpdates,
                             shape = RoundedCornerShape(12.dp)
@@ -950,7 +808,6 @@ fun SettingsBottomSheet(
                             Text(strings.checkUpdatesNow)
                         }
                     }
-
                     if (developerModeEnabled) {
                         Spacer(modifier = Modifier.height(14.dp))
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
@@ -973,7 +830,7 @@ fun SettingsBottomSheet(
                                 onClick = {
                                     onUpdateChannelChange("RELEASE")
                                     onCheckUpdates()
-                                    Toast.makeText(context, "${strings.updateChannelRelease}. Проверка обновлений...", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "${strings.updateChannelRelease}...", Toast.LENGTH_SHORT).show()
                                 },
                                 label = { Text(strings.updateChannelRelease) }
                             )
@@ -982,7 +839,7 @@ fun SettingsBottomSheet(
                                 onClick = {
                                     onUpdateChannelChange("BETA")
                                     onCheckUpdates()
-                                    Toast.makeText(context, "${strings.updateChannelBeta}. Проверка обновлений...", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "${strings.updateChannelBeta}...", Toast.LENGTH_SHORT).show()
                                 },
                                 label = { Text(strings.updateChannelBeta) }
                             )
@@ -991,219 +848,101 @@ fun SettingsBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(20.dp))
 
             // 5. Backup & Sync Section
             Text(
                 text = strings.backupSectionTitle,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
-            Spacer(modifier = Modifier.height(10.dp))
 
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Export to local file / Google Drive SAF
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onExportBackup),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CloudDownload,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = strings.createBackupTitle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = strings.createBackupSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+            ExpressiveSettingsGroup {
+                ExpressiveSettingsRow(
+                    title = strings.createBackupTitle,
+                    subtitle = strings.createBackupSubtitle,
+                    icon = { SettingsIconBox(Icons.Default.CloudDownload) },
+                    onClick = onExportBackup,
+                    trailing = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                    // Send to Google Drive via Android Share
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onSendToGoogleDrive),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = strings.sendToGoogleDriveTitle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = strings.sendToGoogleDriveSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                )
+                ExpressiveDivider()
+                ExpressiveSettingsRow(
+                    title = strings.sendToGoogleDriveTitle,
+                    subtitle = strings.sendToGoogleDriveSubtitle,
+                    icon = { SettingsIconBox(Icons.Default.Share) },
+                    onClick = onSendToGoogleDrive,
+                    trailing = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                    // Restore from backup
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onRestoreBackup),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = strings.restoreBackupTitle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = strings.restoreBackupSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                )
+                ExpressiveDivider()
+                ExpressiveSettingsRow(
+                    title = strings.restoreBackupTitle,
+                    subtitle = strings.restoreBackupSubtitle,
+                    icon = { SettingsIconBox(Icons.Default.History) },
+                    onClick = onRestoreBackup,
+                    trailing = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                }
+                )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(20.dp))
 
             // 6. About, GitHub & Donate Section
             Text(
                 text = strings.aboutSectionTitle,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
-            Spacer(modifier = Modifier.height(10.dp))
 
-            // Donate Card
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
+            ExpressiveSettingsGroup {
+                ExpressiveSettingsRow(
+                    title = strings.donate,
+                    subtitle = "https://dalink.to/koukku",
+                    icon = {
+                        SettingsIconBox(
+                            icon = Icons.Default.Favorite,
+                            tint = MaterialTheme.colorScheme.error,
+                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+                        )
+                    },
+                    onClick = {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://dalink.to/koukku"))
                         context.startActivity(intent)
+                    },
+                    trailing = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = strings.donate,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(26.dp)
-                    )
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = strings.donate,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
+                )
+                ExpressiveDivider()
+                ExpressiveSettingsRow(
+                    title = strings.githubRepository,
+                    subtitle = "https://github.com/Kouqqu/aura-reader",
+                    icon = {
+                        SettingsPainterIconBox(
+                            painter = painterResource(R.drawable.ic_github),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
-                        Text(
-                            text = "https://dalink.to/koukku",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // GitHub Repository Card
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
+                    },
+                    onClick = {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Kouqqu/aura-reader"))
                         context.startActivity(intent)
+                    },
+                    trailing = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_github),
-                        contentDescription = "GitHub",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(26.dp)
-                    )
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = strings.githubRepository,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "https://github.com/Kouqqu/aura-reader",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+                )
             }
         }
+
             if (burstTriggerKey > 0L && burstColors.isNotEmpty()) {
                 PixelFullScreenBurst(
                     triggerKey = burstTriggerKey,
@@ -1214,5 +953,192 @@ fun SettingsBottomSheet(
                 )
             }
         }
+    }
+}
+
+
+@Composable
+private fun ExpressiveThemePill(
+    label: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    previewBgColor: Color,
+    previewTextColor: Color,
+    getSheetCoordinates: () -> LayoutCoordinates?,
+    onClick: (Offset) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var pillCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val haptic = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+
+    val containerColor = if (isSelected) previewBgColor else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
+    val contentColor = if (isSelected) previewTextColor else MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+    val borderWidth = if (isSelected) 2.dp else 1.dp
+
+    Surface(
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            val sheet = getSheetCoordinates()
+            val btn = pillCoordinates
+            val centerOffset = if (sheet != null && sheet.isAttached && btn != null && btn.isAttached) {
+                sheet.localPositionOf(btn, Offset(btn.size.width / 2f, btn.size.height / 2f))
+            } else {
+                Offset(btn?.size?.width?.div(2f) ?: 100f, 100f)
+            }
+            onClick(centerOffset)
+        },
+        interactionSource = interactionSource,
+        shape = RoundedCornerShape(16.dp),
+        color = containerColor,
+        border = BorderStroke(borderWidth, borderColor),
+        modifier = modifier
+            .height(48.dp)
+            .expressiveBounce(interactionSource)
+            .onGloballyPositioned { pillCoordinates = it }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = label,
+                color = contentColor,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingsIconBox(
+    icon: ImageVector,
+    tint: Color = MaterialTheme.colorScheme.primary,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+    contentDescription: String? = null
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = containerColor,
+        modifier = Modifier.size(38.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = tint,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingsPainterIconBox(
+    painter: Painter,
+    tint: Color = MaterialTheme.colorScheme.onSurface,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+    contentDescription: String? = null
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = containerColor,
+        modifier = Modifier.size(38.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                painter = painter,
+                contentDescription = contentDescription,
+                tint = tint,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExpressiveSettingsGroup(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        modifier = modifier.fillMaxWidth(),
+        content = content
+    )
+}
+
+@Composable
+private fun ExpressiveDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = 66.dp, end = 16.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+    )
+}
+
+@Composable
+private fun ExpressiveSettingsRow(
+    title: String,
+    subtitle: String? = null,
+    icon: @Composable () -> Unit,
+    onClick: (() -> Unit)? = null,
+    trailing: @Composable () -> Unit
+) {
+    val rowModifier = if (onClick != null) {
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp)
+    } else {
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp)
+    }
+
+    Row(
+        modifier = rowModifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f).padding(end = 12.dp)
+        ) {
+            icon()
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (!subtitle.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        trailing()
     }
 }

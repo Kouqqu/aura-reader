@@ -196,7 +196,8 @@ fun OpdsScreen(
             onOpenBook = { openedBook ->
                 viewModel.selectBookForDetails(null)
                 onOpenBook(openedBook)
-            }
+            },
+            onCancelDownload = { viewModel.cancelDownload(book.id) }
         )
     }
 
@@ -1205,7 +1206,8 @@ fun OpdsBookDetailsBottomSheet(
     onDismiss: () -> Unit,
     onCoverClick: () -> Unit = {},
     onDownload: (BookFormat) -> Unit,
-    onOpenBook: (Book) -> Unit
+    onOpenBook: (Book) -> Unit,
+    onCancelDownload: (() -> Unit)? = null
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val strings = LocalAppStrings.current
@@ -1397,16 +1399,18 @@ fun OpdsBookDetailsBottomSheet(
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
-                        IconButton(
-                            onClick = { viewModel.cancelDownload(book.id) },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = strings.cancel,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(18.dp)
-                            )
+                        if (onCancelDownload != null) {
+                            IconButton(
+                                onClick = onCancelDownload,
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = strings.cancel,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
