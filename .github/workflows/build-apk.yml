@@ -104,16 +104,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ env.APP_VERSION }}"
-          name: "Aura Reader v${{ env.APP_VERSION }}"
+          name: "Aura Reader v${{ env.APP_VERSION }} (Beta)"
           prerelease: true
           make_latest: false
           body: |
-            Aura Reader v${{ env.APP_VERSION }} (Beta):
+            Aura Reader v${{ env.APP_VERSION }} (Beta)
 
-            ✨ **Что нового**:
-            - 📊 **Анонимная статистика**: счётчик числа читателей с возможностью выключения в Настройках.
-            - ✍️ **Выделение текста**: починили маркеры выделения на несколько слов и предложений.
-            - 🛠️ Оптимизации и исправления ошибок.
+            🚀 Новая бета-версия, тестирование новых функций и исправлений.
           files: AuraReader.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

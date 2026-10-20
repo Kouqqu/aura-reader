@@ -227,7 +227,6 @@ fun LibraryScreen(
     var showReadingStatsSheet by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsState()
     val updateInfo by viewModel.updateInfo.collectAsState()
-    val downloadProgress by viewModel.downloadProgress.collectAsState()
     val foundFiles by viewModel.foundDeviceFiles.collectAsState()
     val readerSettings by viewModel.readerSettings.collectAsState()
     val appLanguage by viewModel.appLanguage.collectAsState()
@@ -582,14 +581,14 @@ fun LibraryScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Button(
                                         onClick = {
-                                            viewModel.startUpdateDownload(context, updateInfo!!.downloadUrl)
+                                            viewModel.openUpdatePage(context, updateInfo!!.releaseUrl)
                                         },
                                         shape = RoundedCornerShape(12.dp),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = MaterialTheme.colorScheme.primary
                                         )
                                     ) {
-                                        Text(strings.update)
+                                        Text(strings.download)
                                     }
                                 }
                             }
@@ -1010,59 +1009,7 @@ fun LibraryScreen(
                 }
             }
 
-            if (downloadProgress != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(24.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        tonalElevation = 6.dp,
-                        modifier = Modifier
-                            .fillMaxWidth(0.85f)
-                            .padding(16.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.SystemUpdate,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(36.dp)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = strings.downloadingUpdate,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            val percent = ((downloadProgress ?: 0f) * 100).toInt().coerceIn(0, 100)
-                            Text(
-                                text = "$percent%",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            LinearProgressIndicator(
-                                progress = { downloadProgress ?: 0f },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                            )
-                        }
-                    }
-                }
-            } else if (uiState is LibraryUiState.Loading) {
+            if (uiState is LibraryUiState.Loading) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -1102,9 +1049,9 @@ fun LibraryScreen(
             confirmButton = {
                 Button(onClick = {
                     viewModel.dismissUpdateDialog()
-                    viewModel.startUpdateDownload(context, info.downloadUrl)
+                    viewModel.openUpdatePage(context, info.releaseUrl)
                 }) {
-                    Text(strings.update)
+                    Text(strings.download)
                 }
             },
             dismissButton = {

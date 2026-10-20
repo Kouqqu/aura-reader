@@ -554,17 +554,8 @@ class LibraryViewModel(
         }
     }
 
-    fun startUpdateDownload(context: Context, downloadUrl: String) {
-        viewModelScope.launch {
-            _downloadProgress.value = 0f
-            val result = AppUpdateManager.downloadAndInstallApk(context, downloadUrl) { progress ->
-                _downloadProgress.value = progress
-            }
-            _downloadProgress.value = null
-            result.onFailure { e ->
-                _uiState.value = LibraryUiState.Error("Ошибка загрузки обновления: ${e.localizedMessage}")
-            }
-        }
+    fun openUpdatePage(context: Context, releaseUrl: String) {
+        AppUpdateManager.openReleasePage(context, releaseUrl)
     }
 
     fun scanDeviceForBooks() {
