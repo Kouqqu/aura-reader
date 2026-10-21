@@ -130,7 +130,8 @@ private const val LIQUID_REFRACTION_AGSL = """
         // Continuous convex lens deflection profile (smooth cosine bell: 1 at edge, 0 at center with zero derivative)
         float falloff = 0.5 * (1.0 + cos(t * 3.14159265));
         float slope = falloff * uRefractionDepth * uIntensity;
-        float2 normal = (dist > 0.001) ? (delta / dist) : float2(0.0, 0.0);
+        // Dampen vertical displacement so symbols never jump vertically
+        float2 normal = (dist > 0.001) ? float2(delta.x / dist, (delta.y / dist) * 0.20) : float2(0.0, 0.0);
         float2 offset = -normal * (slope * bevelWidth);
         
         // Chromatic dispersion: delicate optical prism separation on the outer rim
@@ -323,8 +324,8 @@ fun FloatingNavigationIsland(
                         )
                     } else Modifier
                 )
-                .height(58.dp)
-                .width(276.dp)
+                .height(60.dp)
+                .width(294.dp)
                 .clip(dockShape)
                 .then(hazeModifier)
                 .background(dockBgColor)
@@ -337,7 +338,7 @@ fun FloatingNavigationIsland(
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 6.dp, vertical = 3.dp)
+                    .padding(horizontal = 4.dp, vertical = 3.dp)
             ) {
                 val tabWidth = maxWidth / 3
                 val tabWidthPx = with(density) { tabWidth.toPx() }
@@ -366,7 +367,7 @@ fun FloatingNavigationIsland(
 
                 // Tactile pill expansion:
                 // - Full hold (1.0f) while dragging
-                // - Snappy, silky-smooth response on tap: instant swell, immediate smooth return without hanging
+                // - Clean, snappy response on tap: instant swell, immediate smooth return without hanging
                 val isHolding = isDragging || isPressed
                 val targetExpansion = if (isDragging) 1.0f else if (isPressed) 0.85f else 0.0f
                 val expansionProgress by animateFloatAsState(
@@ -385,11 +386,10 @@ fun FloatingNavigationIsland(
                     label = "pillExpansion"
                 )
 
-                // Refraction optics: ONLY active during movement / sliding (offsetDelta > 2.0f or dragging)
-                // At rest: strictly 0.0f so icons/text are 100% natural, crisp, and unwarped!
-                val offsetDelta = abs(animatedLensOffsetPx - restingOffsetPx)
-                val isMoving = isDragging || offsetDelta > 2.0f
-                val targetInteraction = if (isMoving) 1.0f else 0.0f
+                // Refraction optics:
+                // - Active strictly while dragging (1.0f) where it scans smoothly across icons
+                // - Completely off during tap (0.0f) so symbols NEVER jump or warp on click!
+                val targetInteraction = if (isDragging) 1.0f else 0.0f
                 val interactionStrength by animateFloatAsState(
                     targetValue = targetInteraction,
                     animationSpec = tween(durationMillis = 150),
@@ -397,13 +397,13 @@ fun FloatingNavigationIsland(
                 )
 
                 // Physical Pill dimensions:
-                // Horizontally expanded slightly wider for generous touch targets
+                // Expanded generously for comfortable symbol area (no "symbols on the edge")
                 val basePillWidthPx = tabWidthPx - with(density) { 2.dp.toPx() }
-                val currentPillWidthPx = basePillWidthPx * (1.0f + 0.12f * expansionProgress)
+                val currentPillWidthPx = basePillWidthPx * (1.0f + 0.10f * expansionProgress)
 
-                // Vertically: at rest 42dp, on press expands to fill the entire 52dp container height (zero gap!)
-                val containerHeightPx = with(density) { 52.dp.toPx() }
-                val restingPillHeightPx = with(density) { 42.dp.toPx() }
+                // Vertically: at rest 46dp, on press expands to fill the entire 54dp container height (zero gap!)
+                val containerHeightPx = with(density) { 54.dp.toPx() }
+                val restingPillHeightPx = with(density) { 46.dp.toPx() }
                 val currentPillHeightPx = restingPillHeightPx + (containerHeightPx - restingPillHeightPx) * expansionProgress
 
                 val pillCenterXPx = animatedLensOffsetPx + tabWidthPx / 2f
