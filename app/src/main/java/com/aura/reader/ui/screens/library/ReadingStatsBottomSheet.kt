@@ -80,7 +80,7 @@ fun ReadingStatsBottomSheet(
 
     val sheetBgColor = if (isLiquidGlass) {
         if (isDark) {
-            if (isAmoled) Color(0xFF000000) else Color(0xFF141722)
+            if (isAmoled) Color(0xFF000000) else Color(0xFF14151C)
         } else {
             Color(0xFFF2F3F8)
         }

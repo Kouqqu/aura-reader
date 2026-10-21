@@ -1455,7 +1455,7 @@ private fun ExpressiveSettingsGroup(
         val isSepia = LocalIsSepia.current
         val isAmoled = LocalIsAmoled.current
         val cardColor = if (isDark) {
-            if (isAmoled) Color(0xFF14161E) else Color(0xFF1C1F2B)
+            if (isAmoled) Color(0xFF141419) else Color(0xFF1F2129)
         } else if (isSepia) {
             Color(0xFFFAF2E7)
         } else {

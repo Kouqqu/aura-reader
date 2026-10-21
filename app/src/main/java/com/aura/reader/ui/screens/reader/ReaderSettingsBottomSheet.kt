@@ -155,7 +155,7 @@ fun ReaderSettingsBottomSheet(
         if (isSepia) {
             Color(0xFFFAF0E6)
         } else if (isThemeDark) {
-            if (isAmoled) Color(0xFF000000) else Color(0xFF141722)
+            if (isAmoled) Color(0xFF000000) else Color(0xFF14151C)
         } else {
             Color(0xFFF2F3F8)
         }
@@ -167,10 +167,10 @@ fun ReaderSettingsBottomSheet(
         if (isThemeDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
     } else Color.Transparent
 
-    // Card background with clean contrast
+    // Card background with clean contrast in neutral slate grey-blue
     val cardBg = if (isGlass) {
         if (isThemeDark) {
-            if (isAmoled) Color(0xFF16181F) else Color(0xFF1E212D)
+            if (isAmoled) Color(0xFF141419) else Color(0xFF1F2129)
         } else {
             Color(0xFFFFFFFF)
         }
@@ -187,11 +187,8 @@ fun ReaderSettingsBottomSheet(
         MaterialTheme.colorScheme.onSurface
     }
 
-    val sectionTitleColor = if (isGlass) {
-        if (isThemeDark) Color(0xFF82B1FF) else MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.primary
-    }
+    // Design system purple primary accent for section titles across all modes
+    val sectionTitleColor = MaterialTheme.colorScheme.primary
 
     val itemTitleColor = if (isGlass) {
         if (isThemeDark) Color.White else Color(0xFF1A1C1E)
@@ -207,14 +204,14 @@ fun ReaderSettingsBottomSheet(
 
     val chipColors = FilterChipDefaults.filterChipColors(
         containerColor = if (isGlass) {
-            if (isThemeDark) Color(0xFF1E212D) else Color(0xFFEEEEF2)
+            if (isThemeDark) {
+                if (isAmoled) Color(0xFF141419) else Color(0xFF1F2129)
+            } else Color(0xFFEEEEF2)
         } else MaterialTheme.colorScheme.surfaceContainerLow,
         labelColor = if (isGlass) {
             if (isThemeDark) Color(0xFFE2E2E6) else Color(0xFF1C1B1F)
         } else MaterialTheme.colorScheme.onSurface,
-        iconColor = if (isGlass) {
-            if (isThemeDark) Color(0xFF82B1FF) else MaterialTheme.colorScheme.primary
-        } else MaterialTheme.colorScheme.primary,
+        iconColor = MaterialTheme.colorScheme.primary,
         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
         selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
         selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
