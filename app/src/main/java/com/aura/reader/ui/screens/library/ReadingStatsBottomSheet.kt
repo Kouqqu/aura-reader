@@ -80,9 +80,9 @@ fun ReadingStatsBottomSheet(
 
     val sheetBgColor = if (isLiquidGlass) {
         if (isDark) {
-            if (isAmoled) Color(0xF6121316) else Color(0xF4181A20)
+            if (isAmoled) Color(0xFF000000) else Color(0xFF141722)
         } else {
-            Color(0xF8F6F7FA)
+            Color(0xFFF2F3F8)
         }
     } else {
         MaterialTheme.colorScheme.surfaceContainerHigh
@@ -96,15 +96,19 @@ fun ReadingStatsBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         dragHandle = {
-            Box(
-                modifier = Modifier
-                    .padding(vertical = 12.dp)
-                    .size(width = 36.dp, height = 4.5.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isDark) Color.White.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.15f)
-                    )
-            )
+            if (isLiquidGlass) {
+                Box(
+                    modifier = Modifier
+                        .padding(vertical = 12.dp)
+                        .size(width = 36.dp, height = 4.5.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isDark) Color.White.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.15f)
+                        )
+                )
+            } else {
+                BottomSheetDefaults.DragHandle()
+            }
         },
         containerColor = sheetBgColor,
         scrimColor = Color.Black.copy(alpha = 0.65f),

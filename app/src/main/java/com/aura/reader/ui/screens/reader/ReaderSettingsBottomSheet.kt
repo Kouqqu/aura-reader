@@ -29,11 +29,14 @@ import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -147,13 +150,14 @@ fun ReaderSettingsBottomSheet(
     val isAmoled = settings.themeMode == ReaderThemeMode.AMOLED
     val isSepia = settings.themeMode == ReaderThemeMode.SEPIA
 
+    // Solid opaque sheet background: ZERO bleed-through from underlying screens
     val sheetBgColor = if (isGlass) {
         if (isSepia) {
-            Color(0xFBF5EBE1)
+            Color(0xFFFAF0E6)
         } else if (isThemeDark) {
-            if (isAmoled) Color(0xF6121316) else Color(0xF4181A20)
+            if (isAmoled) Color(0xFF000000) else Color(0xFF141722)
         } else {
-            Color(0xF8F6F7FA)
+            Color(0xFFF2F3F8)
         }
     } else {
         MaterialTheme.colorScheme.surfaceContainerHigh
@@ -163,14 +167,83 @@ fun ReaderSettingsBottomSheet(
         if (isThemeDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
     } else Color.Transparent
 
+    // Card background with clean contrast
     val cardBg = if (isGlass) {
-        if (isThemeDark) Color(0x18FFFFFF) else Color(0x0A000000)
+        if (isThemeDark) {
+            if (isAmoled) Color(0xFF16181F) else Color(0xFF1E212D)
+        } else {
+            Color(0xFFFFFFFF)
+        }
     } else {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     }
     val cardBorder = if (isGlass) {
-        if (isThemeDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
+        if (isThemeDark) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.06f)
     } else Color.Transparent
+
+    val headerTitleColor = if (isGlass) {
+        if (isThemeDark) Color.White else Color(0xFF1A1C1E)
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    val sectionTitleColor = if (isGlass) {
+        if (isThemeDark) Color(0xFF82B1FF) else MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+
+    val itemTitleColor = if (isGlass) {
+        if (isThemeDark) Color.White else Color(0xFF1A1C1E)
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    val itemSubtitleColor = if (isGlass) {
+        if (isThemeDark) Color(0xFFB0B3BA) else Color(0xFF49454F)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val chipColors = FilterChipDefaults.filterChipColors(
+        containerColor = if (isGlass) {
+            if (isThemeDark) Color(0xFF1E212D) else Color(0xFFEEEEF2)
+        } else MaterialTheme.colorScheme.surfaceContainerLow,
+        labelColor = if (isGlass) {
+            if (isThemeDark) Color(0xFFE2E2E6) else Color(0xFF1C1B1F)
+        } else MaterialTheme.colorScheme.onSurface,
+        iconColor = if (isGlass) {
+            if (isThemeDark) Color(0xFF82B1FF) else MaterialTheme.colorScheme.primary
+        } else MaterialTheme.colorScheme.primary,
+        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
+    )
+    val chipBorder = if (isGlass) {
+        FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = false,
+            borderColor = if (isThemeDark) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.10f),
+            selectedBorderColor = MaterialTheme.colorScheme.primary
+        )
+    } else FilterChipDefaults.filterChipBorder(enabled = true, selected = false)
+
+    val textFieldColors = if (isGlass) {
+        OutlinedTextFieldDefaults.colors(
+            focusedTextColor = itemTitleColor,
+            unfocusedTextColor = itemTitleColor,
+            focusedContainerColor = cardBg,
+            unfocusedContainerColor = cardBg,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = if (isThemeDark) Color.White.copy(alpha = 0.20f) else Color.Black.copy(alpha = 0.15f),
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            unfocusedLabelColor = itemSubtitleColor,
+            focusedTrailingIconColor = MaterialTheme.colorScheme.primary,
+            unfocusedTrailingIconColor = itemSubtitleColor
+        )
+    } else {
+        OutlinedTextFieldDefaults.colors()
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -191,7 +264,7 @@ fun ReaderSettingsBottomSheet(
             }
         },
         containerColor = sheetBgColor,
-        scrimColor = Color.Black.copy(alpha = if (isGlass) 0.65f else 0.45f),
+        scrimColor = Color.Black.copy(alpha = if (isGlass) 0.70f else 0.50f),
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         modifier = if (isGlass) {
             Modifier.border(
@@ -217,6 +290,7 @@ fun ReaderSettingsBottomSheet(
                     text = strings.readerSettingsTitle,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
+                    color = headerTitleColor,
                     modifier = Modifier.padding(bottom = 20.dp)
                 )
 
@@ -224,7 +298,8 @@ fun ReaderSettingsBottomSheet(
                 Text(
                     text = strings.themeModeTitle,
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontWeight = FontWeight.Bold,
+                    color = sectionTitleColor
                 )
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -317,12 +392,12 @@ fun ReaderSettingsBottomSheet(
                                     text = strings.materialYouToggle,
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = itemTitleColor
                                 )
                                 Text(
                                     text = strings.materialYouSubtitle,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = itemSubtitleColor
                                 )
                             }
                             Switch(
@@ -344,7 +419,8 @@ fun ReaderSettingsBottomSheet(
                     Text(
                         text = strings.fontSizeTitle,
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.Bold,
+                        color = sectionTitleColor
                     )
                     Text(
                         text = "${settings.fontSizeSp.toInt()} sp",
@@ -358,7 +434,7 @@ fun ReaderSettingsBottomSheet(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("A", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.outline)
+                    Text("A", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = itemSubtitleColor)
                     Slider(
                         value = settings.fontSizeSp,
                         onValueChange = onFontSizeChange,
@@ -368,7 +444,7 @@ fun ReaderSettingsBottomSheet(
                             .weight(1f)
                             .padding(horizontal = 12.dp)
                     )
-                    Text("A", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.outline)
+                    Text("A", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = itemTitleColor)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -377,7 +453,8 @@ fun ReaderSettingsBottomSheet(
                 Text(
                     text = strings.fontFamilyTitle,
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontWeight = FontWeight.Bold,
+                    color = sectionTitleColor
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -393,6 +470,8 @@ fun ReaderSettingsBottomSheet(
                             onFontFamilyChange(ReaderFontFamily.SERIF)
                         },
                         label = { Text(strings.fontFamilySerif, maxLines = 1, softWrap = false) },
+                        colors = chipColors,
+                        border = chipBorder,
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.SERIF) {
                             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                         } else null
@@ -404,6 +483,8 @@ fun ReaderSettingsBottomSheet(
                             onFontFamilyChange(ReaderFontFamily.SANS_SERIF)
                         },
                         label = { Text(strings.fontFamilySansSerif, maxLines = 1, softWrap = false) },
+                        colors = chipColors,
+                        border = chipBorder,
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.SANS_SERIF) {
                             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                         } else null
@@ -415,6 +496,8 @@ fun ReaderSettingsBottomSheet(
                             onFontFamilyChange(ReaderFontFamily.MONOSPACE)
                         },
                         label = { Text(strings.fontFamilyMonospace, maxLines = 1, softWrap = false) },
+                        colors = chipColors,
+                        border = chipBorder,
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.MONOSPACE) {
                             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                         } else null
@@ -448,7 +531,8 @@ fun ReaderSettingsBottomSheet(
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = textFieldColors
                     )
                     ExposedDropdownMenu(
                         expanded = fontDropdownExpanded,
@@ -477,7 +561,8 @@ fun ReaderSettingsBottomSheet(
                 Text(
                     text = strings.lineHeightTitle,
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontWeight = FontWeight.Bold,
+                    color = sectionTitleColor
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -490,17 +575,23 @@ fun ReaderSettingsBottomSheet(
                     FilterChip(
                         selected = settings.lineHeightMultiplier == 1.2f,
                         onClick = { onLineHeightChange(1.2f) },
-                        label = { Text("1.2x", maxLines = 1, softWrap = false) }
+                        label = { Text("1.2x", maxLines = 1, softWrap = false) },
+                        colors = chipColors,
+                        border = chipBorder
                     )
                     FilterChip(
                         selected = settings.lineHeightMultiplier == 1.5f,
                         onClick = { onLineHeightChange(1.5f) },
-                        label = { Text("1.5x", maxLines = 1, softWrap = false) }
+                        label = { Text("1.5x", maxLines = 1, softWrap = false) },
+                        colors = chipColors,
+                        border = chipBorder
                     )
                     FilterChip(
                         selected = settings.lineHeightMultiplier == 1.8f,
                         onClick = { onLineHeightChange(1.8f) },
-                        label = { Text("1.8x", maxLines = 1, softWrap = false) }
+                        label = { Text("1.8x", maxLines = 1, softWrap = false) },
+                        colors = chipColors,
+                        border = chipBorder
                     )
                 }
 
@@ -525,12 +616,13 @@ fun ReaderSettingsBottomSheet(
                             Text(
                                 text = strings.readingModeTitle,
                                 style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.SemiBold,
+                                color = itemTitleColor
                             )
                             Text(
                                 text = if (settings.pagingMode) strings.readingModePaged else strings.readingModeScroll,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = itemSubtitleColor
                             )
                         }
                         Switch(
@@ -545,7 +637,8 @@ fun ReaderSettingsBottomSheet(
                     Text(
                         text = strings.pageAnimationSectionTitle,
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.Bold,
+                        color = sectionTitleColor
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
@@ -555,17 +648,23 @@ fun ReaderSettingsBottomSheet(
                         FilterChip(
                             selected = settings.pageAnimation == PageTurnAnimation.SLIDE,
                             onClick = { onPageAnimationChange(PageTurnAnimation.SLIDE) },
-                            label = { Text(strings.pageAnimationSlide, maxLines = 1, softWrap = false) }
+                            label = { Text(strings.pageAnimationSlide, maxLines = 1, softWrap = false) },
+                            colors = chipColors,
+                            border = chipBorder
                         )
                         FilterChip(
                             selected = settings.pageAnimation == PageTurnAnimation.INSTANT,
                             onClick = { onPageAnimationChange(PageTurnAnimation.INSTANT) },
-                            label = { Text(strings.pageAnimationInstant, maxLines = 1, softWrap = false) }
+                            label = { Text(strings.pageAnimationInstant, maxLines = 1, softWrap = false) },
+                            colors = chipColors,
+                            border = chipBorder
                         )
                         FilterChip(
                             selected = settings.pageAnimation == PageTurnAnimation.CURL,
                             onClick = { onPageAnimationChange(PageTurnAnimation.CURL) },
-                            label = { Text(strings.pageAnimationCurl, maxLines = 1, softWrap = false) }
+                            label = { Text(strings.pageAnimationCurl, maxLines = 1, softWrap = false) },
+                            colors = chipColors,
+                            border = chipBorder
                         )
                     }
 
@@ -573,12 +672,13 @@ fun ReaderSettingsBottomSheet(
                     Text(
                         text = strings.twoColumnSpreadSectionTitle,
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.Bold,
+                        color = sectionTitleColor
                     )
                     Text(
                         text = strings.twoColumnSpreadSubtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                        color = itemSubtitleColor,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -589,17 +689,23 @@ fun ReaderSettingsBottomSheet(
                         FilterChip(
                             selected = settings.twoColumnMode == TwoColumnMode.AUTO,
                             onClick = { onTwoColumnModeChange(TwoColumnMode.AUTO) },
-                            label = { Text(strings.twoColumnSpreadAuto, maxLines = 1, softWrap = false) }
+                            label = { Text(strings.twoColumnSpreadAuto, maxLines = 1, softWrap = false) },
+                            colors = chipColors,
+                            border = chipBorder
                         )
                         FilterChip(
                             selected = settings.twoColumnMode == TwoColumnMode.OFF,
                             onClick = { onTwoColumnModeChange(TwoColumnMode.OFF) },
-                            label = { Text(strings.twoColumnSpreadOff, maxLines = 1, softWrap = false) }
+                            label = { Text(strings.twoColumnSpreadOff, maxLines = 1, softWrap = false) },
+                            colors = chipColors,
+                            border = chipBorder
                         )
                         FilterChip(
                             selected = settings.twoColumnMode == TwoColumnMode.ALWAYS,
                             onClick = { onTwoColumnModeChange(TwoColumnMode.ALWAYS) },
-                            label = { Text(strings.twoColumnSpreadAlways, maxLines = 1, softWrap = false) }
+                            label = { Text(strings.twoColumnSpreadAlways, maxLines = 1, softWrap = false) },
+                            colors = chipColors,
+                            border = chipBorder
                         )
                     }
                 }
@@ -625,12 +731,13 @@ fun ReaderSettingsBottomSheet(
                             Text(
                                 text = strings.hapticFeedbackTitle,
                                 style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.SemiBold,
+                                color = itemTitleColor
                             )
                             Text(
                                 text = strings.hapticFeedbackSubtitle,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = itemSubtitleColor
                             )
                         }
                         Switch(
@@ -661,12 +768,13 @@ fun ReaderSettingsBottomSheet(
                             Text(
                                 text = strings.autoHyphenationTitle,
                                 style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.SemiBold,
+                                color = itemTitleColor
                             )
                             Text(
                                 text = strings.autoHyphenationSubtitle,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = itemSubtitleColor
                             )
                         }
                         Switch(
@@ -697,12 +805,13 @@ fun ReaderSettingsBottomSheet(
                             Text(
                                 text = strings.lightImageBgTitle,
                                 style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.SemiBold,
+                                color = itemTitleColor
                             )
                             Text(
                                 text = strings.lightImageBgSubtitle,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = itemSubtitleColor
                             )
                         }
                         Switch(
@@ -717,6 +826,14 @@ fun ReaderSettingsBottomSheet(
                     OutlinedButton(
                         onClick = { showResetSpeedConfirmDialog = true },
                         shape = RoundedCornerShape(12.dp),
+                        colors = if (isGlass) {
+                            ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        } else ButtonDefaults.outlinedButtonColors(),
+                        border = if (isGlass) {
+                            BorderStroke(0.8.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+                        } else ButtonDefaults.outlinedButtonBorder,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(

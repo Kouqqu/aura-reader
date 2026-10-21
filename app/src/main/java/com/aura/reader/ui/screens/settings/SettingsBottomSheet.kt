@@ -119,6 +119,7 @@ import com.aura.reader.ui.theme.SepiaText
 private val LocalIsLiquidGlass = compositionLocalOf { false }
 private val LocalIsThemeDark = compositionLocalOf { true }
 private val LocalIsSepia = compositionLocalOf { false }
+private val LocalIsAmoled = compositionLocalOf { false }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 
@@ -1183,11 +1184,13 @@ fun SettingsBottomSheet(
         ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
     }
     val isSepia = currentTheme == ReaderThemeMode.SEPIA
+    val isAmoled = currentTheme == ReaderThemeMode.AMOLED
 
     CompositionLocalProvider(
         LocalIsLiquidGlass provides isGlass,
         LocalIsThemeDark provides isThemeDark,
-        LocalIsSepia provides isSepia
+        LocalIsSepia provides isSepia,
+        LocalIsAmoled provides isAmoled
     ) {
         if (isFullScreen) {
             val screenBg = if (isGlass) {
@@ -1450,11 +1453,19 @@ private fun ExpressiveSettingsGroup(
     if (isGlass) {
         val isDark = LocalIsThemeDark.current
         val isSepia = LocalIsSepia.current
+        val isAmoled = LocalIsAmoled.current
+        val cardColor = if (isDark) {
+            if (isAmoled) Color(0xFF14161E) else Color(0xFF1C1F2B)
+        } else if (isSepia) {
+            Color(0xFFFAF2E7)
+        } else {
+            Color(0xFFFFFFFF)
+        }
         LiquidGlassSurface(
             shape = RoundedCornerShape(22.dp),
             isDark = isDark,
-            shadowElevation = 8.dp,
-            tintColor = if (isDark) Color(0x301D212E) else if (isSepia) Color(0x55F5EAD9) else Color(0x85FFFFFF),
+            shadowElevation = if (isDark) 0.dp else 3.dp,
+            tintColor = cardColor,
             modifier = modifier.fillMaxWidth()
         ) {
             Column(
