@@ -10,6 +10,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -126,34 +127,14 @@ private const val LIQUID_REFRACTION_AGSL = """
         float bevelWidth = max(1.0, min(uRefractionWidth, uRadius));
         float t = clamp(distInside / bevelWidth, 0.0, 1.0);
         
-        // Center of the lens past the bevel remains pure and unwarped
-        if (t >= 0.99) {
-            return composable.eval(fragCoord);
-        }
-        
-        // Snell's lens deflection curve: smooth parabolic drop-off from rim to center
-        float slope = sqrt(max(0.0, 1.0 - t * t)) * uRefractionDepth * uIntensity;
+        // Smooth C1-continuous falloff (zero discontinuity, zero inner oval ring!)
+        float falloff = (1.0 - t) * (1.0 - t);
+        float slope = falloff * uRefractionDepth * uIntensity;
         float2 normal = (dist > 0.001) ? (delta / dist) : float2(0.0, 0.0);
         float2 offset = -normal * (slope * bevelWidth);
         
-        // Chromatic dispersion: subtle pixel separation strictly on the outermost rim (t < 0.25)
-        float rimFactor = (1.0 - smoothstep(0.0, 0.25, t)) * uIntensity;
-        float disp = rimFactor * uDispersion;
-        
-        half r = composable.eval(fragCoord + offset + normal * disp).r;
-        half g = composable.eval(fragCoord + offset).g;
-        half b = composable.eval(fragCoord + offset - normal * disp).b;
-        half a = composable.eval(fragCoord + offset).a;
-        
-        // Specular highlight glint on lens rim
-        float edgeSpecular = pow(1.0 - t, 2.5) * 0.08 * uIntensity;
-        
-        return half4(
-            clamp(r + edgeSpecular, 0.0, 1.0),
-            clamp(g + edgeSpecular, 0.0, 1.0),
-            clamp(b + edgeSpecular, 0.0, 1.0),
-            a
-        );
+        // Pure, crystal sharp evaluation without chromatic blurring
+        return composable.eval(fragCoord + offset);
     }
 """
 
@@ -294,16 +275,48 @@ fun FloatingNavigationIsland(
         // LIQUID GLASS (Apple iOS / Mornye) STYLE
         val density = LocalDensity.current
         val haptic = LocalHapticFeedback.current
+        val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
 
-        LiquidGlassSurface(
-            shape = RoundedCornerShape(30.dp),
-            isDark = isDark,
-            shadowElevation = if (isDark && MaterialTheme.colorScheme.background == Color.Black) 0.dp else 10.dp,
-            tintColor = null,
-            hazeState = LocalHazeState.current,
+        val dockShape = RoundedCornerShape(30.dp)
+        val hazeState = LocalHazeState.current
+        val hazeModifier = if (hazeState != null) {
+            Modifier.hazeChild(
+                state = hazeState,
+                shape = dockShape,
+                style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
+            )
+        } else Modifier
+
+        val dockBgColor = if (isDark) {
+            if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)
+        } else {
+            Color(0xF4F5F6FA)
+        }
+        val dockBorderColor = if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
+
+        Box(
             modifier = modifier
+                .then(
+                    if (!isDark) {
+                        Modifier.shadow(
+                            elevation = 8.dp,
+                            shape = dockShape,
+                            clip = false,
+                            ambientColor = Color.Black.copy(alpha = 0.06f),
+                            spotColor = Color.Black.copy(alpha = 0.08f)
+                        )
+                    } else Modifier
+                )
                 .height(60.dp)
                 .width(276.dp)
+                .clip(dockShape)
+                .then(hazeModifier)
+                .background(dockBgColor)
+                .border(
+                    width = 0.6.dp,
+                    color = dockBorderColor,
+                    shape = dockShape
+                )
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -313,7 +326,6 @@ fun FloatingNavigationIsland(
                 val tabWidth = maxWidth / 3
                 val tabWidthPx = with(density) { tabWidth.toPx() }
                 val maxDragXPx = tabWidthPx * 2f
-                val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
 
                 var isPressed by remember { mutableStateOf(false) }
                 var isDragging by remember { mutableStateOf(false) }
@@ -336,30 +348,28 @@ fun FloatingNavigationIsland(
                     label = "liquidLensSlide"
                 )
 
-                // Snappy tactility: "нажал — большая, отпустил — обычная"
+                // Smooth tactile pill expansion on press & slide
                 val isHolding = isPressed || isDragging
-                val lensScaleX by animateFloatAsState(
-                    targetValue = if (isHolding) 1.18f else 1.0f,
+                val offsetDelta = abs(animatedLensOffsetPx - restingOffsetPx)
+                val isSliding = offsetDelta > 8f
+
+                val targetExpansion = if (isHolding) 1.0f else if (isSliding) 0.5f else 0.0f
+                val expansionProgress by animateFloatAsState(
+                    targetValue = targetExpansion,
                     animationSpec = spring(
-                        dampingRatio = 0.70f,
-                        stiffness = 2800f
+                        dampingRatio = 0.72f,
+                        stiffness = Spring.StiffnessMediumLow
                     ),
-                    label = "lensScaleX"
-                )
-                val lensScaleY by animateFloatAsState(
-                    targetValue = if (isHolding) 1.14f else 1.0f,
-                    animationSpec = spring(
-                        dampingRatio = 0.70f,
-                        stiffness = 2800f
-                    ),
-                    label = "lensScaleY"
+                    label = "pillExpansion"
                 )
 
-                val offsetDelta = abs(animatedLensOffsetPx - restingOffsetPx)
-                val targetInteraction = if (isHolding || offsetDelta > 2.5f) 1.0f else 0.0f
+                val lensScaleX = 1.0f + 0.16f * expansionProgress
+                val lensScaleY = 1.0f + 0.10f * expansionProgress
+
+                val targetInteraction = if (isHolding || offsetDelta > 4f) 1.0f else 0.0f
                 val interactionStrength by animateFloatAsState(
                     targetValue = targetInteraction,
-                    animationSpec = tween(durationMillis = 150),
+                    animationSpec = tween(durationMillis = 180),
                     label = "interactionStrength"
                 )
 
@@ -381,7 +391,7 @@ fun FloatingNavigationIsland(
                 val pillRadiusDp = with(density) { pillRadiusPx.toDp() }
 
                 val activeColor = MaterialTheme.colorScheme.primary
-                val inactiveColor = if (isDark) Color.White.copy(alpha = 0.50f) else Color(0x991C1D24)
+                val inactiveColor = if (isDark) Color.White.copy(alpha = 0.45f) else Color(0x8A1C1D24)
 
                 // Drag gesture and Tap detection across the dock
                 Box(
@@ -465,14 +475,22 @@ fun FloatingNavigationIsland(
                             strings = strings,
                             textColor = inactiveColor,
                             iconColor = inactiveColor,
-                            fontWeight = FontWeight.Medium,
-                            lensCenterPx = pillCenterXPx,
-                            tabWidthPx = tabWidthPx,
-                            activeScale = 1.0f
+                            fontWeight = FontWeight.Medium
                         )
                     }
 
-                    // --- LAYER 2: Frosted Convex Glass Drop Capsule ---
+                    // --- LAYER 2: Mornye Translucent Grey Capsule Pill ---
+                    val pillBgColor = if (isDark) {
+                        if (isAmoled) Color(0x28FFFFFF) else Color(0x1EFFFFFF)
+                    } else {
+                        Color(0x12000000)
+                    }
+                    val pillBorderColor = if (isDark) {
+                        Color.White.copy(alpha = 0.06f)
+                    } else {
+                        Color.Black.copy(alpha = 0.04f)
+                    }
+
                     Box(
                         modifier = Modifier
                             .offset(
@@ -484,27 +502,12 @@ fun FloatingNavigationIsland(
                                 height = with(density) { currentPillHeightPx.toDp() }
                             )
                             .clip(RoundedCornerShape(pillRadiusDp))
-                            .background(
-                                if (isDark) {
-                                    if (isAmoled) Color(0x32FFFFFF) else Color(0x22FFFFFF)
-                                } else {
-                                    Color(0x75FFFFFF)
-                                }
+                            .background(pillBgColor)
+                            .border(
+                                width = 0.5.dp,
+                                color = pillBorderColor,
+                                shape = RoundedCornerShape(pillRadiusDp)
                             )
-                            .drawBehind {
-                                val outline = RoundedCornerShape(pillRadiusDp).createOutline(size, layoutDirection, this)
-                                // Delicate visionOS specular highlight rim
-                                drawOutline(
-                                    outline = outline,
-                                    brush = Brush.verticalGradient(
-                                        listOf(
-                                            Color.White.copy(alpha = if (isDark) 0.45f else 0.85f),
-                                            Color.White.copy(alpha = if (isDark) 0.05f else 0.20f)
-                                        )
-                                    ),
-                                    style = androidx.compose.ui.graphics.drawscope.Stroke(0.85.dp.toPx())
-                                )
-                            }
                     )
 
                     // --- LAYER 3: Active Accent Row with SPATIAL COLOR MASK & OPTICS ---
@@ -531,9 +534,9 @@ fun FloatingNavigationIsland(
                                 centerPx = Offset(pillCenterXPx, pillCenterYPx),
                                 sizePx = Size(currentPillWidthPx, currentPillHeightPx),
                                 radiusPx = pillRadiusPx,
-                                refractionDepth = 0.22f,
-                                refractionWidthPx = with(density) { 18.dp.toPx() },
-                                dispersion = 1.25f,
+                                refractionDepth = 0.14f,
+                                refractionWidthPx = with(density) { 14.dp.toPx() },
+                                dispersion = 0.0f,
                                 intensity = interactionStrength
                             )
                     ) {
@@ -541,10 +544,7 @@ fun FloatingNavigationIsland(
                             strings = strings,
                             textColor = activeColor,
                             iconColor = activeColor,
-                            fontWeight = FontWeight.Bold,
-                            lensCenterPx = pillCenterXPx,
-                            tabWidthPx = tabWidthPx,
-                            activeScale = 1.08f // Optical magnification under the lens
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
@@ -689,22 +689,13 @@ private fun TabDockRow(
     strings: com.aura.reader.ui.theme.Strings,
     textColor: Color,
     iconColor: Color,
-    fontWeight: FontWeight,
-    lensCenterPx: Float,
-    tabWidthPx: Float,
-    activeScale: Float = 1.0f
+    fontWeight: FontWeight
 ) {
     Row(
         modifier = Modifier.fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         for (slotIndex in 0..2) {
-            val slotCenterPx = (slotIndex + 0.5f) * tabWidthPx
-            val dist = abs(lensCenterPx - slotCenterPx)
-            val norm = (dist / tabWidthPx).coerceIn(0f, 1f)
-            val proximity = (0.5f * (1f + kotlin.math.cos(norm * Math.PI.toFloat()))).toFloat()
-            val scale = 1.0f + (activeScale - 1.0f) * proximity
-
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -713,13 +704,7 @@ private fun TabDockRow(
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = if (scale != 1.0f) {
-                        Modifier.graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                        }
-                    } else Modifier
+                    verticalArrangement = Arrangement.Center
                 ) {
                     val icon = when (slotIndex) {
                         0 -> Icons.Default.MenuBook
@@ -763,30 +748,58 @@ fun FloatingAddGlassButton(
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
-    LiquidGlassSurface(
-        shape = CircleShape,
-        isDark = isDark,
-        shadowElevation = if (isDark) 0.dp else 8.dp,
-        tintColor = if (isDark) Color(0x22FFFFFF) else Color(0x75FFFFFF),
-        hazeState = LocalHazeState.current,
+    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
+    val shape = CircleShape
+    val hazeState = LocalHazeState.current
+    val hazeModifier = if (hazeState != null) {
+        Modifier.hazeChild(
+            state = hazeState,
+            shape = shape,
+            style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
+        )
+    } else Modifier
+
+    val btnBgColor = if (isDark) {
+        if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)
+    } else {
+        Color(0xF4F5F6FA)
+    }
+    val btnBorderColor = if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
+
+    Box(
         modifier = modifier
+            .then(
+                if (!isDark) {
+                    Modifier.shadow(
+                        elevation = 8.dp,
+                        shape = shape,
+                        clip = false,
+                        ambientColor = Color.Black.copy(alpha = 0.06f),
+                        spotColor = Color.Black.copy(alpha = 0.08f)
+                    )
+                } else Modifier
+            )
             .size(54.dp)
+            .clip(shape)
+            .then(hazeModifier)
+            .background(btnBgColor)
+            .border(
+                width = 0.6.dp,
+                color = btnBorderColor,
+                shape = shape
+            )
             .expressiveClickable(scaleDown = 0.90f) {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
-            }
+            },
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = LocalAppStrings.current.addBooks,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
-            )
-        }
+        Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = LocalAppStrings.current.addBooks,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(28.dp)
+        )
     }
 }
 
