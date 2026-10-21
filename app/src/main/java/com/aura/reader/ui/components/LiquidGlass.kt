@@ -39,10 +39,12 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -249,7 +251,10 @@ fun LiquidGlassSurface(
                 shape = shape
             )
     ) {
-        content()
+        val defaultContentColor = if (isDark) Color(0xFFF6F7F9) else Color(0xFF191B1F)
+        CompositionLocalProvider(LocalContentColor provides defaultContentColor) {
+            content()
+        }
     }
 }
 
@@ -408,41 +413,63 @@ fun FloatingNavigationIsland(
                 val activeColor = MaterialTheme.colorScheme.primary
                 val inactiveColor = if (isDark) Color.White.copy(alpha = 0.45f) else Color(0x8A1C1D24)
 
-                // Unified Touch & Drag Gestures:
-                // Wherever you touch/hold on the dock, the pill immediately moves under your finger!
+                // Seamless Dual-Mode Gesture:
+                // - Quick tap on button: pill glides smoothly directly to the exact button center & symbol
+                // - Hold or Drag: pill follows finger freely anywhere across the dock, then snaps to nearest button
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(tabWidthPx, maxDragXPx) {
+                            val touchSlop = viewConfiguration.touchSlop
                             awaitEachGesture {
                                 val down = awaitFirstDown(requireUnconsumed = false)
+                                val startX = down.position.x
                                 isPressed = true
-                                isDragging = true
-                                dragOffsetPx = (down.position.x - tabWidthPx / 2f).coerceIn(0f, maxDragXPx)
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                isDragging = false
 
+                                var hasDragged = false
                                 val pointerId = down.id
+
                                 while (true) {
                                     val event = awaitPointerEvent()
                                     val change = event.changes.firstOrNull { it.id == pointerId } ?: break
-                                    if (change.pressed) {
-                                        dragOffsetPx = (change.position.x - tabWidthPx / 2f).coerceIn(0f, maxDragXPx)
-                                        change.consume()
-                                    } else {
+                                    if (!change.pressed) {
                                         change.consume()
                                         break
                                     }
+                                    val dx = abs(change.position.x - startX)
+                                    val holdDuration = change.uptimeMillis - down.uptimeMillis
+                                    if (!hasDragged && (dx > touchSlop || holdDuration > 220)) {
+                                        hasDragged = true
+                                        isDragging = true
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    }
+                                    if (hasDragged) {
+                                        dragOffsetPx = (change.position.x - tabWidthPx / 2f).coerceIn(0f, maxDragXPx)
+                                        change.consume()
+                                    }
                                 }
 
-                                isDragging = false
                                 isPressed = false
 
-                                val nearestSlot = ((dragOffsetPx + tabWidthPx / 2f) / tabWidthPx).toInt().coerceIn(0, 2)
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                when (nearestSlot) {
-                                    0 -> onMyBooksClick()
-                                    1 -> onSearchClick()
-                                    2 -> onSettingsClick()
+                                if (hasDragged) {
+                                    isDragging = false
+                                    val nearestSlot = ((dragOffsetPx + tabWidthPx / 2f) / tabWidthPx).toInt().coerceIn(0, 2)
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    when (nearestSlot) {
+                                        0 -> onMyBooksClick()
+                                        1 -> onSearchClick()
+                                        2 -> onSettingsClick()
+                                    }
+                                } else {
+                                    // Clean tap on button: pill glides directly into the button slot under the symbol!
+                                    val clickedSlot = (startX / tabWidthPx).toInt().coerceIn(0, 2)
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    when (clickedSlot) {
+                                        0 -> onMyBooksClick()
+                                        1 -> onSearchClick()
+                                        2 -> onSettingsClick()
+                                    }
                                 }
                             }
                         }

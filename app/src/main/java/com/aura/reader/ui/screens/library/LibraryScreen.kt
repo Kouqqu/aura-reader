@@ -562,64 +562,66 @@ fun LibraryScreen(
             }
         },
         floatingActionButton = {
-            if (isReorderMode) {
-                ExtendedFloatingActionButton(
-                    shape = RoundedCornerShape(20.dp),
-                    onClick = { isReorderMode = false },
-                    icon = { Icon(Icons.Default.Check, contentDescription = null) },
-                    text = { Text(strings.done) },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            } else if (isGlass) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FloatingNavigationIsland(
-                        designStyle = readerSettings.appDesignStyle,
-                        clarity = readerSettings.glassClarity,
-                        selectedTab = currentMainTab,
-                        isDark = isThemeDark,
-                        onMyBooksClick = {
-                            if (currentMainTab != 0) {
-                                currentMainTab = 0
-                            } else {
-                                scope.launch { gridState.animateScrollToItem(0) }
-                            }
-                        },
-                        onSearchClick = {
-                            currentMainTab = 1
-                        },
-                        onSettingsClick = {
-                            currentMainTab = 2
-                        }
+            if (!showAddBooksScreen) {
+                if (isReorderMode) {
+                    ExtendedFloatingActionButton(
+                        shape = RoundedCornerShape(20.dp),
+                        onClick = { isReorderMode = false },
+                        icon = { Icon(Icons.Default.Check, contentDescription = null) },
+                        text = { Text(strings.done) },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    FloatingAddGlassButton(
-                        onClick = {
-                            if (currentMainTab != 0) {
-                                currentMainTab = 0
+                } else if (isGlass) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FloatingNavigationIsland(
+                            designStyle = readerSettings.appDesignStyle,
+                            clarity = readerSettings.glassClarity,
+                            selectedTab = currentMainTab,
+                            isDark = isThemeDark,
+                            onMyBooksClick = {
+                                if (currentMainTab != 0) {
+                                    currentMainTab = 0
+                                } else {
+                                    scope.launch { gridState.animateScrollToItem(0) }
+                                }
+                            },
+                            onSearchClick = {
+                                currentMainTab = 1
+                            },
+                            onSettingsClick = {
+                                currentMainTab = 2
                             }
-                            showAddBooksSheet = true
-                        },
-                        isDark = isThemeDark
+                        )
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        FloatingAddGlassButton(
+                            onClick = {
+                                if (currentMainTab != 0) {
+                                    currentMainTab = 0
+                                }
+                                showAddBooksSheet = true
+                            },
+                            isDark = isThemeDark
+                        )
+                    }
+                } else {
+                    ExtendedFloatingActionButton(
+                        shape = RoundedCornerShape(20.dp),
+                        onClick = { showAddBooksScreen = true },
+                        icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                        text = { Text(strings.addBooks) },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
-            } else {
-                ExtendedFloatingActionButton(
-                    shape = RoundedCornerShape(20.dp),
-                    onClick = { showAddBooksScreen = true },
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text(strings.addBooks) },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
             }
         },
         floatingActionButtonPosition = if (isGlass) FabPosition.Center else FabPosition.End,
@@ -649,9 +651,7 @@ fun LibraryScreen(
                     onOpenCatalog = onOpenCatalog,
                     isDark = isThemeDark
                 )
-            }
-
-            if (isGlass && currentMainTab == 1) {
+            } else if (isGlass && currentMainTab == 1) {
             LibrarySearchScreen(
                 searchQuery = searchQuery,
                 onSearchQueryChange = { viewModel.setSearchQuery(it) },

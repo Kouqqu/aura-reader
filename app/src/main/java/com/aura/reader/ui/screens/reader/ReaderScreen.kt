@@ -701,13 +701,14 @@ fun ReaderScreen(
                                     text = book?.title ?: strings.appName,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
+                                    color = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = currentChapter?.title ?: "",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.65f)) else MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -724,7 +725,7 @@ fun ReaderScreen(
                             Icon(
                                 imageVector = if (ttsState.isPlaying) Icons.Default.VolumeUp else Icons.Default.Headphones,
                                 contentDescription = strings.ttsListenAction,
-                                tint = if (ttsState.isServiceRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                tint = if (ttsState.isServiceRunning) MaterialTheme.colorScheme.primary else if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
                             )
                         }
 
@@ -736,7 +737,7 @@ fun ReaderScreen(
                             Icon(
                                 imageVector = if (isCurrentChapterBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                 contentDescription = strings.bookmarks,
-                                tint = if (isCurrentChapterBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                tint = if (isCurrentChapterBookmarked) MaterialTheme.colorScheme.primary else if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
                             )
                         }
 
@@ -745,7 +746,8 @@ fun ReaderScreen(
                             IconButton(onClick = { showReaderMenu = true }) {
                                 Icon(
                                     imageVector = Icons.Default.MoreVert,
-                                    contentDescription = strings.moreOptions
+                                    contentDescription = strings.moreOptions,
+                                    tint = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
                                 )
                             }
 
@@ -829,7 +831,7 @@ fun ReaderScreen(
             }
 
             if (isGlass) {
-                val topBarBg = if (isSepiaTheme) Color(0xF2FAF0E6) else if (isThemeDark) Color(0xE6141824) else Color(0xF2FFFFFF)
+                val topBarBg = if (isSepiaTheme) Color(0xF4FAF0E6) else null
                 LiquidGlassSurface(
                     shape = RoundedCornerShape(24.dp),
                     shadowElevation = 10.dp,
@@ -881,7 +883,15 @@ fun ReaderScreen(
                                             enabled = currentChapterIndex > 0,
                                             modifier = Modifier.size(36.dp)
                                         ) {
-                                            Icon(Icons.Default.SkipPrevious, contentDescription = strings.prevChapter)
+                                            Icon(
+                                                Icons.Default.SkipPrevious,
+                                                contentDescription = strings.prevChapter,
+                                                tint = if (currentChapterIndex > 0) {
+                                                    if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
+                                                } else {
+                                                    (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
+                                                }
+                                            )
                                         }
 
                                         Row(
@@ -907,7 +917,7 @@ fun ReaderScreen(
                                                     text = currentChapter?.title ?: "",
                                                     style = MaterialTheme.typography.bodySmall,
                                                     fontWeight = FontWeight.SemiBold,
-                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    color = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface,
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
@@ -926,7 +936,15 @@ fun ReaderScreen(
                                             enabled = currentChapterIndex < chapters.size - 1,
                                             modifier = Modifier.size(36.dp)
                                         ) {
-                                            Icon(Icons.Default.SkipNext, contentDescription = strings.nextChapter)
+                                            Icon(
+                                                Icons.Default.SkipNext,
+                                                contentDescription = strings.nextChapter,
+                                                tint = if (currentChapterIndex < chapters.size - 1) {
+                                                    if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
+                                                } else {
+                                                    (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
+                                                }
+                                            )
                                         }
                                     }
 
@@ -951,7 +969,15 @@ fun ReaderScreen(
                                             enabled = currentPagingPage > 0,
                                             modifier = Modifier.size(36.dp)
                                          ) {
-                                             Icon(Icons.Default.ChevronLeft, contentDescription = strings.prevPage)
+                                             Icon(
+                                                 Icons.Default.ChevronLeft,
+                                                 contentDescription = strings.prevPage,
+                                                 tint = if (currentPagingPage > 0) {
+                                                     if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
+                                                 } else {
+                                                     (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
+                                                 }
+                                             )
                                          }
 
                                          Slider(
@@ -971,7 +997,10 @@ fun ReaderScreen(
                                              modifier = Modifier.weight(1f),
                                              colors = SliderDefaults.colors(
                                                  thumbColor = MaterialTheme.colorScheme.primary,
-                                                 activeTrackColor = MaterialTheme.colorScheme.primary
+                                                 activeTrackColor = MaterialTheme.colorScheme.primary,
+                                                 inactiveTrackColor = if (isGlass) {
+                                                     if (isThemeDark) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f)
+                                                 } else MaterialTheme.colorScheme.surfaceContainerHighest
                                              )
                                          )
 
@@ -989,14 +1018,22 @@ fun ReaderScreen(
                                              enabled = currentPagingPage < totalPagingPages - 1,
                                              modifier = Modifier.size(36.dp)
                                          ) {
-                                             Icon(Icons.Default.ChevronRight, contentDescription = strings.nextPage)
+                                             Icon(
+                                                 Icons.Default.ChevronRight,
+                                                 contentDescription = strings.nextPage,
+                                                 tint = if (currentPagingPage < totalPagingPages - 1) {
+                                                     if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
+                                                 } else {
+                                                     (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
+                                                 }
+                                             )
                                          }
                                     }
 
                                     Text(
                                         text = "${strings.page} ${currentPagingPage + 1} ${strings.ofPages} $totalPagingPages  •  ${strings.pagingHint}",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.65f)) else MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.align(Alignment.CenterHorizontally)
                                     )
                                 } else {
@@ -1025,7 +1062,7 @@ fun ReaderScreen(
                                                 text = "${strings.chapter} ${currentChapterIndex + 1} ${strings.ofChapters} ${chapters.size}: ${currentChapter?.title ?: ""}",
                                                 style = MaterialTheme.typography.labelMedium,
                                                 fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.onSurface,
+                                                color = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
                                             )
@@ -1059,7 +1096,15 @@ fun ReaderScreen(
                                             enabled = currentChapterIndex > 0,
                                             modifier = Modifier.size(36.dp)
                                         ) {
-                                            Icon(Icons.Default.ChevronLeft, contentDescription = strings.prevChapter)
+                                            Icon(
+                                                 Icons.Default.ChevronLeft,
+                                                 contentDescription = strings.prevChapter,
+                                                 tint = if (currentChapterIndex > 0) {
+                                                     if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
+                                                 } else {
+                                                     (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
+                                                 }
+                                             )
                                         }
 
                                         Slider(
@@ -1088,14 +1133,22 @@ fun ReaderScreen(
                                             enabled = currentChapterIndex < chapters.size - 1,
                                             modifier = Modifier.size(36.dp)
                                         ) {
-                                            Icon(Icons.Default.ChevronRight, contentDescription = strings.nextChapter)
+                                            Icon(
+                                                 Icons.Default.ChevronRight,
+                                                 contentDescription = strings.nextChapter,
+                                                 tint = if (currentChapterIndex < chapters.size - 1) {
+                                                     if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
+                                                 } else {
+                                                     (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
+                                                 }
+                                             )
                                         }
                                     }
 
                                     Text(
                                         text = strings.chaptersNavigationHint,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.65f)) else MaterialTheme.colorScheme.outline,
                                         modifier = Modifier.align(Alignment.CenterHorizontally)
                                     )
                                 }
@@ -1104,7 +1157,7 @@ fun ReaderScreen(
                     }
 
                     if (isGlass) {
-                        val bottomBarBg = if (isSepiaTheme) Color(0xF2FAF0E6) else if (isThemeDark) Color(0xE6141824) else Color(0xF2FFFFFF)
+                        val bottomBarBg = if (isSepiaTheme) Color(0xF4FAF0E6) else null
                         LiquidGlassSurface(
                             shape = RoundedCornerShape(24.dp),
                             shadowElevation = 10.dp,
