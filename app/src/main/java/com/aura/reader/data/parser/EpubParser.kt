@@ -196,9 +196,44 @@ object EpubParser {
             }
         }
 
-        // 3. Parse chapters & blocks
+        // 3. Comprehensive scan for footnotes across all documents in EPUB
         val chapters = mutableListOf<Chapter>()
         val footnotes = mutableMapOf<String, String>()
+
+        for ((path, bytes) in files) {
+            val lower = path.lowercase()
+            if (lower.endsWith(".xhtml") || lower.endsWith(".html") || lower.endsWith(".htm") || lower.endsWith(".xml")) {
+                try {
+                    val doc = Jsoup.parse(String(bytes, Charsets.UTF_8))
+                    val fileName = path.substringAfterLast("/")
+
+                    // Look for aside, epub:type footnotes, elements with note/footnote classes or IDs
+                    doc.select("aside, [epub\\:type~=footnote], [epub\\:type~=note], [epub\\:type~=endnote], .footnote, .note, .endnote, [id^='fn'], [id^='note'], [id^='n_'], [id^='comment']").forEach { noteEl ->
+                        val id = noteEl.id().ifBlank { noteEl.attr("name") }
+                        val clone = noteEl.clone()
+                        clone.select("a[href]").remove()
+                        val text = clone.text().trim()
+                        if (id.isNotBlank() && text.isNotBlank()) {
+                            registerFootnote(footnotes, id, text, fileName)
+                        }
+                    }
+
+                    // Look for list items or containers with id in note documents
+                    if (lower.contains("note") || lower.contains("comment") || lower.contains("annot")) {
+                        doc.select("li[id], p[id], div[id], section[id]").forEach { itemEl ->
+                            val id = itemEl.id().ifBlank { itemEl.attr("name") }
+                            val clone = itemEl.clone()
+                            clone.select("a[href]").remove()
+                            val text = clone.text().trim()
+                            if (id.isNotBlank() && text.isNotBlank()) {
+                                registerFootnote(footnotes, id, text, fileName)
+                            }
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+
         var order = 0
 
         for (chHref in chapterHrefs) {
@@ -207,16 +242,6 @@ object EpubParser {
 
             val htmlString = String(chBytes, Charsets.UTF_8)
             val jsoupDoc = Jsoup.parse(htmlString)
-
-            // Extract footnotes / aside notes
-            jsoupDoc.select("aside, [epub\\:type~=footnote], [epub\\:type~=note], .footnote, .note").forEach { noteEl ->
-                val id = noteEl.id()
-                val text = noteEl.text().trim()
-                if (id.isNotBlank() && text.isNotBlank()) {
-                    footnotes[id] = text
-                    footnotes["[$id]"] = text
-                }
-            }
 
             val body = jsoupDoc.body()
 
@@ -301,6 +326,61 @@ object EpubParser {
                     continue
                 }
 
+                // Skip standalone footnote container elements from being added as paragraphs
+                if (el.tagName() == "aside" ||
+                    el.attr("epub:type").contains("footnote") ||
+                    el.attr("epub:type").contains("endnote") ||
+                    (el.hasClass("footnote") && !el.tagName().equals("p", ignoreCase = true)) ||
+                    el.parents().any { it.tagName() == "aside" || it.attr("epub:type").contains("footnote") }
+                ) {
+                    continue
+                }
+
+                // Process footnote links inside this element:
+                // Replace <a href="...">num</a> with [num] so that InteractiveText highlights and links it!
+                val anchorLinks = el.select("a[href]")
+                for (a in anchorLinks) {
+                    val href = a.attr("href").trim()
+                    val aText = a.text().trim()
+                    val target = if (href.contains("#")) href.substringAfter("#").trim() else href
+                    val cleanFile = if (href.contains("#")) href.substringBefore("#").substringAfterLast("/") else ""
+
+                    val isFootnoteLink = a.attr("epub:type").contains("noteref") ||
+                        a.hasClass("noteref") || a.hasClass("footnote") || a.hasClass("note") ||
+                        target.contains("note", ignoreCase = true) ||
+                        target.contains("fn", ignoreCase = true) ||
+                        target.contains("n_", ignoreCase = true) ||
+                        target.contains("comment", ignoreCase = true) ||
+                        cleanFile.contains("note", ignoreCase = true) ||
+                        cleanFile.contains("comment", ignoreCase = true) ||
+                        aText.matches(Regex("""^\[?\d{1,4}\]?$""")) ||
+                        aText.matches(Regex("""^\[?[¹²³⁴⁵⁶⁷⁸⁹⁰]+\]?$""")) ||
+                        aText == "*" || aText == "**" || aText == "***"
+
+                    if (isFootnoteLink || footnotes.containsKey(target) || footnotes.containsKey(href) || (cleanFile.isNotBlank() && footnotes.containsKey("$cleanFile#$target"))) {
+                        val cleanNum = aText.removePrefix("[").removeSuffix("]").trim()
+                        val display = if (cleanNum.isNotBlank()) cleanNum else target
+                        val bracketed = if (display.startsWith("[") && display.endsWith("]")) display else "[$display]"
+
+                        val resolvedNote = footnotes[target]
+                            ?: footnotes[href]
+                            ?: (if (cleanFile.isNotBlank()) footnotes["$cleanFile#$target"] else null)
+                            ?: footnotes[cleanNum]
+                            ?: footnotes["[$cleanNum]"]
+
+                        if (resolvedNote != null) {
+                            footnotes[bracketed] = resolvedNote
+                            footnotes[display] = resolvedNote
+                            footnotes[cleanNum] = resolvedNote
+                        } else if (target.isNotBlank()) {
+                            footnotes[bracketed] = target
+                            footnotes[display] = target
+                        }
+
+                        a.text(" $bracketed ")
+                    }
+                }
+
                 val text = el.text().trim()
                 if (text.isBlank()) continue
 
@@ -368,6 +448,14 @@ object EpubParser {
                     val mergedContent = if (prev.content.isNotBlank()) prev.content + "\n\n" + rawText else rawText
                     chapters.add(prev.copy(blocks = mergedBlocks, content = mergedContent))
                 }
+            }
+        }
+
+        // Resolve any indirect footnote pointers
+        for ((key, value) in footnotes.toMap()) {
+            val resolved = footnotes[value]
+            if (resolved != null && resolved != value) {
+                footnotes[key] = resolved
             }
         }
 
@@ -442,5 +530,33 @@ object EpubParser {
             }
         }
         return resolvedStack.joinToString("/")
+    }
+
+    private fun registerFootnote(
+        footnotes: MutableMap<String, String>,
+        id: String,
+        rawText: String,
+        fileName: String = ""
+    ) {
+        val text = rawText.trim()
+        if (text.isBlank()) return
+
+        footnotes[id] = text
+        footnotes["[$id]"] = text
+        footnotes["#$id"] = text
+        if (fileName.isNotBlank()) {
+            footnotes["$fileName#$id"] = text
+        }
+
+        val digits = id.filter { it.isDigit() }
+        if (digits.isNotBlank()) {
+            footnotes[digits] = text
+            footnotes["[$digits]"] = text
+            footnotes["{$digits}"] = text
+            footnotes["#$digits"] = text
+            if (fileName.isNotBlank()) {
+                footnotes["$fileName#$digits"] = text
+            }
+        }
     }
 }

@@ -61,6 +61,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.isSystemInDarkTheme
+import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.PageTurnAnimation
 import com.aura.reader.data.model.ReaderFontFamily
 import com.aura.reader.data.model.ReaderSettings
@@ -135,12 +137,69 @@ fun ReaderSettingsBottomSheet(
         )
     }
 
+    val isGlass = settings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val sysDark = isSystemInDarkTheme()
+    val isThemeDark = when (settings.themeMode) {
+        ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
+        ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
+        ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
+    }
+    val isAmoled = settings.themeMode == ReaderThemeMode.AMOLED
+    val isSepia = settings.themeMode == ReaderThemeMode.SEPIA
+
+    val sheetBgColor = if (isGlass) {
+        if (isSepia) {
+            Color(0xFBF5EBE1)
+        } else if (isThemeDark) {
+            if (isAmoled) Color(0xF6121316) else Color(0xF4181A20)
+        } else {
+            Color(0xF8F6F7FA)
+        }
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+
+    val sheetBorderColor = if (isGlass) {
+        if (isThemeDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+    } else Color.Transparent
+
+    val cardBg = if (isGlass) {
+        if (isThemeDark) Color(0x18FFFFFF) else Color(0x0A000000)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    }
+    val cardBorder = if (isGlass) {
+        if (isThemeDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
+    } else Color.Transparent
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        dragHandle = {
+            if (isGlass) {
+                Box(
+                    modifier = Modifier
+                        .padding(vertical = 12.dp)
+                        .size(width = 36.dp, height = 4.5.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isThemeDark) Color.White.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.15f)
+                        )
+                )
+            } else {
+                BottomSheetDefaults.DragHandle()
+            }
+        },
+        containerColor = sheetBgColor,
+        scrimColor = Color.Black.copy(alpha = if (isGlass) 0.65f else 0.45f),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = if (isGlass) {
+            Modifier.border(
+                width = 0.6.dp,
+                color = sheetBorderColor,
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            )
+        } else Modifier
     ) {
         Box(
             modifier = Modifier
@@ -192,6 +251,8 @@ fun ReaderSettingsBottomSheet(
                         isSelected = settings.themeMode == ReaderThemeMode.LIGHT,
                         hapticEnabled = settings.hapticFeedbackEnabled,
                         getSheetCoordinates = { sheetCoordinates },
+                        isGlass = isGlass,
+                        isDark = isThemeDark,
                         modifier = Modifier.weight(1f),
                         onClick = { origin -> handleThemeClick(ReaderThemeMode.LIGHT, origin, lightColors) }
                     )
@@ -203,6 +264,8 @@ fun ReaderSettingsBottomSheet(
                         isSelected = settings.themeMode == ReaderThemeMode.DARK || settings.themeMode == ReaderThemeMode.SYSTEM_DYNAMIC,
                         hapticEnabled = settings.hapticFeedbackEnabled,
                         getSheetCoordinates = { sheetCoordinates },
+                        isGlass = isGlass,
+                        isDark = isThemeDark,
                         modifier = Modifier.weight(1f),
                         onClick = { origin -> handleThemeClick(ReaderThemeMode.DARK, origin, darkColors) }
                     )
@@ -214,6 +277,8 @@ fun ReaderSettingsBottomSheet(
                         isSelected = settings.themeMode == ReaderThemeMode.SEPIA,
                         hapticEnabled = settings.hapticFeedbackEnabled,
                         getSheetCoordinates = { sheetCoordinates },
+                        isGlass = isGlass,
+                        isDark = isThemeDark,
                         modifier = Modifier.weight(1f),
                         onClick = { origin -> handleThemeClick(ReaderThemeMode.SEPIA, origin, sepiaColors) }
                     )
@@ -225,6 +290,8 @@ fun ReaderSettingsBottomSheet(
                         isSelected = settings.themeMode == ReaderThemeMode.AMOLED,
                         hapticEnabled = settings.hapticFeedbackEnabled,
                         getSheetCoordinates = { sheetCoordinates },
+                        isGlass = isGlass,
+                        isDark = isThemeDark,
                         modifier = Modifier.weight(1f),
                         onClick = { origin -> handleThemeClick(ReaderThemeMode.AMOLED, origin, amoledColors) }
                     )
@@ -234,7 +301,8 @@ fun ReaderSettingsBottomSheet(
                     Spacer(modifier = Modifier.height(14.dp))
                     androidx.compose.material3.Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        color = cardBg,
+                        border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -314,7 +382,9 @@ fun ReaderSettingsBottomSheet(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FilterChip(
@@ -322,7 +392,7 @@ fun ReaderSettingsBottomSheet(
                         onClick = {
                             onFontFamilyChange(ReaderFontFamily.SERIF)
                         },
-                        label = { Text(strings.fontFamilySerif) },
+                        label = { Text(strings.fontFamilySerif, maxLines = 1, softWrap = false) },
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.SERIF) {
                             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                         } else null
@@ -333,7 +403,7 @@ fun ReaderSettingsBottomSheet(
                         onClick = {
                             onFontFamilyChange(ReaderFontFamily.SANS_SERIF)
                         },
-                        label = { Text(strings.fontFamilySansSerif) },
+                        label = { Text(strings.fontFamilySansSerif, maxLines = 1, softWrap = false) },
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.SANS_SERIF) {
                             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                         } else null
@@ -344,7 +414,7 @@ fun ReaderSettingsBottomSheet(
                         onClick = {
                             onFontFamilyChange(ReaderFontFamily.MONOSPACE)
                         },
-                        label = { Text(strings.fontFamilyMonospace) },
+                        label = { Text(strings.fontFamilyMonospace, maxLines = 1, softWrap = false) },
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.MONOSPACE) {
                             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                         } else null
@@ -412,54 +482,62 @@ fun ReaderSettingsBottomSheet(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FilterChip(
                         selected = settings.lineHeightMultiplier == 1.2f,
                         onClick = { onLineHeightChange(1.2f) },
-                        label = { Text("1.2x") }
+                        label = { Text("1.2x", maxLines = 1, softWrap = false) }
                     )
                     FilterChip(
                         selected = settings.lineHeightMultiplier == 1.5f,
                         onClick = { onLineHeightChange(1.5f) },
-                        label = { Text("1.5x") }
+                        label = { Text("1.5x", maxLines = 1, softWrap = false) }
                     )
                     FilterChip(
                         selected = settings.lineHeightMultiplier == 1.8f,
                         onClick = { onLineHeightChange(1.8f) },
-                        label = { Text("1.8x") }
+                        label = { Text("1.8x", maxLines = 1, softWrap = false) }
                     )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // --- Reading Mode (Continuous / Paging) ---
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onPagingModeChange(!settings.pagingMode) }
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = cardBg,
+                    border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                        Text(
-                            text = strings.readingModeTitle,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = if (settings.pagingMode) strings.readingModePaged else strings.readingModeScroll,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onPagingModeChange(!settings.pagingMode) }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                text = strings.readingModeTitle,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = if (settings.pagingMode) strings.readingModePaged else strings.readingModeScroll,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.pagingMode,
+                            onCheckedChange = onPagingModeChange
                         )
                     }
-                    Switch(
-                        checked = settings.pagingMode,
-                        onCheckedChange = onPagingModeChange
-                    )
                 }
 
                 if (settings.pagingMode) {
@@ -529,91 +607,109 @@ fun ReaderSettingsBottomSheet(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // --- Haptic Feedback ---
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onHapticFeedbackChange(!settings.hapticFeedbackEnabled) }
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = cardBg,
+                    border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                        Text(
-                            text = strings.hapticFeedbackTitle,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = strings.hapticFeedbackSubtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onHapticFeedbackChange(!settings.hapticFeedbackEnabled) }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                text = strings.hapticFeedbackTitle,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = strings.hapticFeedbackSubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.hapticFeedbackEnabled,
+                            onCheckedChange = onHapticFeedbackChange
                         )
                     }
-                    Switch(
-                        checked = settings.hapticFeedbackEnabled,
-                        onCheckedChange = onHapticFeedbackChange
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // --- Auto Hyphenation ---
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onAutoHyphenationChange(!settings.autoHyphenation) }
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = cardBg,
+                    border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                        Text(
-                            text = strings.autoHyphenationTitle,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = strings.autoHyphenationSubtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onAutoHyphenationChange(!settings.autoHyphenation) }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                text = strings.autoHyphenationTitle,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = strings.autoHyphenationSubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.autoHyphenation,
+                            onCheckedChange = onAutoHyphenationChange
                         )
                     }
-                    Switch(
-                        checked = settings.autoHyphenation,
-                        onCheckedChange = onAutoHyphenationChange
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // --- Light Background for Illustrations in Dark Themes ---
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onLightImageBackgroundChange(!settings.lightImageBackground) }
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = cardBg,
+                    border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                        Text(
-                            text = strings.lightImageBgTitle,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = strings.lightImageBgSubtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onLightImageBackgroundChange(!settings.lightImageBackground) }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                text = strings.lightImageBgTitle,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = strings.lightImageBgSubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.lightImageBackground,
+                            onCheckedChange = onLightImageBackgroundChange
                         )
                     }
-                    Switch(
-                        checked = settings.lightImageBackground,
-                        onCheckedChange = onLightImageBackgroundChange
-                    )
                 }
 
                 if (onResetReadingSpeed != null) {
@@ -659,6 +755,8 @@ fun ThemeOptionButton(
     isSelected: Boolean,
     hapticEnabled: Boolean,
     getSheetCoordinates: () -> LayoutCoordinates?,
+    isGlass: Boolean = false,
+    isDark: Boolean = true,
     modifier: Modifier = Modifier,
     onClick: (Offset) -> Unit
 ) {
@@ -668,6 +766,8 @@ fun ThemeOptionButton(
 
     val border = if (isSelected) {
         androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+    } else if (isGlass) {
+        androidx.compose.foundation.BorderStroke(0.6.dp, if (isDark) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.08f))
     } else {
         androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     }

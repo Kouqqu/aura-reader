@@ -72,6 +72,7 @@ import androidx.compose.ui.platform.TextToolbar
 import androidx.compose.ui.platform.TextToolbarStatus
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -2832,12 +2833,30 @@ fun InteractiveText(
                 }
             }
 
-            // Highlight footnote links e.g. [1], [note], {1}
-            val footnoteRegex = Regex("""\[([a-zA-Z0-9а-яА-ЯёЁ_\s-]{1,20})\]|\{([0-9]+)\}""")
+            // 1. Highlight and handle web URL links (e.g. https://... or http://...)
+            val urlRegex = Regex("""https?://[^\s<>"'{}|\\^`]+""")
+            for (match in urlRegex.findAll(rawText)) {
+                val url = match.value
+                addStyle(
+                    style = SpanStyle(
+                        color = Color(0xFF1976D2),
+                        textDecoration = TextDecoration.Underline
+                    ),
+                    start = match.range.first,
+                    end = match.range.last + 1
+                )
+                val link = LinkAnnotation.Url(url = url)
+                addLink(link, match.range.first, match.range.last + 1)
+            }
+
+            // 2. Highlight footnote links e.g. [1], [note], {1}, ¹⁴, »14
+            val footnoteRegex = Regex("""\[([a-zA-Z0-9а-яА-ЯёЁ_\s-]{1,25})\]|\{([0-9]+)\}|([¹²³⁴⁵⁶⁷⁸⁹⁰]+)|»\s*(\d{1,4})""")
             for (match in footnoteRegex.findAll(rawText)) {
-                val ref = match.value
+                val matchValue = match.value
+                val ref = matchValue.removePrefix("»").trim()
                 val resolved = resolveFootnoteText(ref, footnotes)
-                if (resolved != null || footnotes.isNotEmpty()) {
+                val isExplicitRef = matchValue.startsWith("[") || matchValue.startsWith("{") || matchValue.any { it in "¹²³⁴⁵⁶⁷⁸⁹⁰" }
+                if (resolved != null || (footnotes.isNotEmpty() && isExplicitRef)) {
                     addStyle(
                         style = SpanStyle(
                             color = Color(0xFF2E7D32),
@@ -2867,13 +2886,40 @@ fun InteractiveText(
 }
 
 fun resolveFootnoteText(ref: String, footnotes: Map<String, String>): String? {
-    val clean = ref.trim().removePrefix("[").removeSuffix("]").removePrefix("{").removeSuffix("}").trim()
+    if (footnotes.isEmpty()) return null
+    val clean = ref.trim()
+        .removePrefix("»").trim()
+        .removePrefix("[").removeSuffix("]")
+        .removePrefix("{").removeSuffix("}")
+        .trim()
+
+    val asciiClean = clean.map { char ->
+        when (char) {
+            '⁰' -> '0'; '¹' -> '1'; '²' -> '2'; '³' -> '3'; '⁴' -> '4'
+            '⁵' -> '5'; '⁶' -> '6'; '⁷' -> '7'; '⁸' -> '8'; '⁹' -> '9'
+            else -> char
+        }
+    }.joinToString("")
+
     val direct = footnotes[ref]
         ?: footnotes[clean]
-        ?: footnotes["#$clean"]
-        ?: footnotes["n$clean"]
-        ?: footnotes["note$clean"]
+        ?: footnotes[asciiClean]
         ?: footnotes["[$clean]"]
+        ?: footnotes["[$asciiClean]"]
+        ?: footnotes["{$clean}"]
+        ?: footnotes["{$asciiClean}"]
+        ?: footnotes["#$clean"]
+        ?: footnotes["#$asciiClean"]
+        ?: footnotes["n$clean"]
+        ?: footnotes["n$asciiClean"]
+        ?: footnotes["n_$clean"]
+        ?: footnotes["n_$asciiClean"]
+        ?: footnotes["fn$clean"]
+        ?: footnotes["fn$asciiClean"]
+        ?: footnotes["note$clean"]
+        ?: footnotes["note$asciiClean"]
+        ?: footnotes["note_$clean"]
+        ?: footnotes["note_$asciiClean"]
 
     if (direct != null && footnotes.containsKey(direct) && footnotes[direct] != direct) {
         return footnotes[direct]
@@ -2883,7 +2929,9 @@ fun resolveFootnoteText(ref: String, footnotes: Map<String, String>): String? {
     return footnotes.entries.firstOrNull {
         it.key.equals(ref, ignoreCase = true) ||
         it.key.equals(clean, ignoreCase = true) ||
-        it.key.contains(clean, ignoreCase = true)
+        it.key.equals(asciiClean, ignoreCase = true) ||
+        it.key.contains(clean, ignoreCase = true) ||
+        it.key.contains(asciiClean, ignoreCase = true)
     }?.value
 }
 

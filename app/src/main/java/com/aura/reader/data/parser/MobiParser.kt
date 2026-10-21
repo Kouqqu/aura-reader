@@ -5,6 +5,7 @@ import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.BookFormat
 import com.aura.reader.data.model.Chapter
 import com.aura.reader.data.model.FormattedBlock
+import org.jsoup.Jsoup
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.nio.charset.Charset
@@ -218,7 +219,88 @@ object MobiParser {
         val rawTextBytes = decompressedText.toByteArray()
         val textContent = decodeBytes(rawTextBytes, textEncoding)
 
-        val cleanHtml = cleanMobiHtml(textContent)
+        val footnotes = mutableMapOf<String, String>()
+        val processedHtml = try {
+            val mobiDoc = Jsoup.parse(textContent)
+
+            // 1. Scan for footnote targets (e.g. <a name="note1">, <div id="note1">, etc.)
+            mobiDoc.select("[id], a[name]").forEach { el ->
+                val id = (el.id().ifBlank { el.attr("name") }).trim()
+                if (id.isNotBlank() && (
+                    id.contains("note", ignoreCase = true) ||
+                    id.contains("fn", ignoreCase = true) ||
+                    id.contains("comment", ignoreCase = true) ||
+                    id.contains("n_", ignoreCase = true) ||
+                    id.matches(Regex("""^[a-zA-Z]?\d+$"""))
+                )) {
+                    val container = if (el.tagName().equals("a", ignoreCase = true) && el.text().isBlank()) {
+                        el.parent() ?: el
+                    } else {
+                        el
+                    }
+                    val clone = container.clone()
+                    clone.select("a[href]").remove()
+                    val text = clone.text().trim()
+                    if (text.isNotBlank()) {
+                        footnotes[id] = text
+                        footnotes["[$id]"] = text
+                        footnotes["#$id"] = text
+                        val digits = id.filter { it.isDigit() }
+                        if (digits.isNotBlank()) {
+                            footnotes[digits] = text
+                            footnotes["[$digits]"] = text
+                            footnotes["{$digits}"] = text
+                        }
+                    }
+                }
+            }
+
+            // 2. Scan for footnote links and transform them to [number]
+            mobiDoc.select("a[href]").forEach { a ->
+                val href = a.attr("href").trim()
+                val target = if (href.contains("#")) href.substringAfter("#") else href
+                val aText = a.text().trim()
+
+                val isFootnote = target.contains("note", ignoreCase = true) ||
+                    target.contains("fn", ignoreCase = true) ||
+                    target.contains("comment", ignoreCase = true) ||
+                    target.contains("n_", ignoreCase = true) ||
+                    aText.matches(Regex("""^\[?\d{1,4}\]?$""")) ||
+                    aText.matches(Regex("""^\[?[¹²³⁴⁵⁶⁷⁸⁹⁰]+\]?$""")) ||
+                    aText == "*" || aText == "**" || aText == "***"
+
+                if (isFootnote || footnotes.containsKey(target)) {
+                    val cleanNum = aText.removePrefix("[").removeSuffix("]").trim()
+                    val display = if (cleanNum.isNotBlank()) cleanNum else target
+                    val bracketed = if (display.startsWith("[") && display.endsWith("]")) display else "[$display]"
+
+                    val noteContent = footnotes[target] ?: footnotes[cleanNum] ?: footnotes["[$cleanNum]"]
+                    if (noteContent != null) {
+                        footnotes[bracketed] = noteContent
+                        footnotes[display] = noteContent
+                        footnotes[cleanNum] = noteContent
+                    } else if (target.isNotBlank()) {
+                        footnotes[bracketed] = target
+                        footnotes[display] = target
+                    }
+                    a.text(" $bracketed ")
+                }
+            }
+
+            // 3. Resolve footnote pointers
+            for ((key, value) in footnotes.toMap()) {
+                val resolved = footnotes[value]
+                if (resolved != null && resolved != value) {
+                    footnotes[key] = resolved
+                }
+            }
+
+            mobiDoc.body()?.html() ?: textContent
+        } catch (e: Exception) {
+            textContent
+        }
+
+        val cleanHtml = cleanMobiHtml(processedHtml)
         val chapters = buildChapters(cleanHtml, bookTitle)
 
         return Book(
@@ -229,7 +311,8 @@ object MobiParser {
             seriesNumber = extractedSeriesNumber,
             format = BookFormat.MOBI,
             uriString = uriString,
-            chapters = chapters
+            chapters = chapters,
+            footnotes = footnotes
         )
     }
 
