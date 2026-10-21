@@ -11,6 +11,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -419,56 +421,43 @@ fun FloatingNavigationIsland(
                 val activeColor = MaterialTheme.colorScheme.primary
                 val inactiveColor = if (isDark) Color.White.copy(alpha = 0.45f) else Color(0x8A1C1D24)
 
-                // Drag gesture and Tap detection across the dock
+                // Unified Touch & Drag Gestures:
+                // Wherever you touch/hold on the dock, the pill immediately moves under your finger!
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(tabWidthPx) {
-                            detectTapGestures(
-                                onPress = {
-                                    isPressed = true
-                                    try {
-                                        awaitRelease()
-                                    } finally {
-                                        isPressed = false
-                                    }
-                                },
-                                onTap = { offset ->
-                                    val slot = (offset.x / tabWidthPx).toInt().coerceIn(0, 2)
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    when (slot) {
-                                        0 -> onMyBooksClick()
-                                        1 -> onSearchClick()
-                                        2 -> onSettingsClick()
+                        .pointerInput(tabWidthPx, maxDragXPx) {
+                            awaitEachGesture {
+                                val down = awaitFirstDown(requireUnconsumed = false)
+                                isPressed = true
+                                isDragging = true
+                                dragOffsetPx = (down.position.x - tabWidthPx / 2f).coerceIn(0f, maxDragXPx)
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+
+                                val pointerId = down.id
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull { it.id == pointerId } ?: break
+                                    if (change.pressed) {
+                                        dragOffsetPx = (change.position.x - tabWidthPx / 2f).coerceIn(0f, maxDragXPx)
+                                        change.consume()
+                                    } else {
+                                        change.consume()
+                                        break
                                     }
                                 }
-                            )
-                        }
-                        .pointerInput(tabWidthPx) {
-                            detectHorizontalDragGestures(
-                                onDragStart = { offset ->
-                                    isDragging = true
-                                    dragOffsetPx = (offset.x - tabWidthPx / 2f).coerceIn(0f, maxDragXPx)
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                },
-                                onDragEnd = {
-                                    isDragging = false
-                                    val nearestSlot = ((dragOffsetPx + tabWidthPx / 2f) / tabWidthPx).toInt().coerceIn(0, 2)
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    when (nearestSlot) {
-                                        0 -> onMyBooksClick()
-                                        1 -> onSearchClick()
-                                        2 -> onSettingsClick()
-                                    }
-                                },
-                                onDragCancel = {
-                                    isDragging = false
-                                },
-                                onHorizontalDrag = { change, dragAmount ->
-                                    change.consume()
-                                    dragOffsetPx = (dragOffsetPx + dragAmount).coerceIn(0f, maxDragXPx)
+
+                                isDragging = false
+                                isPressed = false
+
+                                val nearestSlot = ((dragOffsetPx + tabWidthPx / 2f) / tabWidthPx).toInt().coerceIn(0, 2)
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                when (nearestSlot) {
+                                    0 -> onMyBooksClick()
+                                    1 -> onSearchClick()
+                                    2 -> onSettingsClick()
                                 }
-                            )
+                            }
                         }
                 ) {
                     // --- LAYER 1: Base Inactive Tab Row (rendered ONLY outside the pill, zero double-layer bleed) ---
