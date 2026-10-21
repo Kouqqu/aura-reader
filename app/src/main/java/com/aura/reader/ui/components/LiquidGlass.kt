@@ -127,14 +127,30 @@ private const val LIQUID_REFRACTION_AGSL = """
         float bevelWidth = max(1.0, min(uRefractionWidth, uRadius));
         float t = clamp(distInside / bevelWidth, 0.0, 1.0);
         
-        // Smooth C1-continuous falloff (zero discontinuity, zero inner oval ring!)
-        float falloff = (1.0 - t) * (1.0 - t);
+        // Continuous convex lens deflection profile (smooth cosine bell: 1 at edge, 0 at center with zero derivative)
+        float falloff = 0.5 * (1.0 + cos(t * 3.14159265));
         float slope = falloff * uRefractionDepth * uIntensity;
         float2 normal = (dist > 0.001) ? (delta / dist) : float2(0.0, 0.0);
         float2 offset = -normal * (slope * bevelWidth);
         
-        // Pure, crystal sharp evaluation without chromatic blurring
-        return composable.eval(fragCoord + offset);
+        // Chromatic dispersion: delicate optical prism separation on the outer rim
+        float rimFactor = (1.0 - smoothstep(0.0, 0.35, t)) * uIntensity;
+        float disp = rimFactor * uDispersion;
+        
+        half r = composable.eval(fragCoord + offset + normal * disp).r;
+        half g = composable.eval(fragCoord + offset).g;
+        half b = composable.eval(fragCoord + offset - normal * disp).b;
+        half a = composable.eval(fragCoord + offset).a;
+        
+        // Specular highlight glint on lens rim
+        float edgeSpecular = pow(1.0 - t, 2.5) * 0.10 * uIntensity;
+        
+        return half4(
+            clamp(r + edgeSpecular, 0.0, 1.0),
+            clamp(g + edgeSpecular, 0.0, 1.0),
+            clamp(b + edgeSpecular, 0.0, 1.0),
+            a
+        );
     }
 """
 
@@ -307,7 +323,7 @@ fun FloatingNavigationIsland(
                         )
                     } else Modifier
                 )
-                .height(60.dp)
+                .height(58.dp)
                 .width(276.dp)
                 .clip(dockShape)
                 .then(hazeModifier)
@@ -321,7 +337,7 @@ fun FloatingNavigationIsland(
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 6.dp, vertical = 6.dp)
+                    .padding(horizontal = 6.dp, vertical = 3.dp)
             ) {
                 val tabWidth = maxWidth / 3
                 val tabWidthPx = with(density) { tabWidth.toPx() }
@@ -351,7 +367,7 @@ fun FloatingNavigationIsland(
                 // Smooth tactile pill expansion on press & slide
                 val isHolding = isPressed || isDragging
                 val offsetDelta = abs(animatedLensOffsetPx - restingOffsetPx)
-                val isSliding = offsetDelta > 8f
+                val isSliding = offsetDelta > 2.0f
 
                 val targetExpansion = if (isHolding) 1.0f else if (isSliding) 0.5f else 0.0f
                 val expansionProgress by animateFloatAsState(
@@ -363,31 +379,32 @@ fun FloatingNavigationIsland(
                     label = "pillExpansion"
                 )
 
-                val lensScaleX = 1.0f + 0.16f * expansionProgress
-                val lensScaleY = 1.0f + 0.10f * expansionProgress
-
-                val targetInteraction = if (isHolding || offsetDelta > 4f) 1.0f else 0.0f
+                // Refraction intensity: always present on the glass lens (0.70f), intensifying to 1.0f on slide/press!
+                val targetInteraction = if (isHolding || isSliding) 1.0f else 0.70f
                 val interactionStrength by animateFloatAsState(
                     targetValue = targetInteraction,
-                    animationSpec = tween(durationMillis = 180),
+                    animationSpec = tween(durationMillis = 200),
                     label = "interactionStrength"
                 )
 
-                // Physical Pill dimensions and positions
+                // Physical Pill dimensions:
+                // Horizontally expands smoothly
                 val basePillWidthPx = tabWidthPx - with(density) { 6.dp.toPx() }
-                val currentPillWidthPx = basePillWidthPx * lensScaleX
-                val basePillHeightPx = with(density) { 44.dp.toPx() }
-                val currentPillHeightPx = basePillHeightPx * lensScaleY
+                val currentPillWidthPx = basePillWidthPx * (1.0f + 0.16f * expansionProgress)
+
+                // Vertically: at rest 42dp, on press expands to fill the entire 52dp container height (zero gap!)
+                val containerHeightPx = with(density) { 52.dp.toPx() }
+                val restingPillHeightPx = with(density) { 42.dp.toPx() }
+                val currentPillHeightPx = restingPillHeightPx + (containerHeightPx - restingPillHeightPx) * expansionProgress
 
                 val pillCenterXPx = animatedLensOffsetPx + tabWidthPx / 2f
-                val containerHeightPx = with(density) { 48.dp.toPx() }
                 val pillCenterYPx = containerHeightPx / 2f
 
                 val pillLeftPx = pillCenterXPx - currentPillWidthPx / 2f
                 val pillRightPx = pillCenterXPx + currentPillWidthPx / 2f
                 val pillTopPx = pillCenterYPx - currentPillHeightPx / 2f
                 val pillBottomPx = pillCenterYPx + currentPillHeightPx / 2f
-                val pillRadiusPx = with(density) { 22.dp.toPx() } * lensScaleY
+                val pillRadiusPx = currentPillHeightPx / 2f
                 val pillRadiusDp = with(density) { pillRadiusPx.toDp() }
 
                 val activeColor = MaterialTheme.colorScheme.primary
@@ -479,17 +496,27 @@ fun FloatingNavigationIsland(
                         )
                     }
 
-                    // --- LAYER 2: Mornye Translucent Grey Capsule Pill ---
+                    // --- LAYER 2: Mornye Translucent Grey Capsule Pill with Glass Highlight on Press ---
                     val pillBgColor = if (isDark) {
                         if (isAmoled) Color(0x28FFFFFF) else Color(0x1EFFFFFF)
                     } else {
                         Color(0x12000000)
                     }
-                    val pillBorderColor = if (isDark) {
-                        Color.White.copy(alpha = 0.06f)
+
+                    // Delicate glass border: subtle at rest, lights up with a glowing white glass rim when pressed!
+                    val borderAlpha = if (isDark) {
+                        0.06f + 0.60f * expansionProgress
                     } else {
-                        Color.Black.copy(alpha = 0.04f)
+                        0.05f + 0.50f * expansionProgress
                     }
+                    val borderWidthDp = (0.5f + 0.4f * expansionProgress).dp
+
+                    val pillBorderBrush = Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = borderAlpha),
+                            Color.White.copy(alpha = borderAlpha * 0.35f)
+                        )
+                    )
 
                     Box(
                         modifier = Modifier
@@ -504,8 +531,8 @@ fun FloatingNavigationIsland(
                             .clip(RoundedCornerShape(pillRadiusDp))
                             .background(pillBgColor)
                             .border(
-                                width = 0.5.dp,
-                                color = pillBorderColor,
+                                width = borderWidthDp,
+                                brush = pillBorderBrush,
                                 shape = RoundedCornerShape(pillRadiusDp)
                             )
                     )
@@ -534,9 +561,9 @@ fun FloatingNavigationIsland(
                                 centerPx = Offset(pillCenterXPx, pillCenterYPx),
                                 sizePx = Size(currentPillWidthPx, currentPillHeightPx),
                                 radiusPx = pillRadiusPx,
-                                refractionDepth = 0.14f,
-                                refractionWidthPx = with(density) { 14.dp.toPx() },
-                                dispersion = 0.0f,
+                                refractionDepth = 0.22f,
+                                refractionWidthPx = with(density) { 18.dp.toPx() },
+                                dispersion = 1.15f,
                                 intensity = interactionStrength
                             )
                     ) {
