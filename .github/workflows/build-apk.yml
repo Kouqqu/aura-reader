@@ -107,6 +107,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ env.APP_VERSION }}"
+          target_commitish: ${{ github.sha }}
           name: "Aura Reader v${{ env.APP_VERSION }}"
           prerelease: false
           make_latest: true
@@ -132,6 +133,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ env.APP_VERSION }}"
+          target_commitish: ${{ github.sha }}
           name: "Aura Reader v${{ env.APP_VERSION }} (Beta)"
           prerelease: true
           make_latest: false
