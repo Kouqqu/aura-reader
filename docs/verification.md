@@ -49,3 +49,5 @@ Pull requests to beta run unit tests, lint and a debug build without release sig
 The selection uses a Snell-law beveled capsule model adapted from liquid_glass_easy 5.0.0, with MIT attribution shipped in assets/licenses/liquid_glass_easy.txt. No lighting pass is added; tap activation and the dock layout are unchanged. RuntimeShader compilation is cached, while RenderEffect is rebound after its uniform values change.
 
 DockRefractionTest runs four Android GPU checks: bending on both axes with an unchanged center/outside, uniform-color preservation without glints, comparison against the legacy stretch model, and tap/drag navigation.
+
+The add button now uses a centered, non-bouncy press response (46–52dp inner circle in a 60dp button), without rotation, drag offsets or squash. Standard clickable semantics handle cancelled gestures and accessibility.

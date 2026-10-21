@@ -6,6 +6,10 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -90,11 +94,7 @@ import dev.chrisbanes.haze.hazeChild
 import dev.chrisbanes.haze.materials.HazeMaterials
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.hypot
 import kotlin.math.roundToInt
-import kotlin.math.sin
 
 /**
  * CompositionLocal for ambient Haze backdrop blur across Liquid Glass surfaces.
@@ -692,8 +692,7 @@ private fun TabDockRow(
 /**
  * Circular Liquid Glass action button (+ icon) positioned next to the navigation island.
  * Styled with identical glass material DNA as the navigation dock and capsule pill.
- * The outer glass chamber stays firmly anchored, while the inner translucent liquid tablet
- * and plus icon react with organic jelly-glass wobble physics and rubber-band tension.
+ * A centered, bounded press response keeps the plus inside its glass circle.
  */
 @Composable
 fun FloatingAddGlassButton(
@@ -702,7 +701,6 @@ fun FloatingAddGlassButton(
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
-    val density = LocalDensity.current.density
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val shape = CircleShape
     val hazeState = LocalHazeState.current
@@ -714,43 +712,17 @@ fun FloatingAddGlassButton(
         )
     } else Modifier
 
-    val scope = rememberCoroutineScope()
-    var isPressed by remember { mutableStateOf(false) }
-
-    // Inner liquid droplet wobble & drag animatables
-    val dragOffsetX = remember { Animatable(0f) }
-    val dragOffsetY = remember { Animatable(0f) }
-    val squishX = remember { Animatable(1f) }
-    val squishY = remember { Animatable(1f) }
-
-    // Subtle tactile container compression
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
     val containerScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1.0f,
-        animationSpec = spring(
-            dampingRatio = if (isPressed) Spring.DampingRatioNoBouncy else 0.55f,
-            stiffness = if (isPressed) 900f else 500f
-        ),
-        label = "containerScale"
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 650f),
+        label = "addButtonScale"
     )
-
-    // Inner tablet expansion (matches expansionProgress of the dock pill)
     val expansionProgress by animateFloatAsState(
-        targetValue = if (isPressed) 1.0f else 0.0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = if (isPressed) 900f else 650f
-        ),
-        label = "pillExpansion"
-    )
-
-    // Dynamic icon rotation on press/drag
-    val baseRotation by animateFloatAsState(
-        targetValue = if (isPressed) 45f else 0f,
-        animationSpec = spring(
-            dampingRatio = if (isPressed) Spring.DampingRatioNoBouncy else 0.50f,
-            stiffness = 600f
-        ),
-        label = "btnIconRotation"
+        targetValue = if (isPressed) 1f else 0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 650f),
+        label = "addButtonPress"
     )
 
     // Exact same dock glass styling as FloatingNavigationIsland
@@ -806,95 +778,22 @@ fun FloatingAddGlassButton(
                 color = dockBorderColor,
                 shape = shape
             )
-            .pointerInput(Unit) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    isPressed = true
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                role = Role.Button,
+                onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-
-                    var maxDragReached = 0f
-                    val maxTravelPx = 16f
-
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        val current = event.changes.firstOrNull { it.id == down.id } ?: break
-                        if (!current.pressed) break
-
-                        val delta = current.position - down.position
-                        val dist = hypot(delta.x, delta.y)
-                        if (dist > maxDragReached) {
-                            maxDragReached = dist
-                        }
-
-                        // Organic rubber-band resistance curve keeping droplet inside chamber
-                        val resistance = 0.38f / (1f + dist / 60f)
-                        val targetX = (delta.x * resistance).coerceIn(-maxTravelPx, maxTravelPx)
-                        val targetY = (delta.y * resistance).coerceIn(-maxTravelPx, maxTravelPx)
-
-                        scope.launch {
-                            dragOffsetX.snapTo(targetX)
-                            dragOffsetY.snapTo(targetY)
-
-                            // Jelly squish: stretches along pull direction, compresses laterally
-                            val stretch = (dist / 160f).coerceIn(0f, 0.20f)
-                            val compress = stretch * 0.50f
-                            val angle = atan2(delta.y, delta.x)
-                            val absCos = abs(cos(angle))
-                            val absSin = abs(sin(angle))
-                            squishX.snapTo(1f + stretch * absCos - compress * absSin)
-                            squishY.snapTo(1f + stretch * absSin - compress * absCos)
-                        }
-                        current.consume()
-                    }
-
-                    // Touch released!
-                    isPressed = false
-
-                    val wobbleSpring = spring<Float>(
-                        dampingRatio = 0.35f, // Juicy internal jelly wobble oscillation
-                        stiffness = 450f
-                    )
-
-                    if (maxDragReached <= 14f) {
-                        // Clean tap: triggers action and micro jelly pulse
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onClick()
-                        scope.launch {
-                            squishX.snapTo(0.90f)
-                            squishY.snapTo(1.10f)
-                            squishX.animateTo(1f, wobbleSpring)
-                            squishY.animateTo(1f, wobbleSpring)
-                        }
-                    } else {
-                        // User was playing with the wobbling physics inside the glass!
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    }
-
-                    // Snap inner liquid tablet back to center with jelly wobble
-                    scope.launch { dragOffsetX.animateTo(0f, wobbleSpring) }
-                    scope.launch { dragOffsetY.animateTo(0f, wobbleSpring) }
-                    scope.launch { squishX.animateTo(1f, wobbleSpring) }
-                    scope.launch { squishY.animateTo(1f, wobbleSpring) }
+                    onClick()
                 }
-            },
+            ),
         contentAlignment = Alignment.Center
     ) {
-        // Inner translucent liquid tablet (wobbles and squishes inside the outer glass chamber)
-        val pillSize = (46 + 8 * expansionProgress).dp
-
+        // A centered press response always fits inside the 60dp glass circle.
+        val pillSize = (46 + 6 * expansionProgress).dp
         Box(
             modifier = Modifier
-                .offset {
-                    IntOffset(
-                        dragOffsetX.value.roundToInt(),
-                        dragOffsetY.value.roundToInt()
-                    )
-                }
                 .size(pillSize)
-                .graphicsLayer {
-                    scaleX = squishX.value
-                    scaleY = squishY.value
-                }
                 .clip(CircleShape)
                 .background(pillBgColor)
                 .border(
@@ -910,9 +809,6 @@ fun FloatingAddGlassButton(
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .size(26.dp)
-                    .graphicsLayer {
-                        rotationZ = baseRotation + (dragOffsetX.value * 0.45f)
-                    }
             )
         }
     }
