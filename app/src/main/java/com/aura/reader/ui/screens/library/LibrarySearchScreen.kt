@@ -1,5 +1,11 @@
 package com.aura.reader.ui.screens.library
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.platform.LocalDensity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -89,6 +95,10 @@ fun LibrarySearchScreen(
         }
     }
 
+    val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    val collageSubdued = searchQuery.isNotBlank() || keyboardOpen
+    val heroHeight by animateDpAsState(if (collageSubdued) 110.dp else 310.dp, tween(350), label = "searchHeroHeight")
+    val titleInset by animateDpAsState(if (collageSubdued) 0.dp else 185.dp, tween(350), label = "searchTitleInset")
     val trimmedQuery = searchQuery.trim()
     val searchResults = remember(trimmedQuery, books) {
         if (trimmedQuery.isBlank()) {
@@ -110,11 +120,13 @@ fun LibrarySearchScreen(
             .background(screenBg)
             .statusBarsPadding()
     ) {
+        SearchCoverCollage(books, subdued = collageSubdued, modifier = Modifier.height(heroHeight))
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
+            Spacer(Modifier.height(titleInset))
             // Screen Header: Title
             Row(
                 modifier = Modifier

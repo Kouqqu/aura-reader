@@ -159,4 +159,25 @@ class DockRefractionTest {
         }
         compose.runOnIdle { assertEquals(0, selected) }
     }
+
+    @Test fun touchingAnywhereCapturesLensButOnlyReleaseChangesSection() {
+        var selected by mutableIntStateOf(0)
+        compose.setContent {
+            MaterialTheme {
+                FloatingNavigationIsland(AppDesignStyle.LIQUID_GLASS, selected,
+                    onMyBooksClick = { selected = 0 }, onSearchClick = { selected = 1 },
+                    onSettingsClick = { selected = 2 }, modifier = Modifier.testTag("dock"))
+            }
+        }
+        val dock = compose.onNodeWithTag("dock")
+        val before = dock.captureToImage()
+        dock.performTouchInput { down(Offset(width * 0.72f, height / 2f)) }
+        compose.runOnIdle { assertEquals(0, selected) }
+        val held = dock.captureToImage()
+        assertFalse("Lens follows initial contact before release", before.toPixelMap()[before.width / 6, before.height / 2] == held.toPixelMap()[held.width / 6, held.height / 2] && before.toPixelMap()[before.width * 3 / 4, before.height / 2] == held.toPixelMap()[held.width * 3 / 4, held.height / 2])
+        dock.performTouchInput { moveTo(Offset(width * 0.48f, height / 2f)); up() }
+        compose.runOnIdle { assertEquals(1, selected) }
+        dock.performTouchInput { down(Offset(width * 0.9f, height / 2f)); cancel() }
+        compose.runOnIdle { assertEquals(1, selected) }
+    }
 }

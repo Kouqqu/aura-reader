@@ -10,6 +10,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: apk-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,17 +27,21 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
+
+      - name: Set up Gradle build cache
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Run regression tests and lint
-        run: ./gradlew testDebugUnitTest lintDebug --no-daemon
+        run: ./gradlew testDebugUnitTest lintDebug --build-cache
 
       - name: Build debug APK for pull requests
         if: github.event_name == 'pull_request'
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --build-cache
 
       - name: Setup Release Keystore
         if: github.event_name != 'pull_request'
@@ -63,7 +71,7 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD || 'aura' }}
         run: |
           set -o pipefail
-          ./gradlew assembleRelease --stacktrace --no-daemon 2>&1 | tee gradle-build.log
+          ./gradlew assembleRelease --stacktrace --build-cache 2>&1 | tee gradle-build.log
 
       - name: Publish Error Details to Release if failed
         if: failure() && github.event_name != 'pull_request'

@@ -46,6 +46,9 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -450,6 +453,10 @@ fun LibraryScreen(
         }
     }
 
+    LaunchedEffect(isSearchExpanded) {
+        if (isSearchExpanded) gridState.scrollToItem(0)
+    }
+
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val hazeState = remember { HazeState() }
 
@@ -726,10 +733,17 @@ fun LibraryScreen(
                     .padding(innerPadding)
             ) {
             if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
-                EmptyLibraryView(
-                    onAddBooks = { showAddBooksSheet = true },
-                    onOpenSample = { viewModel.openSampleBook() }
-                )
+                Column(Modifier.fillMaxSize()) {
+                    if (isSearchExpanded && !isGlass) {
+                        SearchCoverCollage(emptyList(), subdued = true, modifier = Modifier.height(100.dp))
+                    }
+                    Box(Modifier.weight(1f)) {
+                        EmptyLibraryView(
+                            onAddBooks = { showAddBooksSheet = true },
+                            onOpenSample = { viewModel.openSampleBook() }
+                        )
+                    }
+                }
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(if (libraryViewMode == "GRID") 2 else 1),
@@ -739,6 +753,14 @@ fun LibraryScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    if (isSearchExpanded && !isGlass) {
+                        item(key = "searchCollage", span = { GridItemSpan(maxLineSpan) }) {
+                            val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+                            val subdued = searchQuery.isNotBlank() || keyboardOpen
+                            val height by animateDpAsState(if (subdued) 72.dp else 240.dp, tween(350), label = "materialSearchHero")
+                            SearchCoverCollage(recentBooks, subdued, Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(24.dp)))
+                        }
+                    }
                     // Instant Update Notification Banner
                     val curUpdate = updateInfo
                     if (curUpdate != null && curUpdate.isAvailable && updateNotificationsEnabled) {
