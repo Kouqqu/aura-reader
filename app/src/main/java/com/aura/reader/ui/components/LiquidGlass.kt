@@ -212,27 +212,18 @@ fun LiquidGlassSurface(
         )
     } else Modifier
 
+    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val baseFill = tintColor ?: if (isDark) {
-        Color(0x22FFFFFF)
+        if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)
     } else {
-        Color(0x70FFFFFF)
+        Color(0xF5F6F7FA)
     }
 
-    val surfaceSheen = Brush.verticalGradient(
-        listOf(
-            Color.White.copy(alpha = if (isDark) 0.08f * highlightIntensity else 0.16f * highlightIntensity),
-            Color.Transparent,
-            Color.Black.copy(alpha = if (isDark) 0.02f else 0.01f)
-        )
-    )
-
-    val specularRim = Brush.verticalGradient(
-        0.00f to Color.White.copy(alpha = if (isDark) 0.45f * highlightIntensity else 0.65f * highlightIntensity),
-        0.18f to Color.White.copy(alpha = if (isDark) 0.15f * highlightIntensity else 0.22f * highlightIntensity),
-        0.50f to Color.Transparent,
-        0.85f to Color.White.copy(alpha = if (isDark) 0.06f * highlightIntensity else 0.08f * highlightIntensity),
-        1.00f to Color.White.copy(alpha = if (isDark) 0.22f * highlightIntensity else 0.35f * highlightIntensity)
-    )
+    val borderColor = if (isDark) {
+        Color.White.copy(alpha = 0.06f * highlightIntensity)
+    } else {
+        Color.Black.copy(alpha = 0.05f * highlightIntensity)
+    }
 
     val effectiveElevation = if (isDark) 0.dp else shadowElevation.coerceAtMost(8.dp)
 
@@ -244,23 +235,19 @@ fun LiquidGlassSurface(
                         elevation = effectiveElevation,
                         shape = shape,
                         clip = false,
-                        ambientColor = Color.Black.copy(alpha = 0.08f),
-                        spotColor = Color.Black.copy(alpha = 0.12f)
+                        ambientColor = Color.Black.copy(alpha = 0.06f),
+                        spotColor = Color.Black.copy(alpha = 0.08f)
                     )
                 } else Modifier
             )
             .clip(shape)
             .then(hazeModifier)
             .background(baseFill)
-            .background(surfaceSheen)
-            .drawBehind {
-                val outline = shape.createOutline(size, layoutDirection, this)
-                drawOutline(
-                    outline = outline,
-                    brush = specularRim,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 0.85.dp.toPx())
-                )
-            }
+            .border(
+                width = 0.5.dp,
+                color = borderColor,
+                shape = shape
+            )
     ) {
         content()
     }
@@ -842,40 +829,28 @@ fun LiquidGlassFilterChip(
     trailingIcon: (@Composable () -> Unit)? = null
 ) {
     if (isGlass) {
-        val bg = if (selected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.25f else 0.18f)
-        } else {
-            if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.04f)
-        }
-
         val primaryColor = MaterialTheme.colorScheme.primary
-        val border = if (selected) {
-            BorderStroke(1.2.dp, primaryColor)
+        val bg = if (selected) {
+            primaryColor.copy(alpha = if (isDark) 0.22f else 0.16f)
         } else {
-            BorderStroke(
-                0.8.dp,
-                Brush.verticalGradient(
-                    listOf(
-                        if (isDark) Color.White.copy(alpha = 0.28f) else Color.Black.copy(alpha = 0.08f),
-                        if (isDark) Color.White.copy(alpha = 0.06f) else Color.Transparent
-                    )
-                )
-            )
+            if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.04f)
+        }
+        val borderColor = if (selected) {
+            primaryColor.copy(alpha = 0.65f)
+        } else {
+            if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
         }
 
         Box(
             modifier = modifier
-                .height(36.dp)
+                .height(34.dp)
                 .clip(CircleShape)
                 .background(bg)
-                .drawBehind {
-                    drawOutline(
-                        outline = CircleShape.createOutline(size, layoutDirection, this),
-                        brush = if (selected) SolidColor(primaryColor) else border.brush,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(border.width.toPx())
-                    )
-                }
-                .clip(CircleShape)
+                .border(
+                    width = 0.5.dp,
+                    color = borderColor,
+                    shape = CircleShape
+                )
                 .expressiveClickable(scaleDown = 0.94f, onClick = onClick)
                 .padding(horizontal = 14.dp),
             contentAlignment = Alignment.Center

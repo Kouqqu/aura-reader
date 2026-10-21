@@ -116,24 +116,24 @@ fun CurrentlyReadingHeroCard(
 
     val primaryAccent = accentColor ?: MaterialTheme.colorScheme.primary
     val cardBg = dominantColor ?: MaterialTheme.colorScheme.primaryContainer
+    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
 
-    val specularRim = Brush.verticalGradient(
-        0.00f to (if (isDark) Color.White.copy(alpha = 0.60f) else Color.White.copy(alpha = 0.95f)),
-        0.14f to (if (isDark) Color.White.copy(alpha = 0.20f) else Color.Black.copy(alpha = 0.04f)),
-        0.50f to Color.Transparent,
-        0.86f to (if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.04f)),
-        1.00f to (if (isDark) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.08f))
-    )
+    val heroBorder = if (isGlass) {
+        BorderStroke(
+            0.5.dp,
+            if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
+        )
+    } else null
 
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
-                if (isDark) Color(0x75161822) else Color(0xEEFFFFFF)
+                if (isDark) (if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)) else Color(0xF6F7FA)
             } else MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        border = if (isGlass) BorderStroke(1.2.dp, specularRim) else null,
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isGlass) 8.dp else 4.dp),
+        border = heroBorder,
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isGlass) 0.dp else 4.dp),
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
@@ -242,13 +242,8 @@ fun CurrentlyReadingHeroCard(
                                     } else MaterialTheme.colorScheme.surfaceContainerHigh,
                                     border = if (isGlass) {
                                         BorderStroke(
-                                            0.85.dp,
-                                            Brush.verticalGradient(
-                                                listOf(
-                                                    Color.White.copy(alpha = if (isDark) 0.35f else 0.70f),
-                                                    Color.White.copy(alpha = 0.05f)
-                                                )
-                                            )
+                                            0.5.dp,
+                                            if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
                                         )
                                     } else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
                                     shadowElevation = if (isGlass) 16.dp else 6.dp

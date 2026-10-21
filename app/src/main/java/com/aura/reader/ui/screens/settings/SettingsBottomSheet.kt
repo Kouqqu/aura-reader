@@ -505,23 +505,14 @@ fun SettingsBottomSheet(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isGlassSelected) {
-                            if (isThemeDark) Color(0x551E2436) else Color(0xDDFFFFFF)
+                            MaterialTheme.colorScheme.primaryContainer
                         } else {
                             if (isThemeDark) Color(0x33FFFFFF) else Color(0x18000000)
                         }
                     ),
                     border = BorderStroke(
                         if (isGlassSelected) 1.5.dp else 1.dp,
-                        if (isGlassSelected) {
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = if (isThemeDark) 0.85f else 0.95f),
-                                    Color.White.copy(alpha = 0.25f)
-                                )
-                            )
-                        } else {
-                            SolidColor(Color.White.copy(alpha = if (isThemeDark) 0.15f else 0.40f))
-                        }
+                        if (isGlassSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = if (isThemeDark) 0.15f else 0.40f)
                     ),
                     modifier = Modifier
                         .weight(1f)
