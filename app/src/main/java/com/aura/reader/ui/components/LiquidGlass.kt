@@ -364,33 +364,42 @@ fun FloatingNavigationIsland(
                     label = "liquidLensSlide"
                 )
 
-                // Smooth tactile pill expansion on press & slide
-                val isHolding = isPressed || isDragging
-                val offsetDelta = abs(animatedLensOffsetPx - restingOffsetPx)
-                val isSliding = offsetDelta > 2.0f
-
-                val targetExpansion = if (isHolding) 1.0f else if (isSliding) 0.5f else 0.0f
+                // Tactile pill expansion:
+                // - Full hold (1.0f) while dragging
+                // - Snappy, silky-smooth response on tap: instant swell, immediate smooth return without hanging
+                val isHolding = isDragging || isPressed
+                val targetExpansion = if (isDragging) 1.0f else if (isPressed) 0.85f else 0.0f
                 val expansionProgress by animateFloatAsState(
                     targetValue = targetExpansion,
-                    animationSpec = spring(
-                        dampingRatio = 0.72f,
-                        stiffness = Spring.StiffnessMediumLow
-                    ),
+                    animationSpec = if (isHolding) {
+                        spring(
+                            dampingRatio = 0.80f,
+                            stiffness = 1500f
+                        )
+                    } else {
+                        spring(
+                            dampingRatio = 0.82f,
+                            stiffness = 1200f
+                        )
+                    },
                     label = "pillExpansion"
                 )
 
-                // Refraction intensity: always present on the glass lens (0.70f), intensifying to 1.0f on slide/press!
-                val targetInteraction = if (isHolding || isSliding) 1.0f else 0.70f
+                // Refraction optics: ONLY active during movement / sliding (offsetDelta > 2.0f or dragging)
+                // At rest: strictly 0.0f so icons/text are 100% natural, crisp, and unwarped!
+                val offsetDelta = abs(animatedLensOffsetPx - restingOffsetPx)
+                val isMoving = isDragging || offsetDelta > 2.0f
+                val targetInteraction = if (isMoving) 1.0f else 0.0f
                 val interactionStrength by animateFloatAsState(
                     targetValue = targetInteraction,
-                    animationSpec = tween(durationMillis = 200),
+                    animationSpec = tween(durationMillis = 150),
                     label = "interactionStrength"
                 )
 
                 // Physical Pill dimensions:
-                // Horizontally expands smoothly
-                val basePillWidthPx = tabWidthPx - with(density) { 6.dp.toPx() }
-                val currentPillWidthPx = basePillWidthPx * (1.0f + 0.16f * expansionProgress)
+                // Horizontally expanded slightly wider for generous touch targets
+                val basePillWidthPx = tabWidthPx - with(density) { 2.dp.toPx() }
+                val currentPillWidthPx = basePillWidthPx * (1.0f + 0.12f * expansionProgress)
 
                 // Vertically: at rest 42dp, on press expands to fill the entire 52dp container height (zero gap!)
                 val containerHeightPx = with(density) { 52.dp.toPx() }
@@ -496,27 +505,26 @@ fun FloatingNavigationIsland(
                         )
                     }
 
-                    // --- LAYER 2: Mornye Translucent Grey Capsule Pill with Glass Highlight on Press ---
+                    // --- LAYER 2: Mornye Translucent Grey Capsule Pill ---
+                    // Deeply transparent, neutral, calm glass without milky glow:
                     val pillBgColor = if (isDark) {
-                        if (isAmoled) Color(0x28FFFFFF) else Color(0x1EFFFFFF)
+                        if (isAmoled) Color(0x10FFFFFF) else Color(0x0EFFFFFF)
                     } else {
-                        Color(0x12000000)
+                        Color(0x08000000)
                     }
 
-                    // Delicate glass border: subtle at rest, lights up with a glowing white glass rim when pressed!
+                    // Single-tone uniform border (no gradient, calm glass outline):
                     val borderAlpha = if (isDark) {
-                        0.06f + 0.60f * expansionProgress
+                        0.05f + 0.22f * expansionProgress
                     } else {
-                        0.05f + 0.50f * expansionProgress
+                        0.04f + 0.16f * expansionProgress
+                    }
+                    val pillBorderColor = if (isDark) {
+                        Color.White.copy(alpha = borderAlpha)
+                    } else {
+                        Color.Black.copy(alpha = borderAlpha)
                     }
                     val borderWidthDp = (0.5f + 0.4f * expansionProgress).dp
-
-                    val pillBorderBrush = Brush.verticalGradient(
-                        listOf(
-                            Color.White.copy(alpha = borderAlpha),
-                            Color.White.copy(alpha = borderAlpha * 0.35f)
-                        )
-                    )
 
                     Box(
                         modifier = Modifier
@@ -532,7 +540,7 @@ fun FloatingNavigationIsland(
                             .background(pillBgColor)
                             .border(
                                 width = borderWidthDp,
-                                brush = pillBorderBrush,
+                                color = pillBorderColor,
                                 shape = RoundedCornerShape(pillRadiusDp)
                             )
                     )
