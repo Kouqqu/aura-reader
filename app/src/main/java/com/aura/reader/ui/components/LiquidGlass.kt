@@ -3,6 +3,7 @@ package com.aura.reader.ui.components
 import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
 import android.os.Build
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -50,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,6 +84,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.AppDesignStyle
@@ -89,7 +92,13 @@ import com.aura.reader.ui.theme.LocalAppStrings
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeChild
 import dev.chrisbanes.haze.materials.HazeMaterials
+import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.roundToInt
+import kotlin.math.sin
 
 /**
  * CompositionLocal for ambient Haze backdrop blur across Liquid Glass surfaces.
@@ -781,8 +790,8 @@ private fun TabDockRow(
  */
 /**
  * Circular Liquid Glass action button (+ icon) positioned next to the navigation island.
- * Features living glass physics: tactile compression, inner liquid lens expansion,
- * illuminated glass rim, and fluid spring response on press.
+ * Features living jelly-glass wobble physics (interactive rubber-band dragging, 3D perspective tilt,
+ * fluid squish & stretch deformation, dynamic specular caustics, and damped spring oscillations).
  */
 @Composable
 fun FloatingAddGlassButton(
@@ -791,6 +800,7 @@ fun FloatingAddGlassButton(
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
+    val density = LocalDensity.current.density
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val shape = CircleShape
     val hazeState = LocalHazeState.current
@@ -802,43 +812,45 @@ fun FloatingAddGlassButton(
         )
     } else Modifier
 
+    val scope = rememberCoroutineScope()
     var isPressed by remember { mutableStateOf(false) }
 
-    // Living glass physics states
+    // Wobble & drag animatables
+    val dragOffsetX = remember { Animatable(0f) }
+    val dragOffsetY = remember { Animatable(0f) }
+    val squishX = remember { Animatable(1f) }
+    val squishY = remember { Animatable(1f) }
+    val tiltX = remember { Animatable(0f) }
+    val tiltY = remember { Animatable(0f) }
+
+    // Tactile press scale
     val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.91f else 1.0f,
+        targetValue = if (isPressed) 0.92f else 1.0f,
         animationSpec = spring(
-            dampingRatio = if (isPressed) Spring.DampingRatioNoBouncy else 0.65f,
-            stiffness = if (isPressed) 900f else 600f
+            dampingRatio = if (isPressed) Spring.DampingRatioNoBouncy else 0.42f,
+            stiffness = if (isPressed) 900f else 480f
         ),
         label = "btnPressScale"
     )
 
+    // Inner liquid droplet expansion
     val liquidLensProgress by animateFloatAsState(
         targetValue = if (isPressed) 1.0f else 0.0f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = if (isPressed) 1000f else 600f
+            dampingRatio = if (isPressed) Spring.DampingRatioNoBouncy else 0.48f,
+            stiffness = 550f
         ),
         label = "btnLiquidLens"
     )
 
-    val iconRotation by animateFloatAsState(
-        targetValue = if (isPressed) 45f else 0.0f,
+    // Dynamic rotation: reacts to drag + click rotation
+    val baseRotation by animateFloatAsState(
+        targetValue = if (isPressed) 45f else 0f,
         animationSpec = spring(
-            dampingRatio = if (isPressed) Spring.DampingRatioNoBouncy else 0.70f,
-            stiffness = 700f
+            dampingRatio = if (isPressed) Spring.DampingRatioNoBouncy else 0.50f,
+            stiffness = 600f
         ),
         label = "btnIconRotation"
-    )
-
-    val iconScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.88f else 1.0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = 900f
-        ),
-        label = "btnIconScale"
     )
 
     val btnBgColor = if (isDark) {
@@ -847,73 +859,182 @@ fun FloatingAddGlassButton(
         Color(0xF4F5F6FA)
     }
     val btnBorderColor = if (isDark) {
-        Color.White.copy(alpha = 0.06f + 0.14f * liquidLensProgress)
+        Color.White.copy(alpha = 0.08f + 0.16f * liquidLensProgress)
     } else {
-        Color.Black.copy(alpha = 0.05f + 0.10f * liquidLensProgress)
+        Color.Black.copy(alpha = 0.06f + 0.12f * liquidLensProgress)
     }
 
     Box(
         modifier = modifier
+            .offset {
+                IntOffset(
+                    dragOffsetX.value.roundToInt(),
+                    dragOffsetY.value.roundToInt()
+                )
+            }
             .then(
                 if (!isDark) {
                     Modifier.shadow(
-                        elevation = 8.dp,
+                        elevation = (8 + 4 * liquidLensProgress).dp,
                         shape = shape,
                         clip = false,
-                        ambientColor = Color.Black.copy(alpha = 0.06f),
-                        spotColor = Color.Black.copy(alpha = 0.08f)
+                        ambientColor = Color.Black.copy(alpha = 0.07f),
+                        spotColor = Color.Black.copy(alpha = 0.10f)
                     )
                 } else Modifier
             )
-            .size(54.dp)
+            .size(56.dp)
             .graphicsLayer {
-                scaleX = pressScale
-                scaleY = pressScale
+                cameraDistance = 14f * density
+                rotationX = tiltX.value
+                rotationY = tiltY.value
+                scaleX = pressScale * squishX.value
+                scaleY = pressScale * squishY.value
             }
             .clip(shape)
             .then(hazeModifier)
             .background(btnBgColor)
             .border(
-                width = (0.6 + 0.4 * liquidLensProgress).dp,
+                width = (0.7 + 0.5 * liquidLensProgress).dp,
                 color = btnBorderColor,
                 shape = shape
             )
             .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        try {
-                            tryAwaitRelease()
-                        } finally {
-                            isPressed = false
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    isPressed = true
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+
+                    var maxDragReached = 0f
+                    val maxTravelPx = 75f
+
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val current = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!current.pressed) break
+
+                        val delta = current.position - down.position
+                        val dist = hypot(delta.x, delta.y)
+                        if (dist > maxDragReached) {
+                            maxDragReached = dist
                         }
-                    },
-                    onTap = {
-                        onClick()
+
+                        // Organic rubber-band resistance curve
+                        val resistance = 0.50f / (1f + dist / 90f)
+                        val targetX = (delta.x * resistance).coerceIn(-maxTravelPx, maxTravelPx)
+                        val targetY = (delta.y * resistance).coerceIn(-maxTravelPx, maxTravelPx)
+
+                        scope.launch {
+                            dragOffsetX.snapTo(targetX)
+                            dragOffsetY.snapTo(targetY)
+
+                            // 3D Tilt in direction of the pull
+                            tiltX.snapTo((-targetY * 0.40f).coerceIn(-26f, 26f))
+                            tiltY.snapTo((targetX * 0.40f).coerceIn(-26f, 26f))
+
+                            // Jelly squish: stretches along pull direction, compresses laterally
+                            val stretch = (dist / 240f).coerceIn(0f, 0.24f)
+                            val compress = stretch * 0.55f
+                            val angle = atan2(delta.y, delta.x)
+                            val absCos = abs(cos(angle))
+                            val absSin = abs(sin(angle))
+                            squishX.snapTo(1f + stretch * absCos - compress * absSin)
+                            squishY.snapTo(1f + stretch * absSin - compress * absCos)
+                        }
+                        current.consume()
                     }
-                )
+
+                    // Touch released!
+                    isPressed = false
+
+                    val wobbleSpring = spring<Float>(
+                        dampingRatio = 0.36f, // Juicy jelly wobble oscillation
+                        stiffness = 420f
+                    )
+                    val tiltSpring = spring<Float>(
+                        dampingRatio = 0.42f,
+                        stiffness = 460f
+                    )
+
+                    if (maxDragReached <= 24f) {
+                        // Regular tap
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onClick()
+                        // Micro jelly pulse on click
+                        scope.launch {
+                            squishX.snapTo(0.88f)
+                            squishY.snapTo(1.12f)
+                            squishX.animateTo(1f, wobbleSpring)
+                            squishY.animateTo(1f, wobbleSpring)
+                        }
+                    } else {
+                        // User was playing with the wobbling physics!
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+
+                    // Snap back to rest with jelly wobble
+                    scope.launch { dragOffsetX.animateTo(0f, wobbleSpring) }
+                    scope.launch { dragOffsetY.animateTo(0f, wobbleSpring) }
+                    scope.launch { tiltX.animateTo(0f, tiltSpring) }
+                    scope.launch { tiltY.animateTo(0f, tiltSpring) }
+                    scope.launch { squishX.animateTo(1f, wobbleSpring) }
+                    scope.launch { squishY.animateTo(1f, wobbleSpring) }
+                }
             },
         contentAlignment = Alignment.Center
     ) {
-        // Inner liquid glass swell (condenses and glows under finger pressure like optical liquid)
+        // Dynamic specular glare that shifts as the glass button tilts and moves
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawBehind {
+                    val specularCenterX = size.width * (0.36f + tiltY.value / 160f)
+                    val specularCenterY = size.height * (0.30f - tiltX.value / 160f)
+                    val centerOffset = Offset(specularCenterX, specularCenterY)
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = if (isDark) 0.32f else 0.50f),
+                                Color.White.copy(alpha = if (isDark) 0.08f else 0.18f),
+                                Color.Transparent
+                            ),
+                            center = centerOffset,
+                            radius = size.minDimension * 0.48f
+                        ),
+                        radius = size.minDimension * 0.48f,
+                        center = centerOffset
+                    )
+                }
+        )
+
+        // Inner glowing liquid glass core (condenses and glows under finger pressure like optical liquid)
         if (liquidLensProgress > 0.01f) {
             Box(
                 modifier = Modifier
-                    .size((44 + 4 * liquidLensProgress).dp)
+                    .size((44 + 6 * liquidLensProgress).dp)
                     .clip(CircleShape)
                     .background(
-                        if (isDark) Color.White.copy(alpha = 0.12f * liquidLensProgress)
-                        else Color.White.copy(alpha = 0.25f * liquidLensProgress)
+                        Brush.radialGradient(
+                            colors = if (isDark) listOf(
+                                Color.White.copy(alpha = 0.20f * liquidLensProgress),
+                                Color.White.copy(alpha = 0.06f * liquidLensProgress),
+                                Color.Transparent
+                            ) else listOf(
+                                Color.White.copy(alpha = 0.35f * liquidLensProgress),
+                                Color.White.copy(alpha = 0.12f * liquidLensProgress),
+                                Color.Transparent
+                            )
+                        )
                     )
                     .border(
-                        width = 0.5.dp,
-                        color = Color.White.copy(alpha = (if (isDark) 0.22f else 0.35f) * liquidLensProgress),
+                        width = 0.6.dp,
+                        color = Color.White.copy(alpha = (if (isDark) 0.28f else 0.42f) * liquidLensProgress),
                         shape = CircleShape
                     )
             )
         }
 
+        // Floating plus icon with subtle parallax depth
         Icon(
             imageVector = Icons.Default.Add,
             contentDescription = LocalAppStrings.current.addBooks,
@@ -921,9 +1042,9 @@ fun FloatingAddGlassButton(
             modifier = Modifier
                 .size(28.dp)
                 .graphicsLayer {
-                    rotationZ = iconRotation
-                    scaleX = iconScale
-                    scaleY = iconScale
+                    rotationZ = baseRotation + (dragOffsetX.value * 0.25f)
+                    translationX = dragOffsetX.value * 0.12f
+                    translationY = dragOffsetY.value * 0.12f
                 }
         )
     }
