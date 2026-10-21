@@ -20,5 +20,3 @@ app/build/
 .idea/
 .kotlin/
 
-*.jks
-*.keystore
