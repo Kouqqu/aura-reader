@@ -637,7 +637,7 @@ class RuStrings : Strings {
     override val readingStreakKeepGoing = "Читайте каждый день, чтобы поддерживать серию!"
     override val readingTimeTodayCard = "Сегодня"
     override val readingTimeTotalCard = "Всего прочитано"
-    override val readingTimeAvgCard = "В среднем в день"
+    override val readingTimeAvgCard = "В среднем"
     override val readingWeeklyActivityTitle = "Активность за 7 дней"
     override fun totalHoursAndMinutes(hours: Int, minutes: Int) = if (hours > 0) "$hours ч $minutes мин" else "$minutes мин"
     override val dayMon = "Пн"

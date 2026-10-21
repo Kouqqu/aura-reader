@@ -347,8 +347,8 @@ fun FloatingNavigationIsland(
                         spring(stiffness = Spring.StiffnessHigh)
                     } else {
                         spring(
-                            dampingRatio = 0.78f,
-                            stiffness = Spring.StiffnessMediumLow
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = 320f
                         )
                     },
                     label = "liquidLensSlide"
@@ -356,20 +356,20 @@ fun FloatingNavigationIsland(
 
                 // Tactile pill expansion:
                 // - Full hold (1.0f) while dragging
-                // - Clean, snappy response on tap: instant swell, immediate smooth return without hanging
+                // - Snappy, critically damped response on tap: smooth swell and clean return without edge bounce
                 val isHolding = isDragging || isPressed
                 val targetExpansion = if (isDragging) 1.0f else if (isPressed) 0.85f else 0.0f
                 val expansionProgress by animateFloatAsState(
                     targetValue = targetExpansion,
                     animationSpec = if (isHolding) {
                         spring(
-                            dampingRatio = 0.80f,
-                            stiffness = 1500f
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = 900f
                         )
                     } else {
                         spring(
-                            dampingRatio = 0.82f,
-                            stiffness = 1200f
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = 700f
                         )
                     },
                     label = "pillExpansion"
@@ -752,6 +752,11 @@ private fun TabDockRow(
 /**
  * Circular Liquid Glass action button (+ icon) positioned next to the navigation island.
  */
+/**
+ * Circular Liquid Glass action button (+ icon) positioned next to the navigation island.
+ * Features living glass physics: tactile compression, inner liquid lens expansion,
+ * illuminated glass rim, and fluid spring response on press.
+ */
 @Composable
 fun FloatingAddGlassButton(
     onClick: () -> Unit,
@@ -770,12 +775,55 @@ fun FloatingAddGlassButton(
         )
     } else Modifier
 
+    var isPressed by remember { mutableStateOf(false) }
+
+    // Living glass physics states
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.91f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = if (isPressed) Spring.DampingRatioNoBouncy else 0.65f,
+            stiffness = if (isPressed) 900f else 600f
+        ),
+        label = "btnPressScale"
+    )
+
+    val liquidLensProgress by animateFloatAsState(
+        targetValue = if (isPressed) 1.0f else 0.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = if (isPressed) 1000f else 600f
+        ),
+        label = "btnLiquidLens"
+    )
+
+    val iconRotation by animateFloatAsState(
+        targetValue = if (isPressed) 45f else 0.0f,
+        animationSpec = spring(
+            dampingRatio = if (isPressed) Spring.DampingRatioNoBouncy else 0.70f,
+            stiffness = 700f
+        ),
+        label = "btnIconRotation"
+    )
+
+    val iconScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.88f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = 900f
+        ),
+        label = "btnIconScale"
+    )
+
     val btnBgColor = if (isDark) {
         if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)
     } else {
         Color(0xF4F5F6FA)
     }
-    val btnBorderColor = if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
+    val btnBorderColor = if (isDark) {
+        Color.White.copy(alpha = 0.06f + 0.14f * liquidLensProgress)
+    } else {
+        Color.Black.copy(alpha = 0.05f + 0.10f * liquidLensProgress)
+    }
 
     Box(
         modifier = modifier
@@ -791,25 +839,65 @@ fun FloatingAddGlassButton(
                 } else Modifier
             )
             .size(54.dp)
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
             .clip(shape)
             .then(hazeModifier)
             .background(btnBgColor)
             .border(
-                width = 0.6.dp,
+                width = (0.6 + 0.4 * liquidLensProgress).dp,
                 color = btnBorderColor,
                 shape = shape
             )
-            .expressiveClickable(scaleDown = 0.90f) {
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onClick()
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        isPressed = true
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        try {
+                            tryAwaitRelease()
+                        } finally {
+                            isPressed = false
+                        }
+                    },
+                    onTap = {
+                        onClick()
+                    }
+                )
             },
         contentAlignment = Alignment.Center
     ) {
+        // Inner liquid glass swell (condenses and glows under finger pressure like optical liquid)
+        if (liquidLensProgress > 0.01f) {
+            Box(
+                modifier = Modifier
+                    .size((44 + 4 * liquidLensProgress).dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isDark) Color.White.copy(alpha = 0.12f * liquidLensProgress)
+                        else Color.White.copy(alpha = 0.25f * liquidLensProgress)
+                    )
+                    .border(
+                        width = 0.5.dp,
+                        color = Color.White.copy(alpha = (if (isDark) 0.22f else 0.35f) * liquidLensProgress),
+                        shape = CircleShape
+                    )
+            )
+        }
+
         Icon(
             imageVector = Icons.Default.Add,
             contentDescription = LocalAppStrings.current.addBooks,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(28.dp)
+            modifier = Modifier
+                .size(28.dp)
+                .graphicsLayer {
+                    rotationZ = iconRotation
+                    scaleX = iconScale
+                    scaleY = iconScale
+                }
         )
     }
 }

@@ -285,8 +285,12 @@ fun LibraryScreen(
     BackHandler(enabled = showAddBooksSheet) {
         showAddBooksSheet = false
     }
+    var showAddBooksScreen by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = showAddBooksScreen) {
+        showAddBooksScreen = false
+    }
 
-    BackHandler(enabled = isGlass && currentMainTab != 0 && !showAddBooksSheet) {
+    BackHandler(enabled = isGlass && currentMainTab != 0 && !showAddBooksSheet && !showAddBooksScreen) {
         currentMainTab = 0
     }
     var showSettingsSheet by remember { mutableStateOf(false) }
@@ -459,7 +463,7 @@ fun LibraryScreen(
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            if (currentMainTab == 0) {
+            if (currentMainTab == 0 && (!showAddBooksScreen || isGlass)) {
                 if (isSearchExpanded && !isGlass) {
                     TopAppBar(
                         title = {
@@ -610,7 +614,7 @@ fun LibraryScreen(
             } else {
                 ExtendedFloatingActionButton(
                     shape = RoundedCornerShape(20.dp),
-                    onClick = { showAddBooksSheet = true },
+                    onClick = { showAddBooksScreen = true },
                     icon = { Icon(Icons.Default.Add, contentDescription = null) },
                     text = { Text(strings.addBooks) },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -626,13 +630,23 @@ fun LibraryScreen(
                 .fillMaxSize()
                 .haze(hazeState)
         ) {
-            if (showAddBooksSheet) {
+            if (showAddBooksSheet && isGlass) {
                 AddBooksBottomSheet(
                     onDismiss = { showAddBooksSheet = false },
                     onSelectFiles = { launchFilePicker() },
                     onScanFolder = { openFolderLauncher.launch(null) },
                     onOpenCatalog = onOpenCatalog,
-                    isLiquidGlass = isGlass,
+                    isLiquidGlass = true,
+                    isDark = isThemeDark
+                )
+            }
+
+            if (showAddBooksScreen && !isGlass) {
+                AddBooksScreen(
+                    onBack = { showAddBooksScreen = false },
+                    onSelectFiles = { launchFilePicker() },
+                    onScanFolder = { openFolderLauncher.launch(null) },
+                    onOpenCatalog = onOpenCatalog,
                     isDark = isThemeDark
                 )
             }
@@ -727,7 +741,7 @@ fun LibraryScreen(
             ) {
             if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
                 EmptyLibraryView(
-                    onAddBooks = { showAddBooksSheet = true },
+                    onAddBooks = { if (isGlass) showAddBooksSheet = true else showAddBooksScreen = true },
                     onOpenSample = { viewModel.openSampleBook() }
                 )
             } else {
@@ -823,7 +837,7 @@ fun LibraryScreen(
                                     )
                                     if (readingStatsData.currentStreakDays > 0) {
                                         Text(
-                                            text = "рџ”Ґ ${readingStatsData.currentStreakDays}",
+                                            text = "🔥 ${readingStatsData.currentStreakDays}",
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
@@ -1809,7 +1823,7 @@ fun BookCard(
 
                 if (!book.series.isNullOrBlank()) {
                     val seriesText = if (book.seriesNumber != null) {
-                        "${book.series} вЂў #${book.seriesNumber}"
+                        "${book.series} • #${book.seriesNumber}"
                     } else {
                         book.series!!
                     }
@@ -2258,7 +2272,7 @@ fun BookGridCard(
 
             if (!book.series.isNullOrBlank()) {
                 val seriesText = if (book.seriesNumber != null) {
-                    "${book.series} вЂў #${book.seriesNumber}"
+                    "${book.series} • #${book.seriesNumber}"
                 } else {
                     book.series!!
                 }

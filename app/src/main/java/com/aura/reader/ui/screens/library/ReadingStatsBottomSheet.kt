@@ -3,6 +3,7 @@ package com.aura.reader.ui.screens.library
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -74,15 +76,46 @@ fun ReadingStatsBottomSheet(
 ) {
     val strings = LocalAppStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
+
+    val sheetBgColor = if (isLiquidGlass) {
+        if (isDark) {
+            if (isAmoled) Color(0xF6121316) else Color(0xF4181A20)
+        } else {
+            Color(0xF8F6F7FA)
+        }
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+
+    val sheetBorderColor = if (isLiquidGlass) {
+        if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+    } else Color.Transparent
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() },
-        containerColor = if (isLiquidGlass) {
-            if (isDark) Color(0xFF131622) else Color(0xFFF2F4F8)
-        } else MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(vertical = 12.dp)
+                    .size(width = 36.dp, height = 4.5.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isDark) Color.White.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.15f)
+                    )
+            )
+        },
+        containerColor = sheetBgColor,
+        scrimColor = Color.Black.copy(alpha = 0.65f),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = if (isLiquidGlass) {
+            Modifier.border(
+                width = 0.6.dp,
+                color = sheetBorderColor,
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            )
+        } else Modifier
     ) {
         Column(
             modifier = Modifier
@@ -163,7 +196,8 @@ fun ReadingStatsBottomSheet(
 
                     WeeklyActivityChart(
                         weeklyStats = statsData.weeklyStats,
-                        strings = strings
+                        strings = strings,
+                        isDark = isDark
                     )
                 }
             }
@@ -172,8 +206,8 @@ fun ReadingStatsBottomSheet(
                 LiquidGlassSurface(
                     shape = RoundedCornerShape(20.dp),
                     isDark = isDark,
-                    shadowElevation = 8.dp,
-                    tintColor = if (isDark) Color(0x301D212E) else Color(0x80FFFFFF),
+                    shadowElevation = 4.dp,
+                    tintColor = null,
                     modifier = Modifier.fillMaxWidth(),
                     content = chartContent
                 )
@@ -234,9 +268,13 @@ fun ReadingStatsBottomSheet(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            FilledTonalButton(
+            Button(
                 onClick = onDismiss,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
@@ -265,18 +303,18 @@ private fun StreakBanner(
             Box(
                 modifier = Modifier
                     .size(46.dp)
-                    .clip(CircleShape)
+                    .clip(RoundedCornerShape(14.dp))
                     .background(
-                        if (hasStreak) Color(0xFFFF9800).copy(alpha = 0.2f)
-                        else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                        if (hasStreak) Color(0xFFFF9500).copy(alpha = if (isDark) 0.18f else 0.12f)
+                        else if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.LocalFireDepartment,
                     contentDescription = null,
-                    tint = if (hasStreak) Color(0xFFFF6D00) else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(28.dp)
+                    tint = if (hasStreak) Color(0xFFFF9500) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(26.dp)
                 )
             }
 
@@ -287,13 +325,13 @@ private fun StreakBanner(
                     text = if (hasStreak) strings.readingStreakFormat(streak) else strings.readingStreakDays,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (hasStreak) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = if (hasStreak) strings.readingStreakKeepGoing else strings.readingStatsEmpty,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (hasStreak) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
                 )
             }
         }
@@ -303,12 +341,8 @@ private fun StreakBanner(
         LiquidGlassSurface(
             shape = RoundedCornerShape(20.dp),
             isDark = isDark,
-            shadowElevation = 8.dp,
-            tintColor = if (hasStreak) {
-                if (isDark) Color(0x35E65100) else Color(0x20FF9800)
-            } else {
-                if (isDark) Color(0x301D212E) else Color(0x80FFFFFF)
-            },
+            shadowElevation = 4.dp,
+            tintColor = null,
             modifier = Modifier.fillMaxWidth(),
             content = bannerContent
         )
@@ -353,9 +387,10 @@ private fun StatCard(
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.5.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+                maxLines = 2,
+                softWrap = true
             )
         }
     }
@@ -364,8 +399,8 @@ private fun StatCard(
         LiquidGlassSurface(
             shape = RoundedCornerShape(16.dp),
             isDark = isDark,
-            shadowElevation = 6.dp,
-            tintColor = if (isDark) Color(0x301D212E) else Color(0x80FFFFFF),
+            shadowElevation = 4.dp,
+            tintColor = null,
             modifier = modifier,
             content = cardContent
         )
@@ -384,7 +419,8 @@ private fun StatCard(
 @Composable
 private fun WeeklyActivityChart(
     weeklyStats: List<DayReadingStat>,
-    strings: Strings
+    strings: Strings,
+    isDark: Boolean = isSystemInDarkTheme()
 ) {
     val maxMinutes = (weeklyStats.maxOfOrNull { it.minutes } ?: 0).coerceAtLeast(30)
     var animationTriggered by remember { mutableStateOf(false) }
@@ -453,7 +489,9 @@ private fun WeeklyActivityChart(
                             .fillMaxWidth()
                             .fillMaxHeight()
                             .clip(RoundedCornerShape(9.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .background(
+                                if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+                            )
                     )
 
                     // Filled Bar (animated via Draw phase graphicsLayer scaleY to eliminate relayout jank)
