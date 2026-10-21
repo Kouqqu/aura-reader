@@ -13,22 +13,25 @@ A modern, fast, and elegant Android e-reader built with Jetpack Compose, Materia
 Crafted for immersive and comfortable reading without ads or trackers.
 
 ### 📚 Key Features:
+- **Ultra-Compact & Fast**: Highly optimized build weighing only **~5 MB** with instant launch and silky-smooth animations.
 - **Rich Format Support**: Reads **EPUB**, **FB2**, **FB2.ZIP**, plain **TXT**, **MOBI**, **PDF**, and comic books (**CBZ**).
 - **Dual Visual Styles**:
-  - **Liquid Glass**: Apple iOS-inspired frosted glass dock, translucent blur materials, specular highlights, and fluid navigation pill physics.
+  - **Liquid Glass**: Apple iOS-inspired frosted glass dock, translucent blur materials, fluid navigation tablet physics, and an interactive jelly-glass add button with organic wobble mechanics.
   - **Material 3 Expressive**: Google's modern design with Material You dynamic color palette integration.
 - **OPDS Catalogs**: Browse and download books directly from online OPDS library catalogs.
 - **Reading Modes**: Realistic **3D Page Flip**, **Page Peel/Curl**, **Paginated slide**, and smooth **Continuous scroll**.
 - **Interactive 3D Parallax Covers**: Tilt your device or drag with your finger to examine book covers in real-time 3D with realistic lighting and gyroscope physics.
 - **Magazine Hero Card**: "Now Reading" card on the home screen with dynamic Aura Glow palette shadows and reading stats.
+- **Home Screen Widget**: Convenient Android widget displaying your current book cover and reading progress.
 - **Text-to-Speech (TTS)**: Background voice playback via system `MediaSessionCompat` with full lock screen and notification shade controls, plus voice selection.
 - **Dictionary & Footnotes**: Instant popup footnotes in a bottom sheet and smart offline dictionary looking up root lemmas.
 - **Full-Text Search**: In-book keyword search with highlights and quick chapter jumping, plus fast library-wide search.
-- **Quotes & Highlights**: Save text excerpts with colored highlighter options (yellow, green, blue, pink, purple).
+- **Quotes & Highlights**: Save text excerpts with colored highlighter options (yellow, green, blue, pink, purple) and multi-paragraph selection.
 - **Reading Statistics**: Track daily streaks, reading speed (words/min), total hours, and weekly interactive activity charts.
 - **Typography & Theming**: Custom font sizes, line height, serif/sans/mono fonts, plus Light, Dark, Sepia, and Pure Black (AMOLED) palettes.
+- **Backup & Restore**: Export and import your library, bookmarks, and reading progress locally.
 - **Privacy First**: No ads. Includes optional anonymous reader telemetry (TelemetryDeck) counting active launches without collecting personal data, with a direct opt-out toggle in Settings.
-- **Multilingual**: Fully localized into 5 languages (English, Russian, Ukrainian, Belarusian, Polish).
+- **Multilingual**: Fully localized into **6 languages**: 🇬🇧 English, 🇷🇺 Русский, 🇺🇦 Українська, 🇧🇾 Беларуская, 🇵🇱 Polski, 🇨🇿 Čeština.
 - **Auto-Updates**: In-app one-tap update checks and seamless installation.
 
 ### 📥 How to Install:
@@ -46,22 +49,25 @@ This project is open-source under the terms of the [GNU General Public License v
 Создана для комфортного чтения без рекламы и назойливых элементов.
 
 ### 📚 Основные возможности:
+- **Сверхкомпактность и скорость**: Оптимизированное приложение весом всего **~5 МБ** с мгновенным запуском и плавной работой.
 - **Широкая поддержка форматов**: Читает **EPUB**, **FB2**, **FB2.ZIP**, обычный **TXT**, **MOBI**, **PDF** и комиксы **CBZ**.
 - **Два стиля оформления**:
-  - **Liquid Glass**: Вдохновлённая эстетикой Apple iOS нижняя стеклянная панель (док), плавное размытие (frosted glass), световые блики и живая физика перемещения таблетки.
+  - **Liquid Glass**: Вдохновлённая эстетикой Apple iOS нижняя стеклянная панель (док), плавное размытие (frosted glass), световые блики, скользящая таблетка навигации и живая желейная кнопка добавления с воблинг-физикой.
   - **Material 3 Expressive**: Каноничный стиль Google с поддержкой адаптивных системных цветов Material You.
 - **OPDS-каталоги**: Поиск, просмотр и скачивание книг напрямую из сетевых электронных библиотек.
 - **Режимы чтения**: Физический **3D-разворот страниц (Flip)**, **стягивание страницы (Curl)**, **постраничный сдвиг** и **непрерывная лента**.
 - **3D Parallax обложки**: Интерактивный 3D-просмотр обложек с реакцией на датчик наклона (гироскоп), жесты пальцем и динамические блики.
 - **Журнальная карточка «Сейчас читаю»**: Стильная карточка на главном экране с мягким свечением Aura Glow в цвет обложки.
+- **Виджет рабочего стола**: Удобный виджет для экрана телефона с обложкой и процентом прогресса текущей книги.
 - **Фоновая озвучка (TTS)**: Чтение текста вслух в фоне через `MediaSessionCompat` с управлением из шторки уведомлений и экрана блокировки, плюс окно выбора системных голосов.
 - **Словарь и сноски**: Всплывающие сноски без потери позиции в тексте и умный поиск словарных форм слов.
 - **Полнотекстовый поиск**: Поиск слов и фраз внутри книги с подсветкой и навигацией, а также поиск по всей библиотеке.
-- **Цитаты и маркеры**: Сохранение фрагментов текста с выбором цвета хайлайта (жёлтый, зелёный, синий, розовый, фиолетовый).
+- **Цитаты и маркеры**: Сохранение фрагментов текста с удобным выделением предложений и абзацев и выбором цвета хайлайта (жёлтый, зелёный, синий, розовый, фиолетовый).
 - **Интерактивная статистика**: Подсчёт времени чтения, страниц, темпа (слов/мин), стрик дней и анимированные графики активности.
 - **Типографика и темы**: Настройка шрифтов, кегля, межстрочного интервала, книжные отступы, темы: Светлая, Тёмная, Сепия и AMOLED.
+- **Резервное копирование**: Экспорт и импорт библиотечной базы и закладок в один файл.
 - **Приватность**: Без рекламы и трекеров. Включает опциональную анонимную статистику (TelemetryDeck) для подсчёта активных читателей без сбора персональных данных, которую можно в любой момент выключить тумблером в Настройках.
-- **Мультиязычность**: 100% перевод интерфейса на 5 языков (Русский, Английский, Украинский, Белорусский, Польский).
+- **Мультиязычность**: Полная локализация на **6 языков**: 🇷🇺 Русский, 🇬🇧 English, 🇺🇦 Українська, 🇧🇾 Беларуская, 🇵🇱 Polski, 🇨🇿 Čeština.
 - **Автообновления**: Проверка и быстрая установка свежих версий прямо из приложения.
 
 ### 📥 Как установить:
