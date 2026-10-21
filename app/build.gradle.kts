@@ -12,8 +12,8 @@ android {
         applicationId = "com.aura.reader"
         minSdk = 26
         targetSdk = 35
-        versionCode = 81
-        versionName = "1.4.5-beta.25"
+        versionCode = 82
+        versionName = "1.4.5-beta.26"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -23,10 +23,13 @@ android {
 
     signingConfigs {
         getByName("debug") {
-            storeFile = file("debug.keystore")
-            storePassword = "androiddebugkey"
-            keyAlias = "androiddebugkey"
-            keyPassword = "androiddebugkey"
+            val dbgFile = file("debug.keystore")
+            if (dbgFile.exists()) {
+                storeFile = dbgFile
+                storePassword = "androiddebugkey"
+                keyAlias = "androiddebugkey"
+                keyPassword = "androiddebugkey"
+            }
         }
         create("release") {
             val ksPath = System.getenv("SIGNING_KEY_STORE_PATH")
@@ -52,10 +55,13 @@ android {
                 enableV2Signing = true
                 enableV3Signing = true
             } else {
-                storeFile = file("debug.keystore")
-                storePassword = "androiddebugkey"
-                keyAlias = "androiddebugkey"
-                keyPassword = "androiddebugkey"
+                val dbgFile = file("debug.keystore")
+                if (dbgFile.exists()) {
+                    storeFile = dbgFile
+                    storePassword = "androiddebugkey"
+                    keyAlias = "androiddebugkey"
+                    keyPassword = "androiddebugkey"
+                }
             }
         }
     }
