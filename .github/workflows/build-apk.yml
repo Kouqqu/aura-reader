@@ -32,8 +32,18 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         run: |
+          set -euo pipefail
           if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 --decode > app/aura-release.jks
+            printf '%s' "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > app/aura-release.jks
+            echo "Keystore restored, size: $(wc -c < app/aura-release.jks) bytes"
+            sha256sum app/aura-release.jks
+            if [ ! -s app/aura-release.jks ]; then
+              echo "::error::Keystore file is empty!"
+              exit 1
+            fi
+          else
+            echo "::error::RELEASE_KEYSTORE_BASE64 secret is missing in GitHub repository settings!"
+            exit 1
           fi
 
       - name: Build Release APK
