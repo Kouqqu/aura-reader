@@ -54,11 +54,14 @@ class ReaderViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun openNextBookInSeries(nextBook: Book) {
+        isAtBookEnd = false
         viewModelScope.launch {
             val result = bookRepository.openBook(nextBook)
             result.onSuccess { opened ->
                 _currentChapterIndex.value = opened.currentChapterIndex
                 _savedScrollOffset.value = opened.currentScrollOffset
+                _savedTextOffset.value = opened.currentBlockTextOffset
+                _savedPixelOffset.value = opened.currentScrollPixelOffset
             }
         }
     }
@@ -69,16 +72,26 @@ class ReaderViewModel(
     private val _savedScrollOffset = MutableStateFlow(0)
     val savedScrollOffset: StateFlow<Int> = _savedScrollOffset.asStateFlow()
 
+    private val _savedTextOffset = MutableStateFlow(0)
+    val savedTextOffset = _savedTextOffset.asStateFlow()
+    private val _savedPixelOffset = MutableStateFlow(0)
+    val savedPixelOffset = _savedPixelOffset.asStateFlow()
+
     init {
         currentBook.value?.let {
             _currentChapterIndex.value = it.currentChapterIndex
             _savedScrollOffset.value = it.currentScrollOffset
+            _savedTextOffset.value = it.currentBlockTextOffset
+            _savedPixelOffset.value = it.currentScrollPixelOffset
         }
     }
 
     fun openBook(book: Book) {
+        isAtBookEnd = false
         _currentChapterIndex.value = book.currentChapterIndex
         _savedScrollOffset.value = book.currentScrollOffset
+        _savedTextOffset.value = book.currentBlockTextOffset
+        _savedPixelOffset.value = book.currentScrollPixelOffset
         bookRepository.prepareBook(book)
         viewModelScope.launch {
             bookRepository.openBook(book)
@@ -88,9 +101,12 @@ class ReaderViewModel(
     fun setChapter(index: Int, offset: Int = 0) {
         val book = currentBook.value ?: return
         if (index in book.chapters.indices) {
+            isAtBookEnd = false
             _currentChapterIndex.value = index
             _savedScrollOffset.value = offset
-            saveProgress(index, offset)
+            _savedTextOffset.value = 0
+            _savedPixelOffset.value = 0
+            saveCurrentProgress()
         }
     }
 
@@ -112,53 +128,35 @@ class ReaderViewModel(
         }
     }
 
-    fun updateScrollProgress(scrollItemIndex: Int, totalItems: Int) {
-        val book = currentBook.value ?: return
-        val chapterIdx = _currentChapterIndex.value
-        val totalChapters = book.chapters.size.coerceAtLeast(1)
+    private var isAtBookEnd = false
+    private var pendingProgressSave: kotlinx.coroutines.Job? = null
 
-        val intraChapterProgress = if (totalItems > 1) {
-            (scrollItemIndex.toFloat() / (totalItems - 1)).coerceIn(0f, 1f)
-        } else 0f
-
-        val overallPercent = (((chapterIdx + intraChapterProgress) / totalChapters) * 100).toInt().coerceIn(0, 100)
-
-        if (_savedScrollOffset.value == scrollItemIndex &&
-            book.currentScrollOffset == scrollItemIndex &&
-            book.currentChapterIndex == chapterIdx &&
-            book.progressPercent == overallPercent) {
-            return
-        }
-
+    fun updateScrollProgress(scrollItemIndex: Int, totalItems: Int, textOffset: Int = 0, pixelOffset: Int = 0, atEnd: Boolean = false) {
+        isAtBookEnd = atEnd
         _savedScrollOffset.value = scrollItemIndex
-
-        viewModelScope.launch {
-            bookRepository.updateReadingProgress(chapterIdx, scrollItemIndex, overallPercent)
-        }
-    }
-
-    private fun saveProgress(chapterIdx: Int, scrollOffset: Int) {
-        val book = currentBook.value ?: return
-        val totalChapters = book.chapters.size.coerceAtLeast(1)
-        val overallPercent = ((chapterIdx.toFloat() / totalChapters) * 100).toInt().coerceIn(0, 100)
-        viewModelScope.launch {
-            bookRepository.updateReadingProgress(chapterIdx, scrollOffset, overallPercent)
+        _savedTextOffset.value = textOffset
+        _savedPixelOffset.value = pixelOffset
+        pendingProgressSave?.cancel()
+        pendingProgressSave = viewModelScope.launch {
+            kotlinx.coroutines.delay(300)
+            saveCurrentProgress()
         }
     }
 
     fun saveCurrentProgress() {
         val book = currentBook.value ?: return
         val chapterIdx = _currentChapterIndex.value
-        val scrollOffset = _savedScrollOffset.value
-        val totalChapters = book.chapters.size.coerceAtLeast(1)
-        val chapter = book.chapters.getOrNull(chapterIdx)
-        val totalBlocks = chapter?.blocks?.size?.coerceAtLeast(1) ?: 1
-        val intraProgress = if (totalBlocks > 1) {
-            (scrollOffset.toFloat() / (totalBlocks - 1)).coerceIn(0f, 1f)
-        } else 0f
-        val overallPercent = (((chapterIdx + intraProgress) / totalChapters) * 100).toInt().coerceIn(0, 100)
+        val block = _savedScrollOffset.value
+        val text = _savedTextOffset.value
+        val pixel = _savedPixelOffset.value
+        val percent = if (isAtBookEnd || (book.progressPercent == 100 && book.currentChapterIndex == chapterIdx &&
+            book.currentScrollOffset == block && book.currentBlockTextOffset == text && book.currentScrollPixelOffset == pixel)) 100
+            else com.aura.reader.data.model.ReadingPosition.percent(book, chapterIdx, block, text)
         viewModelScope.launch {
-            bookRepository.updateReadingProgress(chapterIdx, scrollOffset, overallPercent)
+            // Do not persist a position captured for a different book after navigation.
+            if (bookRepository.currentBook.value?.id == book.id) {
+                bookRepository.updateReadingProgress(chapterIdx, block, percent, text, pixel, expectedBookId = book.id)
+            }
         }
     }
 

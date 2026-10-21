@@ -25,7 +25,8 @@ enum class BlockType {
 data class FormattedBlock(
     val type: BlockType,
     val text: String,
-    val subText: String? = null // Author of epigraph / quote
+    val subText: String? = null, // Author of epigraph / quote
+    val sourceTextOffset: Int = 0
 )
 
 @Immutable
@@ -54,7 +55,9 @@ data class Book(
     val isFavorite: Boolean = false,
     val collections: List<String> = emptyList(),
     val series: String? = null,
-    val seriesNumber: Int? = null
+    val seriesNumber: Int? = null,
+    val currentBlockTextOffset: Int = 0,
+    val currentScrollPixelOffset: Int = 0
 )
 
 @Immutable

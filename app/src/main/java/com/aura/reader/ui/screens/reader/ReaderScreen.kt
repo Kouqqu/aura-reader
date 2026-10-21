@@ -241,6 +241,8 @@ fun ReaderScreen(
     val settings by viewModel.readerSettings.collectAsState()
     val currentChapterIndex by viewModel.currentChapterIndex.collectAsState()
     val savedOffset by viewModel.savedScrollOffset.collectAsState()
+    val savedTextOffset by viewModel.savedTextOffset.collectAsState()
+    val savedPixelOffset by viewModel.savedPixelOffset.collectAsState()
     val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
     val appLanguage by viewModel.appLanguage.collectAsState()
 
@@ -404,11 +406,13 @@ fun ReaderScreen(
                 if (chapters.isNotEmpty()) {
                     if (settings.pagingMode && currentChapter != null) {
                         // --- Paging Mode (Листание страниц) ---
-                        androidx.compose.runtime.key(currentChapterIndex) {
+                        androidx.compose.runtime.key(book?.id, currentChapterIndex) {
                             ChapterPagingView(
                                 chapter = currentChapter,
                                 chapterIndex = currentChapterIndex,
                                 initialBlockIndex = savedOffset,
+                                initialTextOffset = savedTextOffset,
+                                overallProgress = book?.progressPercent,
                                 totalChapters = chapters.size,
                                 prevChapter = chapters.getOrNull(currentChapterIndex - 1),
                                 nextChapter = chapters.getOrNull(currentChapterIndex + 1),
@@ -433,8 +437,8 @@ fun ReaderScreen(
                                     currentPagingPage = page
                                     totalPagingPages = total
                                 },
-                                onUpdateProgress = { blockIdx, totalBlocks ->
-                                    viewModel.updateScrollProgress(blockIdx, totalBlocks)
+                                onUpdateProgress = { blockIdx, totalBlocks, textOffset, pixelOffset, atEnd ->
+                                    viewModel.updateScrollProgress(blockIdx, totalBlocks, textOffset, pixelOffset, atEnd)
                                 },
                                 onBookFinished = {
                                     if (nextBookInSeries != null) {
@@ -472,6 +476,7 @@ fun ReaderScreen(
                                     chapter = chapter,
                                     isCurrentChapter = pageIndex == currentChapterIndex,
                                     initialScrollOffset = if (pageIndex == currentChapterIndex) savedOffset else 0,
+                                    initialPixelOffset = if (pageIndex == currentChapterIndex) savedPixelOffset else 0,
                                     targetScrollOffset = if (pageIndex == currentChapterIndex) targetScrollOffset else null,
                                     onConsumeTargetScrollOffset = { viewModel.consumeTargetScrollOffset() },
                                     settings = settings,
@@ -494,9 +499,9 @@ fun ReaderScreen(
                                             coroutineScope.launch { pagerState.animateScrollToPage(pageIndex + 1) }
                                         }
                                     },
-                                    onUpdateProgress = { firstVisible, totalItems ->
+                                    onUpdateProgress = { firstVisible, totalItems, textOffset, pixelOffset, atEnd ->
                                         if (pageIndex == currentChapterIndex) {
-                                            viewModel.updateScrollProgress(firstVisible, totalItems)
+                                            viewModel.updateScrollProgress(firstVisible, totalItems, textOffset, pixelOffset, atEnd)
                                         }
                                     },
                                     nextBookInSeries = nextBookInSeries,
@@ -1076,7 +1081,7 @@ fun ReaderScreen(
                                             )
                                         }
 
-                                        val progress = (((currentChapterIndex + 1).toFloat() / chapters.size) * 100).toInt()
+                                        val progress = book?.progressPercent ?: 0
                                         Text(
                                             text = "$progress%",
                                             style = MaterialTheme.typography.labelMedium,
@@ -1548,6 +1553,7 @@ fun ChapterContentView(
     chapter: Chapter,
     isCurrentChapter: Boolean,
     initialScrollOffset: Int,
+    initialPixelOffset: Int = 0,
     targetScrollOffset: Int?,
     onConsumeTargetScrollOffset: () -> Unit,
     settings: ReaderSettings,
@@ -1565,7 +1571,7 @@ fun ChapterContentView(
     onOpenNextBook: (Book) -> Unit = {},
     onPrevChapter: () -> Unit,
     onNextChapter: () -> Unit,
-    onUpdateProgress: (Int, Int) -> Unit
+    onUpdateProgress: (Int, Int, Int, Int, Boolean) -> Unit
 ) {
     val blocks = remember(chapter) {
         if (chapter.blocks.isNotEmpty()) {
@@ -1581,21 +1587,21 @@ fun ChapterContentView(
         if (blocks.isEmpty()) 0 else initialScrollOffset.coerceIn(0, (blocks.size - 1).coerceAtLeast(0))
     }
 
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = clampedInitialOffset)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = clampedInitialOffset, initialFirstVisibleItemScrollOffset = initialPixelOffset.coerceAtLeast(0))
 
     if (isCurrentChapter) {
         LaunchedEffect(clampedInitialOffset) {
             if (clampedInitialOffset > 0 && listState.firstVisibleItemIndex == 0) {
-                listState.scrollToItem(clampedInitialOffset)
+                listState.scrollToItem(clampedInitialOffset, initialPixelOffset.coerceAtLeast(0))
             }
         }
 
-        val firstVisibleIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }
-        LaunchedEffect(firstVisibleIndex) {
-            val totalItems = blocks.size
-            if (totalItems > 0) {
-                onUpdateProgress(firstVisibleIndex, totalItems)
-            }
+        LaunchedEffect(listState, chapter.id) {
+            snapshotFlow { Triple(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset,
+                listState.layoutInfo.totalItemsCount > 0 && !listState.canScrollForward) }
+                .collect { (index, pixel, atEnd) ->
+                    if (blocks.isNotEmpty()) onUpdateProgress(index, blocks.size, 0, pixel, atEnd && pageIndex == chaptersCount - 1)
+                }
         }
 
         LaunchedEffect(targetScrollOffset) {
@@ -1740,6 +1746,8 @@ fun ChapterPagingView(
     chapter: Chapter,
     chapterIndex: Int,
     initialBlockIndex: Int = 0,
+    initialTextOffset: Int = 0,
+    overallProgress: Int? = null,
     totalChapters: Int,
     prevChapter: Chapter? = null,
     nextChapter: Chapter? = null,
@@ -1761,7 +1769,7 @@ fun ChapterPagingView(
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onSaveQuote: (String) -> Unit,
     onPageChange: (Int, Int) -> Unit,
-    onUpdateProgress: (Int, Int) -> Unit,
+    onUpdateProgress: (Int, Int, Int, Int, Boolean) -> Unit,
     onBookFinished: () -> Unit = {}
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -1838,21 +1846,10 @@ fun ChapterPagingView(
         val nextPageOffset = if (hasNext) 1 else 0
         val totalPagerSpreads = prevPageOffset + contentSpreadsCount + nextPageOffset
 
-        val calculatedInitialPage = remember(pages, initialBlockIndex, isTwoColumn) {
-            if (pages.isEmpty()) 0
-            else {
-                val pageByBlock = pages.indexOfLast { page ->
-                    page.any { it.first <= initialBlockIndex }
-                }
-                val page = if (pageByBlock in pages.indices) {
-                    pageByBlock
-                } else if (initialBlockIndex in pages.indices) {
-                    initialBlockIndex
-                } else {
-                    0
-                }
-                if (isTwoColumn) page / 2 else page
-            }
+        val reflowAnchor = remember(pages) { initialBlockIndex to initialTextOffset }
+        val calculatedInitialPage = remember(pages, isTwoColumn) {
+            val page = com.aura.reader.data.model.ReadingPosition.pageForAnchor(pages, reflowAnchor.first, reflowAnchor.second)
+            if (isTwoColumn) page / 2 else page
         }
 
         val initialPagerSpread = prevPageOffset + calculatedInitialPage
@@ -1861,7 +1858,6 @@ fun ChapterPagingView(
             pageCount = { totalPagerSpreads.coerceAtLeast(1) }
         )
         val coroutineScope = rememberCoroutineScope()
-        var lastViewedBlockIndex by remember { mutableIntStateOf(initialBlockIndex) }
         val haptic = LocalHapticFeedback.current
         var lastHapticSpread by remember { mutableIntStateOf(-1) }
         var lastHapticOffset by remember { mutableFloatStateOf(pagerState.currentPage.toFloat()) }
@@ -1914,17 +1910,14 @@ fun ChapterPagingView(
                 onPageChange(activePageIdx, pages.size.coerceAtLeast(1))
 
                 val currentBlock = pages.getOrNull(activePageIdx)?.firstOrNull()?.first ?: 0
-                lastViewedBlockIndex = currentBlock
-                onUpdateProgress(currentBlock, blocks.size.coerceAtLeast(1))
+                val textOffset = pages.getOrNull(activePageIdx)?.firstOrNull()?.second?.sourceTextOffset ?: 0
+                onUpdateProgress(currentBlock, blocks.size.coerceAtLeast(1), textOffset, 0,
+                    !hasNext && activePageIdx + (if (isTwoColumn) 1 else 0) >= pages.lastIndex)
             }
         }
 
         LaunchedEffect(pages, isTwoColumn) {
-            val foundPage = pages.indexOfLast { page ->
-                page.any { it.first <= lastViewedBlockIndex }
-            }.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
-            val targetSpread = if (isTwoColumn) foundPage / 2 else foundPage
-            val targetPagerSpread = prevPageOffset + targetSpread
+            val targetPagerSpread = prevPageOffset + calculatedInitialPage
             if (targetPagerSpread != pagerState.currentPage && targetPagerSpread in prevPageOffset until (prevPageOffset + contentSpreadsCount)) {
                 pagerState.scrollToPage(targetPagerSpread)
             }
@@ -2207,7 +2200,7 @@ fun ChapterPagingView(
         val intraChapterProgress = if (contentSpreadsCount > 1) {
             (contentSpreadForProgress.toFloat() / (contentSpreadsCount - 1)).coerceIn(0f, 1f)
         } else 0f
-        val overallPercent = (((chapterIndex + intraChapterProgress) / totalChapters.coerceAtLeast(1)) * 100).toInt().coerceIn(0, 100)
+        val overallPercent = overallProgress ?: (((chapterIndex + intraChapterProgress) / totalChapters.coerceAtLeast(1)) * 100).toInt().coerceIn(0, 100)
 
         val remainingWords = remember(pages, contentSpreadForProgress, isTwoColumn) {
             val startPage = if (isTwoColumn) contentSpreadForProgress * 2 else contentSpreadForProgress
@@ -2460,7 +2453,8 @@ private fun paginateBlocks(
                 currentHeightPx += totalHeight
             }
             BlockType.PARAGRAPH -> {
-                var remainingText = formatTypography(block.text.trim())
+                val formattedText = formatTypography(block.text.trim())
+                var remainingText = formattedText
                 var isContinuation = false
                 var loopGuard = 0
 
@@ -2486,6 +2480,7 @@ private fun paginateBlocks(
                     if (layoutResult.size.height + paragraphSpacingPx <= availableHeightPx) {
                         currentPage.add(originalIndex to block.copy(
                             text = remainingText,
+                            sourceTextOffset = formattedText.length - remainingText.length,
                             subText = if (isContinuation) "continuation" else block.subText
                         ))
                         currentHeightPx += layoutResult.size.height + paragraphSpacingPx
@@ -2519,6 +2514,7 @@ private fun paginateBlocks(
                         if (endOffset <= 0 || endOffset >= remainingText.length) {
                             currentPage.add(originalIndex to block.copy(
                                 text = remainingText,
+                                sourceTextOffset = formattedText.length - remainingText.length,
                                 subText = if (isContinuation) "continuation" else block.subText
                             ))
                             flushPage()
@@ -2530,6 +2526,7 @@ private fun paginateBlocks(
                             if (chunk.isNotEmpty()) {
                                 currentPage.add(originalIndex to block.copy(
                                     text = chunk,
+                                    sourceTextOffset = formattedText.length - remainingText.length,
                                     subText = if (isContinuation) "continuation" else block.subText
                                 ))
                             }
@@ -2652,6 +2649,19 @@ fun RenderBlock(
             Spacer(modifier = Modifier.height(16.dp))
         }
         BlockType.IMAGE -> {
+            val context = LocalContext.current
+            var imageModel by remember(block.text) {
+                mutableStateOf<Any?>(if (block.text.startsWith("aura-pdf:")) null else File(block.text))
+            }
+            LaunchedEffect(block.text) {
+                if (block.text.startsWith("aura-pdf:")) {
+                    imageModel = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        try { com.aura.reader.data.parser.PdfPageCache.render(context, block.text) }
+                        catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                        catch (_: Exception) { null }
+                    }
+                }
+            }
             val isComicOrPdf = block.subText?.contains(" / ") == true || block.subText?.startsWith("Страница ") == true
             if (isComicOrPdf) {
                 Column(
@@ -2666,7 +2676,7 @@ fun RenderBlock(
                 ) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data(File(block.text))
+                            .data(imageModel)
                             .crossfade(true)
                             .build(),
                         contentDescription = block.subText,
@@ -2714,7 +2724,7 @@ fun RenderBlock(
                         ) {
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
-                                    .data(File(block.text))
+                                    .data(imageModel)
                                     .crossfade(true)
                                     .build(),
                                 contentDescription = block.subText,

@@ -45,6 +45,8 @@ data class ReadingStatsData(
 )
 
 class PreferencesManager(private val context: Context) {
+    internal val libraryMutex = kotlinx.coroutines.sync.Mutex()
+
 
     companion object {
         val FONT_SIZE_KEY = floatPreferencesKey("font_size_sp")
@@ -642,6 +644,48 @@ class PreferencesManager(private val context: Context) {
     suspend fun saveRecentBooksJson(json: String) {
         context.dataStore.edit { prefs ->
             prefs[RECENT_BOOKS_KEY] = json
+        }
+    }
+
+    /** Apply a validated backup in one atomic edit. Existing books are retained. */
+    internal suspend fun restoreBackupMetadata(manifest: JSONObject) {
+        context.dataStore.edit { prefs ->
+            fun merge(current: String?, incoming: JSONArray): String {
+                val byId = linkedMapOf<String, JSONObject>()
+                val old = JSONArray(current ?: "[]")
+                for (i in 0 until old.length()) {
+                    val item = old.getJSONObject(i)
+                    byId[item.getString("id")] = item
+                }
+                for (i in 0 until incoming.length()) {
+                    val item = incoming.getJSONObject(i)
+                    byId[item.getString("id")] = item
+                }
+                return JSONArray(byId.values.toList()).toString()
+            }
+            prefs[RECENT_BOOKS_KEY] = merge(prefs[RECENT_BOOKS_KEY], JSONArray(manifest.getString("recentBooksJson")))
+            manifest.optJSONArray("bookmarks")?.let { prefs[BOOKMARKS_KEY] = merge(prefs[BOOKMARKS_KEY], it) }
+            manifest.optJSONArray("quotes")?.let { prefs[QUOTES_KEY] = merge(prefs[QUOTES_KEY], it) }
+            manifest.optJSONArray("userCollections")?.let { incoming ->
+                val names = linkedSetOf<String>()
+                val old = JSONArray(prefs[USER_COLLECTIONS_KEY] ?: "[]")
+                for (i in 0 until old.length()) names.add(old.getString(i))
+                for (i in 0 until incoming.length()) names.add(incoming.getString(i))
+                prefs[USER_COLLECTIONS_KEY] = JSONArray(names.toList()).toString()
+            }
+            manifest.optJSONObject("settings")?.let { settings ->
+                if (settings.has("fontSize")) prefs[FONT_SIZE_KEY] = settings.getDouble("fontSize").toFloat()
+                if (settings.has("lineHeight")) prefs[LINE_HEIGHT_KEY] = settings.getDouble("lineHeight").toFloat()
+                if (settings.has("themeMode")) prefs[THEME_MODE_KEY] = settings.getString("themeMode")
+                if (settings.has("fontFamily")) prefs[FONT_FAMILY_KEY] = settings.getString("fontFamily")
+                if (settings.has("keepScreenOn")) prefs[KEEP_SCREEN_ON_KEY] = settings.getBoolean("keepScreenOn")
+                if (settings.has("pagingMode")) prefs[PAGING_MODE_KEY] = settings.getBoolean("pagingMode")
+                if (settings.has("statsEnabled")) prefs[READING_STATS_ENABLED_KEY] = settings.getBoolean("statsEnabled")
+                if (settings.has("materialYou")) prefs[MATERIAL_YOU_ENABLED_KEY] = settings.getBoolean("materialYou")
+                if (settings.has("updateNotifications")) prefs[UPDATE_NOTIFICATIONS_KEY] = settings.getBoolean("updateNotifications")
+                if (settings.has("catalogUrl")) prefs[OPDS_BASE_URL_KEY] = settings.getString("catalogUrl")
+                if (settings.has("appLanguage")) prefs[APP_LANGUAGE_KEY] = settings.getString("appLanguage")
+            }
         }
     }
 
