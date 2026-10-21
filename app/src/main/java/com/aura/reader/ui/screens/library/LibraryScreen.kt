@@ -740,7 +740,8 @@ fun LibraryScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // Instant Update Notification Banner
-                    if (updateInfo != null && updateInfo!!.isAvailable && updateNotificationsEnabled) {
+                    val curUpdate = updateInfo
+                    if (curUpdate != null && curUpdate.isAvailable && updateNotificationsEnabled) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             LiquidGlassCard(
                                 isGlass = isGlass,
@@ -763,7 +764,7 @@ fun LibraryScreen(
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = strings.updateAvailableTitle(updateInfo!!.latestVersion),
+                                            text = strings.updateAvailableTitle(curUpdate.latestVersion),
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface
@@ -777,7 +778,7 @@ fun LibraryScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Button(
                                         onClick = {
-                                            viewModel.openUpdatePage(context, updateInfo!!.releaseUrl)
+                                            viewModel.openUpdatePage(context, curUpdate.releaseUrl)
                                         },
                                         shape = RoundedCornerShape(12.dp),
                                         colors = ButtonDefaults.buttonColors(
@@ -1811,7 +1812,7 @@ fun BookCard(
                     val seriesText = if (book.seriesNumber != null) {
                         "${book.series} • #${book.seriesNumber}"
                     } else {
-                        book.series!!
+                        book.series.orEmpty()
                     }
                     Text(
                         text = seriesText,
@@ -2260,7 +2261,7 @@ fun BookGridCard(
                 val seriesText = if (book.seriesNumber != null) {
                     "${book.series} • #${book.seriesNumber}"
                 } else {
-                    book.series!!
+                    book.series.orEmpty()
                 }
                 Text(
                     text = seriesText,

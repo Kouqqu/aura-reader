@@ -113,8 +113,9 @@ object DictionaryService {
                 }
             }
 
-            if (!candidateTitle.isNullOrBlank()) {
-                val encCand = URLEncoder.encode(candidateTitle!!.lowercase(), "UTF-8")
+            val validCandidate = candidateTitle
+            if (!validCandidate.isNullOrBlank()) {
+                val encCand = URLEncoder.encode(validCandidate.lowercase(), "UTF-8")
                 val urlCand = "https://ru.wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&titles=" + encCand + "&format=json"
                 val reqCand = Request.Builder().url(urlCand).header("User-Agent", userAgent).build()
                 client.newCall(reqCand).execute().use { response ->
@@ -132,7 +133,7 @@ object DictionaryService {
                                         if (!parsedMeaning.isNullOrBlank()) {
                                             val def = WordDefinition(
                                                 word = cleanWord,
-                                                title = "${candidateTitle!!.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }} (${cleanWord})",
+                                                title = "${validCandidate.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }} (${cleanWord})",
                                                 extract = parsedMeaning,
                                                 source = "Викисловарь"
                                             )
