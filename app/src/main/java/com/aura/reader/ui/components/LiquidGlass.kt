@@ -790,8 +790,9 @@ private fun TabDockRow(
  */
 /**
  * Circular Liquid Glass action button (+ icon) positioned next to the navigation island.
- * Features living jelly-glass wobble physics (interactive rubber-band dragging, 3D perspective tilt,
- * fluid squish & stretch deformation, dynamic specular caustics, and damped spring oscillations).
+ * Styled with identical glass material DNA as the navigation dock and capsule pill.
+ * The outer glass chamber stays firmly anchored, while the inner translucent liquid tablet
+ * and plus icon react with organic jelly-glass wobble physics and rubber-band tension.
  */
 @Composable
 fun FloatingAddGlassButton(
@@ -815,35 +816,33 @@ fun FloatingAddGlassButton(
     val scope = rememberCoroutineScope()
     var isPressed by remember { mutableStateOf(false) }
 
-    // Wobble & drag animatables
+    // Inner liquid droplet wobble & drag animatables
     val dragOffsetX = remember { Animatable(0f) }
     val dragOffsetY = remember { Animatable(0f) }
     val squishX = remember { Animatable(1f) }
     val squishY = remember { Animatable(1f) }
-    val tiltX = remember { Animatable(0f) }
-    val tiltY = remember { Animatable(0f) }
 
-    // Tactile press scale
-    val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.92f else 1.0f,
+    // Subtle tactile container compression
+    val containerScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1.0f,
         animationSpec = spring(
-            dampingRatio = if (isPressed) Spring.DampingRatioNoBouncy else 0.42f,
-            stiffness = if (isPressed) 900f else 480f
+            dampingRatio = if (isPressed) Spring.DampingRatioNoBouncy else 0.55f,
+            stiffness = if (isPressed) 900f else 500f
         ),
-        label = "btnPressScale"
+        label = "containerScale"
     )
 
-    // Inner liquid droplet expansion
-    val liquidLensProgress by animateFloatAsState(
+    // Inner tablet expansion (matches expansionProgress of the dock pill)
+    val expansionProgress by animateFloatAsState(
         targetValue = if (isPressed) 1.0f else 0.0f,
         animationSpec = spring(
-            dampingRatio = if (isPressed) Spring.DampingRatioNoBouncy else 0.48f,
-            stiffness = 550f
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = if (isPressed) 900f else 650f
         ),
-        label = "btnLiquidLens"
+        label = "pillExpansion"
     )
 
-    // Dynamic rotation: reacts to drag + click rotation
+    // Dynamic icon rotation on press/drag
     val baseRotation by animateFloatAsState(
         targetValue = if (isPressed) 45f else 0f,
         animationSpec = spring(
@@ -853,50 +852,57 @@ fun FloatingAddGlassButton(
         label = "btnIconRotation"
     )
 
-    val btnBgColor = if (isDark) {
+    // Exact same dock glass styling as FloatingNavigationIsland
+    val dockBgColor = if (isDark) {
         if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)
     } else {
         Color(0xF4F5F6FA)
     }
-    val btnBorderColor = if (isDark) {
-        Color.White.copy(alpha = 0.08f + 0.16f * liquidLensProgress)
-    } else {
-        Color.Black.copy(alpha = 0.06f + 0.12f * liquidLensProgress)
-    }
+    val dockBorderColor = if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
 
+    // Exact same inner pill styling as the sliding tablet in the dock
+    val pillBgColor = if (isDark) {
+        if (isAmoled) Color(0x10FFFFFF) else Color(0x0EFFFFFF)
+    } else {
+        Color(0x08000000)
+    }
+    val borderAlpha = if (isDark) {
+        0.05f + 0.22f * expansionProgress
+    } else {
+        0.04f + 0.16f * expansionProgress
+    }
+    val pillBorderColor = if (isDark) {
+        Color.White.copy(alpha = borderAlpha)
+    } else {
+        Color.Black.copy(alpha = borderAlpha)
+    }
+    val borderWidthDp = (0.5f + 0.4f * expansionProgress).dp
+
+    // Outer anchored glass vessel (matches 60dp height of FloatingNavigationIsland)
     Box(
         modifier = modifier
-            .offset {
-                IntOffset(
-                    dragOffsetX.value.roundToInt(),
-                    dragOffsetY.value.roundToInt()
-                )
-            }
             .then(
                 if (!isDark) {
                     Modifier.shadow(
-                        elevation = (8 + 4 * liquidLensProgress).dp,
+                        elevation = 8.dp,
                         shape = shape,
                         clip = false,
-                        ambientColor = Color.Black.copy(alpha = 0.07f),
-                        spotColor = Color.Black.copy(alpha = 0.10f)
+                        ambientColor = Color.Black.copy(alpha = 0.06f),
+                        spotColor = Color.Black.copy(alpha = 0.08f)
                     )
                 } else Modifier
             )
-            .size(56.dp)
+            .size(60.dp)
             .graphicsLayer {
-                cameraDistance = 14f * density
-                rotationX = tiltX.value
-                rotationY = tiltY.value
-                scaleX = pressScale * squishX.value
-                scaleY = pressScale * squishY.value
+                scaleX = containerScale
+                scaleY = containerScale
             }
             .clip(shape)
             .then(hazeModifier)
-            .background(btnBgColor)
+            .background(dockBgColor)
             .border(
-                width = (0.7 + 0.5 * liquidLensProgress).dp,
-                color = btnBorderColor,
+                width = 0.6.dp,
+                color = dockBorderColor,
                 shape = shape
             )
             .pointerInput(Unit) {
@@ -906,7 +912,7 @@ fun FloatingAddGlassButton(
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
 
                     var maxDragReached = 0f
-                    val maxTravelPx = 75f
+                    val maxTravelPx = 16f
 
                     while (true) {
                         val event = awaitPointerEvent()
@@ -919,8 +925,8 @@ fun FloatingAddGlassButton(
                             maxDragReached = dist
                         }
 
-                        // Organic rubber-band resistance curve
-                        val resistance = 0.50f / (1f + dist / 90f)
+                        // Organic rubber-band resistance curve keeping droplet inside chamber
+                        val resistance = 0.38f / (1f + dist / 60f)
                         val targetX = (delta.x * resistance).coerceIn(-maxTravelPx, maxTravelPx)
                         val targetY = (delta.y * resistance).coerceIn(-maxTravelPx, maxTravelPx)
 
@@ -928,13 +934,9 @@ fun FloatingAddGlassButton(
                             dragOffsetX.snapTo(targetX)
                             dragOffsetY.snapTo(targetY)
 
-                            // 3D Tilt in direction of the pull
-                            tiltX.snapTo((-targetY * 0.40f).coerceIn(-26f, 26f))
-                            tiltY.snapTo((targetX * 0.40f).coerceIn(-26f, 26f))
-
                             // Jelly squish: stretches along pull direction, compresses laterally
-                            val stretch = (dist / 240f).coerceIn(0f, 0.24f)
-                            val compress = stretch * 0.55f
+                            val stretch = (dist / 160f).coerceIn(0f, 0.20f)
+                            val compress = stretch * 0.50f
                             val angle = atan2(delta.y, delta.x)
                             val absCos = abs(cos(angle))
                             val absSin = abs(sin(angle))
@@ -948,105 +950,70 @@ fun FloatingAddGlassButton(
                     isPressed = false
 
                     val wobbleSpring = spring<Float>(
-                        dampingRatio = 0.36f, // Juicy jelly wobble oscillation
-                        stiffness = 420f
-                    )
-                    val tiltSpring = spring<Float>(
-                        dampingRatio = 0.42f,
-                        stiffness = 460f
+                        dampingRatio = 0.35f, // Juicy internal jelly wobble oscillation
+                        stiffness = 450f
                     )
 
-                    if (maxDragReached <= 24f) {
-                        // Regular tap
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    if (maxDragReached <= 14f) {
+                        // Clean tap: triggers action and micro jelly pulse
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onClick()
-                        // Micro jelly pulse on click
                         scope.launch {
-                            squishX.snapTo(0.88f)
-                            squishY.snapTo(1.12f)
+                            squishX.snapTo(0.90f)
+                            squishY.snapTo(1.10f)
                             squishX.animateTo(1f, wobbleSpring)
                             squishY.animateTo(1f, wobbleSpring)
                         }
                     } else {
-                        // User was playing with the wobbling physics!
+                        // User was playing with the wobbling physics inside the glass!
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     }
 
-                    // Snap back to rest with jelly wobble
+                    // Snap inner liquid tablet back to center with jelly wobble
                     scope.launch { dragOffsetX.animateTo(0f, wobbleSpring) }
                     scope.launch { dragOffsetY.animateTo(0f, wobbleSpring) }
-                    scope.launch { tiltX.animateTo(0f, tiltSpring) }
-                    scope.launch { tiltY.animateTo(0f, tiltSpring) }
                     scope.launch { squishX.animateTo(1f, wobbleSpring) }
                     scope.launch { squishY.animateTo(1f, wobbleSpring) }
                 }
             },
         contentAlignment = Alignment.Center
     ) {
-        // Dynamic specular glare that shifts as the glass button tilts and moves
+        // Inner translucent liquid tablet (wobbles and squishes inside the outer glass chamber)
+        val pillSize = (46 + 8 * expansionProgress).dp
+
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .drawBehind {
-                    val specularCenterX = size.width * (0.36f + tiltY.value / 160f)
-                    val specularCenterY = size.height * (0.30f - tiltX.value / 160f)
-                    val centerOffset = Offset(specularCenterX, specularCenterY)
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = if (isDark) 0.32f else 0.50f),
-                                Color.White.copy(alpha = if (isDark) 0.08f else 0.18f),
-                                Color.Transparent
-                            ),
-                            center = centerOffset,
-                            radius = size.minDimension * 0.48f
-                        ),
-                        radius = size.minDimension * 0.48f,
-                        center = centerOffset
+                .offset {
+                    IntOffset(
+                        dragOffsetX.value.roundToInt(),
+                        dragOffsetY.value.roundToInt()
                     )
                 }
-        )
-
-        // Inner glowing liquid glass core (condenses and glows under finger pressure like optical liquid)
-        if (liquidLensProgress > 0.01f) {
-            Box(
+                .size(pillSize)
+                .graphicsLayer {
+                    scaleX = squishX.value
+                    scaleY = squishY.value
+                }
+                .clip(CircleShape)
+                .background(pillBgColor)
+                .border(
+                    width = borderWidthDp,
+                    color = pillBorderColor,
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = LocalAppStrings.current.addBooks,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
-                    .size((44 + 6 * liquidLensProgress).dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            colors = if (isDark) listOf(
-                                Color.White.copy(alpha = 0.20f * liquidLensProgress),
-                                Color.White.copy(alpha = 0.06f * liquidLensProgress),
-                                Color.Transparent
-                            ) else listOf(
-                                Color.White.copy(alpha = 0.35f * liquidLensProgress),
-                                Color.White.copy(alpha = 0.12f * liquidLensProgress),
-                                Color.Transparent
-                            )
-                        )
-                    )
-                    .border(
-                        width = 0.6.dp,
-                        color = Color.White.copy(alpha = (if (isDark) 0.28f else 0.42f) * liquidLensProgress),
-                        shape = CircleShape
-                    )
+                    .size(26.dp)
+                    .graphicsLayer {
+                        rotationZ = baseRotation + (dragOffsetX.value * 0.45f)
+                    }
             )
         }
-
-        // Floating plus icon with subtle parallax depth
-        Icon(
-            imageVector = Icons.Default.Add,
-            contentDescription = LocalAppStrings.current.addBooks,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .size(28.dp)
-                .graphicsLayer {
-                    rotationZ = baseRotation + (dragOffsetX.value * 0.25f)
-                    translationX = dragOffsetX.value * 0.12f
-                    translationY = dragOffsetY.value * 0.12f
-                }
-        )
     }
 }
 
