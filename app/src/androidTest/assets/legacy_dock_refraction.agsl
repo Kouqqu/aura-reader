@@ -1,0 +1,60 @@
+
+    uniform shader composable;
+    uniform float2 uCenter;
+    uniform float2 uHalfSize;
+    uniform float uRadius;
+    uniform float uRefractionDepth;
+    uniform float uRefractionWidth;
+    uniform float uDispersion;
+    uniform float uIntensity;
+
+    half4 main(float2 fragCoord) {
+        if (uIntensity <= 0.005) {
+            return composable.eval(fragCoord);
+        }
+
+        float2 p = fragCoord - uCenter;
+        
+        // Medial horizontal spine of the capsule lens
+        float capLimit = max(0.0, uHalfSize.x - uRadius);
+        float2 spinePt = float2(clamp(p.x, -capLimit, capLimit), 0.0);
+        float2 delta = p - spinePt;
+        float dist = length(delta);
+        
+        // Signed distance to capsule boundary (negative inside)
+        float d = dist - uRadius;
+        if (d > 0.0) {
+            return composable.eval(fragCoord);
+        }
+        
+        // Curvature and refraction profile across bevel
+        float distInside = -d;
+        float bevelWidth = max(1.0, min(uRefractionWidth, uRadius));
+        float t = clamp(distInside / bevelWidth, 0.0, 1.0);
+        
+        // Continuous convex lens deflection profile (smooth cosine bell: 1 at edge, 0 at center with zero derivative)
+        float falloff = 0.5 * (1.0 + cos(t * 3.14159265));
+        float slope = falloff * uRefractionDepth * uIntensity;
+        // Dampen vertical displacement so symbols never jump vertically
+        float2 normal = (dist > 0.001) ? float2(delta.x / dist, (delta.y / dist) * 0.20) : float2(0.0, 0.0);
+        float2 offset = -normal * (slope * bevelWidth);
+        
+        // Chromatic dispersion: delicate optical prism separation on the outer rim
+        float rimFactor = (1.0 - smoothstep(0.0, 0.35, t)) * uIntensity;
+        float disp = rimFactor * uDispersion;
+        
+        half r = composable.eval(fragCoord + offset + normal * disp).r;
+        half g = composable.eval(fragCoord + offset).g;
+        half b = composable.eval(fragCoord + offset - normal * disp).b;
+        half a = composable.eval(fragCoord + offset).a;
+        
+        // Specular highlight glint on lens rim
+        float edgeSpecular = pow(1.0 - t, 2.5) * 0.10 * uIntensity;
+        
+        return half4(
+            clamp(r + edgeSpecular, 0.0, 1.0),
+            clamp(g + edgeSpecular, 0.0, 1.0),
+            clamp(b + edgeSpecular, 0.0, 1.0),
+            a
+        );
+    }

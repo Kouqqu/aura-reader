@@ -43,3 +43,9 @@ Import limits: PDF/EPUB sources 512 MiB, other sources 128 MiB; EPUB entries 32 
 ## CI
 
 Pull requests to beta run unit tests, lint and a debug build without release signing secrets. Branch pushes preserve the existing signed release workflow. Instrumentation tests require an emulator and are run separately.
+
+## Dock optics experiment (2.0.1-beta.2)
+
+The selection uses a Snell-law beveled capsule model adapted from liquid_glass_easy 5.0.0, with MIT attribution shipped in assets/licenses/liquid_glass_easy.txt. No lighting pass is added; tap activation and the dock layout are unchanged. RuntimeShader compilation is cached, while RenderEffect is rebound after its uniform values change.
+
+DockRefractionTest runs four Android GPU checks: bending on both axes with an unchanged center/outside, uniform-color preservation without glints, comparison against the legacy stretch model, and tap/drag navigation.

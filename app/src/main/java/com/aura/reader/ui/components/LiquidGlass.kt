@@ -1,8 +1,5 @@
 package com.aura.reader.ui.components
 
-import android.graphics.RenderEffect
-import android.graphics.RuntimeShader
-import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -71,7 +68,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -104,100 +100,6 @@ import kotlin.math.sin
  * CompositionLocal for ambient Haze backdrop blur across Liquid Glass surfaces.
  */
 val LocalHazeState = compositionLocalOf<HazeState?> { null }
-
-// AGSL Refraction and Convex Optical Bevel Shader for Android 13+ (API 33+)
-private const val LIQUID_REFRACTION_AGSL = """
-    uniform shader composable;
-    uniform float2 uCenter;
-    uniform float2 uHalfSize;
-    uniform float uRadius;
-    uniform float uRefractionDepth;
-    uniform float uRefractionWidth;
-    uniform float uDispersion;
-    uniform float uIntensity;
-
-    half4 main(float2 fragCoord) {
-        if (uIntensity <= 0.005) {
-            return composable.eval(fragCoord);
-        }
-
-        float2 p = fragCoord - uCenter;
-        
-        // Medial horizontal spine of the capsule lens
-        float capLimit = max(0.0, uHalfSize.x - uRadius);
-        float2 spinePt = float2(clamp(p.x, -capLimit, capLimit), 0.0);
-        float2 delta = p - spinePt;
-        float dist = length(delta);
-        
-        // Signed distance to capsule boundary (negative inside)
-        float d = dist - uRadius;
-        if (d > 0.0) {
-            return composable.eval(fragCoord);
-        }
-        
-        // Curvature and refraction profile across bevel
-        float distInside = -d;
-        float bevelWidth = max(1.0, min(uRefractionWidth, uRadius));
-        float t = clamp(distInside / bevelWidth, 0.0, 1.0);
-        
-        // Continuous convex lens deflection profile (smooth cosine bell: 1 at edge, 0 at center with zero derivative)
-        float falloff = 0.5 * (1.0 + cos(t * 3.14159265));
-        float slope = falloff * uRefractionDepth * uIntensity;
-        // Dampen vertical displacement so symbols never jump vertically
-        float2 normal = (dist > 0.001) ? float2(delta.x / dist, (delta.y / dist) * 0.20) : float2(0.0, 0.0);
-        float2 offset = -normal * (slope * bevelWidth);
-        
-        // Chromatic dispersion: delicate optical prism separation on the outer rim
-        float rimFactor = (1.0 - smoothstep(0.0, 0.35, t)) * uIntensity;
-        float disp = rimFactor * uDispersion;
-        
-        half r = composable.eval(fragCoord + offset + normal * disp).r;
-        half g = composable.eval(fragCoord + offset).g;
-        half b = composable.eval(fragCoord + offset - normal * disp).b;
-        half a = composable.eval(fragCoord + offset).a;
-        
-        // Specular highlight glint on lens rim
-        float edgeSpecular = pow(1.0 - t, 2.5) * 0.10 * uIntensity;
-        
-        return half4(
-            clamp(r + edgeSpecular, 0.0, 1.0),
-            clamp(g + edgeSpecular, 0.0, 1.0),
-            clamp(b + edgeSpecular, 0.0, 1.0),
-            a
-        );
-    }
-"""
-
-fun Modifier.liquidRefraction(
-    centerPx: Offset,
-    sizePx: Size,
-    radiusPx: Float,
-    refractionDepth: Float = 0.22f,
-    refractionWidthPx: Float = 24f,
-    dispersion: Float = 1.25f,
-    intensity: Float = 1.0f
-): Modifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && intensity > 0.01f) {
-    this.graphicsLayer {
-        val halfW = (sizePx.width * 0.5f).coerceAtLeast(radiusPx)
-        val halfH = (sizePx.height * 0.5f).coerceAtLeast(radiusPx)
-        try {
-            val shader = RuntimeShader(LIQUID_REFRACTION_AGSL).apply {
-                setFloatUniform("uCenter", centerPx.x, centerPx.y)
-                setFloatUniform("uHalfSize", halfW, halfH)
-                setFloatUniform("uRadius", radiusPx)
-                setFloatUniform("uRefractionDepth", refractionDepth)
-                setFloatUniform("uRefractionWidth", refractionWidthPx)
-                setFloatUniform("uDispersion", dispersion)
-                setFloatUniform("uIntensity", intensity)
-            }
-            renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "composable").asComposeRenderEffect()
-        } catch (e: Exception) {
-            android.util.Log.e("LiquidGlass", "AGSL compilation failed", e)
-        }
-    }
-} else {
-    this
-}
 
 /**
  * Authentic Apple iOS-inspired Liquid Glass Surface.
@@ -581,9 +483,8 @@ fun FloatingNavigationIsland(
                                 centerPx = Offset(pillCenterXPx, pillCenterYPx),
                                 sizePx = Size(currentPillWidthPx, currentPillHeightPx),
                                 radiusPx = pillRadiusPx,
-                                refractionDepth = 0.22f,
+                                refractiveIndex = 1.018f,
                                 refractionWidthPx = with(density) { 18.dp.toPx() },
-                                dispersion = 1.15f,
                                 intensity = interactionStrength
                             )
                     ) {
