@@ -110,6 +110,24 @@ jobs:
           echo "APP_VERSION=$APP_VER" >> $GITHUB_ENV
           echo "App version is $APP_VER"
 
+      - name: Calculate APK SHA-256 and Submit to VirusTotal
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        env:
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+        run: |
+          SHA256=$(sha256sum AuraReader.apk | cut -d' ' -f1)
+          echo "APK_SHA256=$SHA256" >> $GITHUB_ENV
+          echo "APK SHA-256 is $SHA256"
+          if [ -n "$VT_API_KEY" ]; then
+            echo "Submitting APK to VirusTotal..."
+            UPLOAD_URL=$(curl -s -X GET "https://www.virustotal.com/api/v3/files/upload_url" -H "x-apikey: $VT_API_KEY" | jq -r .data)
+            if [ -n "$UPLOAD_URL" ] && [ "$UPLOAD_URL" != "null" ]; then
+              curl -s -X POST "$UPLOAD_URL" -H "x-apikey: $VT_API_KEY" -F "file=@AuraReader.apk" > /dev/null
+              echo "VirusTotal upload finished successfully."
+            fi
+          fi
+
       - name: Publish GitHub Release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
@@ -123,6 +141,7 @@ jobs:
             # Aura Reader v${{ env.APP_VERSION }} 🎉
 
             ### ✨ Что нового:
+            - 🛡️ **Проверка на вирусы**: [Отчёт безопасности VirusTotal](https://www.virustotal.com/gui/file/${{ env.APK_SHA256 }})
             - 🖼️ **Скачивание и сохранение обложек**: добавлена кнопка сохранения обложки книги в Галерею в 3D-просмотре, а также быстрое скачивание обложек из сети для книг в библиотеке.
             - 📖 **Улучшения в форматах**: поддержка внутренних ссылок и интерактивного оглавления прямо в тексте (EPUB, FB2).
             - 🍏 **Обновлённое стекло Liquid Glass**: доработана физика стеклянного островка — плавное скольжение таблетки, тактильный отклик и точная посадка на кнопки.
@@ -145,6 +164,7 @@ jobs:
             # Aura Reader v${{ env.APP_VERSION }} 🎉
 
             ### ✨ Что нового:
+            - 🛡️ **Проверка на вирусы**: [Отчёт безопасности VirusTotal](https://www.virustotal.com/gui/file/${{ env.APK_SHA256 }})
             - 🖼️ **Скачивание и сохранение обложек**: добавлена кнопка сохранения обложки книги в Галерею в 3D-просмотре, а также быстрое скачивание обложек из сети для книг в библиотеке.
             - 📖 **Улучшения в форматах**: поддержка внутренних ссылок и интерактивного оглавления прямо в тексте (EPUB, FB2).
             - 🍏 **Обновлённое стекло Liquid Glass**: доработана физика стеклянного островка — плавное скольжение таблетки, тактильный отклик и точная посадка на кнопки.
