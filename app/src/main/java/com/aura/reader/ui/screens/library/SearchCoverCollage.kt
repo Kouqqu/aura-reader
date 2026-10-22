@@ -25,7 +25,12 @@ import kotlinx.coroutines.withContext
 @Composable
 fun SearchCoverCollage(books: List<Book>, subdued: Boolean, modifier: Modifier = Modifier) {
     val covers = remember(books) {
-        books.asSequence().filter { !it.coverBase64.isNullOrBlank() }.take(8).toList()
+        val withCovers = books.filter { !it.coverBase64.isNullOrBlank() }
+        if (withCovers.size > 8) {
+            withCovers.shuffled(java.util.Random(withCovers.hashCode().toLong())).take(8)
+        } else {
+            withCovers
+        }
     }
     var images by remember { mutableStateOf<List<ImageBitmap>>(emptyList()) }
     LaunchedEffect(covers) {

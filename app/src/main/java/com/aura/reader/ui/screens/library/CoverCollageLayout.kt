@@ -25,8 +25,9 @@ internal fun coverCollageLayout(count: Int, width: Float, height: Float, phase: 
         val boundsHeight = -s * coverWidth + c * coverHeight
         val exit = min((width + boundsWidth) / 2, (height + boundsHeight) / (2 * slope))
         val period = max(2 * exit + gap * 2, count * spacing).coerceAtLeast(1f)
+        val stepSpacing = period / count
         return CoverLayout(coverWidth, coverHeight, (period / 7f * 1000).toInt(), List(count) { index ->
-            val t = wrap((index - (count - 1) / 2f) * spacing + phase * period, period)
+            val t = wrap(index * stepSpacing + phase * period, period)
             CoverPlacement(width / 2 + t, height / 2 + slope * t)
         })
     }
@@ -38,7 +39,8 @@ internal fun coverCollageLayout(count: Int, width: Float, height: Float, phase: 
     val rows = max(3, ceil((-s * width + c * height + coverHeight + 2 * gap) / cellHeight).toInt())
     val periodU = columns * cellWidth
     val periodV = rows * cellHeight
-    val slots = listOf(5, 6, 1, 2, 9, 10, 4, 7)
+    // Maximally distributed diagonal wavefront: guarantees at least 2 covers are visible at all times
+    val slots = listOf(0, 5, 6, 11, 1, 2, 3, 4)
     val speedX = c * periodU - s * periodV
     return CoverLayout(coverWidth, coverHeight, (speedX / 7f * 1000).toInt(), List(count.coerceAtMost(8)) { index ->
         val slot = slots[index]

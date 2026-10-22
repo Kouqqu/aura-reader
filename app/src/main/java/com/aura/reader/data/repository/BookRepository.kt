@@ -562,10 +562,27 @@ class BookRepository(
 
         if (bookToRemove != null) {
             try {
+                if (bookToRemove.uriString.isNotBlank()) {
+                    val uri = Uri.parse(bookToRemove.uriString)
+                    val filePath = if (uri.scheme == "file") uri.path else bookToRemove.uriString
+                    if (filePath != null) {
+                        val file = java.io.File(filePath)
+                        if (file.exists() && file.canonicalPath.startsWith(context.filesDir.canonicalPath)) {
+                            file.delete()
+                        }
+                    }
+                }
                 val localBookDir = java.io.File(context.filesDir, "saved_books")
                 val files = localBookDir.listFiles() ?: emptyArray()
                 for (f in files) {
-                    if (f.name.startsWith(bookId)) {
+                    if (f.name.startsWith(bookId) || (bookId.length >= 8 && f.name.contains(bookId.take(8)))) {
+                        f.delete()
+                    }
+                }
+                val booksDir = java.io.File(context.filesDir, "books")
+                val bookFiles = booksDir.listFiles() ?: emptyArray()
+                for (f in bookFiles) {
+                    if (f.name.contains(bookId.takeLast(20)) || (bookId.length >= 8 && f.name.contains(bookId.take(8))) || f.name.contains(bookId)) {
                         f.delete()
                     }
                 }

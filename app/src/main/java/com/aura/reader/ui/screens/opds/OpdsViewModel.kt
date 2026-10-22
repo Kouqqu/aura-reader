@@ -16,7 +16,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import java.io.File
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -152,6 +154,41 @@ class OpdsViewModel(
     init {
         // Start in clean Home state without forcibly loading anything
         _uiState.value = OpdsUiState.Idle
+        viewModelScope.launch {
+            bookRepository.recentBooks.collect { libraryBooks ->
+                syncDownloadedBooks(libraryBooks)
+            }
+        }
+    }
+
+    private fun syncDownloadedBooks(libraryBooks: List<Book>) {
+        _downloadedBooks.update { currentMap ->
+            currentMap.filter { (_, book) ->
+                libraryBooks.any { it.id == book.id } &&
+                (book.uriString.isBlank() || !book.uriString.startsWith("file://") || File(Uri.parse(book.uriString).path ?: "").exists())
+            }
+        }
+    }
+
+    private fun matchCatalogWithLibrary(books: List<OpdsBook>) {
+        val library = bookRepository.recentBooks.value
+        if (library.isEmpty()) return
+        val newMatches = mutableMapOf<String, Book>()
+        for (opdsBook in books) {
+            val safeBookId = opdsBook.id.replace(Regex("[^a-zA-Z0-9_-]"), "_").takeLast(20)
+            val match = library.firstOrNull { lib ->
+                (lib.uriString.contains(safeBookId) ||
+                 (lib.title.isNotBlank() && lib.title.trim().equals(opdsBook.title.trim(), ignoreCase = true) &&
+                  (lib.author.isBlank() || opdsBook.author.isBlank() || lib.author.trim().equals(opdsBook.author.trim(), ignoreCase = true)))) &&
+                (!lib.uriString.startsWith("file://") || File(Uri.parse(lib.uriString).path ?: "").exists())
+            }
+            if (match != null) {
+                newMatches[opdsBook.id] = match
+            }
+        }
+        if (newMatches.isNotEmpty()) {
+            _downloadedBooks.update { it + newMatches }
+        }
     }
 
     fun selectBookForDetails(book: OpdsBook?) {
@@ -227,6 +264,7 @@ class OpdsViewModel(
             val currentBase = baseUrl.value
             val result = OpdsService.getCategory(path, currentBase)
             result.onSuccess { list ->
+                matchCatalogWithLibrary(list)
                 _uiState.value = OpdsUiState.Success(list, categoryTitle)
             }.onFailure { error ->
                 val isConn = OpdsService.isConnectionError(error)
@@ -251,6 +289,7 @@ class OpdsViewModel(
                     OpdsSearchType.SERIES -> searchRes.series
                     OpdsSearchType.AUTHORS -> searchRes.authors
                 }
+                matchCatalogWithLibrary(flatBooks)
                 _uiState.value = OpdsUiState.Success(
                     books = flatBooks,
                     currentTitle = "Результаты поиска: $q",
@@ -301,7 +340,7 @@ class OpdsViewModel(
                 result.onSuccess { file ->
                     val openResult = bookRepository.openBookFromUri(Uri.fromFile(file))
                     openResult.onSuccess { loadedBook ->
-                        _downloadedBooks.value = _downloadedBooks.value + (bookId to loadedBook)
+                        _downloadedBooks.update { it + (bookId to loadedBook) }
                         onComplete?.invoke(loadedBook)
                     }
                 }.onFailure { e ->

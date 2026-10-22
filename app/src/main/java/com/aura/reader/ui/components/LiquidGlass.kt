@@ -258,10 +258,10 @@ fun FloatingNavigationIsland(
                 val activeSlot = selectedTab.coerceIn(0, 2)
                 val restingOffsetPx = tabWidthPx * activeSlot
 
-                val settlingLensOffsetPx by animateFloatAsState(
+                val animatedLensOffsetPx by animateFloatAsState(
                     targetValue = if (isDragging) dragOffsetPx else restingOffsetPx,
                     animationSpec = if (isDragging) {
-                        snap()
+                        spring(stiffness = Spring.StiffnessHigh)
                     } else {
                         spring(
                             dampingRatio = Spring.DampingRatioNoBouncy,
@@ -312,7 +312,7 @@ fun FloatingNavigationIsland(
                 val restingPillHeightPx = with(density) { 46.dp.toPx() }
                 val currentPillHeightPx = restingPillHeightPx + (containerHeightPx - restingPillHeightPx) * expansionProgress
 
-                val pillCenterXPx = (if (isDragging) dragOffsetPx else settlingLensOffsetPx) + tabWidthPx / 2f
+                val pillCenterXPx = animatedLensOffsetPx + tabWidthPx / 2f
                 val pillCenterYPx = containerHeightPx / 2f
 
                 val pillLeftPx = pillCenterXPx - currentPillWidthPx / 2f
@@ -325,44 +325,63 @@ fun FloatingNavigationIsland(
                 val activeColor = MaterialTheme.colorScheme.primary
                 val inactiveColor = if (isDark) Color.White.copy(alpha = 0.45f) else Color(0x8A1C1D24)
 
-                // Contact immediately captures the lens; release commits the nearest slot.
-                // Cancelled gestures restore the current selection without navigating.
+                // Seamless Dual-Mode Gesture:
+                // - Quick tap on button: pill glides smoothly directly to the exact button center & symbol
+                // - Hold or Drag: pill follows finger freely anywhere across the dock, then snaps to nearest button
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(tabWidthPx, maxDragXPx) {
+                            val touchSlop = viewConfiguration.touchSlop
                             awaitEachGesture {
                                 val down = awaitFirstDown(requireUnconsumed = false)
-                                down.consume()
-                                dragOffsetPx = (down.position.x - tabWidthPx / 2f).coerceIn(0f, maxDragXPx)
+                                val startX = down.position.x
                                 isPressed = true
-                                isDragging = true
-                                var released = false
-                                try {
-                                    while (true) {
-                                        val event = awaitPointerEvent()
-                                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                                        if (change.isConsumed) break
+                                isDragging = false
+
+                                var hasDragged = false
+                                val pointerId = down.id
+
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull { it.id == pointerId } ?: break
+                                    if (change.isConsumed) break
+                                    if (!change.pressed) {
+                                        change.consume()
+                                        break
+                                    }
+                                    val dx = kotlin.math.abs(change.position.x - startX)
+                                    val holdDuration = change.uptimeMillis - down.uptimeMillis
+                                    if (!hasDragged && (dx > touchSlop || holdDuration > 220)) {
+                                        hasDragged = true
+                                        isDragging = true
+                                    }
+                                    if (hasDragged) {
                                         dragOffsetPx = (change.position.x - tabWidthPx / 2f).coerceIn(0f, maxDragXPx)
-                                        if (!change.pressed) {
-                                            released = true
-                                            change.consume()
-                                            break
-                                        }
                                         change.consume()
                                     }
-                                    if (released) {
-                                        val slot = ((dragOffsetPx + tabWidthPx / 2f) / tabWidthPx).toInt().coerceIn(0, 2)
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        when (slot) {
-                                            0 -> onMyBooksClick()
-                                            1 -> onSearchClick()
-                                            2 -> onSettingsClick()
-                                        }
-                                    }
-                                } finally {
-                                    isPressed = false
+                                }
+
+                                isPressed = false
+
+                                if (hasDragged) {
                                     isDragging = false
+                                    val nearestSlot = ((dragOffsetPx + tabWidthPx / 2f) / tabWidthPx).toInt().coerceIn(0, 2)
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    when (nearestSlot) {
+                                        0 -> onMyBooksClick()
+                                        1 -> onSearchClick()
+                                        2 -> onSettingsClick()
+                                    }
+                                } else {
+                                    // Clean tap on button: pill glides directly into the button slot under the symbol!
+                                    val clickedSlot = (startX / tabWidthPx).toInt().coerceIn(0, 2)
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    when (clickedSlot) {
+                                        0 -> onMyBooksClick()
+                                        1 -> onSearchClick()
+                                        2 -> onSettingsClick()
+                                    }
                                 }
                             }
                         }

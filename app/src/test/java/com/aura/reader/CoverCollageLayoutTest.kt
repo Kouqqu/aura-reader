@@ -52,4 +52,15 @@ class CoverCollageLayoutTest {
             }
         }
     }
+
+    @Test fun visibleCoversAreNeverEmptyThroughoutLoop() {
+        for (width in listOf(280f, 400f, 800f)) for (count in 2..8) for (step in 0..200) {
+            val layout = coverCollageLayout(count, width, 310f, step / 200f)
+            val halfWidth = (c * layout.coverWidth - s * layout.maxCoverHeight) / 2
+            val halfHeight = (-s * layout.coverWidth + c * layout.maxCoverHeight) / 2
+            fun visible(x: Float, y: Float) = x + halfWidth > 0 && x - halfWidth < width && y + halfHeight > 0 && y - halfHeight < 310f
+            val visibleCount = layout.positions.count { visible(it.x, it.y) }
+            assertTrue("Screen became empty at width=$width count=$count step=$step", visibleCount > 0)
+        }
+    }
 }
