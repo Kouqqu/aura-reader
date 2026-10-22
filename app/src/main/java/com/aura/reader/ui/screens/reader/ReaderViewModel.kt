@@ -110,6 +110,35 @@ class ReaderViewModel(
         }
     }
 
+    fun navigateToLink(target: String): Boolean {
+        val book = currentBook.value ?: return false
+        if (target.startsWith("nav:")) {
+            val parts = target.removePrefix("nav:").split(":")
+            val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
+            val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
+            setChapter(ch, blk)
+            return true
+        }
+        val noteVal = book.footnotes[target] ?: book.footnotes[target.removePrefix("#")]
+        if (noteVal != null && noteVal.startsWith("nav:")) {
+            val parts = noteVal.removePrefix("nav:").split(":")
+            val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
+            val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
+            setChapter(ch, blk)
+            return true
+        }
+        val clean = target.substringAfterLast("/").substringBefore("#").lowercase().trim()
+        val chIdx = book.chapters.indexOfFirst {
+            it.title.equals(target, ignoreCase = true) ||
+            (clean.isNotBlank() && it.id.equals(clean, ignoreCase = true))
+        }
+        if (chIdx >= 0) {
+            setChapter(chIdx, 0)
+            return true
+        }
+        return false
+    }
+
     fun nextChapter() {
         val book = currentBook.value ?: return
         val next = _currentChapterIndex.value + 1

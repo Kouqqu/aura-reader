@@ -22,11 +22,20 @@ enum class BlockType {
 }
 
 @Immutable
+data class BookLink(
+    val start: Int,
+    val end: Int,
+    val target: String,
+    val isFootnote: Boolean = false
+)
+
+@Immutable
 data class FormattedBlock(
     val type: BlockType,
     val text: String,
     val subText: String? = null, // Author of epigraph / quote
-    val sourceTextOffset: Int = 0
+    val sourceTextOffset: Int = 0,
+    val links: List<BookLink> = emptyList()
 )
 
 @Immutable

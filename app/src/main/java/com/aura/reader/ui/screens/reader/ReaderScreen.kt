@@ -10,6 +10,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 
 import com.aura.reader.data.model.Book
+import com.aura.reader.data.model.BookLink
 import com.aura.reader.data.model.Quote
 import com.aura.reader.ui.theme.Strings
 import com.aura.reader.util.BookShareUtils
@@ -431,7 +432,16 @@ fun ReaderScreen(
                                 onToggleControls = { showControls = !showControls },
                                 onPrevChapter = { viewModel.prevChapter(startAtEnd = true) },
                                 onNextChapter = { viewModel.nextChapter() },
-                                onFootnoteClick = { ref, content -> selectedFootnote = ref to content },
+                                onFootnoteClick = { ref, content ->
+                                    if (content.startsWith("nav:")) {
+                                        val parts = content.removePrefix("nav:").split(":")
+                                        val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                                        val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                        viewModel.setChapter(ch, blk)
+                                    } else {
+                                        selectedFootnote = ref to content
+                                    }
+                                },
                                 onSaveQuote = { quoteToSave = it },
                                 onPageChange = { page, total ->
                                     currentPagingPage = page
@@ -487,7 +497,16 @@ fun ReaderScreen(
                                     footnotes = footnotes,
                                     selectionResetKey = selectionResetKey,
                                     onToggleControls = { showControls = !showControls },
-                                    onFootnoteClick = { ref, content -> selectedFootnote = ref to content },
+                                    onFootnoteClick = { ref, content ->
+                                    if (content.startsWith("nav:")) {
+                                        val parts = content.removePrefix("nav:").split(":")
+                                        val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                                        val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                        viewModel.setChapter(ch, blk)
+                                    } else {
+                                        selectedFootnote = ref to content
+                                    }
+                                },
                                     onSaveQuote = { quoteToSave = it },
                                     onPrevChapter = {
                                         if (pageIndex > 0) {
@@ -1645,6 +1664,7 @@ fun ChapterContentView(
                         footnotes = footnotes,
                         quotes = quotes,
                         onFootnoteClick = onFootnoteClick,
+                        onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                         onToggleControls = onToggleControls,
                         onSaveQuote = onSaveQuote
                     )
@@ -2090,6 +2110,7 @@ fun ChapterPagingView(
                                                 footnotes = footnotes,
                                                 quotes = quotes,
                                                 onFootnoteClick = onFootnoteClick,
+                                                onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                                 onToggleControls = onToggleControls,
                                                 onSaveQuote = onSaveQuote
                                             )
@@ -2118,6 +2139,7 @@ fun ChapterPagingView(
                                                 footnotes = footnotes,
                                                 quotes = quotes,
                                                 onFootnoteClick = onFootnoteClick,
+                                                onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                                 onToggleControls = onToggleControls,
                                                 onSaveQuote = onSaveQuote
                                             )
@@ -2142,6 +2164,7 @@ fun ChapterPagingView(
                                             footnotes = footnotes,
                                             quotes = quotes,
                                             onFootnoteClick = onFootnoteClick,
+                                            onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                             onToggleControls = onToggleControls,
                                             onSaveQuote = onSaveQuote
                                         )
@@ -2557,49 +2580,88 @@ fun RenderBlock(
     footnotes: Map<String, String>,
     quotes: List<Quote> = emptyList(),
     onFootnoteClick: (ref: String, content: String) -> Unit,
+    onNavigateToChapter: ((chapterIndex: Int, blockIndex: Int) -> Unit)? = null,
     onToggleControls: () -> Unit,
     onSaveQuote: (String) -> Unit
 ) {
     when (block.type) {
         BlockType.TITLE -> {
-            Text(
-                text = block.text,
-                style = TextStyle(
-                    fontSize = (settings.fontSizeSp * 1.35f).sp,
-                    lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.25f).sp,
-                    fontFamily = resolvedFontFamily,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                ),
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 14.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onToggleControls() }
+            val titleStyle = TextStyle(
+                fontSize = (settings.fontSizeSp * 1.35f).sp,
+                lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.25f).sp,
+                fontFamily = resolvedFontFamily,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
             )
+            if (block.links.isNotEmpty()) {
+                InteractiveText(
+                    rawText = block.text,
+                    style = titleStyle,
+                    searchQuery = searchQuery,
+                    footnotes = footnotes,
+                    quotes = quotes,
+                    links = block.links,
+                    onFootnoteClick = onFootnoteClick,
+                    onNavigateToChapter = onNavigateToChapter,
+                    onToggleControls = onToggleControls,
+                    onSaveQuote = onSaveQuote,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 14.dp)
+                )
+            } else {
+                Text(
+                    text = block.text,
+                    style = titleStyle,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 14.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onToggleControls() }
+                )
+            }
         }
         BlockType.SUBTITLE -> {
-            Text(
-                text = block.text,
-                style = TextStyle(
-                    fontSize = (settings.fontSizeSp * 1.15f).sp,
-                    lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.15f).sp,
-                    fontFamily = resolvedFontFamily,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
-                ),
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 14.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onToggleControls() }
+            val subtitleStyle = TextStyle(
+                fontSize = (settings.fontSizeSp * 1.15f).sp,
+                lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.15f).sp,
+                fontFamily = resolvedFontFamily,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
             )
+            if (block.links.isNotEmpty()) {
+                InteractiveText(
+                    rawText = block.text,
+                    style = subtitleStyle,
+                    searchQuery = searchQuery,
+                    footnotes = footnotes,
+                    quotes = quotes,
+                    links = block.links,
+                    onFootnoteClick = onFootnoteClick,
+                    onNavigateToChapter = onNavigateToChapter,
+                    onToggleControls = onToggleControls,
+                    onSaveQuote = onSaveQuote,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 14.dp)
+                )
+            } else {
+                Text(
+                    text = block.text,
+                    style = subtitleStyle,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 14.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onToggleControls() }
+                )
+            }
         }
         BlockType.EPIGRAPH -> {
             Column(
@@ -2774,7 +2836,9 @@ fun RenderBlock(
                 searchQuery = searchQuery,
                 footnotes = footnotes,
                 quotes = quotes,
+                links = block.links,
                 onFootnoteClick = onFootnoteClick,
+                onNavigateToChapter = onNavigateToChapter,
                 onToggleControls = onToggleControls,
                 onSaveQuote = onSaveQuote,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -2794,13 +2858,16 @@ fun InteractiveText(
     searchQuery: String,
     footnotes: Map<String, String>,
     quotes: List<Quote> = emptyList(),
+    links: List<BookLink> = emptyList(),
     onFootnoteClick: (ref: String, content: String) -> Unit,
+    onNavigateToChapter: ((chapterIndex: Int, blockIndex: Int) -> Unit)? = null,
     onToggleControls: () -> Unit,
     onSaveQuote: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
-    val annotated = remember(rawText, searchQuery, footnotes, quotes) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val annotated = remember(rawText, searchQuery, footnotes, quotes, links, primaryColor) {
         buildAnnotatedString {
             append(rawText)
 
@@ -2844,9 +2911,60 @@ fun InteractiveText(
                 }
             }
 
-            // 1. Highlight and handle web URL links (e.g. https://... or http://...)
+            // 1. Explicit internal links and TOC references from book parser
+            for (bookLink in links) {
+                val s = bookLink.start.coerceIn(0, rawText.length)
+                val e = bookLink.end.coerceIn(s, rawText.length)
+                if (s < e) {
+                    val target = bookLink.target
+                    val isExternal = target.startsWith("http://") || target.startsWith("https://") || target.startsWith("mailto:")
+                    val isNav = target.startsWith("nav:") || footnotes[target]?.startsWith("nav:") == true
+
+                    val linkColor = if (isNav) primaryColor else if (isExternal) Color(0xFF1976D2) else Color(0xFF2E7D32)
+                    addStyle(
+                        style = SpanStyle(
+                            color = linkColor,
+                            textDecoration = TextDecoration.Underline,
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        start = s,
+                        end = e
+                    )
+                    if (isExternal) {
+                        addLink(LinkAnnotation.Url(url = target), s, e)
+                    } else {
+                        val link = LinkAnnotation.Clickable(
+                            tag = target,
+                            linkInteractionListener = {
+                                val resolvedNav = if (target.startsWith("nav:")) target else footnotes[target]
+                                if (resolvedNav != null && resolvedNav.startsWith("nav:")) {
+                                    val parts = resolvedNav.removePrefix("nav:").split(":")
+                                    val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                                    val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                    if (onNavigateToChapter != null) {
+                                        onNavigateToChapter(ch, blk)
+                                    } else {
+                                        onFootnoteClick(target, resolvedNav)
+                                    }
+                                } else {
+                                    val linkText = rawText.substring(s, e)
+                                    val content = resolveFootnoteText(target, footnotes)
+                                        ?: resolveFootnoteText(linkText, footnotes)
+                                        ?: footnotes[target]
+                                        ?: "${strings.footnoteTitle}: $linkText"
+                                    onFootnoteClick(target, content)
+                                }
+                            }
+                        )
+                        addLink(link, s, e)
+                    }
+                }
+            }
+
+            // 2. Highlight and handle web URL links (e.g. https://... or http://...)
             val urlRegex = Regex("""https?://[^\s<>"'{}|\\^`]+""")
             for (match in urlRegex.findAll(rawText)) {
+                if (links.any { it.start <= match.range.first && it.end >= match.range.last + 1 }) continue
                 val url = match.value
                 addStyle(
                     style = SpanStyle(
@@ -2860,18 +2978,21 @@ fun InteractiveText(
                 addLink(link, match.range.first, match.range.last + 1)
             }
 
-            // 2. Highlight footnote links e.g. [1], [note], {1}, ¹⁴, »14
+            // 3. Highlight footnote links e.g. [1], [note], {1}, ¹⁴, »14
             val footnoteRegex = Regex("""\[([a-zA-Z0-9а-яА-ЯёЁ_\s-]{1,25})\]|\{([0-9]+)\}|([¹²³⁴⁵⁶⁷⁸⁹⁰]+)|»\s*(\d{1,4})""")
             for (match in footnoteRegex.findAll(rawText)) {
+                if (links.any { it.start <= match.range.first && it.end >= match.range.last + 1 }) continue
                 val matchValue = match.value
                 val ref = matchValue.removePrefix("»").trim()
                 val resolved = resolveFootnoteText(ref, footnotes)
                 val isExplicitRef = matchValue.startsWith("[") || matchValue.startsWith("{") || matchValue.any { it in "¹²³⁴⁵⁶⁷⁸⁹⁰" }
                 if (resolved != null || (footnotes.isNotEmpty() && isExplicitRef)) {
+                    val isNav = resolved?.startsWith("nav:") == true
                     addStyle(
                         style = SpanStyle(
-                            color = Color(0xFF2E7D32),
-                            fontWeight = FontWeight.Bold
+                            color = if (isNav) primaryColor else Color(0xFF2E7D32),
+                            fontWeight = FontWeight.Bold,
+                            textDecoration = if (isNav) TextDecoration.Underline else TextDecoration.None
                         ),
                         start = match.range.first,
                         end = match.range.last + 1
@@ -2880,7 +3001,18 @@ fun InteractiveText(
                         tag = ref,
                         linkInteractionListener = {
                             val content = resolveFootnoteText(ref, footnotes) ?: footnotes[ref] ?: "${strings.footnoteTitle}: $ref"
-                            onFootnoteClick(ref, content)
+                            if (content.startsWith("nav:")) {
+                                val parts = content.removePrefix("nav:").split(":")
+                                val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                                val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                if (onNavigateToChapter != null) {
+                                    onNavigateToChapter(ch, blk)
+                                } else {
+                                    onFootnoteClick(ref, content)
+                                }
+                            } else {
+                                onFootnoteClick(ref, content)
+                            }
                         }
                     )
                     addLink(link, match.range.first, match.range.last + 1)

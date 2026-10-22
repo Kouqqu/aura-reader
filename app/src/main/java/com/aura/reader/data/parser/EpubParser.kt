@@ -6,6 +6,7 @@ import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.BookFormat
 import com.aura.reader.data.model.Chapter
 import com.aura.reader.data.model.FormattedBlock
+import com.aura.reader.data.model.BookLink
 import org.jsoup.Jsoup
 import org.w3c.dom.Element
 import java.io.ByteArrayInputStream
@@ -307,7 +308,7 @@ object EpubParser {
                 val blocks = mutableListOf<FormattedBlock>()
 
                 // Traverse direct children of body or top-level containers
-                val elements = body.select("h1, h2, h3, h4, h5, h6, blockquote, div.epigraph, div.cite, p, pre, img, figure")
+                val elements = body.select("h1, h2, h3, h4, h5, h6, blockquote, div.epigraph, div.cite, p, pre, img, figure, li, nav a, div.toc > a, div.toc > p, ol > li")
                 val chDir = if (resolvedChPath.contains("/")) resolvedChPath.substringBeforeLast("/") else ""
 
                 for (el in elements) {
@@ -352,14 +353,13 @@ object EpubParser {
                         continue
                     }
 
-                    // Process footnote links inside this element:
-                    // Replace <a href="...">num</a> with [num] so that InteractiveText highlights and links it!
+                    // Process links and footnotes inside this element:
                     val anchorLinks = el.select("a[href]")
                     for (a in anchorLinks) {
                         val href = a.attr("href").trim()
                         val aText = a.text().trim()
                         val target = if (href.contains("#")) href.substringAfter("#").trim() else href
-                        val cleanFile = if (href.contains("#")) href.substringBefore("#").substringAfterLast("/") else ""
+                        val cleanFile = if (href.contains("#")) href.substringBefore("#").substringAfterLast("/") else href.substringAfterLast("/")
 
                         val isFootnoteLink = a.attr("epub:type").contains("noteref") ||
                             a.hasClass("noteref") || a.hasClass("footnote") || a.hasClass("note") ||
@@ -398,6 +398,26 @@ object EpubParser {
                     }
 
                     val text = el.text().trim()
+                    val blockLinks = mutableListOf<BookLink>()
+                    if (anchorLinks.isNotEmpty() && text.isNotBlank()) {
+                        var searchOffset = 0
+                        for (a in anchorLinks) {
+                            val href = a.attr("href").trim()
+                            val linkTxt = a.text().trim()
+                            if (href.isNotBlank() && linkTxt.isNotBlank()) {
+                                val s = text.indexOf(linkTxt, searchOffset)
+                                if (s >= 0) {
+                                    val e = s + linkTxt.length
+                                    searchOffset = e
+                                    val target = if (href.contains("#")) href.substringAfter("#").trim() else href
+                                    val isFootnote = a.attr("epub:type").contains("noteref") ||
+                                        a.hasClass("noteref") || a.hasClass("footnote") ||
+                                        footnotes.containsKey(target) || footnotes.containsKey(linkTxt)
+                                    blockLinks.add(BookLink(start = s, end = e, target = href, isFootnote = isFootnote))
+                                }
+                            }
+                        }
+                    }
                     if (text.isBlank()) continue
 
                     // Check if element is inside an already processed blockquote/epigraph
@@ -407,10 +427,10 @@ object EpubParser {
 
                     when {
                         tagName in listOf("h1", "h2") -> {
-                            blocks.add(FormattedBlock(BlockType.TITLE, text))
+                            blocks.add(FormattedBlock(BlockType.TITLE, text, links = blockLinks))
                         }
                         tagName in listOf("h3", "h4", "h5", "h6") || el.hasClass("subtitle") -> {
-                            blocks.add(FormattedBlock(BlockType.SUBTITLE, text))
+                            blocks.add(FormattedBlock(BlockType.SUBTITLE, text, links = blockLinks))
                         }
                         tagName == "blockquote" || el.hasClass("epigraph") || el.hasClass("cite") -> {
                             val authorEl = el.select("cite, p.author, .author, span.author").firstOrNull()
@@ -422,17 +442,17 @@ object EpubParser {
                             } else {
                                 text
                             }
-                            blocks.add(FormattedBlock(BlockType.EPIGRAPH, quoteBody, quoteAuthor))
+                            blocks.add(FormattedBlock(BlockType.EPIGRAPH, quoteBody, quoteAuthor, links = blockLinks))
                         }
                         tagName == "pre" || el.hasClass("poem") -> {
-                            blocks.add(FormattedBlock(BlockType.VERSE, text))
+                            blocks.add(FormattedBlock(BlockType.VERSE, text, links = blockLinks))
                         }
                         else -> {
                             // Check if paragraph is an epigraph by class
                             if (el.className().contains("epigraph", ignoreCase = true) || el.className().contains("quote", ignoreCase = true)) {
-                                blocks.add(FormattedBlock(BlockType.EPIGRAPH, text))
+                                blocks.add(FormattedBlock(BlockType.EPIGRAPH, text, links = blockLinks))
                             } else {
-                                blocks.add(FormattedBlock(BlockType.PARAGRAPH, text))
+                                blocks.add(FormattedBlock(BlockType.PARAGRAPH, text, links = blockLinks))
                             }
                         }
                     }
@@ -467,12 +487,73 @@ object EpubParser {
                 }
             }
 
-            // Resolve any indirect footnote pointers
+            // Resolve any indirect footnote pointers and chapter navigation links
             for ((key, value) in footnotes.toMap()) {
                 val resolved = footnotes[value]
                 if (resolved != null && resolved != value) {
                     footnotes[key] = resolved
                 }
+            }
+
+            // Map spine files and chapter titles to chapter indices for internal book navigation
+            val spineFileToIdx = mutableMapOf<String, Int>()
+            val chapterTitleToIdx = chapters.mapIndexed { idx, ch -> ch.title.lowercase().trim() to idx }.toMap()
+            for ((idx, chHref) in chapterHrefs.withIndex()) {
+                val clean = chHref.substringAfterLast("/")
+                val resolved = resolvePath(opfDir, chHref)
+                val targetChIdx = chapters.indexOfFirst { it.title == (tocTitles[chHref] ?: tocTitles[clean]) }.takeIf { it >= 0 }
+                    ?: idx.coerceAtMost((chapters.size - 1).coerceAtLeast(0))
+                spineFileToIdx[chHref] = targetChIdx
+                spineFileToIdx[clean] = targetChIdx
+                spineFileToIdx[resolved] = targetChIdx
+            }
+
+            // Map any unlinked footnote keys or anchor targets to chapters
+            for ((key, value) in footnotes.toMap()) {
+                if (!value.startsWith("nav:") && (value.endsWith(".xhtml") || value.endsWith(".html") || value.contains("#") || spineFileToIdx.containsKey(value.substringBefore("#").substringAfterLast("/")))) {
+                    val cleanVal = value.substringBefore("#").substringAfterLast("/")
+                    val chIdx = spineFileToIdx[cleanVal] ?: spineFileToIdx[value]
+                    if (chIdx != null) {
+                        footnotes[key] = "nav:$chIdx:0"
+                    }
+                }
+            }
+
+            // Update blocks with resolved navigation targets
+            val resolvedChapters = chapters.map { ch ->
+                val updatedBlocks = ch.blocks.map { block ->
+                    if (block.links.isEmpty()) block
+                    else {
+                        val resolvedLinks = block.links.map { link ->
+                            val t = link.target
+                            if (t.startsWith("http://") || t.startsWith("https://") || t.startsWith("mailto:") || t.startsWith("nav:")) {
+                                link
+                            } else {
+                                val cleanTarget = t.substringBefore("#").substringAfterLast("/")
+                                val linkText = if (link.start in 0..block.text.length && link.end in link.start..block.text.length) {
+                                    block.text.substring(link.start, link.end).trim().lowercase()
+                                } else ""
+                                val chIdx = spineFileToIdx[cleanTarget]
+                                    ?: spineFileToIdx[t]
+                                    ?: chapterTitleToIdx[linkText]
+                                    ?: chapterTitleToIdx[cleanTarget]
+                                if (chIdx != null) {
+                                    val navTarget = "nav:$chIdx:0"
+                                    footnotes[t] = navTarget
+                                    footnotes[cleanTarget] = navTarget
+                                    if (linkText.isNotBlank()) footnotes[linkText] = navTarget
+                                    link.copy(target = navTarget, isFootnote = false)
+                                } else if (footnotes.containsKey(t) && footnotes[t]!!.startsWith("nav:")) {
+                                    link.copy(target = footnotes[t]!!, isFootnote = false)
+                                } else {
+                                    link
+                                }
+                            }
+                        }
+                        block.copy(links = resolvedLinks)
+                    }
+                }
+                ch.copy(blocks = updatedBlocks)
             }
 
             return Book(
@@ -482,7 +563,7 @@ object EpubParser {
                 coverBase64 = coverBase64,
                 format = BookFormat.EPUB,
                 uriString = uriString,
-                chapters = if (chapters.isNotEmpty()) chapters else listOf(
+                chapters = if (resolvedChapters.isNotEmpty()) resolvedChapters else listOf(
                     Chapter(
                         id = UUID.randomUUID().toString(),
                         title = title,

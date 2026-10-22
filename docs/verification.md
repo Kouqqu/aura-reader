@@ -70,3 +70,17 @@ The final motion is a rigid linear diagonal stream to the right and downward, wi
 
 - Clustered 2–3 Book Rows: In `CoverCollageLayout.kt`, updated slot sequence to `[1, 2, 5, 10, 6, 9, 3, 7]` and reduced row height aspect ratio from 1.8f to 1.6f. Every row now has 2 to 3 adjacent books clustered in central columns 1–3, eliminating lonely outer-column outliers and closing the wide vertical row gap.
 - Material Search Bar Animation: In `LibraryScreen.kt`, wrapped topBar with `AnimatedContent` for a smooth slide/expand and fade transition between `LargeTopAppBar` and the search bar. Added `AnimatedVisibility` for the library search hero collage and hardware back button handling to smoothly collapse search.
+
+## In-book links, dense search collage and instant dock glide — 2.0.1-beta.6
+
+- **In-Book Link Navigation**:
+  - Full support for internal links across EPUB and FB2 formats, including inline Table of Contents (e.g. "Содержание", "Пометки", "Примечания"), internal chapter anchors, and cross-references.
+  - Links are rendered with clickable theme styling and underline, navigating directly to the targeted chapter and section without requiring manual TOC navigation.
+  - External links (URLs) open via system browser/intents; footnote references retain the dedicated bottom sheet.
+- **Dense 12-Slot Search Cover Collage**:
+  - Collage slots expanded to 12 positions (4 columns x 3 rows), ensuring all rows consistently display 2–3 covers side-by-side without vertical gaps or empty spaces.
+  - Smart stride distribution tiles available book covers across slots with zero adjacent duplicates horizontally and vertically, even for small libraries (1–3 books).
+  - Shuffled initialization on every search entry guarantees varied starting positions and random arrangements.
+- **Instant Dock Navigation Glide**:
+  - Touching down on any dock tab instantly activates tab transition, causing the glass pill to smoothly glide under the finger with zero delay (no long-press required).
+  - Preserves natural spring physics (`stiffness = 380f`, critically damped) for a smooth gliding motion rather than a jarring teleport.

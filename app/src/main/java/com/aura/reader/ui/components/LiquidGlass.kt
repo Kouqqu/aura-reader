@@ -265,7 +265,7 @@ fun FloatingNavigationIsland(
                     } else {
                         spring(
                             dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = 320f
+                            stiffness = 380f
                         )
                     },
                     label = "liquidLensSlide"
@@ -336,8 +336,20 @@ fun FloatingNavigationIsland(
                             awaitEachGesture {
                                 val down = awaitFirstDown(requireUnconsumed = false)
                                 val startX = down.position.x
+                                val downSlot = (startX / tabWidthPx).toInt().coerceIn(0, 2)
                                 isPressed = true
                                 isDragging = false
+
+                                // Instant response on tap:
+                                // If touching a different tab, activate it immediately so the pill glides smoothly under finger!
+                                if (downSlot != selectedTab) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    when (downSlot) {
+                                        0 -> onMyBooksClick()
+                                        1 -> onSearchClick()
+                                        2 -> onSettingsClick()
+                                    }
+                                }
 
                                 var hasDragged = false
                                 val pointerId = down.id
@@ -352,7 +364,7 @@ fun FloatingNavigationIsland(
                                     }
                                     val dx = kotlin.math.abs(change.position.x - startX)
                                     val holdDuration = change.uptimeMillis - down.uptimeMillis
-                                    if (!hasDragged && (dx > touchSlop || holdDuration > 220)) {
+                                    if (!hasDragged && (dx > touchSlop || holdDuration > 180)) {
                                         hasDragged = true
                                         isDragging = true
                                     }
@@ -367,20 +379,23 @@ fun FloatingNavigationIsland(
                                 if (hasDragged) {
                                     isDragging = false
                                     val nearestSlot = ((dragOffsetPx + tabWidthPx / 2f) / tabWidthPx).toInt().coerceIn(0, 2)
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    when (nearestSlot) {
-                                        0 -> onMyBooksClick()
-                                        1 -> onSearchClick()
-                                        2 -> onSettingsClick()
+                                    if (nearestSlot != downSlot) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        when (nearestSlot) {
+                                            0 -> onMyBooksClick()
+                                            1 -> onSearchClick()
+                                            2 -> onSettingsClick()
+                                        }
                                     }
                                 } else {
-                                    // Clean tap on button: pill glides directly into the button slot under the symbol!
-                                    val clickedSlot = (startX / tabWidthPx).toInt().coerceIn(0, 2)
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    when (clickedSlot) {
-                                        0 -> onMyBooksClick()
-                                        1 -> onSearchClick()
-                                        2 -> onSettingsClick()
+                                    // If user tapped on the currently selected tab (e.g. MyBooks to scroll to top)
+                                    if (downSlot == selectedTab) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        when (downSlot) {
+                                            0 -> onMyBooksClick()
+                                            1 -> onSearchClick()
+                                            2 -> onSettingsClick()
+                                        }
                                     }
                                 }
                             }

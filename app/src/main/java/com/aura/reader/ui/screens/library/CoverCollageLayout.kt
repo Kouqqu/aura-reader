@@ -43,10 +43,10 @@ internal fun coverCollageLayout(count: Int, width: Float, height: Float, phase: 
     // Row 0: cols 1, 2, 3
     // Row 1: cols 1, 2, 3
     // Row 2: cols 1, 2
-    val slots = listOf(1, 2, 5, 10, 6, 9, 3, 7)
+    val slots = listOf(1, 2, 5, 10, 6, 9, 3, 7, 0, 4, 8, 11)
     val speedX = c * periodU - s * periodV
-    return CoverLayout(coverWidth, coverHeight, (speedX / 7f * 1000).toInt(), List(count.coerceAtMost(8)) { index ->
-        val slot = slots[index]
+    return CoverLayout(coverWidth, coverHeight, (speedX / 7f * 1000).toInt(), List(count.coerceAtMost(12)) { index ->
+        val slot = slots[index % slots.size]
         val u = wrap((slot % 4 - 1.5f) * cellWidth + phase * periodU, periodU)
         val v = wrap((slot / 4 - 1f) * cellHeight + phase * periodV, periodV)
         CoverPlacement(width / 2 + c * u - s * v, height / 2 + s * u + c * v)

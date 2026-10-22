@@ -26,18 +26,38 @@ import kotlinx.coroutines.withContext
 fun SearchCoverCollage(books: List<Book>, subdued: Boolean, modifier: Modifier = Modifier) {
     val covers = remember(books) {
         val withCovers = books.filter { !it.coverBase64.isNullOrBlank() }
-        if (withCovers.size > 8) {
-            withCovers.shuffled(java.util.Random(withCovers.hashCode().toLong())).take(8)
+        if (withCovers.isEmpty()) {
+            emptyList()
         } else {
-            withCovers
+            val totalSlots = 12
+            val L = withCovers.size
+            val shuffled = withCovers.shuffled()
+            if (L == 1) {
+                List(totalSlots) { shuffled[0] }
+            } else {
+                var rowStep = 1
+                for (step in 1..L + 1) {
+                    if (step % L != 0 && (step % L) != (4 % L)) {
+                        rowStep = step
+                        break
+                    }
+                }
+                List(totalSlots) { index ->
+                    val r = index / 4
+                    val c = index % 4
+                    val bookIdx = (r * rowStep + c) % L
+                    shuffled[bookIdx]
+                }
+            }
         }
     }
     var images by remember { mutableStateOf<List<ImageBitmap>>(emptyList()) }
     LaunchedEffect(covers) {
         images = withContext(Dispatchers.Default) {
-            covers.mapNotNull { book ->
-                CoverBitmapCache.getOrDecode("collage:${book.id}:${book.coverBase64.hashCode()}", book.coverBase64!!, 360, 540)
+            val uniqueBitmaps = covers.distinctBy { it.id }.associate { book ->
+                book.id to CoverBitmapCache.getOrDecode("collage:${book.id}:${book.coverBase64.hashCode()}", book.coverBase64!!, 360, 540)
             }
+            covers.mapNotNull { book -> uniqueBitmaps[book.id] }
         }
     }
     val background = MaterialTheme.colorScheme.background

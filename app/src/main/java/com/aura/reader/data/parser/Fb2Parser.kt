@@ -40,6 +40,7 @@ object Fb2Parser {
         val binaries = mutableMapOf<String, String>()
         val chapters = mutableListOf<Chapter>()
         val footnotes = mutableMapOf<String, String>()
+        val sectionIdToChapter = mutableMapOf<String, Int>()
         var currentNoteId: String? = null
         var currentNoteTitle = ""
         val currentNoteText = StringBuilder()
@@ -208,6 +209,11 @@ object Fb2Parser {
                                 if (sectionDepth == 0 && currentBlocks.isNotEmpty()) {
                                     flushChapter()
                                 }
+                                val secId = parser.getAttributeValue(null, "id")
+                                if (!secId.isNullOrBlank()) {
+                                    sectionIdToChapter[secId] = chapters.size
+                                    sectionIdToChapter[secId.removePrefix("#")] = chapters.size
+                                }
                                 sectionDepth++
                             }
                         }
@@ -374,11 +380,20 @@ object Fb2Parser {
 
         flushChapter()
 
-        // Resolve footnote pointers (where value is targetId referencing another entry)
+        // Resolve footnote pointers and section links
         for ((key, value) in footnotes.toMap()) {
             val resolved = footnotes[value]
             if (resolved != null && resolved != value) {
                 footnotes[key] = resolved
+            } else if (sectionIdToChapter.containsKey(value) || sectionIdToChapter.containsKey(value.removePrefix("#"))) {
+                val chIdx = sectionIdToChapter[value] ?: sectionIdToChapter[value.removePrefix("#")]!!
+                footnotes[key] = "nav:$chIdx:0"
+            } else {
+                val cleanVal = value.removePrefix("#").lowercase().trim()
+                val chIdx = chapters.indexOfFirst { it.title.lowercase().trim() == cleanVal }
+                if (chIdx >= 0) {
+                    footnotes[key] = "nav:$chIdx:0"
+                }
             }
         }
 
