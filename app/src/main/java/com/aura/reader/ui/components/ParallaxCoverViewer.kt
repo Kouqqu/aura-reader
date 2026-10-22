@@ -17,6 +17,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -36,13 +37,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -274,16 +278,41 @@ fun ParallaxCoverViewer(
                     )
                 }
             }
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier
-                    .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(50))
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = strings.closeDialog,
-                    tint = Color.White
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val hasCover = !coverBase64.isNullOrBlank() || !coverUrl.isNullOrBlank()
+                if (hasCover) {
+                    IconButton(
+                        onClick = {
+                            com.aura.reader.util.CoverDownloadUtils.saveCoverToGallery(
+                                context = context,
+                                title = title,
+                                coverBase64 = coverBase64,
+                                coverUrl = coverUrl,
+                                strings = strings
+                            )
+                        },
+                        modifier = Modifier
+                            .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(50))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = strings.downloadCover,
+                            tint = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(50))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = strings.closeDialog,
+                        tint = Color.White
+                    )
+                }
             }
         }
 
@@ -425,15 +454,58 @@ fun ParallaxCoverViewer(
             }
         }
 
-        // Hint at the bottom
-        Text(
-            text = strings.parallaxCoverHint,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.6f),
+        // Bottom controls: Download Cover Pill + Parallax Hint
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 24.dp)
-        )
+                .padding(bottom = 20.dp)
+        ) {
+            val hasCover = !coverBase64.isNullOrBlank() || !coverUrl.isNullOrBlank()
+            if (hasCover) {
+                Surface(
+                    onClick = {
+                        com.aura.reader.util.CoverDownloadUtils.saveCoverToGallery(
+                            context = context,
+                            title = title,
+                            coverBase64 = coverBase64,
+                            coverUrl = coverUrl,
+                            strings = strings
+                        )
+                    },
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.22f),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.downloadCover,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            // Hint at the bottom
+            Text(
+                text = strings.parallaxCoverHint,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.6f)
+            )
+        }
     }
     }
 }

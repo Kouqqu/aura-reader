@@ -29,6 +29,7 @@ import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.preferences.PreferencesManager
+import com.aura.reader.data.service.CoverSearchService
 import com.aura.reader.ui.theme.AppLanguage
 import kotlinx.coroutines.flow.first
 
@@ -353,6 +354,35 @@ class LibraryViewModel(
 
     fun updateBookCover(bookId: String, newCoverBase64: String?) {
         viewModelScope.launch { bookRepository.updateBookCover(bookId, newCoverBase64) }
+    }
+
+    fun autoDownloadMissingCovers(
+        books: List<Book>,
+        onComplete: (Int) -> Unit
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            var downloadedCount = 0
+            for (book in books) {
+                if (!book.coverBase64.isNullOrBlank()) continue
+                try {
+                    val cleanTitle = CoverSearchService.cleanBookTitle(book.title)
+                    val cleanAuthor = CoverSearchService.cleanAuthorName(book.author)
+                    val query = if (cleanAuthor.isNotBlank()) "$cleanTitle $cleanAuthor" else cleanTitle
+                    val results = CoverSearchService.searchCovers(query, fallbackTitle = cleanTitle)
+                    val bestCover = results.firstOrNull()
+                    if (bestCover != null) {
+                        val base64 = CoverSearchService.downloadCoverAsBase64(bestCover.highResUrl)
+                        if (!base64.isNullOrBlank()) {
+                            bookRepository.updateBookCover(book.id, base64)
+                            downloadedCount++
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+            withContext(Dispatchers.Main) {
+                onComplete(downloadedCount)
+            }
+        }
     }
 
     fun exportBackup(

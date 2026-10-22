@@ -258,6 +258,11 @@ interface Strings {
     val noCoversFoundOnline: String
     val coverUpdated: String
     val applyCover: String
+    val downloadCover: String
+    val coverSavedToGallery: String
+    val coverSaveError: String
+    val downloadMissingCovers: String
+    fun coversDownloadedSuccess(count: Int): String
 
     // Highlights & Quotes
     val highlightColorTitle: String
@@ -627,6 +632,11 @@ class RuStrings : Strings {
     override val noCoversFoundOnline = "Обложки не найдены"
     override val coverUpdated = "Обложка обновлена"
     override val applyCover = "Применить"
+    override val downloadCover = "Скачать обложку"
+    override val coverSavedToGallery = "Обложка сохранена в Галерею"
+    override val coverSaveError = "Не удалось сохранить обложку"
+    override val downloadMissingCovers = "Скачать недостающие обложки"
+    override fun coversDownloadedSuccess(count: Int) = "Скачано обложек: $count"
 
 
     override val highlightColorTitle = "Цвет маркера"
@@ -984,6 +994,11 @@ class EnStrings : Strings {
     override val noCoversFoundOnline = "No covers found"
     override val coverUpdated = "Cover updated"
     override val applyCover = "Apply"
+    override val downloadCover = "Download cover"
+    override val coverSavedToGallery = "Cover saved to Gallery"
+    override val coverSaveError = "Failed to save cover"
+    override val downloadMissingCovers = "Download missing covers"
+    override fun coversDownloadedSuccess(count: Int) = "Covers downloaded: $count"
 
 
     override val highlightColorTitle = "Highlight color"
@@ -1341,6 +1356,11 @@ class UkStrings : Strings {
     override val noCoversFoundOnline = "Обкладинки не знайдено"
     override val coverUpdated = "Обкладинку оновлено"
     override val applyCover = "Застосувати"
+    override val downloadCover = "Завантажити обкладинку"
+    override val coverSavedToGallery = "Обкладинку збережено в Галерею"
+    override val coverSaveError = "Не вдалося зберегти обкладинку"
+    override val downloadMissingCovers = "Завантажити відсутні обкладинки"
+    override fun coversDownloadedSuccess(count: Int) = "Завантажено обкладинок: $count"
 
 
     override val highlightColorTitle = "Колір маркера"
@@ -1698,6 +1718,11 @@ class BeStrings : Strings {
     override val noCoversFoundOnline = "Вокладкі не знойдзены"
     override val coverUpdated = "Вокладка абноўлена"
     override val applyCover = "Ужыць"
+    override val downloadCover = "Спампаваць вокладку"
+    override val coverSavedToGallery = "Вокладка захавана ў Галерэю"
+    override val coverSaveError = "Не атрымалася захаваць вокладку"
+    override val downloadMissingCovers = "Спампаваць адсутныя вокладкі"
+    override fun coversDownloadedSuccess(count: Int) = "Спампавана вокладак: $count"
 
 
     override val highlightColorTitle = "Колер маркера"
@@ -2055,6 +2080,11 @@ class PlStrings : Strings {
     override val noCoversFoundOnline = "Nie znaleziono okładek"
     override val coverUpdated = "Okładka została zaktualizowana"
     override val applyCover = "Zastosuj"
+    override val downloadCover = "Pobierz okładkę"
+    override val coverSavedToGallery = "Okładka zapisana w Galerii"
+    override val coverSaveError = "Nie udało się zapisać okładki"
+    override val downloadMissingCovers = "Pobierz brakujące okładki"
+    override fun coversDownloadedSuccess(count: Int) = "Pobrano okładki: $count"
 
     override val highlightColorTitle = "Kolor zakreślacza"
     override val quoteSavedAsHighlight = "Cytat zapisany i wyróżniony w tekście"
@@ -2398,6 +2428,11 @@ class CsStrings : Strings {
     override val noCoversFoundOnline = "Online obálky nebyly nalezeny"
     override val coverUpdated = "Obálka byla aktualizována"
     override val applyCover = "Použít obálku"
+    override val downloadCover = "Stáhnout obálku"
+    override val coverSavedToGallery = "Obálka uložena do Galerie"
+    override val coverSaveError = "Obálku se nepodařilo uložit"
+    override val downloadMissingCovers = "Stáhnout chybějící obálky"
+    override fun coversDownloadedSuccess(count: Int) = "Staženo obálek: $count"
     override val highlightColorTitle = "Barva zvýraznění"
     override val quoteSavedAsHighlight = "Uloženo jako zvýraznění"
     override val readingStatsSheetTitle = "Statistika čtení"

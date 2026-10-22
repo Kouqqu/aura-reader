@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FolderOpen
@@ -81,6 +82,8 @@ fun CurrentlyReadingHeroCard(
 ) {
     val strings = LocalAppStrings.current
     var showMenu by remember { mutableStateOf(false) }
+
+    val hasCover = !book.coverBase64.isNullOrBlank()
 
     // Dynamic color extraction via Palette API (Offloaded entirely to Dispatchers.Default with downscaled thumbnail for 120fps smoothness)
     var dominantColor by remember { mutableStateOf<Color?>(null) }
@@ -167,6 +170,7 @@ fun CurrentlyReadingHeroCard(
                             spotColor = cardBg
                         )
                 ) {
+                    val hasCover = !book.coverBase64.isNullOrBlank()
                     BookCoverView(
                         coverBase64 = book.coverBase64,
                         title = book.title,
@@ -174,7 +178,7 @@ fun CurrentlyReadingHeroCard(
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .size(width = 88.dp, height = 130.dp)
-                            .clickable { onCoverClick(book) }
+                            .clickable { if (hasCover) onCoverClick(book) else onChangeCover() }
                     )
                 }
 
@@ -257,8 +261,8 @@ fun CurrentlyReadingHeroCard(
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text(strings.changeCover) },
-                                        leadingIcon = { Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                        text = { Text(if (hasCover) strings.changeCover else strings.downloadCover) },
+                                        leadingIcon = { Icon(if (hasCover) Icons.Default.Image else Icons.Default.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                         onClick = {
                                             showMenu = false
                                             onChangeCover()

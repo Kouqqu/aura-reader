@@ -39,6 +39,9 @@ import com.aura.reader.util.BookShareUtils
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material3.HorizontalDivider
 
 import android.content.Context
 import android.hardware.Sensor
@@ -94,6 +97,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.toMutableStateList
 
 import android.content.Intent
+import android.widget.Toast
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
@@ -906,7 +910,7 @@ fun LibraryScreen(
                                     )
                                     if (readingStatsData.currentStreakDays > 0) {
                                         Text(
-                                            text = "🔥 ${readingStatsData.currentStreakDays}",
+                                            text = "рџ”Ґ ${readingStatsData.currentStreakDays}",
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
@@ -1185,6 +1189,24 @@ fun LibraryScreen(
                                                 }
                                             }
                                         )
+
+                                        val booksWithoutCovers = remember(recentBooks) { recentBooks.filter { it.coverBase64.isNullOrBlank() } }
+                                        if (booksWithoutCovers.isNotEmpty()) {
+                                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                            DropdownMenuItem(
+                                                text = { Text(strings.downloadMissingCovers) },
+                                                leadingIcon = {
+                                                    Icon(Icons.Default.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                },
+                                                onClick = {
+                                                    showSortMenu = false
+                                                    Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
+                                                    viewModel.autoDownloadMissingCovers(recentBooks) { count ->
+                                                        Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1460,7 +1482,7 @@ fun LibraryScreen(
                 ) {
                     if (userCollections.isEmpty()) {
                         Text(
-                            text = "РџРѕРєР° РЅРµС‚ СЃРѕР·РґР°РЅРЅС‹С… РїРѕР»РѕРє",
+                            text = "Р СџР С•Р С”Р В° Р Р…Р ВµРЎвЂљ РЎРѓР С•Р В·Р Т‘Р В°Р Р…Р Р…РЎвЂ№РЎвЂ¦ Р С—Р С•Р В»Р С•Р С”",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 8.dp)
@@ -1649,6 +1671,7 @@ fun BookCard(
     var showMenu by remember { mutableStateOf(false) }
     val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
+    val hasCover = !book.coverBase64.isNullOrBlank()
 
     val isDraggingThis = currentlyDraggedBookId == book.id
     val rotationZ = if (isDraggingThis) 0f else if (isReorderMode) (if (index % 2 == 0) wobbleAngle else -wobbleAngle) else 0f
@@ -1728,6 +1751,7 @@ fun BookCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val hasCover = !book.coverBase64.isNullOrBlank()
             BookCoverView(
                 coverBase64 = book.coverBase64,
                 title = book.title,
@@ -1735,7 +1759,9 @@ fun BookCard(
                 modifier = Modifier
                     .size(width = 64.dp, height = 90.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .clickable { onCoverClick() }
+                    .clickable {
+                        if (hasCover) onCoverClick() else onChangeCover()
+                    }
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -1820,9 +1846,13 @@ fun BookCard(
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text(strings.changeCover) },
+                                    text = { Text(if (hasCover) strings.changeCover else strings.downloadCover) },
                                     leadingIcon = {
-                                        Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        Icon(
+                                            imageVector = if (hasCover) Icons.Default.Image else Icons.Default.Download,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
                                     },
                                     onClick = {
                                         showMenu = false
@@ -1892,7 +1922,7 @@ fun BookCard(
 
                 if (!book.series.isNullOrBlank()) {
                     val seriesText = if (book.seriesNumber != null) {
-                        "${book.series} • #${book.seriesNumber}"
+                        "${book.series} вЂў #${book.seriesNumber}"
                     } else {
                         book.series.orEmpty()
                     }
@@ -1987,17 +2017,33 @@ fun BookCoverView(
             contentScale = ContentScale.Crop
         )
     } else {
+        val strings = LocalAppStrings.current
         Box(
             modifier = finalModifier
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.Book,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(32.dp)
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CloudDownload,
+                    contentDescription = strings.downloadCover,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = strings.downloadCover,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
@@ -2150,6 +2196,7 @@ fun BookGridCard(
     var showMenu by remember { mutableStateOf(false) }
     val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
+    val hasCover = !book.coverBase64.isNullOrBlank()
 
     val isDraggingThis = currentlyDraggedBookId == book.id
     val rotationZ = if (isDraggingThis) 0f else if (isReorderMode) (if (index % 2 == 0) wobbleAngle else -wobbleAngle) else 0f
@@ -2235,13 +2282,14 @@ fun BookGridCard(
                     .clip(RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
+                val hasCover = !book.coverBase64.isNullOrBlank()
                 BookCoverView(
                     coverBase64 = book.coverBase64,
                     title = book.title,
                     bookId = book.id,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clickable { onCoverClick() }
+                        .clickable { if (hasCover) onCoverClick() else onChangeCover() }
                 )
 
                 Surface(
@@ -2341,7 +2389,7 @@ fun BookGridCard(
 
             if (!book.series.isNullOrBlank()) {
                 val seriesText = if (book.seriesNumber != null) {
-                    "${book.series} • #${book.seriesNumber}"
+                    "${book.series} вЂў #${book.seriesNumber}"
                 } else {
                     book.series.orEmpty()
                 }
@@ -2394,8 +2442,8 @@ fun BookGridCard(
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text(strings.changeCover) },
-                    leadingIcon = { Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                    text = { Text(if (hasCover) strings.changeCover else strings.downloadCover) },
+                    leadingIcon = { Icon(if (hasCover) Icons.Default.Image else Icons.Default.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     onClick = {
                         showMenu = false
                         onChangeCover()
