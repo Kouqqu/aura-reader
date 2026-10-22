@@ -8,6 +8,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.lazy.LazyRow
+import java.util.Locale
 import androidx.compose.ui.graphics.Color
 
 import androidx.compose.foundation.background
@@ -375,8 +377,11 @@ fun TtsBottomSheet(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 val currentVoiceName = ttsState.selectedVoiceName
-                val currentVoiceLabel = ttsState.availableVoices.firstOrNull { it.name == currentVoiceName }?.displayName
-                    ?: strings.ttsVoiceDefault
+                val currentVoice = ttsState.availableVoices.firstOrNull { it.name == currentVoiceName }
+                val currentVoiceLabel = currentVoice?.let { v ->
+                    if (v.languageDisplayName.isNotBlank()) "${v.languageDisplayName}: ${v.displayName}"
+                    else v.displayName
+                } ?: strings.ttsVoiceDefault
 
                 OutlinedCard(
                     onClick = { isVoiceDropdownExpanded = true },
@@ -403,12 +408,38 @@ fun TtsBottomSheet(
 
                 if (isVoiceDropdownExpanded) {
                     var voiceSearchQuery by remember { mutableStateOf("") }
-                    val filteredVoices = remember(voiceSearchQuery, ttsState.availableVoices) {
-                        if (voiceSearchQuery.isBlank()) ttsState.availableVoices
-                        else ttsState.availableVoices.filter {
-                            it.displayName.contains(voiceSearchQuery, ignoreCase = true) ||
-                            it.name.contains(voiceSearchQuery, ignoreCase = true)
+                    val distinctLanguages = remember(ttsState.availableVoices) {
+                        ttsState.availableVoices
+                            .map { it.languageDisplayName to it.languageCode }
+                            .distinctBy { it.second }
+                            .filter { it.first.isNotBlank() }
+                    }
+
+                    val systemLang = remember { Locale.getDefault().language.lowercase(Locale.ROOT) }
+                    var selectedLangCode by remember(ttsState.selectedVoiceName, distinctLanguages) {
+                        val voiceLang = ttsState.availableVoices.firstOrNull { it.name == currentVoiceName }?.languageCode
+                        val defaultCode = when {
+                            voiceLang != null && voiceLang.isNotBlank() -> voiceLang
+                            distinctLanguages.any { it.second == systemLang } -> systemLang
+                            distinctLanguages.isNotEmpty() -> distinctLanguages.first().second
+                            else -> ""
                         }
+                        mutableStateOf(defaultCode)
+                    }
+
+                    val filteredVoices = remember(voiceSearchQuery, selectedLangCode, ttsState.availableVoices) {
+                        var list = ttsState.availableVoices
+                        if (selectedLangCode.isNotBlank()) {
+                            list = list.filter { it.languageCode == selectedLangCode }
+                        }
+                        if (voiceSearchQuery.isNotBlank()) {
+                            list = list.filter {
+                                it.displayName.contains(voiceSearchQuery, ignoreCase = true) ||
+                                it.languageDisplayName.contains(voiceSearchQuery, ignoreCase = true) ||
+                                it.name.contains(voiceSearchQuery, ignoreCase = true)
+                            }
+                        }
+                        list
                     }
 
                     AlertDialog(
@@ -421,7 +452,36 @@ fun TtsBottomSheet(
                         },
                         text = {
                             Column(modifier = Modifier.fillMaxWidth()) {
-                                if (ttsState.availableVoices.size > 5) {
+                                if (distinctLanguages.size > 1) {
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 10.dp)
+                                    ) {
+                                        item {
+                                            FilterChip(
+                                                selected = selectedLangCode.isBlank(),
+                                                onClick = { selectedLangCode = "" },
+                                                label = { Text(strings.ttsAllLanguages) },
+                                                shape = RoundedCornerShape(10.dp)
+                                            )
+                                        }
+                                        items(distinctLanguages, key = { it.second }) { (langName, langCode) ->
+                                            val count = remember(langCode, ttsState.availableVoices) {
+                                                ttsState.availableVoices.count { it.languageCode == langCode }
+                                            }
+                                            FilterChip(
+                                                selected = selectedLangCode == langCode,
+                                                onClick = { selectedLangCode = langCode },
+                                                label = { Text("$langName ($count)") },
+                                                shape = RoundedCornerShape(10.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (ttsState.availableVoices.size > 6) {
                                     OutlinedTextField(
                                         value = voiceSearchQuery,
                                         onValueChange = { voiceSearchQuery = it },
@@ -438,7 +498,7 @@ fun TtsBottomSheet(
                                 LazyColumn(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .heightIn(max = 360.dp)
+                                        .heightIn(max = 340.dp)
                                 ) {
                                     items(filteredVoices, key = { it.name }) { voice ->
                                         val isSelected = voice.name == currentVoiceName
@@ -454,17 +514,43 @@ fun TtsBottomSheet(
                                                     onVoiceChange(voice.name)
                                                     isVoiceDropdownExpanded = false
                                                 }
-                                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                                                .padding(horizontal = 14.dp, vertical = 10.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(
-                                                text = voice.displayName,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                                modifier = Modifier.weight(1f)
-                                            )
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = voice.displayName,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                    modifier = Modifier.padding(top = 2.dp)
+                                                ) {
+                                                    if (selectedLangCode.isBlank() && voice.languageDisplayName.isNotBlank()) {
+                                                        Text(
+                                                            text = voice.languageDisplayName,
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                    Surface(
+                                                        color = if (voice.isNetworkRequired) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
+                                                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                                        shape = RoundedCornerShape(6.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = if (voice.isNetworkRequired) strings.ttsOnlineQuality else strings.ttsOfflineQuality,
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
                                             if (isSelected) {
                                                 Icon(
                                                     imageVector = Icons.Default.Check,

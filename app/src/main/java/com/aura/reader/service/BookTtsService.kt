@@ -29,7 +29,10 @@ import java.util.Locale
 data class TtsVoiceInfo(
     val name: String,
     val locale: String,
-    val displayName: String
+    val displayName: String,
+    val languageCode: String = "",
+    val languageDisplayName: String = "",
+    val isNetworkRequired: Boolean = false
 )
 
 data class TtsState(
@@ -181,6 +184,45 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         }
     }
 
+    private fun formatFriendlyVoiceName(rawName: String, counter: Int): String {
+        val lower = rawName.lowercase(Locale.ROOT)
+        val nameMap = mapOf(
+            "aleksandr" to "Александр",
+            "aleksandr-hq" to "Александр (HQ)",
+            "elena" to "Елена",
+            "anna" to "Анна",
+            "artemiy" to "Артемий",
+            "yuriy" to "Юрий",
+            "victoria" to "Виктория",
+            "irina" to "Ирина",
+            "tatiana" to "Татьяна",
+            "mikhail" to "Михаил",
+            "evgeniy" to "Евгений",
+            "evgeniy-rus" to "Евгений",
+            "pavel" to "Павел",
+            "vitaliy" to "Виталий"
+        )
+        if (nameMap.containsKey(lower)) {
+            return nameMap[lower]!!
+        }
+
+        // Custom named engine voice (e.g. Alan, Bick)
+        if (!rawName.contains("-x-") && !rawName.matches(Regex("^[a-z]{2,3}[-_][a-z]{2,3}.*", RegexOption.IGNORE_CASE))) {
+            val clean = rawName.replace(Regex("[-_]"), " ").trim()
+            return clean.split(" ").joinToString(" ") { word ->
+                word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
+            }
+        }
+
+        val prefix = when (Locale.getDefault().language.lowercase(Locale.ROOT)) {
+            "ru", "uk", "be" -> "Голос"
+            "pl" -> "Głos"
+            "cs" -> "Hlas"
+            else -> "Voice"
+        }
+        return "$prefix $counter"
+    }
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
@@ -225,13 +267,45 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 }
             })
             val voicesList = try {
-                tts?.voices?.map { v ->
-                    TtsVoiceInfo(
-                        name = v.name,
-                        locale = v.locale.displayLanguage,
-                        displayName = "${v.locale.displayLanguage} (${v.name.takeLast(10)})"
-                    )
-                }?.distinctBy { it.name }?.sortedBy { it.displayName } ?: emptyList()
+                val rawVoices = tts?.voices ?: emptySet()
+                val currentLang = Locale.getDefault().language.lowercase(Locale.ROOT)
+                val grouped = rawVoices.groupBy { it.locale.language.lowercase(Locale.ROOT) }
+
+                val sortedLangCodes = grouped.keys.sortedWith { a, b ->
+                    if (a == currentLang) -1
+                    else if (b == currentLang) 1
+                    else {
+                        val nameA = Locale(a).getDisplayLanguage(Locale.getDefault())
+                        val nameB = Locale(b).getDisplayLanguage(Locale.getDefault())
+                        nameA.compareTo(nameB, ignoreCase = true)
+                    }
+                }
+
+                val result = mutableListOf<TtsVoiceInfo>()
+                for (langCode in sortedLangCodes) {
+                    val voicesInLang = grouped[langCode] ?: continue
+                    val langDisplay = Locale(langCode).getDisplayLanguage(Locale.getDefault())
+                        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+
+                    val sortedVoices = voicesInLang.sortedWith(compareBy({ it.isNetworkConnectionRequired }, { it.name }))
+                    var voiceNum = 1
+                    for (v in sortedVoices) {
+                        val isNetwork = v.isNetworkConnectionRequired
+                        val friendly = formatFriendlyVoiceName(v.name, voiceNum)
+                        voiceNum++
+                        result.add(
+                            TtsVoiceInfo(
+                                name = v.name,
+                                locale = v.locale.toLanguageTag(),
+                                displayName = friendly,
+                                languageCode = langCode,
+                                languageDisplayName = langDisplay,
+                                isNetworkRequired = isNetwork
+                            )
+                        )
+                    }
+                }
+                result
             } catch (e: Throwable) {
                 emptyList()
             }

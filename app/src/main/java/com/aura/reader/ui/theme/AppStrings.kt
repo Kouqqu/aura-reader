@@ -324,6 +324,10 @@ interface Strings {
     val ttsVoiceDefault: String
     val ttsPitchTitle: String
     fun ttsParagraphProgress(current: Int, total: Int): String
+    val ttsAllLanguages: String
+    val ttsOnlineQuality: String
+    val ttsOfflineQuality: String
+    fun ttsVoiceNumber(num: Int): String
 
     // Currently Reading & View Mode
     val currentlyReadingBadge: String
@@ -690,6 +694,10 @@ class RuStrings : Strings {
     override val ttsVoiceDefault = "По умолчанию"
     override val ttsPitchTitle = "Высота тона"
     override fun ttsParagraphProgress(current: Int, total: Int) = "Абзац $current из $total"
+    override val ttsAllLanguages = "Все языки"
+    override val ttsOnlineQuality = "Сеть"
+    override val ttsOfflineQuality = "Офлайн"
+    override fun ttsVoiceNumber(num: Int) = "Голос $num"
 
     override val currentlyReadingBadge = "СЕЙЧАС ЧИТАЮ"
     override val continueReadingAction = "Продолжить чтение"
@@ -1052,6 +1060,10 @@ class EnStrings : Strings {
     override val ttsVoiceDefault = "System Default"
     override val ttsPitchTitle = "Pitch"
     override fun ttsParagraphProgress(current: Int, total: Int) = "Paragraph $current of $total"
+    override val ttsAllLanguages = "All languages"
+    override val ttsOnlineQuality = "Network"
+    override val ttsOfflineQuality = "Offline"
+    override fun ttsVoiceNumber(num: Int) = "Voice $num"
 
     override val currentlyReadingBadge = "CURRENTLY READING"
     override val continueReadingAction = "Continue Reading"
@@ -1414,6 +1426,10 @@ class UkStrings : Strings {
     override val ttsVoiceDefault = "За замовчуванням"
     override val ttsPitchTitle = "Висота тону"
     override fun ttsParagraphProgress(current: Int, total: Int) = "Абзац $current з $total"
+    override val ttsAllLanguages = "Всі мови"
+    override val ttsOnlineQuality = "Мережа"
+    override val ttsOfflineQuality = "Офлайн"
+    override fun ttsVoiceNumber(num: Int) = "Голос $num"
 
     override val currentlyReadingBadge = "ЗАРАЗ ЧИТАЮ"
     override val continueReadingAction = "Продовжити читання"
@@ -1776,6 +1792,10 @@ class BeStrings : Strings {
     override val ttsVoiceDefault = "Па змаўчанні"
     override val ttsPitchTitle = "Вышыня тону"
     override fun ttsParagraphProgress(current: Int, total: Int) = "Абзац $current з $total"
+    override val ttsAllLanguages = "Усе мовы"
+    override val ttsOnlineQuality = "Сетка"
+    override val ttsOfflineQuality = "Афлайн"
+    override fun ttsVoiceNumber(num: Int) = "Голас $num"
 
     override val currentlyReadingBadge = "ЗАРАЗ ЧЫТАЮ"
     override val continueReadingAction = "Працягнуць чытанне"
@@ -2137,6 +2157,10 @@ class PlStrings : Strings {
     override val ttsVoiceDefault = "Domyślny"
     override val ttsPitchTitle = "Wysokość tonu"
     override fun ttsParagraphProgress(current: Int, total: Int) = "Akapit $current z $total"
+    override val ttsAllLanguages = "Wszystkie języki"
+    override val ttsOnlineQuality = "Sieć"
+    override val ttsOfflineQuality = "Offline"
+    override fun ttsVoiceNumber(num: Int) = "Głos $num"
 
     override val currentlyReadingBadge = "TERAZ CZYTAM"
     override val continueReadingAction = "Kontynuuj czytanie"
@@ -2482,6 +2506,10 @@ class CsStrings : Strings {
     override val ttsVoiceDefault = "Výchozí hlas systému"
     override val ttsPitchTitle = "Výška hlasu"
     override fun ttsParagraphProgress(current: Int, total: Int) = "Odstavec $current z $total"
+    override val ttsAllLanguages = "Všechny jazyky"
+    override val ttsOnlineQuality = "Síť"
+    override val ttsOfflineQuality = "Offline"
+    override fun ttsVoiceNumber(num: Int) = "Hlas $num"
     override val currentlyReadingBadge = "Právě čtu"
     override val continueReadingAction = "Číst"
     override val viewModeList = "Seznam"
