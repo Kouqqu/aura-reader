@@ -251,17 +251,29 @@ fun FloatingNavigationIsland(
                 val maxDragXPx = tabWidthPx * 2f
 
                 var isPressed by remember { mutableStateOf(false) }
-                var isInteracting by remember { mutableStateOf(false) }
                 var isDragging by remember { mutableStateOf(false) }
+                var tapTargetSlot by remember { mutableStateOf(selectedTab) }
                 var dragOffsetPx by remember { mutableFloatStateOf(0f) }
 
                 // The resting target offset according to selectedTab
                 val activeSlot = selectedTab.coerceIn(0, 2)
                 val restingOffsetPx = tabWidthPx * activeSlot
 
+                // Target position:
+                // - While dragging: follow finger coordinate
+                // - On tap/press (not dragging): target the exact center of the tapped button slot
+                // - At rest: target current selected tab slot
+                val targetOffsetPx = if (isDragging) {
+                    dragOffsetPx
+                } else if (isPressed) {
+                    tabWidthPx * tapTargetSlot
+                } else {
+                    restingOffsetPx
+                }
+
                 val animatedLensOffsetPx by animateFloatAsState(
-                    targetValue = if (isInteracting) dragOffsetPx else restingOffsetPx,
-                    animationSpec = if (isInteracting) {
+                    targetValue = targetOffsetPx,
+                    animationSpec = if (isDragging) {
                         spring(
                             dampingRatio = Spring.DampingRatioNoBouncy,
                             stiffness = 500f
@@ -330,9 +342,9 @@ fun FloatingNavigationIsland(
                 val inactiveColor = if (isDark) Color.White.copy(alpha = 0.45f) else Color(0x8A1C1D24)
 
                 // Seamless Fluid Kinematics:
-                // - Touch/Hold anywhere: pill glides immediately and smoothly under the finger without teleporting.
-                // - Dragging: follows finger smoothly across the dock with haptic feedback when crossing slots.
-                // - Release (UP): snaps cleanly to the nearest button slot and switches page ONLY on release!
+                // - Quick tap: pill glides directly to the exact button center (no off-center finger offset)
+                // - Press & Hold / Drag: follows finger across the dock without vibration during motion
+                // - Haptics: on press down, and on release strictly if dragged
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -341,16 +353,19 @@ fun FloatingNavigationIsland(
                             awaitEachGesture {
                                 val down = awaitFirstDown(requireUnconsumed = false)
                                 val startX = down.position.x
-                                var currentX = startX
-                                var hasDragged = false
-                                var lastHapticSlot = (startX / tabWidthPx).toInt().coerceIn(0, 2)
+                                val downSlot = (startX / tabWidthPx).toInt().coerceIn(0, 2)
 
+                                tapTargetSlot = downSlot
                                 isPressed = true
-                                isInteracting = true
+                                isDragging = false
                                 dragOffsetPx = (startX - tabWidthPx / 2f).coerceIn(0f, maxDragXPx)
+
+                                // Haptic feedback on initial press down:
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
 
                                 val pointerId = down.id
                                 var isSuccessRelease = false
+                                var hasDragged = false
 
                                 while (true) {
                                     val event = awaitPointerEvent()
@@ -361,34 +376,40 @@ fun FloatingNavigationIsland(
                                         isSuccessRelease = true
                                         break
                                     }
-                                    currentX = change.position.x
+                                    val currentX = change.position.x
                                     val dx = kotlin.math.abs(currentX - startX)
                                     val holdDuration = change.uptimeMillis - down.uptimeMillis
-                                    if (!hasDragged && (dx > touchSlop || holdDuration > 150)) {
+                                    if (!hasDragged && (dx > touchSlop || holdDuration > 200)) {
                                         hasDragged = true
                                         isDragging = true
                                     }
-                                    dragOffsetPx = (currentX - tabWidthPx / 2f).coerceIn(0f, maxDragXPx)
-
-                                    val hoverSlot = (currentX / tabWidthPx).toInt().coerceIn(0, 2)
-                                    if (hasDragged && hoverSlot != lastHapticSlot) {
-                                        lastHapticSlot = hoverSlot
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    if (hasDragged) {
+                                        dragOffsetPx = (currentX - tabWidthPx / 2f).coerceIn(0f, maxDragXPx)
                                     }
                                     change.consume()
                                 }
 
+                                val wasDragging = isDragging
                                 isPressed = false
-                                isInteracting = false
                                 isDragging = false
 
                                 if (isSuccessRelease) {
-                                    val nearestSlot = ((dragOffsetPx + tabWidthPx / 2f) / tabWidthPx).toInt().coerceIn(0, 2)
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    when (nearestSlot) {
-                                        0 -> onMyBooksClick()
-                                        1 -> onSearchClick()
-                                        2 -> onSettingsClick()
+                                    if (wasDragging) {
+                                        // Release after dragging/holding: haptic on release, switch to nearest slot
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        val nearestSlot = ((dragOffsetPx + tabWidthPx / 2f) / tabWidthPx).toInt().coerceIn(0, 2)
+                                        when (nearestSlot) {
+                                            0 -> onMyBooksClick()
+                                            1 -> onSearchClick()
+                                            2 -> onSettingsClick()
+                                        }
+                                    } else {
+                                        // Quick tap on button: already vibrated on touch down, land cleanly on button
+                                        when (downSlot) {
+                                            0 -> onMyBooksClick()
+                                            1 -> onSearchClick()
+                                            2 -> onSettingsClick()
+                                        }
                                     }
                                 }
                             }
