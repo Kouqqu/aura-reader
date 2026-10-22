@@ -70,6 +70,17 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -298,6 +309,11 @@ fun LibraryScreen(
     var inspectingCoverBook by remember { mutableStateOf<Book?>(null) }
     var bookForCoverChange by remember { mutableStateOf<Book?>(null) }
     var isSearchExpanded by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = isSearchExpanded && !isGlass) {
+        isSearchExpanded = false
+        viewModel.setSearchQuery("")
+    }
     var showNewCollectionDialog by remember { mutableStateOf(false) }
     var bookForCollections by remember { mutableStateOf<Book?>(null) }
     var collectionToDelete by remember { mutableStateOf<String?>(null) }
@@ -467,39 +483,69 @@ fun LibraryScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             if (currentMainTab == 0) {
-                if (isSearchExpanded && !isGlass) {
-                    TopAppBar(
-                        title = {
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { viewModel.setSearchQuery(it) },
-                                placeholder = { Text(strings.searchLibraryPlaceholder) },
-                                singleLine = true,
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = {
-                                isSearchExpanded = false
-                                viewModel.setSearchQuery("")
-                            }) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = strings.cancel)
-                            }
-                        },
-                        actions = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                    Icon(Icons.Default.Close, contentDescription = strings.clear)
+                AnimatedContent(
+                    targetState = isSearchExpanded && !isGlass,
+                    transitionSpec = {
+                        if (targetState) {
+                            (fadeIn(animationSpec = tween(220, delayMillis = 40)) +
+                             slideInVertically(animationSpec = tween(260)) { -it / 2 } +
+                             expandVertically(animationSpec = tween(260)))
+                                .togetherWith(
+                                    fadeOut(animationSpec = tween(160)) +
+                                    shrinkVertically(animationSpec = tween(180))
+                                )
+                        } else {
+                            (fadeIn(animationSpec = tween(220, delayMillis = 40)) +
+                             expandVertically(animationSpec = tween(240)))
+                                .togetherWith(
+                                    fadeOut(animationSpec = tween(160)) +
+                                    slideOutVertically(animationSpec = tween(180)) { -it / 2 } +
+                                    shrinkVertically(animationSpec = tween(180))
+                                )
+                        }
+                    },
+                    label = "materialSearchTopBarTransition"
+                ) { searching ->
+                    if (searching) {
+                        val searchFocusRequester = remember { FocusRequester() }
+                        LaunchedEffect(Unit) {
+                            kotlinx.coroutines.delay(120)
+                            searchFocusRequester.requestFocus()
+                        }
+                        TopAppBar(
+                            title = {
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = { viewModel.setSearchQuery(it) },
+                                    placeholder = { Text(strings.searchLibraryPlaceholder) },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(14.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(searchFocusRequester)
+                                )
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = {
+                                    isSearchExpanded = false
+                                    viewModel.setSearchQuery("")
+                                }) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = strings.cancel)
                                 }
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface
+                            },
+                            actions = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                        Icon(Icons.Default.Close, contentDescription = strings.clear)
+                                    }
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            )
                         )
-                    )
-                } else {
-                    LargeTopAppBar(
+                    } else {
+                        LargeTopAppBar(
                         title = {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -561,6 +607,7 @@ fun LibraryScreen(
                             }
                         )
                     )
+                    }
                 }
             }
         },
@@ -758,7 +805,20 @@ fun LibraryScreen(
                             val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
                             val subdued = searchQuery.isNotBlank() || keyboardOpen
                             val height by animateDpAsState(if (subdued) 72.dp else 240.dp, tween(350), label = "materialSearchHero")
-                            SearchCoverCollage(recentBooks, subdued, Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(24.dp)))
+                            AnimatedVisibility(
+                                visible = isSearchExpanded && !isGlass,
+                                enter = expandVertically(tween(320)) + fadeIn(tween(250)),
+                                exit = shrinkVertically(tween(250)) + fadeOut(tween(200))
+                            ) {
+                                SearchCoverCollage(
+                                    recentBooks,
+                                    subdued,
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(height)
+                                        .clip(RoundedCornerShape(24.dp))
+                                )
+                            }
                         }
                     }
                     // Instant Update Notification Banner

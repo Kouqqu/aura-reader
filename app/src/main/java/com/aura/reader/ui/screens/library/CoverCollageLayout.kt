@@ -12,7 +12,7 @@ internal fun coverCollageLayout(count: Int, width: Float, height: Float, phase: 
     val s = sin(angle).toFloat()
     val gap = 24f
     val coverWidth = width * if (count < 4) 0.4f else 0.42f
-    val coverHeight = coverWidth * 1.8f
+    val coverHeight = coverWidth * 1.6f
     fun wrap(value: Float, period: Float): Float = ((value + period / 2) % period + period) % period - period / 2
     if (count < 4) {
         // Sparse libraries form a single diagonal stream. The wrap happens only
@@ -39,8 +39,11 @@ internal fun coverCollageLayout(count: Int, width: Float, height: Float, phase: 
     val rows = max(3, ceil((-s * width + c * height + coverHeight + 2 * gap) / cellHeight).toInt())
     val periodU = columns * cellWidth
     val periodV = rows * cellHeight
-    // Maximally distributed diagonal wavefront: guarantees at least 2 covers are visible at all times
-    val slots = listOf(0, 5, 6, 11, 1, 2, 3, 4)
+    // Maximally clustered pairs/triplets in 2-3 books per row centered across the viewport:
+    // Row 0: cols 1, 2, 3
+    // Row 1: cols 1, 2, 3
+    // Row 2: cols 1, 2
+    val slots = listOf(1, 2, 5, 10, 6, 9, 3, 7)
     val speedX = c * periodU - s * periodV
     return CoverLayout(coverWidth, coverHeight, (speedX / 7f * 1000).toInt(), List(count.coerceAtMost(8)) { index ->
         val slot = slots[index]
