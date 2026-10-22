@@ -910,7 +910,7 @@ fun LibraryScreen(
                                     )
                                     if (readingStatsData.currentStreakDays > 0) {
                                         Text(
-                                            text = "рџ”Ґ ${readingStatsData.currentStreakDays}",
+                                            text = "\uD83D\uDD25 ${readingStatsData.currentStreakDays}",
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary

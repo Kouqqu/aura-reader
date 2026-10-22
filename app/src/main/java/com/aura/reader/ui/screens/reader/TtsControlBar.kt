@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.aura.reader.service.TtsState
 import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.ui.theme.Strings
@@ -61,12 +62,12 @@ fun TtsControlBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(32.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
@@ -75,23 +76,23 @@ fun TtsControlBar(
                     imageVector = Icons.Default.Headphones,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "${strings.ttsNotificationTitle} (${ttsState.currentParagraphIndex + 1}/${ttsState.totalParagraphs.coerceAtLeast(1)})",
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 1
                 )
                 Text(
                     text = ttsState.currentText.ifBlank { ttsState.chapterTitle },
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -100,18 +101,18 @@ fun TtsControlBar(
 
             IconButton(
                 onClick = onPrev,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(30.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.SkipPrevious,
                     contentDescription = strings.previous,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
             FilledIconButton(
                 onClick = onPlayPause,
-                modifier = Modifier.size(42.dp),
+                modifier = Modifier.size(36.dp),
                 colors = IconButtonDefaults.filledIconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
@@ -120,18 +121,18 @@ fun TtsControlBar(
                 Icon(
                     imageVector = if (ttsState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (ttsState.isPlaying) strings.ttsPaused else strings.ttsPlaying,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
             IconButton(
                 onClick = onNext,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(30.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.SkipNext,
                     contentDescription = strings.next,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
@@ -142,12 +143,12 @@ fun TtsControlBar(
                     val nextSpeed = speeds[(if (currentIdx >= 0) currentIdx + 1 else 1) % speeds.size]
                     onSpeedChange(nextSpeed)
                 },
-                contentPadding = PaddingValues(horizontal = 4.dp),
-                modifier = Modifier.height(36.dp)
+                contentPadding = PaddingValues(horizontal = 2.dp),
+                modifier = Modifier.height(30.dp)
             ) {
                 Text(
                     text = "${ttsState.speed}x",
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -155,13 +156,13 @@ fun TtsControlBar(
 
             IconButton(
                 onClick = onStop,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(30.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = strings.ttsStop,
                     tint = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
@@ -170,8 +171,8 @@ fun TtsControlBar(
     if (isGlass) {
         val ttsBg = if (isDark) Color(0xE6141824) else Color(0xF2FFFFFF)
         LiquidGlassSurface(
-            shape = RoundedCornerShape(24.dp),
-            shadowElevation = 10.dp,
+            shape = RoundedCornerShape(18.dp),
+            shadowElevation = 8.dp,
             isDark = isDark,
             tintColor = ttsBg,
             modifier = modifier
@@ -181,12 +182,12 @@ fun TtsControlBar(
         )
     } else {
         Card(
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.98f),
                 contentColor = MaterialTheme.colorScheme.onSurface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
             modifier = modifier
                 .fillMaxWidth()
                 .clickable { onClick() },

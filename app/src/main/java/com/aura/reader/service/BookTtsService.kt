@@ -82,6 +82,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         const val EXTRA_SPEED = "extra_speed"
         const val EXTRA_PITCH = "extra_pitch"
         const val EXTRA_VOICE_NAME = "extra_voice_name"
+        const val EXTRA_START_TEXT = "extra_start_text"
 
         private val _ttsState = MutableStateFlow(TtsState())
         val ttsState: StateFlow<TtsState> = _ttsState.asStateFlow()
@@ -94,7 +95,8 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             startIndex: Int = 0,
             speed: Float = 1.0f,
             pitch: Float = 1.0f,
-            initialVoice: String? = null
+            initialVoice: String? = null,
+            startText: String? = null
         ) {
             val intent = Intent(context, BookTtsService::class.java).apply {
                 action = ACTION_START
@@ -106,6 +108,9 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 putExtra(EXTRA_PITCH, pitch)
                 if (initialVoice != null) {
                     putExtra(EXTRA_VOICE_NAME, initialVoice)
+                }
+                if (startText != null) {
+                    putExtra(EXTRA_START_TEXT, startText)
                 }
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -203,6 +208,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
     private var speechRate: Float = 1.0f
     private var speechPitch: Float = 1.0f
     private var selectedVoice: String? = null
+    private var customFirstText: String? = null
     private var isTtsReady: Boolean = false
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -440,6 +446,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 chapterTitle = intent.getStringExtra(EXTRA_CHAPTER_TITLE) ?: ""
                 paragraphs = intent.getStringArrayListExtra(EXTRA_PARAGRAPHS) ?: emptyList()
                 currentIndex = intent.getIntExtra(EXTRA_START_INDEX, 0).coerceIn(0, (paragraphs.size - 1).coerceAtLeast(0))
+                customFirstText = intent.getStringExtra(EXTRA_START_TEXT)
                 speechRate = intent.getFloatExtra(EXTRA_SPEED, speechRate)
                 speechPitch = intent.getFloatExtra(EXTRA_PITCH, speechPitch)
                 val initVoice = intent.getStringExtra(EXTRA_VOICE_NAME)
@@ -569,7 +576,9 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
 
     private fun speakCurrentParagraph() {
         if (!isTtsReady || paragraphs.isEmpty()) return
-        val text = paragraphs.getOrNull(currentIndex)?.trim() ?: return
+        val firstText = customFirstText
+        customFirstText = null
+        val text = (firstText ?: paragraphs.getOrNull(currentIndex))?.trim() ?: return
         if (text.isBlank()) {
             nextParagraph()
             return

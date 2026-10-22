@@ -490,25 +490,50 @@ class ReaderViewModel(
         if (validBlocksWithIndex.isEmpty()) return
 
         val paragraphs = ArrayList(validBlocksWithIndex.map { it.second })
+        val refIndex = startIndex ?: _savedScrollOffset.value
 
-        val targetTtsIndex = when {
-            !selectedText.isNullOrBlank() -> {
-                val clean = selectedText.trim()
-                val found = validBlocksWithIndex.indexOfFirst { (_, text) ->
-                    text.contains(clean, ignoreCase = true) || clean.contains(text, ignoreCase = true)
+        var targetTtsIndex = 0
+        var customFirstText: String? = null
+
+        if (!selectedText.isNullOrBlank()) {
+            val clean = selectedText.trim()
+            val cleanPunct = clean.trim { it <= ' ' || it in "\"'«»“”„“.,!?:;()[]{}–—-" }
+
+            // Search for matches in valid blocks
+            val matches = validBlocksWithIndex.mapIndexedNotNull { ttsIdx, (origIdx, text) ->
+                var pos = text.indexOf(clean, ignoreCase = true)
+                if (pos == -1 && cleanPunct.isNotBlank()) {
+                    pos = text.indexOf(cleanPunct, ignoreCase = true)
                 }
-                if (found != -1) found else 0
+                if (pos != -1) {
+                    Triple(ttsIdx, origIdx, pos)
+                } else null
             }
-            startIndex != null -> {
-                val found = validBlocksWithIndex.indexOfFirst { (origIdx, _) -> origIdx >= startIndex }
-                if (found != -1) found else startIndex.coerceIn(0, paragraphs.size - 1)
+
+            if (matches.isNotEmpty()) {
+                // Find candidate closest to reference scroll position
+                val best = matches.minByOrNull { (_, origIdx, _) -> kotlin.math.abs(origIdx - refIndex) }!!
+                targetTtsIndex = best.first
+                val wordOffset = best.third
+                val fullText = validBlocksWithIndex[targetTtsIndex].second
+                val startFromWord = fullText.substring(wordOffset).trim()
+                if (startFromWord.isNotBlank()) {
+                    customFirstText = startFromWord
+                }
+            } else {
+                val found = validBlocksWithIndex.indexOfFirst { (origIdx, _) -> origIdx >= refIndex }
+                targetTtsIndex = if (found != -1) found else 0
             }
-            else -> {
-                val savedBlock = _savedScrollOffset.value
-                val found = validBlocksWithIndex.indexOfFirst { (origIdx, _) -> origIdx >= savedBlock }
-                if (found != -1) found else 0
-            }
-        }.coerceIn(0, paragraphs.size - 1)
+        } else if (startIndex != null) {
+            val found = validBlocksWithIndex.indexOfFirst { (origIdx, _) -> origIdx >= startIndex }
+            targetTtsIndex = if (found != -1) found else startIndex.coerceIn(0, paragraphs.size - 1)
+        } else {
+            val savedBlock = _savedScrollOffset.value
+            val found = validBlocksWithIndex.indexOfFirst { (origIdx, _) -> origIdx >= savedBlock }
+            targetTtsIndex = if (found != -1) found else 0
+        }
+
+        targetTtsIndex = targetTtsIndex.coerceIn(0, paragraphs.size - 1)
 
         viewModelScope.launch {
             val speed = preferencesManager.ttsSpeed.first()
@@ -523,7 +548,8 @@ class ReaderViewModel(
                 startIndex = targetTtsIndex,
                 speed = speed,
                 pitch = pitch,
-                initialVoice = savedVoice
+                initialVoice = savedVoice,
+                startText = customFirstText
             )
         }
     }

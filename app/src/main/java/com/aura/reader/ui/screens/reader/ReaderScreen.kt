@@ -67,6 +67,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalTextToolbar
 import androidx.compose.ui.platform.TextToolbar
@@ -92,6 +93,8 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.verticalScroll
 import com.aura.reader.R
 import androidx.compose.ui.unit.Constraints
@@ -331,6 +334,17 @@ fun ReaderScreen(
 
     val defaultToolbar = LocalTextToolbar.current
     val clipboardManager = LocalClipboardManager.current
+    var lastCopiedText by remember { mutableStateOf<String?>(null) }
+    val interceptedClipboardManager = remember(clipboardManager) {
+        object : androidx.compose.ui.platform.ClipboardManager {
+            override fun getText(): androidx.compose.ui.text.AnnotatedString? = clipboardManager.getText()
+            override fun setText(annotatedString: androidx.compose.ui.text.AnnotatedString) {
+                lastCopiedText = annotatedString.text
+                clipboardManager.setText(annotatedString)
+            }
+            override fun hasText(): Boolean = clipboardManager.hasText()
+        }
+    }
     var selectedQuoteCopyAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var selectionRect by remember { mutableStateOf<Rect?>(null) }
     var textToolbarStatus by remember { mutableStateOf(TextToolbarStatus.Hidden) }
@@ -345,6 +359,7 @@ fun ReaderScreen(
                 textToolbarStatus = TextToolbarStatus.Hidden
                 selectedQuoteCopyAction = null
                 selectionRect = null
+                lastCopiedText = null
             }
 
             override fun showMenu(
@@ -370,7 +385,7 @@ fun ReaderScreen(
         themeMode = settings.themeMode,
         materialYou = materialYouEnabled
     ) {
-      CompositionLocalProvider(LocalTextToolbar provides customTextToolbar) {
+      CompositionLocalProvider(LocalTextToolbar provides customTextToolbar, LocalClipboardManager provides interceptedClipboardManager) {
         val resolvedFontFamily = remember(settings.fontFamily, settings.fontName) {
             val fallback = when (settings.fontFamily) {
                 ReaderFontFamily.SERIF -> FontFamily.Serif
@@ -1213,7 +1228,7 @@ fun ReaderScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(horizontal = 16.dp)
-                        .padding(bottom = if (showControls) 175.dp else 24.dp)
+                        .padding(bottom = if (showControls) 175.dp else (44.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()))
                 ) {
                     TtsControlBar(
                         ttsState = ttsState,
@@ -1405,10 +1420,13 @@ fun ReaderScreen(
                         border = androidx.compose.foundation.BorderStroke(
                             1.dp,
                             MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-                        )
+                        ),
+                        modifier = Modifier.widthIn(max = (LocalConfiguration.current.screenWidthDp.dp - 24.dp))
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            modifier = Modifier
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
@@ -1530,10 +1548,14 @@ fun ReaderScreen(
                                 onClick = {
                                     val action = selectedQuoteCopyAction
                                     action?.invoke()
-                                    val clip = clipboardManager.getText()?.text?.trim()
+                                    val clip = (lastCopiedText ?: clipboardManager.getText()?.text)?.trim()
                                     selectionResetKey++
                                     customTextToolbar.hide()
-                                    viewModel.startTts(context, selectedText = clip)
+                                    if (!clip.isNullOrBlank()) {
+                                        viewModel.startTts(context, selectedText = clip)
+                                    } else {
+                                        viewModel.startTts(context)
+                                    }
                                     showTtsSheet = true
                                 },
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
