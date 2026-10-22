@@ -354,18 +354,31 @@ fun FloatingNavigationIsland(
                                 val down = awaitFirstDown(requireUnconsumed = false)
                                 val startX = down.position.x
                                 val downSlot = (startX / tabWidthPx).toInt().coerceIn(0, 2)
+                                val buttonCenterXPx = (downSlot + 0.5f) * tabWidthPx
+                                val distToCenterPx = kotlin.math.abs(startX - buttonCenterXPx)
+                                val buttonHitThresholdPx = with(density) { 26.dp.toPx() }
+                                val isTouchingButton = distToCenterPx < buttonHitThresholdPx
 
                                 tapTargetSlot = downSlot
                                 isPressed = true
-                                isDragging = false
                                 dragOffsetPx = (startX - tabWidthPx / 2f).coerceIn(0f, maxDragXPx)
 
-                                // Haptic feedback on initial press down:
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                var hasDragged = false
+
+                                if (isTouchingButton) {
+                                    // User tapped directly on a button: target that button center
+                                    isDragging = false
+                                    // Haptic feedback strictly on button press:
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                } else {
+                                    // User touched between buttons / in dock space:
+                                    // Immediately track finger directly under touch - zero detour to a button!
+                                    isDragging = true
+                                    hasDragged = true
+                                }
 
                                 val pointerId = down.id
                                 var isSuccessRelease = false
-                                var hasDragged = false
 
                                 while (true) {
                                     val event = awaitPointerEvent()
@@ -379,7 +392,7 @@ fun FloatingNavigationIsland(
                                     val currentX = change.position.x
                                     val dx = kotlin.math.abs(currentX - startX)
                                     val holdDuration = change.uptimeMillis - down.uptimeMillis
-                                    if (!hasDragged && (dx > touchSlop || holdDuration > 200)) {
+                                    if (!hasDragged && (dx > touchSlop || holdDuration > 250)) {
                                         hasDragged = true
                                         isDragging = true
                                     }
@@ -389,7 +402,7 @@ fun FloatingNavigationIsland(
                                     change.consume()
                                 }
 
-                                val wasDragging = isDragging
+                                val wasDragging = hasDragged
                                 isPressed = false
                                 isDragging = false
 
