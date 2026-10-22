@@ -10,6 +10,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.lazy.LazyRow
 import java.util.Locale
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.ui.graphics.Color
 
 import androidx.compose.foundation.background
@@ -88,7 +92,8 @@ fun TtsBottomSheet(
     onStop: () -> Unit,
     onSpeedChange: (Float) -> Unit,
     onPitchChange: (Float) -> Unit,
-    onVoiceChange: (String) -> Unit
+    onVoiceChange: (String) -> Unit,
+    onPreviewVoice: (String) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val strings = LocalAppStrings.current
@@ -453,30 +458,105 @@ fun TtsBottomSheet(
                         text = {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 if (distinctLanguages.size > 1) {
-                                    LazyRow(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    var isLangDropdownOpen by remember { mutableStateOf(false) }
+                                    val currentLangText = if (selectedLangCode.isBlank()) {
+                                        strings.ttsAllLanguages
+                                    } else {
+                                        val found = distinctLanguages.firstOrNull { it.second == selectedLangCode }
+                                        val count = ttsState.availableVoices.count { it.languageCode == selectedLangCode }
+                                        if (found != null) "${found.first} ($count)" else strings.ttsAllLanguages
+                                    }
+
+                                    Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(bottom = 10.dp)
                                     ) {
-                                        item {
-                                            FilterChip(
-                                                selected = selectedLangCode.isBlank(),
-                                                onClick = { selectedLangCode = "" },
-                                                label = { Text(strings.ttsAllLanguages) },
-                                                shape = RoundedCornerShape(10.dp)
-                                            )
-                                        }
-                                        items(distinctLanguages, key = { it.second }) { (langName, langCode) ->
-                                            val count = remember(langCode, ttsState.availableVoices) {
-                                                ttsState.availableVoices.count { it.languageCode == langCode }
+                                        Surface(
+                                            onClick = { isLangDropdownOpen = true },
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Language,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                    Text(
+                                                        text = currentLangText,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                                Icon(
+                                                    imageVector = Icons.Default.ArrowDropDown,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
                                             }
-                                            FilterChip(
-                                                selected = selectedLangCode == langCode,
-                                                onClick = { selectedLangCode = langCode },
-                                                label = { Text("$langName ($count)") },
-                                                shape = RoundedCornerShape(10.dp)
+                                        }
+
+                                        DropdownMenu(
+                                            expanded = isLangDropdownOpen,
+                                            onDismissRequest = { isLangDropdownOpen = false },
+                                            modifier = Modifier.heightIn(max = 280.dp)
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(
+                                                        text = strings.ttsAllLanguages,
+                                                        fontWeight = if (selectedLangCode.isBlank()) FontWeight.Bold else FontWeight.Normal
+                                                    )
+                                                },
+                                                onClick = {
+                                                    selectedLangCode = ""
+                                                    isLangDropdownOpen = false
+                                                },
+                                                leadingIcon = {
+                                                    if (selectedLangCode.isBlank()) {
+                                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                    }
+                                                }
                                             )
+                                            distinctLanguages.forEach { (langName, langCode) ->
+                                                val count = ttsState.availableVoices.count { it.languageCode == langCode }
+                                                val isSelected = selectedLangCode == langCode
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            text = "$langName ($count)",
+                                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        selectedLangCode = langCode
+                                                        isLangDropdownOpen = false
+                                                    },
+                                                    leadingIcon = {
+                                                        if (isSelected) {
+                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                        }
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -551,13 +631,31 @@ fun TtsBottomSheet(
                                                     }
                                                 }
                                             }
-                                            if (isSelected) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                IconButton(
+                                                    onClick = { onPreviewVoice(voice.name) },
+                                                    modifier = Modifier.size(36.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(19.dp)
+                                                    )
+                                                }
+                                                if (isSelected) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(20.dp).padding(start = 2.dp)
+                                                    )
+                                                } else {
+                                                    Spacer(modifier = Modifier.width(20.dp))
+                                                }
                                             }
                                         }
                                     }

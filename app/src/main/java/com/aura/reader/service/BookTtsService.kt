@@ -66,6 +66,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         const val ACTION_SET_SPEED = "com.aura.reader.tts.SET_SPEED"
         const val ACTION_SET_PITCH = "com.aura.reader.tts.SET_PITCH"
         const val ACTION_SET_VOICE = "com.aura.reader.tts.SET_VOICE"
+        const val ACTION_PREVIEW_VOICE = "com.aura.reader.tts.PREVIEW_VOICE"
 
         const val EXTRA_BOOK_TITLE = "extra_book_title"
         const val EXTRA_CHAPTER_TITLE = "extra_chapter_title"
@@ -160,6 +161,14 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             }
             context.startService(intent)
         }
+
+        fun previewVoice(context: Context, voiceName: String) {
+            val intent = Intent(context, BookTtsService::class.java).apply {
+                action = ACTION_PREVIEW_VOICE
+                putExtra(EXTRA_VOICE_NAME, voiceName)
+            }
+            context.startService(intent)
+        }
     }
 
     private var tts: TextToSpeech? = null
@@ -184,7 +193,28 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         }
     }
 
-    private fun formatFriendlyVoiceName(rawName: String, counter: Int): String {
+    private var pendingPreviewVoice: String? = null
+
+    private fun detectGoogleOrSystemGender(rawName: String, features: Set<String>?): String {
+        if (features != null) {
+            if (features.any { it.contains("female", ignoreCase = true) }) return "female"
+            if (features.any { it.contains("male", ignoreCase = true) && !it.contains("female", ignoreCase = true) }) return "male"
+        }
+        val lower = rawName.lowercase(Locale.ROOT)
+        // Known Google Russian voices
+        if (lower.contains("dfc") || lower.contains("rua") || lower.contains("ruc")) return "female"
+        if (lower.contains("rub") || lower.contains("rud")) return "male"
+
+        // Known Google English voices
+        if (lower.contains("sfg") || lower.contains("iom") || lower.contains("iol")) return "female"
+        if (lower.contains("iob") || lower.contains("tpd") || lower.contains("tpc")) return "male"
+
+        if (lower.contains("female")) return "female"
+        if (lower.contains("male")) return "male"
+        return ""
+    }
+
+    private fun formatFriendlyVoiceName(rawName: String, counter: Int, features: Set<String>?): String {
         val lower = rawName.lowercase(Locale.ROOT)
         val nameMap = mapOf(
             "aleksandr" to "Александр",
@@ -202,11 +232,12 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             "pavel" to "Павел",
             "vitaliy" to "Виталий"
         )
+        // 3rd party recognized voice: keep pure name without gender suffix
         if (nameMap.containsKey(lower)) {
             return nameMap[lower]!!
         }
 
-        // Custom named engine voice (e.g. Alan, Bick)
+        // Custom named engine voice (e.g. Alan, Bick) - also keep pure name
         if (!rawName.contains("-x-") && !rawName.matches(Regex("^[a-z]{2,3}[-_][a-z]{2,3}.*", RegexOption.IGNORE_CASE))) {
             val clean = rawName.replace(Regex("[-_]"), " ").trim()
             return clean.split(" ").joinToString(" ") { word ->
@@ -214,13 +245,61 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             }
         }
 
+        // Standard machine voice (Google/Samsung): append Male/Female
         val prefix = when (Locale.getDefault().language.lowercase(Locale.ROOT)) {
             "ru", "uk", "be" -> "Голос"
             "pl" -> "Głos"
             "cs" -> "Hlas"
             else -> "Voice"
         }
-        return "$prefix $counter"
+
+        val gender = detectGoogleOrSystemGender(rawName, features)
+        val genderLabel = when (gender) {
+            "female" -> when (Locale.getDefault().language.lowercase(Locale.ROOT)) {
+                "ru" -> " (Женский)"
+                "uk" -> " (Жіночий)"
+                "be" -> " (Жаночы)"
+                "pl" -> " (Żeński)"
+                "cs" -> " (Ženský)"
+                else -> " (Female)"
+            }
+            "male" -> when (Locale.getDefault().language.lowercase(Locale.ROOT)) {
+                "ru" -> " (Мужской)"
+                "uk" -> " (Чоловічий)"
+                "be" -> " (Мужчынскі)"
+                "pl" -> " (Męski)"
+                "cs" -> " (Mužský)"
+                else -> " (Male)"
+            }
+            else -> ""
+        }
+        return "$prefix $counter$genderLabel"
+    }
+
+    private fun getSampleTextForVoice(localeTag: String): String {
+        val lang = if (localeTag.isNotBlank()) localeTag.take(2).lowercase(Locale.ROOT) else Locale.getDefault().language
+        return when (lang) {
+            "ru" -> "Привет! Это пример звучания голоса в читалке Aura."
+            "uk" -> "Привіт! Це приклад звучання голосу в читалці Aura."
+            "be" -> "Прывітанне! Гэта прыклад гучання голасу ў чыталцы Aura."
+            "pl" -> "Cześć! To jest próbka głosu w czytniku Aura."
+            "cs" -> "Ahoj! Toto je ukázka hlasu ve čtečce Aura."
+            else -> "Hello! This is a voice sample in Aura Reader."
+        }
+    }
+
+    private fun speakPreview(voiceName: String) {
+        try {
+            val matched = tts?.voices?.firstOrNull { it.name == voiceName }
+            if (matched != null) {
+                tts?.voice = matched
+                val sampleText = getSampleTextForVoice(matched.locale.toLanguageTag())
+                val params = Bundle().apply {
+                    putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "utterance_preview")
+                }
+                tts?.speak(sampleText, TextToSpeech.QUEUE_FLUSH, params, "utterance_preview")
+            }
+        } catch (_: Throwable) {}
     }
 
     override fun onCreate() {
@@ -251,12 +330,14 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 override fun onStart(utteranceId: String?) {}
 
                 override fun onDone(utteranceId: String?) {
+                    if (utteranceId == "utterance_preview") return
                     if (_ttsState.value.isPlaying) {
                         nextParagraph()
                     }
                 }
 
                 override fun onError(utteranceId: String?) {
+                    if (utteranceId == "utterance_preview") return
                     if (_ttsState.value.isPlaying) {
                         nextParagraph()
                     }
@@ -291,7 +372,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                     var voiceNum = 1
                     for (v in sortedVoices) {
                         val isNetwork = v.isNetworkConnectionRequired
-                        val friendly = formatFriendlyVoiceName(v.name, voiceNum)
+                        val friendly = formatFriendlyVoiceName(v.name, voiceNum, v.features)
                         voiceNum++
                         result.add(
                             TtsVoiceInfo(
@@ -316,8 +397,10 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 selectedVoiceName = tts?.voice?.name
             )
 
-            // If we already had paragraphs pending, start speaking
-            if (paragraphs.isNotEmpty() && _ttsState.value.isPlaying) {
+            if (pendingPreviewVoice != null) {
+                speakPreview(pendingPreviewVoice!!)
+                pendingPreviewVoice = null
+            } else if (paragraphs.isNotEmpty() && _ttsState.value.isPlaying) {
                 speakCurrentParagraph()
             }
         }
@@ -409,6 +492,14 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                     } catch (e: Throwable) {
                         e.printStackTrace()
                     }
+                }
+            }
+            ACTION_PREVIEW_VOICE -> {
+                val voiceName = intent.getStringExtra(EXTRA_VOICE_NAME) ?: return START_NOT_STICKY
+                if (isTtsReady) {
+                    speakPreview(voiceName)
+                } else {
+                    pendingPreviewVoice = voiceName
                 }
             }
         }

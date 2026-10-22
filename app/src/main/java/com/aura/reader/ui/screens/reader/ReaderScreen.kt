@@ -1243,7 +1243,8 @@ fun ReaderScreen(
                     },
                     onSpeedChange = { spd -> com.aura.reader.service.BookTtsService.setSpeed(context, spd) },
                     onPitchChange = { pitch -> com.aura.reader.service.BookTtsService.setPitch(context, pitch) },
-                    onVoiceChange = { voice -> com.aura.reader.service.BookTtsService.setVoice(context, voice) }
+                    onVoiceChange = { voice -> com.aura.reader.service.BookTtsService.setVoice(context, voice) },
+                    onPreviewVoice = { voice -> com.aura.reader.service.BookTtsService.previewVoice(context, voice) }
                 )
             }
 
