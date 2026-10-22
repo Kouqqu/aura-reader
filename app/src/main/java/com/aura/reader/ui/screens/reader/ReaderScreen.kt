@@ -1244,7 +1244,8 @@ fun ReaderScreen(
                     onSpeedChange = { spd -> com.aura.reader.service.BookTtsService.setSpeed(context, spd) },
                     onPitchChange = { pitch -> com.aura.reader.service.BookTtsService.setPitch(context, pitch) },
                     onVoiceChange = { voice -> com.aura.reader.service.BookTtsService.setVoice(context, voice) },
-                    onPreviewVoice = { voice -> com.aura.reader.service.BookTtsService.previewVoice(context, voice) }
+                    onPreviewVoice = { voice -> com.aura.reader.service.BookTtsService.previewVoice(context, voice) },
+                    onSeekParagraph = { idx -> com.aura.reader.service.BookTtsService.seekParagraph(context, idx) }
                 )
             }
 
@@ -1520,6 +1521,27 @@ fun ReaderScreen(
                                 Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(15.dp))
                                 Spacer(modifier = Modifier.width(3.dp))
                                 Text(strings.translateAction, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
+                            }
+
+                            Box(modifier = Modifier.height(14.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
+
+                            // 5. Read from here (TTS)
+                            TextButton(
+                                onClick = {
+                                    val action = selectedQuoteCopyAction
+                                    action?.invoke()
+                                    val clip = clipboardManager.getText()?.text?.trim()
+                                    selectionResetKey++
+                                    customTextToolbar.hide()
+                                    viewModel.startTts(context, selectedText = clip)
+                                    showTtsSheet = true
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                modifier = Modifier.height(34.dp)
+                            ) {
+                                Icon(Icons.Default.VolumeUp, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(strings.ttsStartFromHere, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
                             }
                         }
                     }

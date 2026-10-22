@@ -323,6 +323,7 @@ interface Strings {
     val ttsVoiceTitle: String
     val ttsVoiceDefault: String
     val ttsPitchTitle: String
+    val ttsStartFromHere: String
     fun ttsParagraphProgress(current: Int, total: Int): String
     val ttsAllLanguages: String
     val ttsOnlineQuality: String
@@ -693,6 +694,7 @@ class RuStrings : Strings {
     override val ttsVoiceTitle = "Голос"
     override val ttsVoiceDefault = "По умолчанию"
     override val ttsPitchTitle = "Высота тона"
+    override val ttsStartFromHere = "Озвучить отсюда"
     override fun ttsParagraphProgress(current: Int, total: Int) = "Абзац $current из $total"
     override val ttsAllLanguages = "Все языки"
     override val ttsOnlineQuality = "Сеть"
@@ -1059,6 +1061,7 @@ class EnStrings : Strings {
     override val ttsVoiceTitle = "Voice"
     override val ttsVoiceDefault = "System Default"
     override val ttsPitchTitle = "Pitch"
+    override val ttsStartFromHere = "Read from here"
     override fun ttsParagraphProgress(current: Int, total: Int) = "Paragraph $current of $total"
     override val ttsAllLanguages = "All languages"
     override val ttsOnlineQuality = "Network"
@@ -1425,6 +1428,7 @@ class UkStrings : Strings {
     override val ttsVoiceTitle = "Голос"
     override val ttsVoiceDefault = "За замовчуванням"
     override val ttsPitchTitle = "Висота тону"
+    override val ttsStartFromHere = "Озвучити звідси"
     override fun ttsParagraphProgress(current: Int, total: Int) = "Абзац $current з $total"
     override val ttsAllLanguages = "Всі мови"
     override val ttsOnlineQuality = "Мережа"
@@ -1791,6 +1795,7 @@ class BeStrings : Strings {
     override val ttsVoiceTitle = "Голас"
     override val ttsVoiceDefault = "Па змаўчанні"
     override val ttsPitchTitle = "Вышыня тону"
+    override val ttsStartFromHere = "Агучыць адсюль"
     override fun ttsParagraphProgress(current: Int, total: Int) = "Абзац $current з $total"
     override val ttsAllLanguages = "Усе мовы"
     override val ttsOnlineQuality = "Сетка"
@@ -2156,6 +2161,7 @@ class PlStrings : Strings {
     override val ttsVoiceTitle = "Głos"
     override val ttsVoiceDefault = "Domyślny"
     override val ttsPitchTitle = "Wysokość tonu"
+    override val ttsStartFromHere = "Czytaj od tego miejsca"
     override fun ttsParagraphProgress(current: Int, total: Int) = "Akapit $current z $total"
     override val ttsAllLanguages = "Wszystkie języki"
     override val ttsOnlineQuality = "Sieć"
@@ -2505,6 +2511,7 @@ class CsStrings : Strings {
     override val ttsVoiceTitle = "Hlas"
     override val ttsVoiceDefault = "Výchozí hlas systému"
     override val ttsPitchTitle = "Výška hlasu"
+    override val ttsStartFromHere = "Číst odsud"
     override fun ttsParagraphProgress(current: Int, total: Int) = "Odstavec $current z $total"
     override val ttsAllLanguages = "Všechny jazyky"
     override val ttsOnlineQuality = "Síť"

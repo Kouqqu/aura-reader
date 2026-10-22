@@ -67,6 +67,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -93,7 +94,8 @@ fun TtsBottomSheet(
     onSpeedChange: (Float) -> Unit,
     onPitchChange: (Float) -> Unit,
     onVoiceChange: (String) -> Unit,
-    onPreviewVoice: (String) -> Unit = {}
+    onPreviewVoice: (String) -> Unit = {},
+    onSeekParagraph: (Int) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val strings = LocalAppStrings.current
@@ -199,19 +201,42 @@ fun TtsBottomSheet(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    val progress = if (ttsState.totalParagraphs > 0) {
-                        (ttsState.currentParagraphIndex.toFloat() + 1f) / ttsState.totalParagraphs.toFloat()
-                    } else 0f
+                    if (ttsState.totalParagraphs > 1) {
+                        var isDraggingSlider by remember { mutableStateOf(false) }
+                        var sliderVal by remember(ttsState.currentParagraphIndex) {
+                            mutableFloatStateOf(ttsState.currentParagraphIndex.toFloat())
+                        }
 
-                    LinearProgressIndicator(
-                        progress = { progress.coerceIn(0f, 1f) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp)),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                        Slider(
+                            value = if (isDraggingSlider) sliderVal else ttsState.currentParagraphIndex.toFloat(),
+                            onValueChange = {
+                                isDraggingSlider = true
+                                sliderVal = it
+                            },
+                            onValueChangeFinished = {
+                                isDraggingSlider = false
+                                onSeekParagraph(sliderVal.toInt().coerceIn(0, ttsState.totalParagraphs - 1))
+                            },
+                            valueRange = 0f..(ttsState.totalParagraphs - 1).toFloat(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(32.dp)
+                        )
+                    } else {
+                        val progress = if (ttsState.totalParagraphs > 0) {
+                            (ttsState.currentParagraphIndex.toFloat() + 1f) / ttsState.totalParagraphs.toFloat()
+                        } else 0f
+
+                        LinearProgressIndicator(
+                            progress = { progress.coerceIn(0f, 1f) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 

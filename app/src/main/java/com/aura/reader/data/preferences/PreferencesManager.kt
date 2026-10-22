@@ -92,6 +92,43 @@ class PreferencesManager(private val context: Context) {
         val HAS_TRACKED_FIRST_OPEN_KEY = booleanPreferencesKey("has_tracked_first_open")
         val APP_DESIGN_STYLE_KEY = stringPreferencesKey("app_design_style")
         val GLASS_CLARITY_KEY = floatPreferencesKey("glass_clarity")
+        val TTS_VOICE_NAME_KEY = stringPreferencesKey("tts_selected_voice_name")
+        val TTS_SPEED_KEY = floatPreferencesKey("tts_speed")
+        val TTS_PITCH_KEY = floatPreferencesKey("tts_pitch")
+    }
+
+    val ttsSelectedVoiceName: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[TTS_VOICE_NAME_KEY]
+    }
+
+    suspend fun setTtsSelectedVoice(name: String?) {
+        context.dataStore.edit { prefs ->
+            if (name == null) {
+                prefs.remove(TTS_VOICE_NAME_KEY)
+            } else {
+                prefs[TTS_VOICE_NAME_KEY] = name
+            }
+        }
+    }
+
+    val ttsSpeed: Flow<Float> = context.dataStore.data.map { prefs ->
+        prefs[TTS_SPEED_KEY] ?: 1.0f
+    }
+
+    suspend fun setTtsSpeed(speed: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[TTS_SPEED_KEY] = speed
+        }
+    }
+
+    val ttsPitch: Flow<Float> = context.dataStore.data.map { prefs ->
+        prefs[TTS_PITCH_KEY] ?: 1.0f
+    }
+
+    suspend fun setTtsPitch(pitch: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[TTS_PITCH_KEY] = pitch
+        }
     }
 
     val appFont: Flow<String> = context.dataStore.data.map { prefs ->

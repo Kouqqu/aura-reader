@@ -24,6 +24,11 @@ import com.aura.reader.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 data class TtsVoiceInfo(
@@ -67,6 +72,8 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         const val ACTION_SET_PITCH = "com.aura.reader.tts.SET_PITCH"
         const val ACTION_SET_VOICE = "com.aura.reader.tts.SET_VOICE"
         const val ACTION_PREVIEW_VOICE = "com.aura.reader.tts.PREVIEW_VOICE"
+        const val ACTION_SEEK_PARAGRAPH = "com.aura.reader.tts.SEEK_PARAGRAPH"
+        const val EXTRA_PARAGRAPH_INDEX = "extra_paragraph_index"
 
         const val EXTRA_BOOK_TITLE = "extra_book_title"
         const val EXTRA_CHAPTER_TITLE = "extra_chapter_title"
@@ -85,7 +92,9 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             chapterTitle: String,
             paragraphs: ArrayList<String>,
             startIndex: Int = 0,
-            speed: Float = 1.0f
+            speed: Float = 1.0f,
+            pitch: Float = 1.0f,
+            initialVoice: String? = null
         ) {
             val intent = Intent(context, BookTtsService::class.java).apply {
                 action = ACTION_START
@@ -94,6 +103,10 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 putStringArrayListExtra(EXTRA_PARAGRAPHS, paragraphs)
                 putExtra(EXTRA_START_INDEX, startIndex)
                 putExtra(EXTRA_SPEED, speed)
+                putExtra(EXTRA_PITCH, pitch)
+                if (initialVoice != null) {
+                    putExtra(EXTRA_VOICE_NAME, initialVoice)
+                }
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
@@ -169,6 +182,13 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             }
             context.startService(intent)
         }
+        fun seekParagraph(context: Context, paragraphIndex: Int) {
+            val intent = Intent(context, BookTtsService::class.java).apply {
+                action = ACTION_SEEK_PARAGRAPH
+                putExtra(EXTRA_PARAGRAPH_INDEX, paragraphIndex)
+            }
+            context.startService(intent)
+        }
     }
 
     private var tts: TextToSpeech? = null
@@ -184,6 +204,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
     private var speechPitch: Float = 1.0f
     private var selectedVoice: String? = null
     private var isTtsReady: Boolean = false
+    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val noisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -391,10 +412,16 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 emptyList()
             }
             isTtsReady = true
+            if (selectedVoice != null) {
+                try {
+                    val matched = tts?.voices?.firstOrNull { it.name == selectedVoice }
+                    if (matched != null) tts?.voice = matched
+                } catch (_: Throwable) {}
+            }
             _ttsState.value = _ttsState.value.copy(
                 isInitialized = true,
                 availableVoices = voicesList,
-                selectedVoiceName = tts?.voice?.name
+                selectedVoiceName = selectedVoice ?: tts?.voice?.name
             )
 
             if (pendingPreviewVoice != null) {
@@ -413,7 +440,12 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 chapterTitle = intent.getStringExtra(EXTRA_CHAPTER_TITLE) ?: ""
                 paragraphs = intent.getStringArrayListExtra(EXTRA_PARAGRAPHS) ?: emptyList()
                 currentIndex = intent.getIntExtra(EXTRA_START_INDEX, 0).coerceIn(0, (paragraphs.size - 1).coerceAtLeast(0))
-                speechRate = intent.getFloatExtra(EXTRA_SPEED, 1.0f)
+                speechRate = intent.getFloatExtra(EXTRA_SPEED, speechRate)
+                speechPitch = intent.getFloatExtra(EXTRA_PITCH, speechPitch)
+                val initVoice = intent.getStringExtra(EXTRA_VOICE_NAME)
+                if (!initVoice.isNullOrBlank()) {
+                    selectedVoice = initVoice
+                }
 
                 tts?.setSpeechRate(speechRate)
                 tts?.setPitch(speechPitch)
@@ -463,6 +495,11 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 speechRate = newSpeed
                 tts?.setSpeechRate(speechRate)
                 _ttsState.value = _ttsState.value.copy(speed = speechRate)
+                serviceScope.launch {
+                    try {
+                        com.aura.reader.data.preferences.PreferencesManager(applicationContext).setTtsSpeed(newSpeed)
+                    } catch (_: Exception) {}
+                }
                 if (_ttsState.value.isPlaying) {
                     speakCurrentParagraph()
                 }
@@ -472,6 +509,11 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 speechPitch = newPitch
                 tts?.setPitch(speechPitch)
                 _ttsState.value = _ttsState.value.copy(pitch = speechPitch)
+                serviceScope.launch {
+                    try {
+                        com.aura.reader.data.preferences.PreferencesManager(applicationContext).setTtsPitch(newPitch)
+                    } catch (_: Exception) {}
+                }
                 if (_ttsState.value.isPlaying) {
                     speakCurrentParagraph()
                 }
@@ -485,6 +527,11 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                             tts?.voice = matched
                             selectedVoice = voiceName
                             _ttsState.value = _ttsState.value.copy(selectedVoiceName = voiceName)
+                            serviceScope.launch {
+                                try {
+                                    com.aura.reader.data.preferences.PreferencesManager(applicationContext).setTtsSelectedVoice(voiceName)
+                                } catch (_: Exception) {}
+                            }
                             if (_ttsState.value.isPlaying) {
                                 speakCurrentParagraph()
                             }
@@ -500,6 +547,19 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                     speakPreview(voiceName)
                 } else {
                     pendingPreviewVoice = voiceName
+                }
+            }
+            ACTION_SEEK_PARAGRAPH -> {
+                val targetIdx = intent.getIntExtra(EXTRA_PARAGRAPH_INDEX, 0)
+                if (paragraphs.isNotEmpty()) {
+                    currentIndex = targetIdx.coerceIn(0, paragraphs.size - 1)
+                    _ttsState.value = _ttsState.value.copy(
+                        currentParagraphIndex = currentIndex,
+                        currentText = paragraphs.getOrNull(currentIndex) ?: ""
+                    )
+                    if (_ttsState.value.isPlaying && isTtsReady) {
+                        speakCurrentParagraph()
+                    }
                 }
             }
         }
@@ -739,6 +799,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         tts?.shutdown()
         abandonAudioFocus()
         _ttsState.value = TtsState()
+        serviceScope.cancel()
         super.onDestroy()
     }
 
