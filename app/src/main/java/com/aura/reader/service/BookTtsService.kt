@@ -52,7 +52,11 @@ data class TtsState(
     val currentText: String = "",
     val bookTitle: String = "",
     val chapterTitle: String = "",
-    val isInitialized: Boolean = false
+    val isInitialized: Boolean = false,
+    val currentWordStart: Int = -1,
+    val currentWordEnd: Int = -1,
+    val currentSpokenWord: String = "",
+    val currentOriginalBlockIndex: Int = -1
 )
 
 class BookTtsService : Service(), TextToSpeech.OnInitListener {
@@ -83,6 +87,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         const val EXTRA_PITCH = "extra_pitch"
         const val EXTRA_VOICE_NAME = "extra_voice_name"
         const val EXTRA_START_TEXT = "extra_start_text"
+        const val EXTRA_ORIGINAL_BLOCK_INDICES = "extra_original_block_indices"
 
         private val _ttsState = MutableStateFlow(TtsState())
         val ttsState: StateFlow<TtsState> = _ttsState.asStateFlow()
@@ -96,7 +101,8 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             speed: Float = 1.0f,
             pitch: Float = 1.0f,
             initialVoice: String? = null,
-            startText: String? = null
+            startText: String? = null,
+            originalBlockIndices: ArrayList<Int>? = null
         ) {
             val intent = Intent(context, BookTtsService::class.java).apply {
                 action = ACTION_START
@@ -111,6 +117,9 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 }
                 if (startText != null) {
                     putExtra(EXTRA_START_TEXT, startText)
+                }
+                if (originalBlockIndices != null) {
+                    putIntegerArrayListExtra(EXTRA_ORIGINAL_BLOCK_INDICES, originalBlockIndices)
                 }
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -202,6 +211,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
     private var audioFocusRequest: AudioFocusRequest? = null
 
     private var paragraphs: List<String> = emptyList()
+    private var originalBlockIndices: ArrayList<Int> = ArrayList()
     private var currentIndex: Int = 0
     private var bookTitle: String = ""
     private var chapterTitle: String = ""
@@ -354,10 +364,21 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             }
             tts?.setSpeechRate(speechRate)
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String?) {}
+                override fun onStart(utteranceId: String?) {
+                    _ttsState.value = _ttsState.value.copy(
+                        currentWordStart = -1,
+                        currentWordEnd = -1,
+                        currentSpokenWord = ""
+                    )
+                }
 
                 override fun onDone(utteranceId: String?) {
                     if (utteranceId == "utterance_preview") return
+                    _ttsState.value = _ttsState.value.copy(
+                        currentWordStart = -1,
+                        currentWordEnd = -1,
+                        currentSpokenWord = ""
+                    )
                     if (_ttsState.value.isPlaying) {
                         nextParagraph()
                     }
@@ -365,13 +386,36 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
 
                 override fun onError(utteranceId: String?) {
                     if (utteranceId == "utterance_preview") return
+                    _ttsState.value = _ttsState.value.copy(
+                        currentWordStart = -1,
+                        currentWordEnd = -1,
+                        currentSpokenWord = ""
+                    )
                     if (_ttsState.value.isPlaying) {
                         nextParagraph()
                     }
                 }
 
                 override fun onStop(utteranceId: String?, interrupted: Boolean) {
-                    // Intentionally stopped/paused, do nothing
+                    _ttsState.value = _ttsState.value.copy(
+                        currentWordStart = -1,
+                        currentWordEnd = -1,
+                        currentSpokenWord = ""
+                    )
+                }
+
+                override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
+                    if (utteranceId != null && utteranceId.startsWith("aura_utterance_")) {
+                        val currentText = _ttsState.value.currentText
+                        val word = if (start in 0..currentText.length && end in start..currentText.length) {
+                            currentText.substring(start, end).trim()
+                        } else ""
+                        _ttsState.value = _ttsState.value.copy(
+                            currentWordStart = start,
+                            currentWordEnd = end,
+                            currentSpokenWord = word
+                        )
+                    }
                 }
             })
             val voicesList = try {
@@ -445,6 +489,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 bookTitle = intent.getStringExtra(EXTRA_BOOK_TITLE) ?: ""
                 chapterTitle = intent.getStringExtra(EXTRA_CHAPTER_TITLE) ?: ""
                 paragraphs = intent.getStringArrayListExtra(EXTRA_PARAGRAPHS) ?: emptyList()
+                originalBlockIndices = intent.getIntegerArrayListExtra(EXTRA_ORIGINAL_BLOCK_INDICES) ?: ArrayList()
                 currentIndex = intent.getIntExtra(EXTRA_START_INDEX, 0).coerceIn(0, (paragraphs.size - 1).coerceAtLeast(0))
                 customFirstText = intent.getStringExtra(EXTRA_START_TEXT)
                 speechRate = intent.getFloatExtra(EXTRA_SPEED, speechRate)
@@ -467,6 +512,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                     isPlaying = true,
                     isServiceRunning = true,
                     currentParagraphIndex = currentIndex,
+                    currentOriginalBlockIndex = originalBlockIndices.getOrNull(currentIndex) ?: currentIndex,
                     totalParagraphs = paragraphs.size,
                     speed = speechRate,
                     pitch = speechPitch,
@@ -593,6 +639,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         _ttsState.value = _ttsState.value.copy(
             isPlaying = true,
             currentParagraphIndex = currentIndex,
+            currentOriginalBlockIndex = originalBlockIndices.getOrNull(currentIndex) ?: currentIndex,
             currentText = text
         )
 

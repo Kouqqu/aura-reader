@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.repository.BookRepository
 import com.aura.reader.ui.navigation.AuraNavGraph
+import com.aura.reader.ui.navigation.NavRoutes
 import com.aura.reader.ui.screens.library.LibraryViewModel
 import com.aura.reader.ui.screens.reader.ReaderViewModel
 import com.aura.reader.ui.theme.AuraReaderTheme
@@ -23,6 +24,8 @@ import com.aura.reader.ui.theme.getStrings
 
 import androidx.lifecycle.lifecycleScope
 import com.aura.reader.data.analytics.AnalyticsManager
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
 
@@ -61,6 +64,11 @@ class MainActivity : ComponentActivity() {
         // Handle opening a book from external intent (e.g. file manager)
         handleIncomingIntent(intent)
 
+        val hasCompletedOnboarding = runBlocking {
+            preferencesManager.hasCompletedOnboarding.first()
+        }
+        val startDestination = if (!hasCompletedOnboarding) NavRoutes.ONBOARDING else NavRoutes.LIBRARY
+
         setContent {
             val settings by preferencesManager.readerSettings.collectAsState(
                 initial = ReaderSettings()
@@ -88,7 +96,9 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         libraryViewModel = libraryViewModel,
                         readerViewModel = readerViewModel,
-                        opdsViewModel = opdsViewModel
+                        opdsViewModel = opdsViewModel,
+                        preferencesManager = preferencesManager,
+                        startDestination = startDestination
                     )
                 }
             }

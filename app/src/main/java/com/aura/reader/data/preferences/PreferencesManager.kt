@@ -92,9 +92,20 @@ class PreferencesManager(private val context: Context) {
         val HAS_TRACKED_FIRST_OPEN_KEY = booleanPreferencesKey("has_tracked_first_open")
         val APP_DESIGN_STYLE_KEY = stringPreferencesKey("app_design_style")
         val GLASS_CLARITY_KEY = floatPreferencesKey("glass_clarity")
+        val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("has_completed_onboarding")
         val TTS_VOICE_NAME_KEY = stringPreferencesKey("tts_selected_voice_name")
         val TTS_SPEED_KEY = floatPreferencesKey("tts_speed")
         val TTS_PITCH_KEY = floatPreferencesKey("tts_pitch")
+    }
+
+        val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[HAS_COMPLETED_ONBOARDING_KEY] ?: false
+    }
+
+    suspend fun setHasCompletedOnboarding(completed: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[HAS_COMPLETED_ONBOARDING_KEY] = completed
+        }
     }
 
     val ttsSelectedVoiceName: Flow<String?> = context.dataStore.data.map { prefs ->

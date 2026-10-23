@@ -225,7 +225,8 @@ import java.io.File
 fun LibraryScreen(
     viewModel: LibraryViewModel,
     onBookSelected: (Book) -> Unit,
-    onOpenCatalog: () -> Unit
+    onOpenCatalog: () -> Unit,
+    onOpenOnboarding: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val strings = LocalAppStrings.current
@@ -736,6 +737,7 @@ fun LibraryScreen(
                 materialYouEnabled = materialYouEnabled,
                 isFullScreen = true,
                 onDismiss = { currentMainTab = 0 },
+                onOpenOnboarding = onOpenOnboarding,
                 onThemeChange = { viewModel.setAppThemeMode(it) },
                 onLanguageChange = { viewModel.setAppLanguage(it) },
                 onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
@@ -1542,6 +1544,7 @@ fun LibraryScreen(
             readingStatsEnabled = readingStatsEnabled,
             materialYouEnabled = materialYouEnabled,
             onDismiss = { showSettingsSheet = false },
+            onOpenOnboarding = onOpenOnboarding,
             onThemeChange = { viewModel.setAppThemeMode(it) },
             onLanguageChange = { viewModel.setAppLanguage(it) },
             onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },

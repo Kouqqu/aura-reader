@@ -95,6 +95,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.aura.reader.R
 import androidx.compose.ui.draw.clip
@@ -162,7 +163,8 @@ fun SettingsBottomSheet(
     onGlassClarityChange: (Float) -> Unit = {},
     appFont: String = "DEFAULT",
     onAppFontChange: (String) -> Unit = {},
-    onResetReadingSpeed: () -> Unit = {}
+    onResetReadingSpeed: () -> Unit = {},
+    onOpenOnboarding: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
@@ -1161,7 +1163,57 @@ fun SettingsBottomSheet(
                         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 )
+                ExpressiveDivider()
+                ExpressiveSettingsRow(
+                    title = strings.telegramChannelTitle,
+                    subtitle = strings.telegramChannelSubtitle,
+                    icon = {
+                        SettingsPainterIconBox(
+                            painter = painterResource(R.drawable.ic_telegram),
+                            tint = Color(0xFF2AABEE),
+                            containerColor = Color(0xFF2AABEE).copy(alpha = 0.15f)
+                        )
+                    },
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/koukkuteka"))
+                        context.startActivity(intent)
+                    },
+                    trailing = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                )
+                ExpressiveDivider()
+                ExpressiveSettingsRow(
+                    title = strings.quickGuideTitle,
+                    subtitle = strings.quickGuideSubtitle,
+                    icon = {
+                        SettingsIconBox(
+                            icon = Icons.Default.MenuBook,
+                            tint = MaterialTheme.colorScheme.primary,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                        )
+                    },
+                    onClick = {
+                        onDismiss()
+                        onOpenOnboarding()
+                    },
+                    trailing = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                )
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Stworzone z ❤️ przez Koukku",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 20.dp)
+            )
         }
 
             if (burstTriggerKey > 0L && burstColors.isNotEmpty()) {

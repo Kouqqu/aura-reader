@@ -136,6 +136,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -285,6 +286,7 @@ fun ReaderScreen(
     var showBookInfoDialog by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showTtsSheet by remember { mutableStateOf(false) }
+    val isTtsHighlightActive = ttsState.isServiceRunning && !showTtsSheet && ttsState.isPlaying
     var showChaptersSheet by remember { mutableStateOf(false) }
     var showBookmarksQuotesSheet by remember { mutableStateOf(false) }
     var selectedFootnote by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -469,7 +471,9 @@ fun ReaderScreen(
                                     if (nextBookInSeries != null) {
                                         showNextInSeriesDialog = true
                                     }
-                                }
+                                },
+                                ttsState = ttsState,
+                                isTtsHighlightActive = isTtsHighlightActive
                             )
                         }
                     } else {
@@ -539,7 +543,9 @@ fun ReaderScreen(
                                         }
                                     },
                                     nextBookInSeries = nextBookInSeries,
-                                    onOpenNextBook = { viewModel.openNextBookInSeries(it) }
+                                    onOpenNextBook = { viewModel.openNextBookInSeries(it) },
+                                    ttsState = ttsState,
+                                    isTtsHighlightActive = isTtsHighlightActive
                                 )
                             }
                         }
@@ -1635,7 +1641,9 @@ fun ChapterContentView(
     onOpenNextBook: (Book) -> Unit = {},
     onPrevChapter: () -> Unit,
     onNextChapter: () -> Unit,
-    onUpdateProgress: (Int, Int, Int, Int, Boolean) -> Unit
+    onUpdateProgress: (Int, Int, Int, Int, Boolean) -> Unit,
+    ttsState: com.aura.reader.service.TtsState = com.aura.reader.service.TtsState(),
+    isTtsHighlightActive: Boolean = false
 ) {
     val blocks = remember(chapter) {
         if (chapter.blocks.isNotEmpty()) {
@@ -1657,6 +1665,12 @@ fun ChapterContentView(
         LaunchedEffect(clampedInitialOffset) {
             if (clampedInitialOffset > 0 && listState.firstVisibleItemIndex == 0) {
                 listState.scrollToItem(clampedInitialOffset, initialPixelOffset.coerceAtLeast(0))
+            }
+        }
+
+        LaunchedEffect(ttsState.currentOriginalBlockIndex, isTtsHighlightActive) {
+            if (isTtsHighlightActive && ttsState.currentOriginalBlockIndex in blocks.indices) {
+                listState.animateScrollToItem(ttsState.currentOriginalBlockIndex)
             }
         }
 
@@ -1700,7 +1714,8 @@ fun ChapterContentView(
                     bottom = 140.dp
                 )
             ) {
-                items(blocks) { block ->
+                itemsIndexed(blocks) { blockIndex, block ->
+                    val isSpeaking = isTtsHighlightActive && isCurrentChapter && (blockIndex == ttsState.currentOriginalBlockIndex)
                     RenderBlock(
                         block = block,
                         settings = settings,
@@ -1708,6 +1723,9 @@ fun ChapterContentView(
                         searchQuery = searchQuery,
                         footnotes = footnotes,
                         quotes = quotes,
+                        ttsWordStart = if (isSpeaking) ttsState.currentWordStart else -1,
+                        ttsWordEnd = if (isSpeaking) ttsState.currentWordEnd else -1,
+                        ttsSpokenWord = if (isSpeaking) ttsState.currentSpokenWord else "",
                         onFootnoteClick = onFootnoteClick,
                         onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                         onToggleControls = onToggleControls,
@@ -1835,7 +1853,9 @@ fun ChapterPagingView(
     onSaveQuote: (String) -> Unit,
     onPageChange: (Int, Int) -> Unit,
     onUpdateProgress: (Int, Int, Int, Int, Boolean) -> Unit,
-    onBookFinished: () -> Unit = {}
+    onBookFinished: () -> Unit = {},
+    ttsState: com.aura.reader.service.TtsState = com.aura.reader.service.TtsState(),
+    isTtsHighlightActive: Boolean = false
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenHeightDp = maxHeight.value
@@ -1923,6 +1943,22 @@ fun ChapterPagingView(
             pageCount = { totalPagerSpreads.coerceAtLeast(1) }
         )
         val coroutineScope = rememberCoroutineScope()
+
+        LaunchedEffect(ttsState.currentOriginalBlockIndex, isTtsHighlightActive) {
+            if (isTtsHighlightActive && ttsState.currentOriginalBlockIndex >= 0) {
+                val targetBlock = ttsState.currentOriginalBlockIndex
+                val targetPageIdx = pages.indexOfFirst { pageList ->
+                    pageList.any { it.first == targetBlock }
+                }
+                if (targetPageIdx != -1) {
+                    val targetSpread = if (isTwoColumn) targetPageIdx / 2 else targetPageIdx
+                    val targetPagerSpread = targetSpread + prevPageOffset
+                    if (pagerState.currentPage != targetPagerSpread && targetPagerSpread in 0 until totalPagerSpreads) {
+                        pagerState.animateScrollToPage(targetPagerSpread)
+                    }
+                }
+            }
+        }
         val haptic = LocalHapticFeedback.current
         var lastHapticSpread by remember { mutableIntStateOf(-1) }
         var lastHapticOffset by remember { mutableFloatStateOf(pagerState.currentPage.toFloat()) }
@@ -2146,7 +2182,8 @@ fun ChapterPagingView(
                                             .fillMaxHeight(),
                                         verticalArrangement = Arrangement.Top
                                     ) {
-                                        for ((_, block) in leftPageBlocks) {
+                                        for ((originalIndex, block) in leftPageBlocks) {
+                                            val isSpeaking = isTtsHighlightActive && (originalIndex == ttsState.currentOriginalBlockIndex)
                                             RenderBlock(
                                                 block = block,
                                                 settings = settings,
@@ -2154,6 +2191,9 @@ fun ChapterPagingView(
                                                 searchQuery = searchQuery,
                                                 footnotes = footnotes,
                                                 quotes = quotes,
+                                                ttsWordStart = if (isSpeaking) ttsState.currentWordStart else -1,
+                                                ttsWordEnd = if (isSpeaking) ttsState.currentWordEnd else -1,
+                                                ttsSpokenWord = if (isSpeaking) ttsState.currentSpokenWord else "",
                                                 onFootnoteClick = onFootnoteClick,
                                                 onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                                 onToggleControls = onToggleControls,
@@ -2175,7 +2215,8 @@ fun ChapterPagingView(
                                             .fillMaxHeight(),
                                         verticalArrangement = Arrangement.Top
                                     ) {
-                                        for ((_, block) in rightPageBlocks) {
+                                        for ((originalIndex, block) in rightPageBlocks) {
+                                            val isSpeaking = isTtsHighlightActive && (originalIndex == ttsState.currentOriginalBlockIndex)
                                             RenderBlock(
                                                 block = block,
                                                 settings = settings,
@@ -2183,6 +2224,9 @@ fun ChapterPagingView(
                                                 searchQuery = searchQuery,
                                                 footnotes = footnotes,
                                                 quotes = quotes,
+                                                ttsWordStart = if (isSpeaking) ttsState.currentWordStart else -1,
+                                                ttsWordEnd = if (isSpeaking) ttsState.currentWordEnd else -1,
+                                                ttsSpokenWord = if (isSpeaking) ttsState.currentSpokenWord else "",
                                                 onFootnoteClick = onFootnoteClick,
                                                 onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                                 onToggleControls = onToggleControls,
@@ -2200,7 +2244,8 @@ fun ChapterPagingView(
                                         .padding(top = topPaddingDp, bottom = bottomPaddingDp),
                                     verticalArrangement = Arrangement.Top
                                 ) {
-                                    for ((_, block) in pageBlocks) {
+                                    for ((originalIndex, block) in pageBlocks) {
+                                        val isSpeaking = isTtsHighlightActive && (originalIndex == ttsState.currentOriginalBlockIndex)
                                         RenderBlock(
                                             block = block,
                                             settings = settings,
@@ -2208,6 +2253,9 @@ fun ChapterPagingView(
                                             searchQuery = searchQuery,
                                             footnotes = footnotes,
                                             quotes = quotes,
+                                            ttsWordStart = if (isSpeaking) ttsState.currentWordStart else -1,
+                                            ttsWordEnd = if (isSpeaking) ttsState.currentWordEnd else -1,
+                                            ttsSpokenWord = if (isSpeaking) ttsState.currentSpokenWord else "",
                                             onFootnoteClick = onFootnoteClick,
                                             onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                             onToggleControls = onToggleControls,
@@ -2624,6 +2672,9 @@ fun RenderBlock(
     searchQuery: String,
     footnotes: Map<String, String>,
     quotes: List<Quote> = emptyList(),
+    ttsWordStart: Int = -1,
+    ttsWordEnd: Int = -1,
+    ttsSpokenWord: String = "",
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onNavigateToChapter: ((chapterIndex: Int, blockIndex: Int) -> Unit)? = null,
     onToggleControls: () -> Unit,
@@ -2646,6 +2697,9 @@ fun RenderBlock(
                     footnotes = footnotes,
                     quotes = quotes,
                     links = block.links,
+                    ttsWordStart = ttsWordStart,
+                    ttsWordEnd = ttsWordEnd,
+                    ttsSpokenWord = ttsSpokenWord,
                     onFootnoteClick = onFootnoteClick,
                     onNavigateToChapter = onNavigateToChapter,
                     onToggleControls = onToggleControls,
@@ -2685,6 +2739,9 @@ fun RenderBlock(
                     footnotes = footnotes,
                     quotes = quotes,
                     links = block.links,
+                    ttsWordStart = ttsWordStart,
+                    ttsWordEnd = ttsWordEnd,
+                    ttsSpokenWord = ttsSpokenWord,
                     onFootnoteClick = onFootnoteClick,
                     onNavigateToChapter = onNavigateToChapter,
                     onToggleControls = onToggleControls,
@@ -2882,6 +2939,9 @@ fun RenderBlock(
                 footnotes = footnotes,
                 quotes = quotes,
                 links = block.links,
+                ttsWordStart = ttsWordStart,
+                ttsWordEnd = ttsWordEnd,
+                ttsSpokenWord = ttsSpokenWord,
                 onFootnoteClick = onFootnoteClick,
                 onNavigateToChapter = onNavigateToChapter,
                 onToggleControls = onToggleControls,
@@ -2904,6 +2964,9 @@ fun InteractiveText(
     footnotes: Map<String, String>,
     quotes: List<Quote> = emptyList(),
     links: List<BookLink> = emptyList(),
+    ttsWordStart: Int = -1,
+    ttsWordEnd: Int = -1,
+    ttsSpokenWord: String = "",
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onNavigateToChapter: ((chapterIndex: Int, blockIndex: Int) -> Unit)? = null,
     onToggleControls: () -> Unit,
@@ -2912,9 +2975,53 @@ fun InteractiveText(
 ) {
     val strings = LocalAppStrings.current
     val primaryColor = MaterialTheme.colorScheme.primary
-    val annotated = remember(rawText, searchQuery, footnotes, quotes, links, primaryColor) {
+    val annotated = remember(rawText, searchQuery, footnotes, quotes, links, primaryColor, ttsWordStart, ttsWordEnd, ttsSpokenWord) {
         buildAnnotatedString {
             append(rawText)
+
+            // Highlight real-time spoken TTS word
+            if (ttsWordStart >= 0 || ttsSpokenWord.isNotBlank()) {
+                var hlStart = -1
+                var hlEnd = -1
+
+                if (ttsSpokenWord.isNotBlank()) {
+                    val searchWindowStart = maxOf(0, if (ttsWordStart >= 0) ttsWordStart - 6 else 0)
+                    val idx = rawText.indexOf(ttsSpokenWord, searchWindowStart, ignoreCase = true)
+                    if (idx != -1 && (ttsWordStart < 0 || kotlin.math.abs(idx - ttsWordStart) < 40)) {
+                        hlStart = idx
+                        hlEnd = idx + ttsSpokenWord.length
+                    } else {
+                        val cleanWord = ttsSpokenWord.trim { it <= ' ' || it in "\"'«»“”„“.,!?:;()[]{}–—-" }
+                        if (cleanWord.isNotBlank()) {
+                            val idxClean = rawText.indexOf(cleanWord, searchWindowStart, ignoreCase = true)
+                            if (idxClean != -1 && (ttsWordStart < 0 || kotlin.math.abs(idxClean - ttsWordStart) < 40)) {
+                                hlStart = idxClean
+                                hlEnd = idxClean + cleanWord.length
+                            }
+                        }
+                    }
+                }
+
+                if (hlStart == -1 && ttsWordStart in 0 until rawText.length) {
+                    hlStart = ttsWordStart
+                    hlEnd = if (ttsWordEnd > ttsWordStart && ttsWordEnd <= rawText.length) ttsWordEnd else {
+                        val spaceIdx = rawText.indexOf(' ', ttsWordStart)
+                        if (spaceIdx != -1) spaceIdx else rawText.length
+                    }
+                }
+
+                if (hlStart in 0 until rawText.length && hlEnd > hlStart) {
+                    addStyle(
+                        style = SpanStyle(
+                            background = primaryColor.copy(alpha = 0.28f),
+                            color = primaryColor,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        start = hlStart,
+                        end = minOf(hlEnd, rawText.length)
+                    )
+                }
+            }
 
             // Highlight saved quotes
             for (quote in quotes) {

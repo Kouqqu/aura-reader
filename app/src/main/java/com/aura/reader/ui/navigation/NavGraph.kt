@@ -14,8 +14,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.ui.screens.library.LibraryScreen
 import com.aura.reader.ui.screens.library.LibraryViewModel
+import com.aura.reader.ui.screens.onboarding.OnboardingScreen
 import com.aura.reader.ui.screens.opds.OpdsScreen
 import com.aura.reader.ui.screens.opds.OpdsViewModel
 import com.aura.reader.ui.screens.reader.ReaderScreen
@@ -25,6 +27,7 @@ object NavRoutes {
     const val LIBRARY = "library"
     const val READER = "reader"
     const val CATALOG = "catalog"
+    const val ONBOARDING = "onboarding"
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -37,13 +40,15 @@ fun AuraNavGraph(
     navController: NavHostController = rememberNavController(),
     libraryViewModel: LibraryViewModel,
     readerViewModel: ReaderViewModel,
-    opdsViewModel: OpdsViewModel
+    opdsViewModel: OpdsViewModel,
+    preferencesManager: PreferencesManager,
+    startDestination: String = NavRoutes.LIBRARY
 ) {
     SharedTransitionLayout {
         CompositionLocalProvider(LocalSharedTransitionScope provides this) {
             NavHost(
                 navController = navController,
-                startDestination = NavRoutes.LIBRARY,
+                startDestination = startDestination,
                 enterTransition = {
                     slideIntoContainer(
                         AnimatedContentTransitionScope.SlideDirection.Start,
@@ -69,6 +74,18 @@ fun AuraNavGraph(
                     )
                 }
             ) {
+                composable(NavRoutes.ONBOARDING) {
+                    OnboardingScreen(
+                        preferencesManager = preferencesManager,
+                        onFinish = {
+                            navController.navigate(NavRoutes.LIBRARY) {
+                                popUpTo(NavRoutes.ONBOARDING) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+                }
+
                 composable(NavRoutes.LIBRARY) {
                     CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
                         LibraryScreen(
@@ -81,6 +98,9 @@ fun AuraNavGraph(
                             },
                             onOpenCatalog = {
                                 navController.navigate(NavRoutes.CATALOG)
+                            },
+                            onOpenOnboarding = {
+                                navController.navigate(NavRoutes.ONBOARDING)
                             }
                         )
                     }

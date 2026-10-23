@@ -549,7 +549,8 @@ class ReaderViewModel(
                 speed = speed,
                 pitch = pitch,
                 initialVoice = savedVoice,
-                startText = customFirstText
+                startText = customFirstText,
+                originalBlockIndices = ArrayList(validBlocksWithIndex.map { it.first })
             )
         }
     }
