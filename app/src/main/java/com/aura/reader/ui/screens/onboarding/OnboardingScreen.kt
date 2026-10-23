@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -323,24 +324,22 @@ private fun OnboardingStyleSlide(
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        // Option 1: Material 3 Expressive
-        StyleOptionCard(
+        // Option 1: Material 3 Expressive (Solid tonal surfaces, expressive shape, dynamic swatches)
+        MaterialStyleOptionCard(
             title = strings.designStyleMaterial,
             subtitle = strings.designStyleDescMaterial,
-            badge = "Material You",
             isSelected = currentStyle == AppDesignStyle.MATERIAL,
             onClick = { onStyleSelected(AppDesignStyle.MATERIAL) }
         )
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Option 2: Liquid Glass
-        StyleOptionCard(
+        // Option 2: Liquid Glass (Frosted translucent gradient, specular glossy borders, neon cyan glow)
+        LiquidGlassStyleOptionCard(
             title = strings.designStyleLiquidGlass,
             subtitle = strings.designStyleDescLiquidGlass,
-            badge = "iOS Frosted Glass",
             isSelected = currentStyle == AppDesignStyle.LIQUID_GLASS,
             onClick = { onStyleSelected(AppDesignStyle.LIQUID_GLASS) }
         )
@@ -348,25 +347,24 @@ private fun OnboardingStyleSlide(
 }
 
 @Composable
-private fun StyleOptionCard(
+private fun MaterialStyleOptionCard(
     title: String,
     subtitle: String,
-    badge: String,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
     val borderWidth = if (isSelected) 2.dp else 1.dp
     val containerColor = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
     } else {
-        MaterialTheme.colorScheme.surfaceContainer
+        MaterialTheme.colorScheme.surfaceContainerHigh
     }
 
     Card(
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
-        border = androidx.compose.foundation.BorderStroke(borderWidth, borderColor),
+        border = BorderStroke(borderWidth, borderColor),
         modifier = Modifier
             .fillMaxWidth()
             .expressiveClickable(scaleDown = 0.98f, onClick = onClick)
@@ -377,16 +375,84 @@ private fun StyleOptionCard(
                 .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Material Tonal Icon Box
             Box(
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Palette,
+                    contentDescription = null,
+                    tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                // Material Dynamic Palette Swatches Preview
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val swatches = listOf(
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.secondary,
+                        MaterialTheme.colorScheme.tertiary,
+                        MaterialTheme.colorScheme.surfaceTint
+                    )
+                    swatches.forEach { color ->
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Dynamic Color",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        fontSize = 10.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Material Expressive Selection Indicator
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
                     .clip(CircleShape)
                     .border(
-                        2.dp,
-                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                        CircleShape
+                        width = if (isSelected) 0.dp else 2.dp,
+                        color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant,
+                        shape = CircleShape
                     )
-                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent),
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 if (isSelected) {
@@ -398,41 +464,223 @@ private fun StyleOptionCard(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun LiquidGlassStyleOptionCard(
+    title: String,
+    subtitle: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val isDark = isSystemInDarkTheme()
+
+    // Frosted translucent glass background
+    val glassBgBrush = if (isDark) {
+        if (isSelected) {
+            Brush.linearGradient(
+                listOf(
+                    Color(0x3500C6FF),
+                    Color(0x180072FF),
+                    Color(0x18FFFFFF)
+                )
+            )
+        } else {
+            Brush.linearGradient(
+                listOf(
+                    Color(0x22FFFFFF),
+                    Color(0x0CFFFFFF)
+                )
+            )
+        }
+    } else {
+        if (isSelected) {
+            Brush.linearGradient(
+                listOf(
+                    Color(0xEEF0F9FF),
+                    Color(0xDDE0F2FE),
+                    Color(0xCCBAE6FD)
+                )
+            )
+        } else {
+            Brush.linearGradient(
+                listOf(
+                    Color(0xE6FFFFFF),
+                    Color(0xB3FFFFFF)
+                )
+            )
+        }
+    }
+
+    // Specular light edge reflection border
+    val glassBorderBrush = if (isSelected) {
+        Brush.linearGradient(
+            listOf(
+                Color.White.copy(alpha = if (isDark) 0.90f else 0.95f),
+                Color(0xFF00C6FF).copy(alpha = 0.70f),
+                Color.White.copy(alpha = 0.25f),
+                Color(0xFF0072FF).copy(alpha = 0.50f)
+            )
+        )
+    } else {
+        Brush.linearGradient(
+            listOf(
+                Color.White.copy(alpha = if (isDark) 0.35f else 0.70f),
+                Color.White.copy(alpha = if (isDark) 0.08f else 0.25f)
+            )
+        )
+    }
+
+    val glassShape = RoundedCornerShape(24.dp)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(glassShape)
+            .background(glassBgBrush)
+            .border(
+                width = if (isSelected) 1.6.dp else 1.dp,
+                brush = glassBorderBrush,
+                shape = glassShape
+            )
+            .expressiveClickable(scaleDown = 0.98f, onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Frosted Glass Icon Vessel with Specular Rim
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                Color.White.copy(alpha = if (isDark) 0.22f else 0.50f),
+                                Color.White.copy(alpha = if (isDark) 0.06f else 0.15f)
+                            )
+                        )
+                    )
+                    .border(
+                        width = 1.dp,
+                        brush = Brush.linearGradient(
+                            listOf(
+                                Color.White.copy(alpha = if (isSelected) 0.85f else 0.50f),
+                                Color.White.copy(alpha = 0.10f)
+                            )
+                        ),
+                        shape = RoundedCornerShape(14.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = if (isSelected) Color(0xFF00C6FF) else if (isDark) Color(0xFFE2E8F0) else Color(0xFF0284C7),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = badge,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(modifier = Modifier.height(10.dp))
+                // Floating Frosted Glass Dock Capsule Preview
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    Color.White.copy(alpha = if (isDark) 0.18f else 0.40f),
+                                    Color.White.copy(alpha = if (isDark) 0.05f else 0.15f)
+                                )
+                            )
+                        )
+                        .border(
+                            width = 0.6.dp,
+                            color = Color.White.copy(alpha = if (isDark) 0.35f else 0.55f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF00C6FF))
+                        )
+                        Text(
+                            text = "Frosted Dock & Blur",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isDark) Color(0xFFE2E8F0) else Color(0xFF334155),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Glowing Glass Capsule Selection Indicator
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isSelected) {
+                            Brush.linearGradient(listOf(Color(0xFF00C6FF), Color(0xFF0072FF)))
+                        } else {
+                            Brush.linearGradient(
+                                listOf(
+                                    Color.White.copy(alpha = if (isDark) 0.15f else 0.30f),
+                                    Color.White.copy(alpha = 0.05f)
+                                )
+                            )
+                        }
+                    )
+                    .border(
+                        width = 1.2.dp,
+                        brush = Brush.linearGradient(
+                            listOf(
+                                Color.White.copy(alpha = if (isSelected) 0.95f else 0.40f),
+                                Color.White.copy(alpha = 0.15f)
+                            )
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }
@@ -566,7 +814,7 @@ private fun OnboardingTtsSlide() {
 
         FeatureHighlightCard(
             icon = Icons.Default.VolumeUp,
-            title = "Голоса RHVoice и Google",
+            title = "Большой выбор голосов",
             description = "Высокое качество речи, регулировка темпа и высоты тона"
         )
     }

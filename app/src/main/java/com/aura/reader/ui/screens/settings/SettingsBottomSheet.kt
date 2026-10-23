@@ -406,7 +406,6 @@ fun SettingsBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
-                    .padding(bottom = if (isFullScreen) 120.dp else 36.dp)
                     .verticalScroll(rememberScrollState())
             ) {
                 // Header
@@ -1212,8 +1211,9 @@ fun SettingsBottomSheet(
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 20.dp)
+                    .padding(bottom = 8.dp)
             )
+            Spacer(modifier = Modifier.height(if (isFullScreen) 160.dp else 40.dp))
         }
 
             if (burstTriggerKey > 0L && burstColors.isNotEmpty()) {
