@@ -2984,27 +2984,40 @@ fun InteractiveText(
                 var hlStart = -1
                 var hlEnd = -1
 
-                if (ttsSpokenWord.isNotBlank()) {
-                    val searchWindowStart = maxOf(0, if (ttsWordStart >= 0) ttsWordStart - 6 else 0)
-                    val idx = rawText.indexOf(ttsSpokenWord, searchWindowStart, ignoreCase = true)
-                    if (idx != -1 && (ttsWordStart < 0 || kotlin.math.abs(idx - ttsWordStart) < 40)) {
-                        hlStart = idx
-                        hlEnd = idx + ttsSpokenWord.length
-                    } else {
-                        val cleanWord = ttsSpokenWord.trim { it <= ' ' || it in "\"'«»“”„“.,!?:;()[]{}–—-" }
-                        if (cleanWord.isNotBlank()) {
-                            val idxClean = rawText.indexOf(cleanWord, searchWindowStart, ignoreCase = true)
-                            if (idxClean != -1 && (ttsWordStart < 0 || kotlin.math.abs(idxClean - ttsWordStart) < 40)) {
-                                hlStart = idxClean
-                                hlEnd = idxClean + cleanWord.length
-                            }
+                // 1. Direct offset match check (fastest and most accurate)
+                if (ttsWordStart in 0 until rawText.length) {
+                    val candidateEnd = if (ttsWordEnd in (ttsWordStart + 1)..rawText.length) ttsWordEnd else {
+                        val spaceIdx = rawText.indexOf(' ', ttsWordStart)
+                        if (spaceIdx != -1) spaceIdx else rawText.length
+                    }
+                    val candidateWord = rawText.substring(ttsWordStart, candidateEnd).trim { it <= ' ' || it in "\"'«»“”„“.,!?:;()[]{}–—-" }
+                    val cleanSpoken = ttsSpokenWord.trim { it <= ' ' || it in "\"'«»“”„“.,!?:;()[]{}–—-" }
+                    if (cleanSpoken.isEmpty() || candidateWord.equals(cleanSpoken, ignoreCase = true) ||
+                        candidateWord.startsWith(cleanSpoken, ignoreCase = true) || cleanSpoken.startsWith(candidateWord, ignoreCase = true)) {
+                        hlStart = ttsWordStart
+                        hlEnd = candidateEnd
+                    }
+                }
+
+                // 2. Proximity search if typography or accents caused slight character index drift
+                if (hlStart == -1 && ttsSpokenWord.isNotBlank()) {
+                    val cleanSpoken = ttsSpokenWord.trim { it <= ' ' || it in "\"'«»“”„“.,!?:;()[]{}–—-" }
+                    if (cleanSpoken.isNotBlank()) {
+                        val windowStart = if (ttsWordStart >= 0) maxOf(0, ttsWordStart - 8) else 0
+                        val windowEnd = if (ttsWordStart >= 0) minOf(rawText.length, ttsWordStart + cleanSpoken.length + 8) else rawText.length
+                        val windowText = rawText.substring(windowStart, windowEnd)
+                        val relIdx = windowText.indexOf(cleanSpoken, ignoreCase = true)
+                        if (relIdx != -1) {
+                            hlStart = windowStart + relIdx
+                            hlEnd = hlStart + cleanSpoken.length
                         }
                     }
                 }
 
+                // 3. Fallback to reported start/end indices
                 if (hlStart == -1 && ttsWordStart in 0 until rawText.length) {
                     hlStart = ttsWordStart
-                    hlEnd = if (ttsWordEnd > ttsWordStart && ttsWordEnd <= rawText.length) ttsWordEnd else {
+                    hlEnd = if (ttsWordEnd in (ttsWordStart + 1)..rawText.length) ttsWordEnd else {
                         val spaceIdx = rawText.indexOf(' ', ttsWordStart)
                         if (spaceIdx != -1) spaceIdx else rawText.length
                     }

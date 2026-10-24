@@ -56,7 +56,8 @@ data class TtsState(
     val currentWordStart: Int = -1,
     val currentWordEnd: Int = -1,
     val currentSpokenWord: String = "",
-    val currentOriginalBlockIndex: Int = -1
+    val currentOriginalBlockIndex: Int = -1,
+    val chapterFinishedEvent: Long = 0L
 )
 
 class BookTtsService : Service(), TextToSpeech.OnInitListener {
@@ -87,6 +88,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         const val EXTRA_PITCH = "extra_pitch"
         const val EXTRA_VOICE_NAME = "extra_voice_name"
         const val EXTRA_START_TEXT = "extra_start_text"
+        const val EXTRA_START_CHAR_OFFSET = "extra_start_char_offset"
         const val EXTRA_ORIGINAL_BLOCK_INDICES = "extra_original_block_indices"
 
         private val _ttsState = MutableStateFlow(TtsState())
@@ -102,6 +104,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             pitch: Float = 1.0f,
             initialVoice: String? = null,
             startText: String? = null,
+            startCharOffset: Int = 0,
             originalBlockIndices: ArrayList<Int>? = null
         ) {
             val intent = Intent(context, BookTtsService::class.java).apply {
@@ -118,6 +121,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 if (startText != null) {
                     putExtra(EXTRA_START_TEXT, startText)
                 }
+                putExtra(EXTRA_START_CHAR_OFFSET, startCharOffset)
                 if (originalBlockIndices != null) {
                     putIntegerArrayListExtra(EXTRA_ORIGINAL_BLOCK_INDICES, originalBlockIndices)
                 }
@@ -127,6 +131,13 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             } else {
                 context.startService(intent)
             }
+        }
+
+        fun pause(context: Context) {
+            val intent = Intent(context, BookTtsService::class.java).apply {
+                action = ACTION_PAUSE
+            }
+            context.startService(intent)
         }
 
         fun playPause(context: Context) {
@@ -219,6 +230,11 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
     private var speechPitch: Float = 1.0f
     private var selectedVoice: String? = null
     private var customFirstText: String? = null
+    private var customFirstCharOffset: Int = 0
+    private var currentBlockCharOffset: Int = 0
+    private val utteranceCounter = java.util.concurrent.atomic.AtomicLong(0)
+    @Volatile
+    private var currentActiveUtteranceId: String? = null
     private var isTtsReady: Boolean = false
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -384,6 +400,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             tts?.setSpeechRate(speechRate)
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {
+                    if (utteranceId != currentActiveUtteranceId) return
                     _ttsState.value = _ttsState.value.copy(
                         currentWordStart = -1,
                         currentWordEnd = -1,
@@ -393,6 +410,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
 
                 override fun onDone(utteranceId: String?) {
                     if (utteranceId == "utterance_preview") return
+                    if (utteranceId != currentActiveUtteranceId) return
                     _ttsState.value = _ttsState.value.copy(
                         currentWordStart = -1,
                         currentWordEnd = -1,
@@ -400,42 +418,55 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                     )
                     if (_ttsState.value.isPlaying) {
                         serviceScope.launch(Dispatchers.Main) {
-                            nextParagraph()
+                            if (utteranceId == currentActiveUtteranceId) {
+                                nextParagraph()
+                            }
                         }
                     }
                 }
 
+                @Deprecated("Deprecated in Java")
                 override fun onError(utteranceId: String?) {
                     if (utteranceId == "utterance_preview") return
+                    if (utteranceId != currentActiveUtteranceId) return
                     _ttsState.value = _ttsState.value.copy(
                         currentWordStart = -1,
                         currentWordEnd = -1,
                         currentSpokenWord = ""
                     )
-                    if (_ttsState.value.isPlaying) {
-                        serviceScope.launch(Dispatchers.Main) {
-                            nextParagraph()
-                        }
-                    }
+                }
+
+                override fun onError(utteranceId: String?, errorCode: Int) {
+                    if (utteranceId == "utterance_preview") return
+                    if (utteranceId != currentActiveUtteranceId) return
+                    _ttsState.value = _ttsState.value.copy(
+                        currentWordStart = -1,
+                        currentWordEnd = -1,
+                        currentSpokenWord = ""
+                    )
                 }
 
                 override fun onStop(utteranceId: String?, interrupted: Boolean) {
-                    _ttsState.value = _ttsState.value.copy(
-                        currentWordStart = -1,
-                        currentWordEnd = -1,
-                        currentSpokenWord = ""
-                    )
+                    if (utteranceId == currentActiveUtteranceId) {
+                        _ttsState.value = _ttsState.value.copy(
+                            currentWordStart = -1,
+                            currentWordEnd = -1,
+                            currentSpokenWord = ""
+                        )
+                    }
                 }
 
                 override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
-                    if (utteranceId != null && utteranceId.startsWith("aura_utterance_")) {
-                        val currentText = _ttsState.value.currentText
-                        val word = if (start in 0..currentText.length && end in start..currentText.length) {
-                            currentText.substring(start, end).trim()
+                    if (utteranceId != null && utteranceId == currentActiveUtteranceId) {
+                        val fullText = paragraphs.getOrNull(currentIndex) ?: _ttsState.value.currentText
+                        val adjustedStart = start + currentBlockCharOffset
+                        val adjustedEnd = end + currentBlockCharOffset
+                        val word = if (adjustedStart in 0..fullText.length && adjustedEnd in adjustedStart..fullText.length) {
+                            fullText.substring(adjustedStart, adjustedEnd).trim()
                         } else ""
                         _ttsState.value = _ttsState.value.copy(
-                            currentWordStart = start,
-                            currentWordEnd = end,
+                            currentWordStart = adjustedStart,
+                            currentWordEnd = adjustedEnd,
                             currentSpokenWord = word
                         )
                     }
@@ -512,6 +543,8 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 originalBlockIndices = intent.getIntegerArrayListExtra(EXTRA_ORIGINAL_BLOCK_INDICES) ?: ArrayList()
                 currentIndex = intent.getIntExtra(EXTRA_START_INDEX, 0).coerceIn(0, (paragraphs.size - 1).coerceAtLeast(0))
                 customFirstText = intent.getStringExtra(EXTRA_START_TEXT)
+                customFirstCharOffset = intent.getIntExtra(EXTRA_START_CHAR_OFFSET, 0)
+                currentBlockCharOffset = customFirstCharOffset
                 speechRate = intent.getFloatExtra(EXTRA_SPEED, speechRate)
                 speechPitch = intent.getFloatExtra(EXTRA_PITCH, speechPitch)
                 val initVoice = intent.getStringExtra(EXTRA_VOICE_NAME)
@@ -537,7 +570,10 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                     currentText = paragraphs.getOrNull(currentIndex) ?: "",
                     bookTitle = bookTitle,
                     chapterTitle = chapterTitle,
-                    isInitialized = isTtsReady
+                    isInitialized = isTtsReady,
+                    currentWordStart = -1,
+                    currentWordEnd = -1,
+                    currentSpokenWord = ""
                 )
 
                 requestAudioFocus()
@@ -616,10 +652,15 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             ACTION_SEEK_PARAGRAPH -> {
                 val targetIdx = intent.getIntExtra(EXTRA_PARAGRAPH_INDEX, 0)
                 if (paragraphs.isNotEmpty()) {
+                    currentBlockCharOffset = 0
                     currentIndex = targetIdx.coerceIn(0, paragraphs.size - 1)
                     _ttsState.value = _ttsState.value.copy(
                         currentParagraphIndex = currentIndex,
-                        currentText = paragraphs.getOrNull(currentIndex) ?: ""
+                        currentOriginalBlockIndex = originalBlockIndices.getOrNull(currentIndex) ?: currentIndex,
+                        currentText = paragraphs.getOrNull(currentIndex) ?: "",
+                        currentWordStart = -1,
+                        currentWordEnd = -1,
+                        currentSpokenWord = ""
                     )
                     if (_ttsState.value.isPlaying && isTtsReady) {
                         speakCurrentParagraph()
@@ -635,23 +676,34 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         if (!isTtsReady || paragraphs.isEmpty()) return
         val firstText = customFirstText
         customFirstText = null
-        val text = (firstText ?: paragraphs.getOrNull(currentIndex))?.trim() ?: return
-        if (text.isBlank()) {
+        val charOffset = customFirstCharOffset
+        customFirstCharOffset = 0
+        currentBlockCharOffset = charOffset
+
+        val fullText = paragraphs.getOrNull(currentIndex)?.trim() ?: return
+        val textToSpeak = (firstText ?: fullText).trim()
+        if (textToSpeak.isBlank()) {
             nextParagraph()
             return
         }
 
-        val params = Bundle()
-        val utteranceId = "aura_utterance_$currentIndex"
-        params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+        val utteranceId = "aura_utterance_${utteranceCounter.incrementAndGet()}_$currentIndex"
+        currentActiveUtteranceId = utteranceId
 
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
+        val params = Bundle().apply {
+            putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+        }
+
+        tts?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
 
         _ttsState.value = _ttsState.value.copy(
             isPlaying = true,
             currentParagraphIndex = currentIndex,
             currentOriginalBlockIndex = originalBlockIndices.getOrNull(currentIndex) ?: currentIndex,
-            currentText = text
+            currentText = fullText,
+            currentWordStart = -1,
+            currentWordEnd = -1,
+            currentSpokenWord = ""
         )
 
         val notification = buildNotification(isPlaying = true)
@@ -660,9 +712,15 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
     }
 
     private fun pausePlayback() {
+        currentActiveUtteranceId = null
         tts?.stop()
         abandonAudioFocus()
-        _ttsState.value = _ttsState.value.copy(isPlaying = false)
+        _ttsState.value = _ttsState.value.copy(
+            isPlaying = false,
+            currentWordStart = -1,
+            currentWordEnd = -1,
+            currentSpokenWord = ""
+        )
 
         val notification = buildNotification(isPlaying = false)
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -677,16 +735,21 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
     }
 
     private fun nextParagraph() {
+        currentBlockCharOffset = 0
         if (currentIndex < paragraphs.size - 1) {
             currentIndex++
             speakCurrentParagraph()
         } else {
             // Finished chapter
+            _ttsState.value = _ttsState.value.copy(
+                chapterFinishedEvent = System.currentTimeMillis()
+            )
             pausePlayback()
         }
     }
 
     private fun previousParagraph() {
+        currentBlockCharOffset = 0
         if (currentIndex > 0) {
             currentIndex--
             speakCurrentParagraph()
@@ -696,6 +759,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
     }
 
     private fun stopPlayback() {
+        currentActiveUtteranceId = null
         tts?.stop()
         abandonAudioFocus()
         _ttsState.value = TtsState(isPlaying = false, isServiceRunning = false)

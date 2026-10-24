@@ -20,7 +20,8 @@ import kotlinx.coroutines.launch
 
 class ReaderViewModel(
     private val bookRepository: BookRepository,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val applicationContext: Context? = null
 ) : ViewModel() {
 
     val currentBook: StateFlow<Book?> = bookRepository.currentBook
@@ -86,7 +87,18 @@ class ReaderViewModel(
             _savedPixelOffset.value = it.currentScrollPixelOffset
         }
         viewModelScope.launch {
+            var lastChapterFinishedEvent = 0L
             com.aura.reader.service.BookTtsService.ttsState.collect { state ->
+                if (state.chapterFinishedEvent > 0L && state.chapterFinishedEvent != lastChapterFinishedEvent) {
+                    lastChapterFinishedEvent = state.chapterFinishedEvent
+                    val book = currentBook.value
+                    if (book != null && _currentChapterIndex.value < book.chapters.size - 1) {
+                        nextChapter()
+                        applicationContext?.let { ctx ->
+                            startTts(ctx, startIndex = 0)
+                        }
+                    }
+                }
                 if (state.isServiceRunning && state.totalParagraphs > 0) {
                     val book = currentBook.value
                     val chapter = book?.chapters?.getOrNull(_currentChapterIndex.value)
@@ -130,12 +142,23 @@ class ReaderViewModel(
     fun setChapter(index: Int, offset: Int = 0) {
         val book = currentBook.value ?: return
         if (index in book.chapters.indices) {
+            val chapterChanged = _currentChapterIndex.value != index
             isAtBookEnd = false
             _currentChapterIndex.value = index
             _savedScrollOffset.value = offset
             _savedTextOffset.value = 0
             _savedPixelOffset.value = 0
             saveCurrentProgress()
+
+            if (chapterChanged && com.aura.reader.service.BookTtsService.ttsState.value.isServiceRunning) {
+                val wasPlaying = com.aura.reader.service.BookTtsService.ttsState.value.isPlaying
+                startTts(startIndex = offset)
+                if (!wasPlaying) {
+                    applicationContext?.let { ctx ->
+                        com.aura.reader.service.BookTtsService.pause(ctx)
+                    }
+                }
+            }
         }
     }
 
@@ -474,7 +497,8 @@ class ReaderViewModel(
     }
 
     // --- TTS Narration ---
-    fun startTts(context: Context, startIndex: Int? = null, selectedText: String? = null) {
+    fun startTts(context: Context? = null, startIndex: Int? = null, selectedText: String? = null) {
+        val targetContext = context ?: applicationContext ?: return
         val book = currentBook.value ?: return
         val chapter = book.chapters.getOrNull(_currentChapterIndex.value) ?: return
 
@@ -483,7 +507,7 @@ class ReaderViewModel(
                 block.type != com.aura.reader.data.model.BlockType.DIVIDER &&
                 block.text.isNotBlank()
             ) {
-                originalIndex to block.text.trim()
+                originalIndex to formatTypography(block.text.trim())
             } else null
         }
 
@@ -494,6 +518,7 @@ class ReaderViewModel(
 
         var targetTtsIndex = 0
         var customFirstText: String? = null
+        var customFirstCharOffset = 0
 
         if (!selectedText.isNullOrBlank()) {
             val clean = selectedText.trim()
@@ -518,7 +543,10 @@ class ReaderViewModel(
                 val fullText = validBlocksWithIndex[targetTtsIndex].second
                 val startFromWord = fullText.substring(wordOffset).trim()
                 if (startFromWord.isNotBlank()) {
+                    val leadingTrimmed = fullText.substring(wordOffset).indexOf(startFromWord)
+                    val exactOffset = wordOffset + (if (leadingTrimmed > 0) leadingTrimmed else 0)
                     customFirstText = startFromWord
+                    customFirstCharOffset = exactOffset
                 }
             } else {
                 val found = validBlocksWithIndex.indexOfFirst { (origIdx, _) -> origIdx >= refIndex }
@@ -541,7 +569,7 @@ class ReaderViewModel(
             val savedVoice = preferencesManager.ttsSelectedVoiceName.first()
 
             com.aura.reader.service.BookTtsService.start(
-                context = context,
+                context = targetContext,
                 bookTitle = book.title,
                 chapterTitle = chapter.title.ifBlank { "Глава ${_currentChapterIndex.value + 1}" },
                 paragraphs = paragraphs,
@@ -550,6 +578,7 @@ class ReaderViewModel(
                 pitch = pitch,
                 initialVoice = savedVoice,
                 startText = customFirstText,
+                startCharOffset = customFirstCharOffset,
                 originalBlockIndices = ArrayList(validBlocksWithIndex.map { it.first })
             )
         }

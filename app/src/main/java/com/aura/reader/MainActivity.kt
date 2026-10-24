@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
         preferencesManager = PreferencesManager(applicationContext)
         bookRepository = BookRepository(applicationContext, preferencesManager)
         libraryViewModel = LibraryViewModel(bookRepository, preferencesManager)
-        readerViewModel = ReaderViewModel(bookRepository, preferencesManager)
+        readerViewModel = ReaderViewModel(bookRepository, preferencesManager, applicationContext)
         opdsViewModel = com.aura.reader.ui.screens.opds.OpdsViewModel(bookRepository, preferencesManager)
 
         // Track anonymous app metrics if enabled
