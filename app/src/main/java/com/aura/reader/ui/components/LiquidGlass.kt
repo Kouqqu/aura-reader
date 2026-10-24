@@ -924,6 +924,104 @@ fun LiquidGlassFilterChip(
     }
 }
 
+
+/**
+ * iOS 26-style Liquid Glass toggle switch.
+ * Track: frosted glassmorphism capsule — blue/cyan gradient when ON, translucent gray when OFF.
+ * Thumb: pure white circle with drop shadow and specular highlight arc at top-left.
+ * Animation: spring physics on thumb movement with ellipse squish on press.
+ */
+@Composable
+fun LiquidGlassSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    val trackWidth = 52.dp
+    val trackHeight = 32.dp
+    val thumbDiameter = 28.dp
+
+    val density = LocalDensity.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val isDark = isSystemInDarkTheme()
+    val thumbPaddingDp = (trackHeight - thumbDiameter) / 2
+
+    val thumbWidthAnim by animateDpAsState(
+        targetValue = if (isPressed) thumbDiameter + 4.dp else thumbDiameter,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessHigh
+        ),
+        label = "glassThumbWidth"
+    )
+
+    val thumbOffsetAnim by animateDpAsState(
+        targetValue = if (checked) trackWidth - thumbWidthAnim - thumbPaddingDp else thumbPaddingDp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "glassThumbOffset"
+    )
+
+    val trackBrush = if (checked) {
+        Brush.linearGradient(
+            listOf(Color(0xE600C6FF), Color(0xE60072FF))
+        )
+    } else {
+        SolidColor(if (isDark) Color(0x35FFFFFF) else Color(0x1F000000))
+    }
+
+    Box(
+        modifier = modifier
+            .size(width = trackWidth, height = trackHeight)
+            .clip(CircleShape)
+            .background(trackBrush)
+            .border(
+                width = 1.dp,
+                color = if (checked) Color.White.copy(alpha = 0.55f) else Color.White.copy(alpha = if (isDark) 0.20f else 0.40f),
+                shape = CircleShape
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                role = Role.Switch,
+                onClick = { onCheckedChange(!checked) }
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .offset(x = thumbOffsetAnim, y = thumbPaddingDp)
+                .size(width = thumbWidthAnim, height = thumbDiameter)
+                .shadow(
+                    elevation = 4.dp,
+                    shape = CircleShape,
+                    ambientColor = Color.Black.copy(alpha = 0.18f),
+                    spotColor = Color.Black.copy(alpha = 0.22f)
+                )
+                .clip(CircleShape)
+                .background(Color.White)
+                .drawWithContent {
+                    drawContent()
+                    drawArc(
+                        color = Color.White.copy(alpha = 0.70f),
+                        startAngle = 200f,
+                        sweepAngle = 110f,
+                        useCenter = false,
+                        topLeft = Offset(size.width * 0.05f, size.height * 0.05f),
+                        size = Size(size.width * 0.45f, size.height * 0.45f),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                            width = with(density) { 2.dp.toPx() }
+                        )
+                    )
+                }
+        )
+    }
+}
 /**
  * Card surface that adapts between Material 3 container and iOS Liquid Glass.
  */

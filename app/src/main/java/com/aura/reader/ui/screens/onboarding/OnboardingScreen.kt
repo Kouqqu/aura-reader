@@ -63,6 +63,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -176,9 +177,10 @@ fun OnboardingScreen(
                             }
                         }
                     )
-                    1 -> OnboardingFormatsSlide()
-                    2 -> OnboardingTtsSlide()
+                    1 -> OnboardingFormatsSlide(isGlass = isGlass)
+                    2 -> OnboardingTtsSlide(isGlass = isGlass)
                     3 -> OnboardingCommunitySlide(
+                        isGlass = isGlass,
                         onOpenTelegram = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/koukkuteka"))
                             context.startActivity(intent)
@@ -215,9 +217,10 @@ fun OnboardingScreen(
                             label = "pagerIndicatorWidth"
                         )
                         val color = if (isSelected) {
-                            MaterialTheme.colorScheme.primary
+                            if (isGlass) Color(0xFF00C6FF) else MaterialTheme.colorScheme.primary
                         } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+                            if (isGlass) Color.White.copy(alpha = if (isDark) 0.15f else 0.25f)
+                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
                         }
 
                         Box(
@@ -232,24 +235,9 @@ fun OnboardingScreen(
 
                 // Action Pill Button (Next -> Start Reading)
                 val isLastPage = pagerState.currentPage == totalSlides - 1
-                Button(
-                    onClick = {
-                        if (isLastPage) {
-                            finishOnboarding()
-                        } else {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                            }
-                        }
-                    },
-                    shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    modifier = Modifier
-                        .height(54.dp)
-                        .expressiveClickable {
+                if (isGlass) {
+                    Surface(
+                        onClick = {
                             if (isLastPage) {
                                 finishOnboarding()
                             } else {
@@ -258,20 +246,92 @@ fun OnboardingScreen(
                                 }
                             }
                         },
-                    contentPadding = PaddingValues(horizontal = 24.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = if (isLastPage) strings.onboardingStartReading else strings.onboardingNext,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = if (isLastPage) Icons.Default.Check else Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        shape = RoundedCornerShape(28.dp),
+                        color = if (isDark) Color(0x3500C6FF) else Color(0x220072FF),
+                        border = BorderStroke(
+                            1.5.dp,
+                            Brush.linearGradient(
+                                listOf(
+                                    Color.White.copy(alpha = if (isDark) 0.85f else 0.95f),
+                                    Color.White.copy(alpha = 0.25f)
+                                )
+                            )
+                        ),
+                        shadowElevation = if (isDark) 0.dp else 4.dp,
+                        modifier = Modifier
+                            .height(54.dp)
+                            .expressiveClickable {
+                                if (isLastPage) {
+                                    finishOnboarding()
+                                } else {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                    }
+                                }
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(horizontal = 24.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (isLastPage) strings.onboardingStartReading else strings.onboardingNext,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isDark) Color.White else Color(0xFF0284C7)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = if (isLastPage) Icons.Default.Check else Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = if (isDark) Color.White else Color(0xFF0284C7),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            if (isLastPage) {
+                                finishOnboarding()
+                            } else {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                }
+                            }
+                        },
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        modifier = Modifier
+                            .height(54.dp)
+                            .expressiveClickable {
+                                if (isLastPage) {
+                                    finishOnboarding()
+                                } else {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                    }
+                                }
+                            },
+                        contentPadding = PaddingValues(horizontal = 24.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (isLastPage) strings.onboardingStartReading else strings.onboardingNext,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = if (isLastPage) Icons.Default.Check else Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -476,73 +536,41 @@ private fun LiquidGlassStyleOptionCard(
     onClick: () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
-
-    // Frosted translucent glass background
-    val glassBgBrush = if (isDark) {
-        if (isSelected) {
-            Brush.linearGradient(
-                listOf(
-                    Color(0x3500C6FF),
-                    Color(0x180072FF),
-                    Color(0x18FFFFFF)
-                )
-            )
-        } else {
-            Brush.linearGradient(
-                listOf(
-                    Color(0x22FFFFFF),
-                    Color(0x0CFFFFFF)
-                )
-            )
-        }
-    } else {
-        if (isSelected) {
-            Brush.linearGradient(
-                listOf(
-                    Color(0xEEF0F9FF),
-                    Color(0xDDE0F2FE),
-                    Color(0xCCBAE6FD)
-                )
-            )
-        } else {
-            Brush.linearGradient(
-                listOf(
-                    Color(0xE6FFFFFF),
-                    Color(0xB3FFFFFF)
-                )
-            )
-        }
-    }
-
-    // Specular light edge reflection border
-    val glassBorderBrush = if (isSelected) {
-        Brush.linearGradient(
-            listOf(
-                Color.White.copy(alpha = if (isDark) 0.90f else 0.95f),
-                Color(0xFF00C6FF).copy(alpha = 0.70f),
-                Color.White.copy(alpha = 0.25f),
-                Color(0xFF0072FF).copy(alpha = 0.50f)
-            )
-        )
-    } else {
-        Brush.linearGradient(
-            listOf(
-                Color.White.copy(alpha = if (isDark) 0.35f else 0.70f),
-                Color.White.copy(alpha = if (isDark) 0.08f else 0.25f)
-            )
-        )
-    }
-
     val glassShape = RoundedCornerShape(24.dp)
 
-    Box(
+    val surfaceTint = if (isSelected) {
+        if (isDark) Color(0x3500C6FF) else Color(0xD8E0F2FE)
+    } else {
+        if (isDark) Color(0x22181C26) else Color(0xE8FFFFFF)
+    }
+
+    val rimBrush = if (isSelected) {
+        Brush.linearGradient(
+            listOf(
+                Color.White.copy(alpha = if (isDark) 0.95f else 0.90f),
+                Color(0xFF00C6FF).copy(alpha = 0.80f),
+                Color.White.copy(alpha = 0.30f)
+            )
+        )
+    } else {
+        Brush.linearGradient(
+            listOf(
+                Color.White.copy(alpha = if (isDark) 0.30f else 0.50f),
+                Color.White.copy(alpha = if (isDark) 0.08f else 0.20f)
+            )
+        )
+    }
+
+    LiquidGlassSurface(
+        shape = glassShape,
+        isDark = isDark,
+        tintColor = surfaceTint,
+        shadowElevation = if (isSelected) 8.dp else 4.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(glassShape)
-            .background(glassBgBrush)
             .border(
                 width = if (isSelected) 1.6.dp else 1.dp,
-                brush = glassBorderBrush,
+                brush = rimBrush,
                 shape = glassShape
             )
             .expressiveClickable(scaleDown = 0.98f, onClick = onClick)
@@ -559,19 +587,18 @@ private fun LiquidGlassStyleOptionCard(
                     .size(46.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
-                        Brush.linearGradient(
-                            listOf(
-                                Color.White.copy(alpha = if (isDark) 0.22f else 0.50f),
-                                Color.White.copy(alpha = if (isDark) 0.06f else 0.15f)
-                            )
-                        )
+                        if (isSelected) {
+                            if (isDark) Color(0x4000C6FF) else Color(0x300284C7)
+                        } else {
+                            if (isDark) Color(0x20FFFFFF) else Color(0x12000000)
+                        }
                     )
                     .border(
                         width = 1.dp,
                         brush = Brush.linearGradient(
                             listOf(
-                                Color.White.copy(alpha = if (isSelected) 0.85f else 0.50f),
-                                Color.White.copy(alpha = 0.10f)
+                                Color.White.copy(alpha = if (isSelected) 0.85f else 0.45f),
+                                Color.White.copy(alpha = 0.15f)
                             )
                         ),
                         shape = RoundedCornerShape(14.dp)
@@ -607,16 +634,11 @@ private fun LiquidGlassStyleOptionCard(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .background(
-                            Brush.linearGradient(
-                                listOf(
-                                    Color.White.copy(alpha = if (isDark) 0.18f else 0.40f),
-                                    Color.White.copy(alpha = if (isDark) 0.05f else 0.15f)
-                                )
-                            )
+                            if (isDark) Color(0x25FFFFFF) else Color(0x2500C6FF)
                         )
                         .border(
                             width = 0.6.dp,
-                            color = Color.White.copy(alpha = if (isDark) 0.35f else 0.55f),
+                            color = Color.White.copy(alpha = if (isDark) 0.35f else 0.60f),
                             shape = RoundedCornerShape(12.dp)
                         )
                         .padding(horizontal = 8.dp, vertical = 2.dp)
@@ -634,7 +656,7 @@ private fun LiquidGlassStyleOptionCard(
                         Text(
                             text = "Frosted Dock & Blur",
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (isDark) Color(0xFFE2E8F0) else Color(0xFF334155),
+                            color = if (isDark) Color(0xFFE2E8F0) else Color(0xFF0369A1),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -653,12 +675,7 @@ private fun LiquidGlassStyleOptionCard(
                         if (isSelected) {
                             Brush.linearGradient(listOf(Color(0xFF00C6FF), Color(0xFF0072FF)))
                         } else {
-                            Brush.linearGradient(
-                                listOf(
-                                    Color.White.copy(alpha = if (isDark) 0.15f else 0.30f),
-                                    Color.White.copy(alpha = 0.05f)
-                                )
-                            )
+                            SolidColor(if (isDark) Color(0x20FFFFFF) else Color(0x12000000))
                         }
                     )
                     .border(
@@ -690,7 +707,7 @@ private fun LiquidGlassStyleOptionCard(
  * Slide 1: Supported formats & OPDS catalogs
  */
 @Composable
-private fun OnboardingFormatsSlide() {
+private fun OnboardingFormatsSlide(isGlass: Boolean = false) {
     val strings = LocalAppStrings.current
     val scrollState = rememberScrollState()
 
@@ -732,7 +749,8 @@ private fun OnboardingFormatsSlide() {
         FeatureHighlightCard(
             icon = Icons.Default.AutoAwesome,
             title = "EPUB, FB2, MOBI, PDF, TXT, CBZ",
-            description = "Умный парсер глав, сохранение изображений, сноски и таблицы"
+            description = "Умный парсер глав, сохранение изображений, сноски и таблицы",
+            isGlass = isGlass
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -740,7 +758,8 @@ private fun OnboardingFormatsSlide() {
         FeatureHighlightCard(
             icon = Icons.AutoMirrored.Filled.MenuBook,
             title = "Каталоги OPDS",
-            description = "Поиск и загрузка тысяч книг напрямую из онлайн-библиотек"
+            description = "Поиск и загрузка тысяч книг напрямую из онлайн-библиотек",
+            isGlass = isGlass
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -748,7 +767,8 @@ private fun OnboardingFormatsSlide() {
         FeatureHighlightCard(
             icon = Icons.Default.BarChart,
             title = "Статистика чтения",
-            description = "Трекинг времени, ежедневный стрик и точный персональный WPM"
+            description = "Трекинг времени, ежедневный стрик и точный персональный WPM",
+            isGlass = isGlass
         )
     }
 }
@@ -757,7 +777,7 @@ private fun OnboardingFormatsSlide() {
  * Slide 2: Real-time TTS Narration with Word Highlight
  */
 @Composable
-private fun OnboardingTtsSlide() {
+private fun OnboardingTtsSlide(isGlass: Boolean = false) {
     val strings = LocalAppStrings.current
     val scrollState = rememberScrollState()
 
@@ -799,7 +819,8 @@ private fun OnboardingTtsSlide() {
         FeatureHighlightCard(
             icon = Icons.Default.AutoAwesome,
             title = "Подсветка слов в реальном времени",
-            description = "Слово, произносимое прямо сейчас, мягко подсвечивается в тексте"
+            description = "Слово, произносимое прямо сейчас, мягко подсвечивается в тексте",
+            isGlass = isGlass
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -807,7 +828,8 @@ private fun OnboardingTtsSlide() {
         FeatureHighlightCard(
             icon = Icons.AutoMirrored.Filled.MenuBook,
             title = "Озвучка с любого места",
-            description = "Нажмите на любое слово в книге, чтобы начать чтение именно с него"
+            description = "Нажмите на любое слово в книге, чтобы начать чтение именно с него",
+            isGlass = isGlass
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -815,7 +837,8 @@ private fun OnboardingTtsSlide() {
         FeatureHighlightCard(
             icon = Icons.AutoMirrored.Filled.VolumeUp,
             title = "Большой выбор голосов",
-            description = "Высокое качество речи, регулировка темпа и высоты тона"
+            description = "Высокое качество речи, регулировка темпа и высоты тона",
+            isGlass = isGlass
         )
     }
 }
@@ -825,11 +848,13 @@ private fun OnboardingTtsSlide() {
  */
 @Composable
 private fun OnboardingCommunitySlide(
+    isGlass: Boolean = false,
     onOpenTelegram: () -> Unit,
     onOpenGithub: () -> Unit
 ) {
     val strings = LocalAppStrings.current
     val scrollState = rememberScrollState()
+    val isDark = isSystemInDarkTheme()
 
     Column(
         modifier = Modifier
@@ -867,114 +892,236 @@ private fun OnboardingCommunitySlide(
         Spacer(modifier = Modifier.height(28.dp))
 
         // Telegram Channel Card
-        Card(
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            modifier = Modifier
-                .fillMaxWidth()
-                .expressiveClickable(scaleDown = 0.98f, onClick = onOpenTelegram)
-        ) {
-            Row(
+        if (isGlass) {
+            val shape = RoundedCornerShape(22.dp)
+            LiquidGlassSurface(
+                shape = shape,
+                isDark = isDark,
+                shadowElevation = 4.dp,
+                tintColor = if (isDark) Color(0x221E2330) else Color(0xD0FFFFFF),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(18.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .border(0.8.dp, Color.White.copy(alpha = if (isDark) 0.18f else 0.45f), shape)
+                    .expressiveClickable(scaleDown = 0.98f, onClick = onOpenTelegram)
             ) {
-                Box(
+                Row(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF2AABEE).copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF2AABEE).copy(alpha = 0.20f))
+                            .border(1.dp, Color(0xFF2AABEE).copy(alpha = 0.40f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_telegram),
+                            contentDescription = null,
+                            tint = Color(0xFF2AABEE),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Telegram: @koukkuteka",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Официальный канал обновлений и предложений",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
                     Icon(
-                        painter = painterResource(R.drawable.ic_telegram),
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = null,
                         tint = Color(0xFF2AABEE),
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
+            }
+        } else {
+            Card(
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .expressiveClickable(scaleDown = 0.98f, onClick = onOpenTelegram)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF2AABEE).copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_telegram),
+                            contentDescription = null,
+                            tint = Color(0xFF2AABEE),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Telegram: @koukkuteka",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Официальный канал обновлений и предложений",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Telegram: @koukkuteka",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Официальный канал обновлений и предложений",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        tint = Color(0xFF2AABEE),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
-
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = Color(0xFF2AABEE),
-                    modifier = Modifier.size(20.dp)
-                )
             }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
         // GitHub Repository Card
-        Card(
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            modifier = Modifier
-                .fillMaxWidth()
-                .expressiveClickable(scaleDown = 0.98f, onClick = onOpenGithub)
-        ) {
-            Row(
+        if (isGlass) {
+            val shape = RoundedCornerShape(22.dp)
+            LiquidGlassSurface(
+                shape = shape,
+                isDark = isDark,
+                shadowElevation = 4.dp,
+                tintColor = if (isDark) Color(0x221E2330) else Color(0xD0FFFFFF),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(18.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .border(0.8.dp, Color.White.copy(alpha = if (isDark) 0.18f else 0.45f), shape)
+                    .expressiveClickable(scaleDown = 0.98f, onClick = onOpenGithub)
             ) {
-                Box(
+                Row(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(if (isDark) Color(0x30FFFFFF) else Color(0x12000000))
+                            .border(1.dp, Color.White.copy(alpha = if (isDark) 0.35f else 0.45f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_github),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "GitHub Repository",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Kouqqu/aura-reader",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
                     Icon(
-                        painter = painterResource(R.drawable.ic_github),
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(24.dp)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
+            }
+        } else {
+            Card(
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .expressiveClickable(scaleDown = 0.98f, onClick = onOpenGithub)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_github),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "GitHub Repository",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Kouqqu/aura-reader",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "GitHub Repository",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Kouqqu/aura-reader",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
-
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
-                )
             }
         }
     }
@@ -984,53 +1131,120 @@ private fun OnboardingCommunitySlide(
 private fun FeatureHighlightCard(
     icon: ImageVector,
     title: String,
-    description: String
+    description: String,
+    isGlass: Boolean = false
 ) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
+    val isDark = isSystemInDarkTheme()
+    val shape = RoundedCornerShape(20.dp)
+
+    if (isGlass) {
+        LiquidGlassSurface(
+            shape = shape,
+            isDark = isDark,
+            shadowElevation = 4.dp,
+            tintColor = if (isDark) Color(0x221E2330) else Color(0xD0FFFFFF),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .border(
+                    width = 0.8.dp,
+                    color = Color.White.copy(alpha = if (isDark) 0.18f else 0.45f),
+                    shape = shape
+                )
         ) {
-            Box(
+            Row(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (isDark) Color(0x3000C6FF) else Color(0x200284C7)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = Color.White.copy(alpha = if (isDark) 0.35f else 0.55f),
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
+        }
+    } else {
+        Card(
+            shape = shape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
 
-            Spacer(modifier = Modifier.width(14.dp))
+                Spacer(modifier = Modifier.width(14.dp))
 
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
 }
+
 
 /**
  * Material 3 Expressive Scalloped Flower Badge Container

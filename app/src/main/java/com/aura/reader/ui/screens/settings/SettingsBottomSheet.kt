@@ -105,6 +105,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.components.LiquidGlassSurface
+import com.aura.reader.ui.components.LiquidGlassSwitch
+import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.opds.OpdsService
 import com.aura.reader.ui.components.PixelFullScreenBurst
@@ -668,10 +670,17 @@ fun SettingsBottomSheet(
                     icon = { SettingsIconBox(Icons.Default.Palette) },
                     onClick = { onSyncThemesChange(!syncThemesWithApp) },
                     trailing = {
-                        Switch(
-                            checked = syncThemesWithApp,
-                            onCheckedChange = onSyncThemesChange
-                        )
+                        if (isGlass) {
+                            LiquidGlassSwitch(
+                                checked = syncThemesWithApp,
+                                onCheckedChange = onSyncThemesChange
+                            )
+                        } else {
+                            Switch(
+                                checked = syncThemesWithApp,
+                                onCheckedChange = onSyncThemesChange
+                            )
+                        }
                     }
                 )
                 ExpressiveDivider()
@@ -695,14 +704,21 @@ fun SettingsBottomSheet(
                     icon = { SettingsIconBox(Icons.Default.AutoAwesome) },
                     onClick = { onToggleMaterialYou(!materialYouEnabled) },
                     trailing = {
-                        Switch(
-                            checked = materialYouEnabled,
-                            onCheckedChange = onToggleMaterialYou,
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        if (isGlass) {
+                            LiquidGlassSwitch(
+                                checked = materialYouEnabled,
+                                onCheckedChange = onToggleMaterialYou
                             )
-                        )
+                        } else {
+                            Switch(
+                                checked = materialYouEnabled,
+                                onCheckedChange = onToggleMaterialYou,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            )
+                        }
                     }
                 )
             }
@@ -768,32 +784,24 @@ fun SettingsBottomSheet(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        FilterChip(
+                        LiquidGlassFilterChip(
                             selected = appFont == "DEFAULT",
                             onClick = { onAppFontChange("DEFAULT") },
                             label = { Text(strings.appFontDefault) },
+                            isGlass = isGlass,
                             leadingIcon = if (appFont == "DEFAULT") {
                                 { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                            } else null,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            } else null
                         )
 
-                        FilterChip(
+                        LiquidGlassFilterChip(
                             selected = appFont == "GOOGLE_SANS",
                             onClick = { onAppFontChange("GOOGLE_SANS") },
                             label = { Text(strings.appFontGoogleSans) },
+                            isGlass = isGlass,
                             leadingIcon = if (appFont == "GOOGLE_SANS") {
                                 { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                            } else null,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            } else null
                         )
                     }
                 }
@@ -817,14 +825,21 @@ fun SettingsBottomSheet(
                     icon = { SettingsIconBox(Icons.Default.BarChart) },
                     onClick = { onToggleReadingStats(!readingStatsEnabled) },
                     trailing = {
-                        Switch(
-                            checked = readingStatsEnabled,
-                            onCheckedChange = onToggleReadingStats,
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        if (isGlass) {
+                            LiquidGlassSwitch(
+                                checked = readingStatsEnabled,
+                                onCheckedChange = onToggleReadingStats
                             )
-                        )
+                        } else {
+                            Switch(
+                                checked = readingStatsEnabled,
+                                onCheckedChange = onToggleReadingStats,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            )
+                        }
                     }
                 )
                 ExpressiveDivider()
@@ -898,14 +913,21 @@ fun SettingsBottomSheet(
                                 )
                             }
                         }
-                        Switch(
-                            checked = customOpdsEnabled,
-                            onCheckedChange = onToggleCustomOpds,
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        if (isGlass) {
+                            LiquidGlassSwitch(
+                                checked = customOpdsEnabled,
+                                onCheckedChange = onToggleCustomOpds
                             )
-                        )
+                        } else {
+                            Switch(
+                                checked = customOpdsEnabled,
+                                onCheckedChange = onToggleCustomOpds,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            )
+                        }
                     }
                     if (customOpdsEnabled) {
                         Spacer(modifier = Modifier.height(14.dp))
@@ -956,14 +978,21 @@ fun SettingsBottomSheet(
                     icon = { SettingsIconBox(Icons.Default.Notifications) },
                     onClick = { onToggleUpdateNotifications(!updateNotificationsEnabled) },
                     trailing = {
-                        Switch(
-                            checked = updateNotificationsEnabled,
-                            onCheckedChange = onToggleUpdateNotifications,
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        if (isGlass) {
+                            LiquidGlassSwitch(
+                                checked = updateNotificationsEnabled,
+                                onCheckedChange = onToggleUpdateNotifications
                             )
-                        )
+                        } else {
+                            Switch(
+                                checked = updateNotificationsEnabled,
+                                onCheckedChange = onToggleUpdateNotifications,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            )
+                        }
                     }
                 )
                 ExpressiveDivider()
@@ -973,14 +1002,21 @@ fun SettingsBottomSheet(
                     icon = { SettingsIconBox(Icons.Default.Analytics) },
                     onClick = { onToggleAnonymousAnalytics(!anonymousAnalyticsEnabled) },
                     trailing = {
-                        Switch(
-                            checked = anonymousAnalyticsEnabled,
-                            onCheckedChange = onToggleAnonymousAnalytics,
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        if (isGlass) {
+                            LiquidGlassSwitch(
+                                checked = anonymousAnalyticsEnabled,
+                                onCheckedChange = onToggleAnonymousAnalytics
                             )
-                        )
+                        } else {
+                            Switch(
+                                checked = anonymousAnalyticsEnabled,
+                                onCheckedChange = onToggleAnonymousAnalytics,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            )
+                        }
                     }
                 )
                 ExpressiveDivider()
@@ -1047,8 +1083,9 @@ fun SettingsBottomSheet(
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(
+                            LiquidGlassFilterChip(
                                 selected = updateChannel == "RELEASE",
+                                isGlass = isGlass,
                                 onClick = {
                                     onUpdateChannelChange("RELEASE")
                                     onCheckUpdates()
@@ -1056,8 +1093,9 @@ fun SettingsBottomSheet(
                                 },
                                 label = { Text(strings.updateChannelRelease) }
                             )
-                            FilterChip(
+                            LiquidGlassFilterChip(
                                 selected = updateChannel == "BETA",
+                                isGlass = isGlass,
                                 onClick = {
                                     onUpdateChannelChange("BETA")
                                     onCheckUpdates()
