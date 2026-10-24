@@ -1268,7 +1268,8 @@ fun ReaderScreen(
                     onPreviewVoice = { voice -> com.aura.reader.service.BookTtsService.previewVoice(context, voice) },
                     onSeekParagraph = { idx -> com.aura.reader.service.BookTtsService.seekParagraph(context, idx) },
                     onHighlightDelayChange = { delay -> com.aura.reader.service.BookTtsService.setHighlightDelay(context, delay) },
-                    onToggleWordHighlight = { enabled -> com.aura.reader.service.BookTtsService.setWordHighlightEnabled(context, enabled) }
+                    onToggleWordHighlight = { enabled -> com.aura.reader.service.BookTtsService.setWordHighlightEnabled(context, enabled) },
+                    isGlass = isGlass
                 )
             }
 

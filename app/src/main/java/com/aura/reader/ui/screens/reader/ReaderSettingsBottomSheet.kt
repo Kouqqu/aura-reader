@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.isSystemInDarkTheme
 import com.aura.reader.data.model.AppDesignStyle
+import com.aura.reader.ui.components.LiquidGlassSwitch
 import com.aura.reader.data.model.PageTurnAnimation
 import com.aura.reader.data.model.ReaderFontFamily
 import com.aura.reader.data.model.ReaderSettings
@@ -397,10 +398,17 @@ fun ReaderSettingsBottomSheet(
                                     color = itemSubtitleColor
                                 )
                             }
-                            Switch(
-                                checked = materialYouEnabled,
-                                onCheckedChange = onMaterialYouChange
-                            )
+                            if (isGlass) {
+                                LiquidGlassSwitch(
+                                    checked = materialYouEnabled,
+                                    onCheckedChange = { onMaterialYouChange?.invoke(it) }
+                                )
+                            } else {
+                                Switch(
+                                    checked = materialYouEnabled,
+                                    onCheckedChange = onMaterialYouChange
+                                )
+                            }
                         }
                     }
                 }
@@ -622,10 +630,17 @@ fun ReaderSettingsBottomSheet(
                                 color = itemSubtitleColor
                             )
                         }
-                        Switch(
-                            checked = settings.pagingMode,
-                            onCheckedChange = onPagingModeChange
-                        )
+                        if (isGlass) {
+                            LiquidGlassSwitch(
+                                checked = settings.pagingMode,
+                                onCheckedChange = onPagingModeChange
+                            )
+                        } else {
+                            Switch(
+                                checked = settings.pagingMode,
+                                onCheckedChange = onPagingModeChange
+                            )
+                        }
                     }
                 }
 
@@ -737,10 +752,17 @@ fun ReaderSettingsBottomSheet(
                                 color = itemSubtitleColor
                             )
                         }
-                        Switch(
-                            checked = settings.hapticFeedbackEnabled,
-                            onCheckedChange = onHapticFeedbackChange
-                        )
+                        if (isGlass) {
+                            LiquidGlassSwitch(
+                                checked = settings.hapticFeedbackEnabled,
+                                onCheckedChange = onHapticFeedbackChange
+                            )
+                        } else {
+                            Switch(
+                                checked = settings.hapticFeedbackEnabled,
+                                onCheckedChange = onHapticFeedbackChange
+                            )
+                        }
                     }
                 }
 
@@ -774,10 +796,17 @@ fun ReaderSettingsBottomSheet(
                                 color = itemSubtitleColor
                             )
                         }
-                        Switch(
-                            checked = settings.autoHyphenation,
-                            onCheckedChange = onAutoHyphenationChange
-                        )
+                        if (isGlass) {
+                            LiquidGlassSwitch(
+                                checked = settings.autoHyphenation,
+                                onCheckedChange = onAutoHyphenationChange
+                            )
+                        } else {
+                            Switch(
+                                checked = settings.autoHyphenation,
+                                onCheckedChange = onAutoHyphenationChange
+                            )
+                        }
                     }
                 }
 
@@ -811,10 +840,17 @@ fun ReaderSettingsBottomSheet(
                                 color = itemSubtitleColor
                             )
                         }
-                        Switch(
-                            checked = settings.lightImageBackground,
-                            onCheckedChange = onLightImageBackgroundChange
-                        )
+                        if (isGlass) {
+                            LiquidGlassSwitch(
+                                checked = settings.lightImageBackground,
+                                onCheckedChange = onLightImageBackgroundChange
+                            )
+                        } else {
+                            Switch(
+                                checked = settings.lightImageBackground,
+                                onCheckedChange = onLightImageBackgroundChange
+                            )
+                        }
                     }
                 }
 

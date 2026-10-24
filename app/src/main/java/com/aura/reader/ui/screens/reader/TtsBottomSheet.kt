@@ -82,6 +82,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aura.reader.service.BookTtsService
+import com.aura.reader.ui.components.LiquidGlassSwitch
 import com.aura.reader.service.TtsState
 import com.aura.reader.ui.theme.LocalAppStrings
 
@@ -100,7 +101,8 @@ fun TtsBottomSheet(
     onPreviewVoice: (String) -> Unit = {},
     onSeekParagraph: (Int) -> Unit = {},
     onHighlightDelayChange: (Int) -> Unit = {},
-    onToggleWordHighlight: (Boolean) -> Unit = {}
+    onToggleWordHighlight: (Boolean) -> Unit = {},
+    isGlass: Boolean = false
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val strings = LocalAppStrings.current
@@ -435,10 +437,17 @@ fun TtsBottomSheet(
                         )
                     }
                 }
-                Switch(
-                    checked = ttsState.isWordHighlightEnabled,
-                    onCheckedChange = { onToggleWordHighlight(it) }
-                )
+                if (isGlass) {
+                    LiquidGlassSwitch(
+                        checked = ttsState.isWordHighlightEnabled,
+                        onCheckedChange = { onToggleWordHighlight(it) }
+                    )
+                } else {
+                    Switch(
+                        checked = ttsState.isWordHighlightEnabled,
+                        onCheckedChange = { onToggleWordHighlight(it) }
+                    )
+                }
             }
 
             // Highlight Synchronization Options (only when word highlight is enabled)

@@ -217,7 +217,7 @@ fun OnboardingScreen(
                             label = "pagerIndicatorWidth"
                         )
                         val color = if (isSelected) {
-                            if (isGlass) Color(0xFF00C6FF) else MaterialTheme.colorScheme.primary
+                            if (isGlass) Color(0xFF0A84FF) else MaterialTheme.colorScheme.primary
                         } else {
                             if (isGlass) Color.White.copy(alpha = if (isDark) 0.15f else 0.25f)
                             else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
@@ -247,7 +247,7 @@ fun OnboardingScreen(
                             }
                         },
                         shape = RoundedCornerShape(28.dp),
-                        color = if (isDark) Color(0x3500C6FF) else Color(0x220072FF),
+                        color = if (isDark) Color(0x280A84FF) else Color(0x220072FF),
                         border = BorderStroke(
                             1.5.dp,
                             Brush.linearGradient(
@@ -488,13 +488,6 @@ private fun MaterialStyleOptionCard(
                                 .background(color)
                         )
                     }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Dynamic Color",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        fontSize = 10.sp
-                    )
                 }
             }
 
@@ -538,25 +531,26 @@ private fun LiquidGlassStyleOptionCard(
     val isDark = isSystemInDarkTheme()
     val glassShape = RoundedCornerShape(24.dp)
 
+    // Calm, translucent, deep frosted glass (visionOS / iOS 26 aesthetic)
     val surfaceTint = if (isSelected) {
-        if (isDark) Color(0x3500C6FF) else Color(0xD8E0F2FE)
+        if (isDark) Color(0x28FFFFFF) else Color(0xF2FFFFFF)
     } else {
-        if (isDark) Color(0x22181C26) else Color(0xE8FFFFFF)
+        if (isDark) Color(0x14FFFFFF) else Color(0xD8FFFFFF)
     }
 
+    // Authentic Apple specular rim highlight (light from top, no neon cyan)
     val rimBrush = if (isSelected) {
-        Brush.linearGradient(
+        Brush.verticalGradient(
             listOf(
-                Color.White.copy(alpha = if (isDark) 0.95f else 0.90f),
-                Color(0xFF00C6FF).copy(alpha = 0.80f),
-                Color.White.copy(alpha = 0.30f)
+                Color.White.copy(alpha = if (isDark) 0.50f else 0.75f),
+                Color.White.copy(alpha = if (isDark) 0.15f else 0.25f)
             )
         )
     } else {
-        Brush.linearGradient(
+        Brush.verticalGradient(
             listOf(
-                Color.White.copy(alpha = if (isDark) 0.30f else 0.50f),
-                Color.White.copy(alpha = if (isDark) 0.08f else 0.20f)
+                Color.White.copy(alpha = if (isDark) 0.18f else 0.35f),
+                Color.White.copy(alpha = if (isDark) 0.05f else 0.12f)
             )
         )
     }
@@ -565,11 +559,12 @@ private fun LiquidGlassStyleOptionCard(
         shape = glassShape,
         isDark = isDark,
         tintColor = surfaceTint,
-        shadowElevation = if (isSelected) 8.dp else 4.dp,
+        highlightIntensity = 0f, // Disable internal border to avoid double-border artifact
+        shadowElevation = if (isSelected) 6.dp else 2.dp,
         modifier = Modifier
             .fillMaxWidth()
             .border(
-                width = if (isSelected) 1.6.dp else 1.dp,
+                width = if (isSelected) 1.dp else 0.75.dp,
                 brush = rimBrush,
                 shape = glassShape
             )
@@ -587,18 +582,14 @@ private fun LiquidGlassStyleOptionCard(
                     .size(46.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
-                        if (isSelected) {
-                            if (isDark) Color(0x4000C6FF) else Color(0x300284C7)
-                        } else {
-                            if (isDark) Color(0x20FFFFFF) else Color(0x12000000)
-                        }
+                        if (isDark) Color(0x20FFFFFF) else Color(0x0C000000)
                     )
                     .border(
-                        width = 1.dp,
-                        brush = Brush.linearGradient(
+                        width = 0.75.dp,
+                        brush = Brush.verticalGradient(
                             listOf(
-                                Color.White.copy(alpha = if (isSelected) 0.85f else 0.45f),
-                                Color.White.copy(alpha = 0.15f)
+                                Color.White.copy(alpha = if (isDark) 0.35f else 0.50f),
+                                Color.White.copy(alpha = if (isDark) 0.08f else 0.15f)
                             )
                         ),
                         shape = RoundedCornerShape(14.dp)
@@ -608,7 +599,7 @@ private fun LiquidGlassStyleOptionCard(
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = if (isSelected) Color(0xFF00C6FF) else if (isDark) Color(0xFFE2E8F0) else Color(0xFF0284C7),
+                    tint = if (isSelected) (if (isDark) Color(0xFF0A84FF) else Color(0xFF007AFF)) else (if (isDark) Color(0xFFE2E8F0) else Color(0xFF191B1F)),
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -628,64 +619,34 @@ private fun LiquidGlassStyleOptionCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                // Floating Frosted Glass Dock Capsule Preview
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            if (isDark) Color(0x25FFFFFF) else Color(0x2500C6FF)
-                        )
-                        .border(
-                            width = 0.6.dp,
-                            color = Color.White.copy(alpha = if (isDark) 0.35f else 0.60f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF00C6FF))
-                        )
-                        Text(
-                            text = "Frosted Dock & Blur",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isDark) Color(0xFFE2E8F0) else Color(0xFF0369A1),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Glowing Glass Capsule Selection Indicator
+            // Authentic iOS Selection Indicator
             Box(
                 modifier = Modifier
                     .size(26.dp)
                     .clip(CircleShape)
                     .background(
                         if (isSelected) {
-                            Brush.linearGradient(listOf(Color(0xFF00C6FF), Color(0xFF0072FF)))
+                            Brush.verticalGradient(listOf(Color(0xFF0A84FF), Color(0xFF0071E3)))
                         } else {
-                            SolidColor(if (isDark) Color(0x20FFFFFF) else Color(0x12000000))
+                            SolidColor(Color.Transparent)
                         }
                     )
                     .border(
-                        width = 1.2.dp,
-                        brush = Brush.linearGradient(
-                            listOf(
-                                Color.White.copy(alpha = if (isSelected) 0.95f else 0.40f),
-                                Color.White.copy(alpha = 0.15f)
+                        width = if (isSelected) 0.75.dp else 1.5.dp,
+                        brush = if (isSelected) {
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.60f),
+                                    Color.Transparent
+                                )
                             )
-                        ),
+                        } else {
+                            SolidColor(Color.White.copy(alpha = if (isDark) 0.22f else 0.40f))
+                        },
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center

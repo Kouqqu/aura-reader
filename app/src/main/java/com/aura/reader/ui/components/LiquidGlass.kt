@@ -133,10 +133,20 @@ fun LiquidGlassSurface(
         Color(0xF5F6F7FA)
     }
 
-    val borderColor = if (isDark) {
-        Color.White.copy(alpha = 0.06f * highlightIntensity)
+    val borderBrush = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.16f * highlightIntensity),
+                Color.White.copy(alpha = 0.04f * highlightIntensity)
+            )
+        )
     } else {
-        Color.Black.copy(alpha = 0.05f * highlightIntensity)
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.40f * highlightIntensity),
+                Color.Black.copy(alpha = 0.05f * highlightIntensity)
+            )
+        )
     }
 
     val effectiveElevation = if (isDark) 0.dp else shadowElevation.coerceAtMost(8.dp)
@@ -158,8 +168,8 @@ fun LiquidGlassSurface(
             .then(hazeModifier)
             .background(baseFill)
             .border(
-                width = 0.5.dp,
-                color = borderColor,
+                width = 0.6.dp,
+                brush = borderBrush,
                 shape = shape
             )
     ) {
@@ -938,52 +948,81 @@ fun LiquidGlassSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
-    val trackWidth = 52.dp
-    val trackHeight = 32.dp
-    val thumbDiameter = 28.dp
+    val trackWidth = 51.dp
+    val trackHeight = 31.dp
+    val thumbDiameter = 27.dp
+    val thumbPaddingDp = 2.dp
 
     val density = LocalDensity.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-
     val isDark = isSystemInDarkTheme()
-    val thumbPaddingDp = (trackHeight - thumbDiameter) / 2
 
+    // Tactile squish on press: thumb elongates from 27dp to 33dp
     val thumbWidthAnim by animateDpAsState(
-        targetValue = if (isPressed) thumbDiameter + 4.dp else thumbDiameter,
+        targetValue = if (isPressed) thumbDiameter + 6.dp else thumbDiameter,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessHigh
+            stiffness = 600f
         ),
         label = "glassThumbWidth"
     )
 
+    // Smooth iOS spring travel:
+    // When checked: right-aligned -> trackWidth - thumbWidthAnim - thumbPaddingDp
+    // When unchecked: left-aligned -> thumbPaddingDp
+    val targetOffset = if (checked) {
+        trackWidth - thumbWidthAnim - thumbPaddingDp
+    } else {
+        thumbPaddingDp
+    }
+
     val thumbOffsetAnim by animateDpAsState(
-        targetValue = if (checked) trackWidth - thumbWidthAnim - thumbPaddingDp else thumbPaddingDp,
+        targetValue = targetOffset,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow
+            dampingRatio = 0.75f,
+            stiffness = 500f
         ),
         label = "glassThumbOffset"
     )
 
+    // iOS signature vibrant green track when ON; frosted translucent glass when OFF
+    val activeTrackColor = if (isDark) Color(0xFF30D158) else Color(0xFF34C759)
+    val inactiveTrackColor = if (isDark) Color(0x38FFFFFF) else Color(0x1F000000)
+
     val trackBrush = if (checked) {
-        Brush.linearGradient(
-            listOf(Color(0xE600C6FF), Color(0xE60072FF))
+        Brush.verticalGradient(
+            listOf(activeTrackColor, activeTrackColor.copy(alpha = 0.92f))
         )
     } else {
-        SolidColor(if (isDark) Color(0x35FFFFFF) else Color(0x1F000000))
+        SolidColor(inactiveTrackColor)
     }
+
+    val trackBorderBrush = if (checked) {
+        Brush.verticalGradient(
+            listOf(Color.White.copy(alpha = 0.35f), Color.White.copy(alpha = 0.10f))
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = if (isDark) 0.22f else 0.40f),
+                Color.White.copy(alpha = if (isDark) 0.06f else 0.15f)
+            )
+        )
+    }
+
+    val trackShape = RoundedCornerShape(percent = 50)
+    val thumbShape = RoundedCornerShape(percent = 50)
 
     Box(
         modifier = modifier
             .size(width = trackWidth, height = trackHeight)
-            .clip(CircleShape)
+            .clip(trackShape)
             .background(trackBrush)
             .border(
-                width = 1.dp,
-                color = if (checked) Color.White.copy(alpha = 0.55f) else Color.White.copy(alpha = if (isDark) 0.20f else 0.40f),
-                shape = CircleShape
+                width = 0.75.dp,
+                brush = trackBorderBrush,
+                shape = trackShape
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -993,29 +1032,61 @@ fun LiquidGlassSwitch(
                 onClick = { onCheckedChange(!checked) }
             )
     ) {
+        // Liquid Glass 3D Convex Lens Thumb (lens reflection, drop shadow, specular rim)
         Box(
             modifier = Modifier
                 .offset(x = thumbOffsetAnim, y = thumbPaddingDp)
                 .size(width = thumbWidthAnim, height = thumbDiameter)
                 .shadow(
-                    elevation = 4.dp,
-                    shape = CircleShape,
-                    ambientColor = Color.Black.copy(alpha = 0.18f),
-                    spotColor = Color.Black.copy(alpha = 0.22f)
+                    elevation = if (isPressed) 5.dp else 3.dp,
+                    shape = thumbShape,
+                    clip = false,
+                    ambientColor = Color.Black.copy(alpha = 0.22f),
+                    spotColor = Color.Black.copy(alpha = 0.28f)
                 )
-                .clip(CircleShape)
-                .background(Color.White)
+                .clip(thumbShape)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color.White,
+                            Color(0xFFF3F4F6)
+                        )
+                    )
+                )
+                .border(
+                    width = 0.75.dp,
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            Color.White,
+                            Color.White.copy(alpha = 0.45f),
+                            Color.White.copy(alpha = 0.15f)
+                        )
+                    ),
+                    shape = thumbShape
+                )
                 .drawWithContent {
                     drawContent()
-                    drawArc(
-                        color = Color.White.copy(alpha = 0.70f),
-                        startAngle = 200f,
-                        sweepAngle = 110f,
-                        useCenter = false,
-                        topLeft = Offset(size.width * 0.05f, size.height * 0.05f),
-                        size = Size(size.width * 0.45f, size.height * 0.45f),
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = with(density) { 2.dp.toPx() }
+                    // 3D convex glass specular crescent highlight at top-left
+                    val highlightWidth = size.width * 0.75f
+                    val highlightHeight = size.height * 0.45f
+                    val highlightLeft = (size.width - highlightWidth) / 2f
+                    val highlightTop = size.height * 0.08f
+
+                    val specularPath = Path().apply {
+                        addRoundRect(
+                            RoundRect(
+                                rect = Rect(highlightLeft, highlightTop, highlightLeft + highlightWidth, highlightTop + highlightHeight),
+                                cornerRadius = CornerRadius(highlightHeight / 2f, highlightHeight / 2f)
+                            )
+                        )
+                    }
+                    drawPath(
+                        path = specularPath,
+                        brush = Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.85f),
+                                Color.White.copy(alpha = 0.0f)
+                            )
                         )
                     )
                 }
