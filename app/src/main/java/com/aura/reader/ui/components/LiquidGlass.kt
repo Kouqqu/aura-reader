@@ -936,10 +936,10 @@ fun LiquidGlassFilterChip(
 
 
 /**
- * iOS 26-style Liquid Glass toggle switch.
- * Track: frosted glassmorphism capsule — blue/cyan gradient when ON, translucent gray when OFF.
- * Thumb: pure white circle with drop shadow and specular highlight arc at top-left.
- * Animation: spring physics on thumb movement with ellipse squish on press.
+ * Authentic visionOS / iOS 26 Liquid Optical Glass toggle switch.
+ * Track: Apple-signature vibrant green capsule when ON, frosted translucent glass when OFF.
+ * Thumb: Real optical liquid glass lens with AGSL Snell refraction, specular rim highlight,
+ *        and physical drag/squish kinematics copied directly from the dock.
  */
 @Composable
 fun LiquidGlassSwitch(
@@ -948,125 +948,179 @@ fun LiquidGlassSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
-    val trackWidth = 51.dp
-    val trackHeight = 31.dp
-    val thumbDiameter = 27.dp
-    val thumbPaddingDp = 2.dp
+    val trackWidth = 54.dp
+    val trackHeight = 32.dp
+    val thumbDiameter = 26.dp
+    val paddingDp = 3.dp
 
     val density = LocalDensity.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
+    val haptic = LocalHapticFeedback.current
     val isDark = isSystemInDarkTheme()
 
-    // Tactile squish on press: thumb elongates from 27dp to 33dp
-    val thumbWidthAnim by animateDpAsState(
-        targetValue = if (isPressed) thumbDiameter + 6.dp else thumbDiameter,
+    val trackWidthPx = with(density) { trackWidth.toPx() }
+    val trackHeightPx = with(density) { trackHeight.toPx() }
+    val paddingPx = with(density) { paddingDp.toPx() }
+    val baseThumbWidthPx = with(density) { thumbDiameter.toPx() }
+    val thumbHeightPx = with(density) { thumbDiameter.toPx() }
+    val maxTravelPx = (trackWidthPx - baseThumbWidthPx - 2 * paddingPx).coerceAtLeast(1f)
+
+    var isPressed by remember { mutableStateOf(false) }
+    var isDragging by remember { mutableStateOf(false) }
+    var dragOffsetPx by remember { mutableFloatStateOf(if (checked) maxTravelPx else 0f) }
+
+    // Synchronize resting drag target when checked state changes externally
+    val restingTargetPx = if (checked) maxTravelPx else 0f
+    val targetOffsetPx = if (isDragging) dragOffsetPx else restingTargetPx
+
+    val animatedLensOffsetPx by animateFloatAsState(
+        targetValue = targetOffsetPx,
+        animationSpec = if (isDragging) {
+            spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 600f)
+        } else {
+            spring(dampingRatio = 0.78f, stiffness = 450f)
+        },
+        label = "switchLensSlide"
+    )
+
+    // Tactile pill expansion:
+    // When held or dragged, the glass lens expands horizontally (squish)
+    val isHolding = isDragging || isPressed
+    val targetExpansion = if (isDragging) 1.0f else if (isPressed) 0.85f else 0.0f
+    val expansionProgress by animateFloatAsState(
+        targetValue = targetExpansion,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = 600f
+            stiffness = 700f
         ),
-        label = "glassThumbWidth"
+        label = "switchExpansion"
     )
 
-    // Smooth iOS spring travel:
-    // When checked: right-aligned -> trackWidth - thumbWidthAnim - thumbPaddingDp
-    // When unchecked: left-aligned -> thumbPaddingDp
-    val targetOffset = if (checked) {
-        trackWidth - thumbWidthAnim - thumbPaddingDp
-    } else {
-        thumbPaddingDp
-    }
+    val currentThumbWidthPx = baseThumbWidthPx * (1.0f + 0.22f * expansionProgress)
+    val currentThumbWidthDp = with(density) { currentThumbWidthPx.toDp() }
 
-    val thumbOffsetAnim by animateDpAsState(
-        targetValue = targetOffset,
-        animationSpec = spring(
-            dampingRatio = 0.75f,
-            stiffness = 500f
-        ),
-        label = "glassThumbOffset"
-    )
+    // Lens coordinates
+    val lensLeftPx = (paddingPx + animatedLensOffsetPx).coerceIn(paddingPx, trackWidthPx - paddingPx - currentThumbWidthPx)
+    val lensCenterXPx = lensLeftPx + currentThumbWidthPx / 2f
+    val lensCenterYPx = trackHeightPx / 2f
+    val pillRadiusPx = thumbHeightPx / 2f
 
-    // iOS signature vibrant green track when ON; frosted translucent glass when OFF
-    val activeTrackColor = if (isDark) Color(0xFF30D158) else Color(0xFF34C759)
-    val inactiveTrackColor = if (isDark) Color(0x38FFFFFF) else Color(0x1F000000)
-
-    val trackBrush = if (checked) {
-        Brush.verticalGradient(
-            listOf(activeTrackColor, activeTrackColor.copy(alpha = 0.92f))
-        )
-    } else {
-        SolidColor(inactiveTrackColor)
-    }
-
-    val trackBorderBrush = if (checked) {
-        Brush.verticalGradient(
-            listOf(Color.White.copy(alpha = 0.35f), Color.White.copy(alpha = 0.10f))
-        )
-    } else {
-        Brush.verticalGradient(
-            listOf(
-                Color.White.copy(alpha = if (isDark) 0.22f else 0.40f),
-                Color.White.copy(alpha = if (isDark) 0.06f else 0.15f)
-            )
-        )
-    }
+    // Track color smoothly transitions as the lens slides across
+    val travelProgress = (animatedLensOffsetPx / maxTravelPx).coerceIn(0f, 1f)
+    val offTrackColor = if (isDark) Color(0x35FFFFFF) else Color(0x1F000000)
+    val onTrackColor = if (isDark) Color(0xFF30D158) else Color(0xFF34C759)
+    val currentTrackColor = lerp(offTrackColor, onTrackColor, travelProgress)
 
     val trackShape = RoundedCornerShape(percent = 50)
     val thumbShape = RoundedCornerShape(percent = 50)
+
+    val trackBorderAlpha = if (isDark) 0.12f else 0.22f
+    val thumbBorderAlpha = if (isDark) (0.35f + 0.35f * expansionProgress) else (0.55f + 0.35f * expansionProgress)
 
     Box(
         modifier = modifier
             .size(width = trackWidth, height = trackHeight)
             .clip(trackShape)
-            .background(trackBrush)
+            .background(currentTrackColor)
             .border(
-                width = 0.75.dp,
-                brush = trackBorderBrush,
+                width = 0.5.dp,
+                color = Color.White.copy(alpha = trackBorderAlpha),
                 shape = trackShape
             )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                role = Role.Switch,
-                onClick = { onCheckedChange(!checked) }
-            )
+            .pointerInput(enabled, checked, maxTravelPx) {
+                if (!enabled) return@pointerInput
+                val touchSlop = viewConfiguration.touchSlop
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val startX = down.position.x
+                    isPressed = true
+                    dragOffsetPx = if (checked) maxTravelPx else 0f
+
+                    var hasDragged = false
+                    val pointerId = down.id
+                    var isSuccessRelease = false
+
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == pointerId } ?: break
+                        if (change.isConsumed) break
+                        if (!change.pressed) {
+                            change.consume()
+                            isSuccessRelease = true
+                            break
+                        }
+                        val currentX = change.position.x
+                        val dx = kotlin.math.abs(currentX - startX)
+                        if (!hasDragged && dx > touchSlop) {
+                            hasDragged = true
+                            isDragging = true
+                        }
+                        if (hasDragged) {
+                            dragOffsetPx = (currentX - paddingPx - currentThumbWidthPx / 2f).coerceIn(0f, maxTravelPx)
+                        }
+                        change.consume()
+                    }
+
+                    val wasDragging = hasDragged
+                    isPressed = false
+                    isDragging = false
+
+                    if (isSuccessRelease) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        if (wasDragging) {
+                            val newChecked = dragOffsetPx > (maxTravelPx / 2f)
+                            if (newChecked != checked) {
+                                onCheckedChange(newChecked)
+                            }
+                        } else {
+                            onCheckedChange(!checked)
+                        }
+                    }
+                }
+            }
     ) {
-        // Liquid Glass 3D Convex Lens Thumb (lens reflection, drop shadow, specular rim)
+        // LAYER 1: AGSL Snell Optical Refraction Layer (same optics as the dock!)
         Box(
             modifier = Modifier
-                .offset(x = thumbOffsetAnim, y = thumbPaddingDp)
-                .size(width = thumbWidthAnim, height = thumbDiameter)
+                .fillMaxSize()
+                .liquidRefraction(
+                    centerPx = Offset(lensCenterXPx, lensCenterYPx),
+                    sizePx = Size(currentThumbWidthPx, thumbHeightPx),
+                    radiusPx = pillRadiusPx,
+                    refractiveIndex = 1.025f,
+                    refractionWidthPx = with(density) { 12.dp.toPx() },
+                    intensity = if (isHolding) 1.0f else 0.70f
+                )
+        )
+
+        // LAYER 2: Transparent Liquid Glass Lens Body
+        Box(
+            modifier = Modifier
+                .offset(x = with(density) { lensLeftPx.toDp() }, y = paddingDp)
+                .size(width = currentThumbWidthDp, height = thumbDiameter)
                 .shadow(
-                    elevation = if (isPressed) 5.dp else 3.dp,
+                    elevation = if (isHolding) 6.dp else 3.dp,
                     shape = thumbShape,
                     clip = false,
-                    ambientColor = Color.Black.copy(alpha = 0.22f),
-                    spotColor = Color.Black.copy(alpha = 0.28f)
+                    ambientColor = Color.Black.copy(alpha = 0.30f),
+                    spotColor = Color.Black.copy(alpha = 0.35f)
                 )
                 .clip(thumbShape)
                 .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color.White,
-                            Color(0xFFF3F4F6)
-                        )
-                    )
+                    if (isDark) Color(0x35FFFFFF) else Color(0x45FFFFFF)
                 )
                 .border(
-                    width = 0.75.dp,
+                    width = (0.75f + 0.35f * expansionProgress).dp,
                     brush = Brush.verticalGradient(
                         listOf(
-                            Color.White,
-                            Color.White.copy(alpha = 0.45f),
-                            Color.White.copy(alpha = 0.15f)
+                            Color.White.copy(alpha = thumbBorderAlpha),
+                            Color.White.copy(alpha = thumbBorderAlpha * 0.35f)
                         )
                     ),
                     shape = thumbShape
                 )
                 .drawWithContent {
                     drawContent()
-                    // 3D convex glass specular crescent highlight at top-left
+                    // 3D Convex glass specular crescent reflection curve along top edge
                     val highlightWidth = size.width * 0.75f
                     val highlightHeight = size.height * 0.45f
                     val highlightLeft = (size.width - highlightWidth) / 2f
@@ -1093,6 +1147,7 @@ fun LiquidGlassSwitch(
         )
     }
 }
+
 /**
  * Card surface that adapts between Material 3 container and iOS Liquid Glass.
  */

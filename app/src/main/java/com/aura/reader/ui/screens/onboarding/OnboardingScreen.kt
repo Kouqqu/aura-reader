@@ -217,9 +217,9 @@ fun OnboardingScreen(
                             label = "pagerIndicatorWidth"
                         )
                         val color = if (isSelected) {
-                            if (isGlass) Color(0xFF0A84FF) else MaterialTheme.colorScheme.primary
+                            if (isGlass) Color.White else MaterialTheme.colorScheme.primary
                         } else {
-                            if (isGlass) Color.White.copy(alpha = if (isDark) 0.15f else 0.25f)
+                            if (isGlass) Color.White.copy(alpha = if (isDark) 0.20f else 0.35f)
                             else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
                         }
 
@@ -247,16 +247,8 @@ fun OnboardingScreen(
                             }
                         },
                         shape = RoundedCornerShape(28.dp),
-                        color = if (isDark) Color(0x280A84FF) else Color(0x220072FF),
-                        border = BorderStroke(
-                            1.5.dp,
-                            Brush.linearGradient(
-                                listOf(
-                                    Color.White.copy(alpha = if (isDark) 0.85f else 0.95f),
-                                    Color.White.copy(alpha = 0.25f)
-                                )
-                            )
-                        ),
+                        color = if (isDark) Color(0x28FFFFFF) else Color(0xF2FFFFFF),
+                        border = null,
                         shadowElevation = if (isDark) 0.dp else 4.dp,
                         modifier = Modifier
                             .height(54.dp)
@@ -278,14 +270,14 @@ fun OnboardingScreen(
                             Text(
                                 text = if (isLastPage) strings.onboardingStartReading else strings.onboardingNext,
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isDark) Color.White else Color(0xFF0284C7)
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isDark) Color.White else Color(0xFF191B1F)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
                                 imageVector = if (isLastPage) Icons.Default.Check else Icons.AutoMirrored.Filled.ArrowForward,
                                 contentDescription = null,
-                                tint = if (isDark) Color.White else Color(0xFF0284C7),
+                                tint = if (isDark) Color.White else Color(0xFF191B1F),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -468,27 +460,7 @@ private fun MaterialStyleOptionCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                // Material Dynamic Palette Swatches Preview
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val swatches = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.secondary,
-                        MaterialTheme.colorScheme.tertiary,
-                        MaterialTheme.colorScheme.surfaceTint
-                    )
-                    swatches.forEach { color ->
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                        )
-                    }
-                }
+
             }
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -531,41 +503,31 @@ private fun LiquidGlassStyleOptionCard(
     val isDark = isSystemInDarkTheme()
     val glassShape = RoundedCornerShape(24.dp)
 
-    // Calm, translucent, deep frosted glass (visionOS / iOS 26 aesthetic)
-    val surfaceTint = if (isSelected) {
-        if (isDark) Color(0x28FFFFFF) else Color(0xF2FFFFFF)
+    // Deep, calm, authentic Apple frosted glass matching the dock
+    val cardBgColor = if (isDark) {
+        if (isSelected) Color(0x22181C26) else Color(0x14181C26)
     } else {
-        if (isDark) Color(0x14FFFFFF) else Color(0xD8FFFFFF)
+        if (isSelected) Color(0xF8FFFFFF) else Color(0xEEFFFFFF)
     }
 
-    // Authentic Apple specular rim highlight (light from top, no neon cyan)
-    val rimBrush = if (isSelected) {
-        Brush.verticalGradient(
-            listOf(
-                Color.White.copy(alpha = if (isDark) 0.50f else 0.75f),
-                Color.White.copy(alpha = if (isDark) 0.15f else 0.25f)
-            )
-        )
+    // Hairline, delicate glass perimeter matching dock's 0.06f border (NO thick outline!)
+    val borderColor = if (isDark) {
+        if (isSelected) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.06f)
     } else {
-        Brush.verticalGradient(
-            listOf(
-                Color.White.copy(alpha = if (isDark) 0.18f else 0.35f),
-                Color.White.copy(alpha = if (isDark) 0.05f else 0.12f)
-            )
-        )
+        if (isSelected) Color.Black.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.05f)
     }
 
     LiquidGlassSurface(
         shape = glassShape,
         isDark = isDark,
-        tintColor = surfaceTint,
-        highlightIntensity = 0f, // Disable internal border to avoid double-border artifact
-        shadowElevation = if (isSelected) 6.dp else 2.dp,
+        tintColor = cardBgColor,
+        highlightIntensity = 0f,
+        shadowElevation = 0.dp,
         modifier = Modifier
             .fillMaxWidth()
             .border(
-                width = if (isSelected) 1.dp else 0.75.dp,
-                brush = rimBrush,
+                width = 0.6.dp,
+                color = borderColor,
                 shape = glassShape
             )
             .expressiveClickable(scaleDown = 0.98f, onClick = onClick)
@@ -576,22 +538,17 @@ private fun LiquidGlassStyleOptionCard(
                 .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Frosted Glass Icon Vessel with Specular Rim
+            // Calm frosted glass icon vessel matching dock buttons
             Box(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
-                        if (isDark) Color(0x20FFFFFF) else Color(0x0C000000)
+                        if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
                     )
                     .border(
-                        width = 0.75.dp,
-                        brush = Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = if (isDark) 0.35f else 0.50f),
-                                Color.White.copy(alpha = if (isDark) 0.08f else 0.15f)
-                            )
-                        ),
+                        width = 0.5.dp,
+                        color = Color.White.copy(alpha = if (isDark) 0.10f else 0.20f),
                         shape = RoundedCornerShape(14.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -599,7 +556,7 @@ private fun LiquidGlassStyleOptionCard(
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = if (isSelected) (if (isDark) Color(0xFF0A84FF) else Color(0xFF007AFF)) else (if (isDark) Color(0xFFE2E8F0) else Color(0xFF191B1F)),
+                    tint = if (isDark) Color.White else Color(0xFF191B1F),
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -623,30 +580,17 @@ private fun LiquidGlassStyleOptionCard(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Authentic iOS Selection Indicator
+            // Clean iOS Selection Indicator
             Box(
                 modifier = Modifier
                     .size(26.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isSelected) {
-                            Brush.verticalGradient(listOf(Color(0xFF0A84FF), Color(0xFF0071E3)))
-                        } else {
-                            SolidColor(Color.Transparent)
-                        }
+                        if (isSelected) Color(0xFF007AFF) else Color.Transparent
                     )
                     .border(
-                        width = if (isSelected) 0.75.dp else 1.5.dp,
-                        brush = if (isSelected) {
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.60f),
-                                    Color.Transparent
-                                )
-                            )
-                        } else {
-                            SolidColor(Color.White.copy(alpha = if (isDark) 0.22f else 0.40f))
-                        },
+                        width = if (isSelected) 0.dp else 1.5.dp,
+                        color = if (isSelected) Color.Transparent else Color.White.copy(alpha = if (isDark) 0.18f else 0.35f),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
