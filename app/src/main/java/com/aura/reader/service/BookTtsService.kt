@@ -62,7 +62,8 @@ data class TtsState(
     val currentSpokenWord: String = "",
     val currentOriginalBlockIndex: Int = -1,
     val chapterFinishedEvent: Long = 0L,
-    val highlightDelayMs: Int = -1
+    val highlightDelayMs: Int = -1,
+    val isWordHighlightEnabled: Boolean = true
 )
 
 data class TtsHighlightEvent(
@@ -92,8 +93,10 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         const val ACTION_PREVIEW_VOICE = "com.aura.reader.tts.PREVIEW_VOICE"
         const val ACTION_SEEK_PARAGRAPH = "com.aura.reader.tts.SEEK_PARAGRAPH"
         const val ACTION_SET_HIGHLIGHT_DELAY = "com.aura.reader.tts.SET_HIGHLIGHT_DELAY"
+        const val ACTION_SET_WORD_HIGHLIGHT = "com.aura.reader.tts.SET_WORD_HIGHLIGHT"
         const val EXTRA_PARAGRAPH_INDEX = "extra_paragraph_index"
         const val EXTRA_HIGHLIGHT_DELAY = "extra_highlight_delay"
+        const val EXTRA_WORD_HIGHLIGHT_ENABLED = "extra_word_highlight_enabled"
 
         const val EXTRA_BOOK_TITLE = "extra_book_title"
         const val EXTRA_CHAPTER_TITLE = "extra_chapter_title"
@@ -237,6 +240,14 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             }
             context.startService(intent)
         }
+
+        fun setWordHighlightEnabled(context: Context, enabled: Boolean) {
+            val intent = Intent(context, BookTtsService::class.java).apply {
+                action = ACTION_SET_WORD_HIGHLIGHT
+                putExtra(EXTRA_WORD_HIGHLIGHT_ENABLED, enabled)
+            }
+            context.startService(intent)
+        }
     }
 
     private var tts: TextToSpeech? = null
@@ -329,11 +340,13 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 }
 
                 if (event.utteranceId == currentActiveUtteranceId && _ttsState.value.isPlaying) {
-                    _ttsState.value = _ttsState.value.copy(
-                        currentWordStart = event.start,
-                        currentWordEnd = event.end,
-                        currentSpokenWord = event.word
-                    )
+                    if (_ttsState.value.isWordHighlightEnabled) {
+                        _ttsState.value = _ttsState.value.copy(
+                            currentWordStart = event.start,
+                            currentWordEnd = event.end,
+                            currentSpokenWord = event.word
+                        )
+                    }
                     lastWordDisplayUptime = android.os.SystemClock.uptimeMillis()
                 }
             }
@@ -493,6 +506,13 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 com.aura.reader.data.preferences.PreferencesManager(applicationContext).ttsHighlightDelayMs.collect { delay ->
                     userHighlightDelayMs = delay
                     _ttsState.value = _ttsState.value.copy(highlightDelayMs = delay)
+                }
+            } catch (_: Exception) {}
+        }
+        serviceScope.launch {
+            try {
+                com.aura.reader.data.preferences.PreferencesManager(applicationContext).ttsWordHighlightEnabled.collect { enabled ->
+                    _ttsState.value = _ttsState.value.copy(isWordHighlightEnabled = enabled)
                 }
             } catch (_: Exception) {}
         }
@@ -791,6 +811,20 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 serviceScope.launch {
                     try {
                         com.aura.reader.data.preferences.PreferencesManager(applicationContext).setTtsHighlightDelay(delayMs)
+                    } catch (_: Exception) {}
+                }
+            }
+            ACTION_SET_WORD_HIGHLIGHT -> {
+                val enabled = intent.getBooleanExtra(EXTRA_WORD_HIGHLIGHT_ENABLED, true)
+                _ttsState.value = _ttsState.value.copy(
+                    isWordHighlightEnabled = enabled,
+                    currentWordStart = if (!enabled) -1 else _ttsState.value.currentWordStart,
+                    currentWordEnd = if (!enabled) -1 else _ttsState.value.currentWordEnd,
+                    currentSpokenWord = if (!enabled) "" else _ttsState.value.currentSpokenWord
+                )
+                serviceScope.launch {
+                    try {
+                        com.aura.reader.data.preferences.PreferencesManager(applicationContext).setTtsWordHighlightEnabled(enabled)
                     } catch (_: Exception) {}
                 }
             }

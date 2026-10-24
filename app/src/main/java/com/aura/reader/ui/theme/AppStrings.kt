@@ -332,6 +332,8 @@ interface Strings {
     fun ttsVoiceNumber(num: Int): String
     val ttsSyncTitle: String
     val ttsSyncAuto: String
+    val ttsWordHighlightTitle: String
+    val ttsWordHighlightSubtitle: String
 
     // Currently Reading & View Mode
     val currentlyReadingBadge: String
@@ -720,8 +722,10 @@ class RuStrings : Strings {
     override val ttsOnlineQuality = "Сеть"
     override val ttsOfflineQuality = "Офлайн"
     override fun ttsVoiceNumber(num: Int) = "Голос $num"
-    override val ttsSyncTitle = "Синхронизация подсветки"
-    override val ttsSyncAuto = "Авто (компенсация задержки)"
+    override val ttsSyncTitle = "Синхронизация"
+    override val ttsSyncAuto = "Авто"
+    override val ttsWordHighlightTitle = "Подсветка слов"
+    override val ttsWordHighlightSubtitle = "Выделять читаемое слово в реальном времени"
 
     override val currentlyReadingBadge = "СЕЙЧАС ЧИТАЮ"
     override val continueReadingAction = "Продолжить чтение"
@@ -1107,8 +1111,10 @@ class EnStrings : Strings {
     override val ttsOnlineQuality = "Network"
     override val ttsOfflineQuality = "Offline"
     override fun ttsVoiceNumber(num: Int) = "Voice $num"
-    override val ttsSyncTitle = "Highlight Sync"
-    override val ttsSyncAuto = "Auto (Latency compensation)"
+    override val ttsSyncTitle = "Sync Delay"
+    override val ttsSyncAuto = "Auto"
+    override val ttsWordHighlightTitle = "Word Highlighting"
+    override val ttsWordHighlightSubtitle = "Highlight spoken words in real time"
 
     override val currentlyReadingBadge = "CURRENTLY READING"
     override val continueReadingAction = "Continue Reading"
@@ -1494,8 +1500,10 @@ class UkStrings : Strings {
     override val ttsOnlineQuality = "Мережа"
     override val ttsOfflineQuality = "Офлайн"
     override fun ttsVoiceNumber(num: Int) = "Голос $num"
-    override val ttsSyncTitle = "Синхронізація підсвічування"
-    override val ttsSyncAuto = "Авто (компенсація затримки)"
+    override val ttsSyncTitle = "Синхронізація"
+    override val ttsSyncAuto = "Авто"
+    override val ttsWordHighlightTitle = "Підсвічування слів"
+    override val ttsWordHighlightSubtitle = "Виділяти слово, що читається, в реальному часі"
 
     override val currentlyReadingBadge = "ЗАРАЗ ЧИТАЮ"
     override val continueReadingAction = "Продовжити читання"
@@ -1881,8 +1889,10 @@ class BeStrings : Strings {
     override val ttsOnlineQuality = "Сетка"
     override val ttsOfflineQuality = "Афлайн"
     override fun ttsVoiceNumber(num: Int) = "Голас $num"
-    override val ttsSyncTitle = "Сінхранізацыя падсветкі"
-    override val ttsSyncAuto = "Аўта (кампенсацыя затрымкі)"
+    override val ttsSyncTitle = "Сінхранізацыя"
+    override val ttsSyncAuto = "Аўта"
+    override val ttsWordHighlightTitle = "Падсветка слоў"
+    override val ttsWordHighlightSubtitle = "Падсвечваць чытанае слова ў рэальным часе"
 
     override val currentlyReadingBadge = "ЗАРАЗ ЧЫТАЮ"
     override val continueReadingAction = "Працягнуць чытанне"
@@ -2267,8 +2277,10 @@ class PlStrings : Strings {
     override val ttsOnlineQuality = "Sieć"
     override val ttsOfflineQuality = "Offline"
     override fun ttsVoiceNumber(num: Int) = "Głos $num"
-    override val ttsSyncTitle = "Synchronizacja podświetlenia"
-    override val ttsSyncAuto = "Automatyczna (kompensacja opóźnień)"
+    override val ttsSyncTitle = "Synchronizacja"
+    override val ttsSyncAuto = "Auto"
+    override val ttsWordHighlightTitle = "Podświetlanie słów"
+    override val ttsWordHighlightSubtitle = "Podświetlaj czytane słowo w czasie rzeczywistym"
 
     override val currentlyReadingBadge = "TERAZ CZYTAM"
     override val continueReadingAction = "Kontynuuj czytanie"
@@ -2637,8 +2649,10 @@ class CsStrings : Strings {
     override val ttsOnlineQuality = "Síť"
     override val ttsOfflineQuality = "Offline"
     override fun ttsVoiceNumber(num: Int) = "Hlas $num"
-    override val ttsSyncTitle = "Synchronizace zvýraznění"
-    override val ttsSyncAuto = "Automaticky (kompenzace zpoždění)"
+    override val ttsSyncTitle = "Synchronizace"
+    override val ttsSyncAuto = "Auto"
+    override val ttsWordHighlightTitle = "Zvýraznění slov"
+    override val ttsWordHighlightSubtitle = "Zvýrazňovat čtené slovo v reálném čase"
     override val currentlyReadingBadge = "Právě čtu"
     override val continueReadingAction = "Číst"
     override val viewModeList = "Seznam"
@@ -3002,8 +3016,10 @@ class HeStrings : Strings {
     override val ttsOnlineQuality = "רשת"
     override val ttsOfflineQuality = "לא מקוון"
     override fun ttsVoiceNumber(num: Int) = "קול #$num"
-    override val ttsSyncTitle = "סנכרון הדגשה"
-    override val ttsSyncAuto = "אוטומטי (פיצוי השהיה)"
+    override val ttsSyncTitle = "סנכרון"
+    override val ttsSyncAuto = "אוטומטי"
+    override val ttsWordHighlightTitle = "הדגשת מילים"
+    override val ttsWordHighlightSubtitle = "הדגשת המילה המוקראת בזמן אמת"
     override val currentlyReadingBadge = "קורא כעת"
     override val continueReadingAction = "המשך לקרוא"
     override val viewModeList = "רשימה"

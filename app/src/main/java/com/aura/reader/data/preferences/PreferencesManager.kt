@@ -98,6 +98,7 @@ class PreferencesManager(private val context: Context) {
         val TTS_SPEED_KEY = floatPreferencesKey("tts_speed")
         val TTS_PITCH_KEY = floatPreferencesKey("tts_pitch")
         val TTS_HIGHLIGHT_DELAY_KEY = intPreferencesKey("tts_highlight_delay_ms")
+        val TTS_WORD_HIGHLIGHT_KEY = booleanPreferencesKey("tts_word_highlight_enabled")
     }
 
         val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -151,6 +152,16 @@ class PreferencesManager(private val context: Context) {
     suspend fun setTtsHighlightDelay(delayMs: Int) {
         context.dataStore.edit { prefs ->
             prefs[TTS_HIGHLIGHT_DELAY_KEY] = delayMs
+        }
+    }
+
+    val ttsWordHighlightEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[TTS_WORD_HIGHLIGHT_KEY] ?: true
+    }
+
+    suspend fun setTtsWordHighlightEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[TTS_WORD_HIGHLIGHT_KEY] = enabled
         }
     }
 

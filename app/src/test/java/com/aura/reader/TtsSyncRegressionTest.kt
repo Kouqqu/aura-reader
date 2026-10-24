@@ -90,6 +90,29 @@ class TtsSyncRegressionTest {
         assertEquals(-1, state.currentWordStart)
         assertEquals(-1, state.currentWordEnd)
         assertEquals(-1, state.highlightDelayMs)
+        assertTrue(state.isWordHighlightEnabled)
+    }
+
+    @Test
+    fun testWordHighlightToggleDisablesHighlighting() {
+        val stateDisabled = TtsState(
+            isPlaying = true,
+            isWordHighlightEnabled = false,
+            currentWordStart = -1,
+            currentWordEnd = -1
+        )
+        assertFalse(stateDisabled.isWordHighlightEnabled)
+
+        // Simulating the UI calculation guard:
+        val isSpeaking = stateDisabled.isPlaying
+        val highlightWords = isSpeaking && stateDisabled.isWordHighlightEnabled
+        val ttsWordStart = if (highlightWords) 10 else -1
+        val ttsWordEnd = if (highlightWords) 15 else -1
+        val ttsSpokenWord = if (highlightWords) "Тест" else ""
+
+        assertEquals(-1, ttsWordStart)
+        assertEquals(-1, ttsWordEnd)
+        assertEquals("", ttsSpokenWord)
     }
 
     @Test

@@ -37,6 +37,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.FormatColorText
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -63,6 +64,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -97,7 +99,8 @@ fun TtsBottomSheet(
     onVoiceChange: (String) -> Unit,
     onPreviewVoice: (String) -> Unit = {},
     onSeekParagraph: (Int) -> Unit = {},
-    onHighlightDelayChange: (Int) -> Unit = {}
+    onHighlightDelayChange: (Int) -> Unit = {},
+    onToggleWordHighlight: (Boolean) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val strings = LocalAppStrings.current
@@ -400,51 +403,101 @@ fun TtsBottomSheet(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Highlight Synchronization Control
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Sync,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = strings.ttsSyncTitle,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                Text(
-                    text = if (ttsState.highlightDelayMs < 0) strings.ttsSyncAuto else "${ttsState.highlightDelayMs} ms",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            val delayOptions = listOf(-1, 0, 150, 300, 450, 600, 750, 900)
+            // Word Highlighting Toggle
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                delayOptions.forEach { delayMs ->
-                    val isSelected = ttsState.highlightDelayMs == delayMs
-                    val label = if (delayMs < 0) strings.ttsSyncAuto.take(4) else "${delayMs}ms"
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { onHighlightDelayChange(delayMs) },
-                        label = { Text(label) }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f).padding(end = 12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.FormatColorText,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = strings.ttsWordHighlightTitle,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = strings.ttsWordHighlightSubtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Switch(
+                    checked = ttsState.isWordHighlightEnabled,
+                    onCheckedChange = { onToggleWordHighlight(it) }
+                )
+            }
+
+            // Highlight Synchronization Options (only when word highlight is enabled)
+            if (ttsState.isWordHighlightEnabled) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f).padding(end = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Sync,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.ttsSyncTitle,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                    ) {
+                        Text(
+                            text = if (ttsState.highlightDelayMs < 0) strings.ttsSyncAuto else "${ttsState.highlightDelayMs} ms",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                val delayOptions = listOf(-1, 0, 150, 300, 450, 600)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    delayOptions.forEach { delayMs ->
+                        val isSelected = ttsState.highlightDelayMs == delayMs
+                        val label = if (delayMs < 0) strings.ttsSyncAuto else "${delayMs}ms"
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { onHighlightDelayChange(delayMs) },
+                            label = { Text(label) }
+                        )
+                    }
                 }
             }
 

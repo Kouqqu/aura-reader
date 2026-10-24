@@ -1267,7 +1267,8 @@ fun ReaderScreen(
                     onVoiceChange = { voice -> com.aura.reader.service.BookTtsService.setVoice(context, voice) },
                     onPreviewVoice = { voice -> com.aura.reader.service.BookTtsService.previewVoice(context, voice) },
                     onSeekParagraph = { idx -> com.aura.reader.service.BookTtsService.seekParagraph(context, idx) },
-                    onHighlightDelayChange = { delay -> com.aura.reader.service.BookTtsService.setHighlightDelay(context, delay) }
+                    onHighlightDelayChange = { delay -> com.aura.reader.service.BookTtsService.setHighlightDelay(context, delay) },
+                    onToggleWordHighlight = { enabled -> com.aura.reader.service.BookTtsService.setWordHighlightEnabled(context, enabled) }
                 )
             }
 
@@ -1717,6 +1718,7 @@ fun ChapterContentView(
             ) {
                 itemsIndexed(blocks) { blockIndex, block ->
                     val isSpeaking = isTtsHighlightActive && isCurrentChapter && (blockIndex == ttsState.currentOriginalBlockIndex)
+                    val highlightWords = isSpeaking && ttsState.isWordHighlightEnabled
                     RenderBlock(
                         block = block,
                         settings = settings,
@@ -1724,9 +1726,9 @@ fun ChapterContentView(
                         searchQuery = searchQuery,
                         footnotes = footnotes,
                         quotes = quotes,
-                        ttsWordStart = if (isSpeaking) ttsState.currentWordStart else -1,
-                        ttsWordEnd = if (isSpeaking) ttsState.currentWordEnd else -1,
-                        ttsSpokenWord = if (isSpeaking) ttsState.currentSpokenWord else "",
+                        ttsWordStart = if (highlightWords) ttsState.currentWordStart else -1,
+                        ttsWordEnd = if (highlightWords) ttsState.currentWordEnd else -1,
+                        ttsSpokenWord = if (highlightWords) ttsState.currentSpokenWord else "",
                         onFootnoteClick = onFootnoteClick,
                         onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                         onToggleControls = onToggleControls,
@@ -2209,9 +2211,10 @@ fun ChapterPagingView(
                                         for ((originalIndex, block) in leftPageBlocks) {
                                             val isSpeaking = isTtsHighlightActive && (originalIndex == ttsState.currentOriginalBlockIndex)
                                             val blockOffset = block.sourceTextOffset
-                                            val adjustedStart = if (isSpeaking && ttsState.currentWordStart >= 0) ttsState.currentWordStart - blockOffset else -1
-                                            val adjustedEnd = if (isSpeaking && ttsState.currentWordEnd >= 0) ttsState.currentWordEnd - blockOffset else -1
-                                            val isWordInChunk = adjustedStart in 0 until block.text.length
+                                            val highlightWords = isSpeaking && ttsState.isWordHighlightEnabled
+                                            val adjustedStart = if (highlightWords && ttsState.currentWordStart >= 0) ttsState.currentWordStart - blockOffset else -1
+                                            val adjustedEnd = if (highlightWords && ttsState.currentWordEnd >= 0) ttsState.currentWordEnd - blockOffset else -1
+                                            val isWordInChunk = highlightWords && adjustedStart in 0 until block.text.length
                                             RenderBlock(
                                                 block = block,
                                                 settings = settings,
@@ -2246,9 +2249,10 @@ fun ChapterPagingView(
                                         for ((originalIndex, block) in rightPageBlocks) {
                                             val isSpeaking = isTtsHighlightActive && (originalIndex == ttsState.currentOriginalBlockIndex)
                                             val blockOffset = block.sourceTextOffset
-                                            val adjustedStart = if (isSpeaking && ttsState.currentWordStart >= 0) ttsState.currentWordStart - blockOffset else -1
-                                            val adjustedEnd = if (isSpeaking && ttsState.currentWordEnd >= 0) ttsState.currentWordEnd - blockOffset else -1
-                                            val isWordInChunk = adjustedStart in 0 until block.text.length
+                                            val highlightWords = isSpeaking && ttsState.isWordHighlightEnabled
+                                            val adjustedStart = if (highlightWords && ttsState.currentWordStart >= 0) ttsState.currentWordStart - blockOffset else -1
+                                            val adjustedEnd = if (highlightWords && ttsState.currentWordEnd >= 0) ttsState.currentWordEnd - blockOffset else -1
+                                            val isWordInChunk = highlightWords && adjustedStart in 0 until block.text.length
                                             RenderBlock(
                                                 block = block,
                                                 settings = settings,
@@ -2279,9 +2283,10 @@ fun ChapterPagingView(
                                     for ((originalIndex, block) in pageBlocks) {
                                         val isSpeaking = isTtsHighlightActive && (originalIndex == ttsState.currentOriginalBlockIndex)
                                         val blockOffset = block.sourceTextOffset
-                                        val adjustedStart = if (isSpeaking && ttsState.currentWordStart >= 0) ttsState.currentWordStart - blockOffset else -1
-                                        val adjustedEnd = if (isSpeaking && ttsState.currentWordEnd >= 0) ttsState.currentWordEnd - blockOffset else -1
-                                        val isWordInChunk = adjustedStart in 0 until block.text.length
+                                        val highlightWords = isSpeaking && ttsState.isWordHighlightEnabled
+                                        val adjustedStart = if (highlightWords && ttsState.currentWordStart >= 0) ttsState.currentWordStart - blockOffset else -1
+                                        val adjustedEnd = if (highlightWords && ttsState.currentWordEnd >= 0) ttsState.currentWordEnd - blockOffset else -1
+                                        val isWordInChunk = highlightWords && adjustedStart in 0 until block.text.length
                                         RenderBlock(
                                             block = block,
                                             settings = settings,
