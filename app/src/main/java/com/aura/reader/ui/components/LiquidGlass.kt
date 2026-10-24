@@ -948,10 +948,11 @@ fun LiquidGlassSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
-    val trackWidth = 54.dp
+    val trackWidth = 56.dp
     val trackHeight = 32.dp
-    val thumbDiameter = 26.dp
-    val paddingDp = 3.dp
+    val thumbHeight = 25.dp
+    val baseThumbWidth = 32.dp
+    val paddingDp = 3.5.dp
 
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
@@ -960,8 +961,8 @@ fun LiquidGlassSwitch(
     val trackWidthPx = with(density) { trackWidth.toPx() }
     val trackHeightPx = with(density) { trackHeight.toPx() }
     val paddingPx = with(density) { paddingDp.toPx() }
-    val baseThumbWidthPx = with(density) { thumbDiameter.toPx() }
-    val thumbHeightPx = with(density) { thumbDiameter.toPx() }
+    val baseThumbWidthPx = with(density) { baseThumbWidth.toPx() }
+    val thumbHeightPx = with(density) { thumbHeight.toPx() }
     val maxTravelPx = (trackWidthPx - baseThumbWidthPx - 2 * paddingPx).coerceAtLeast(1f)
 
     var isPressed by remember { mutableStateOf(false) }
@@ -995,10 +996,11 @@ fun LiquidGlassSwitch(
         label = "switchExpansion"
     )
 
-    val currentThumbWidthPx = baseThumbWidthPx * (1.0f + 0.22f * expansionProgress)
+    // Expands from 32dp to 38dp
+    val currentThumbWidthPx = baseThumbWidthPx + with(density) { 6.dp.toPx() } * expansionProgress
     val currentThumbWidthDp = with(density) { currentThumbWidthPx.toDp() }
 
-    // Lens coordinates
+    // Lens horizontal position:
     val lensLeftPx = (paddingPx + animatedLensOffsetPx).coerceIn(paddingPx, trackWidthPx - paddingPx - currentThumbWidthPx)
     val lensCenterXPx = lensLeftPx + currentThumbWidthPx / 2f
     val lensCenterYPx = trackHeightPx / 2f
@@ -1014,7 +1016,7 @@ fun LiquidGlassSwitch(
     val thumbShape = RoundedCornerShape(percent = 50)
 
     val trackBorderAlpha = if (isDark) 0.12f else 0.22f
-    val thumbBorderAlpha = if (isDark) (0.35f + 0.35f * expansionProgress) else (0.55f + 0.35f * expansionProgress)
+    val thumbBorderAlpha = if (isDark) (0.50f + 0.35f * expansionProgress) else (0.70f + 0.25f * expansionProgress)
 
     Box(
         modifier = modifier
@@ -1078,7 +1080,7 @@ fun LiquidGlassSwitch(
                 }
             }
     ) {
-        // LAYER 1: AGSL Snell Optical Refraction Layer (same optics as the dock!)
+        // LAYER 1: AGSL Snell Optical Refraction Layer (real glass refraction from dock!)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -1087,63 +1089,37 @@ fun LiquidGlassSwitch(
                     sizePx = Size(currentThumbWidthPx, thumbHeightPx),
                     radiusPx = pillRadiusPx,
                     refractiveIndex = 1.025f,
-                    refractionWidthPx = with(density) { 12.dp.toPx() },
+                    refractionWidthPx = with(density) { 10.dp.toPx() },
                     intensity = if (isHolding) 1.0f else 0.70f
                 )
         )
 
-        // LAYER 2: Transparent Liquid Glass Lens Body
+        // LAYER 2: Horizontal 3D Liquid Glass Capsule Lens (NO nested inner oval!)
         Box(
             modifier = Modifier
                 .offset(x = with(density) { lensLeftPx.toDp() }, y = paddingDp)
-                .size(width = currentThumbWidthDp, height = thumbDiameter)
+                .size(width = currentThumbWidthDp, height = with(density) { thumbHeightPx.toDp() })
                 .shadow(
                     elevation = if (isHolding) 6.dp else 3.dp,
                     shape = thumbShape,
                     clip = false,
-                    ambientColor = Color.Black.copy(alpha = 0.30f),
-                    spotColor = Color.Black.copy(alpha = 0.35f)
+                    ambientColor = Color.Black.copy(alpha = 0.35f),
+                    spotColor = Color.Black.copy(alpha = 0.40f)
                 )
                 .clip(thumbShape)
                 .background(
                     if (isDark) Color(0x35FFFFFF) else Color(0x45FFFFFF)
                 )
                 .border(
-                    width = (0.75f + 0.35f * expansionProgress).dp,
+                    width = (0.75f + 0.25f * expansionProgress).dp,
                     brush = Brush.verticalGradient(
                         listOf(
                             Color.White.copy(alpha = thumbBorderAlpha),
-                            Color.White.copy(alpha = thumbBorderAlpha * 0.35f)
+                            Color.White.copy(alpha = thumbBorderAlpha * 0.30f)
                         )
                     ),
                     shape = thumbShape
                 )
-                .drawWithContent {
-                    drawContent()
-                    // 3D Convex glass specular crescent reflection curve along top edge
-                    val highlightWidth = size.width * 0.75f
-                    val highlightHeight = size.height * 0.45f
-                    val highlightLeft = (size.width - highlightWidth) / 2f
-                    val highlightTop = size.height * 0.08f
-
-                    val specularPath = Path().apply {
-                        addRoundRect(
-                            RoundRect(
-                                rect = Rect(highlightLeft, highlightTop, highlightLeft + highlightWidth, highlightTop + highlightHeight),
-                                cornerRadius = CornerRadius(highlightHeight / 2f, highlightHeight / 2f)
-                            )
-                        )
-                    }
-                    drawPath(
-                        path = specularPath,
-                        brush = Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.85f),
-                                Color.White.copy(alpha = 0.0f)
-                            )
-                        )
-                    )
-                }
         )
     }
 }

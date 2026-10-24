@@ -503,31 +503,32 @@ private fun LiquidGlassStyleOptionCard(
     val isDark = isSystemInDarkTheme()
     val glassShape = RoundedCornerShape(24.dp)
 
-    // Deep, calm, authentic Apple frosted glass matching the dock
+    // Luminous, translucent frosted glass (clearly visible, frosted silver-grey in dark mode, NOT black!)
     val cardBgColor = if (isDark) {
-        if (isSelected) Color(0x22181C26) else Color(0x14181C26)
+        if (isSelected) Color(0x2EFFFFFF) else Color(0x1AFFFFFF)
     } else {
-        if (isSelected) Color(0xF8FFFFFF) else Color(0xEEFFFFFF)
+        if (isSelected) Color(0xF5FFFFFF) else Color(0xD8FFFFFF)
     }
 
-    // Hairline, delicate glass perimeter matching dock's 0.06f border (NO thick outline!)
-    val borderColor = if (isDark) {
-        if (isSelected) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.06f)
-    } else {
-        if (isSelected) Color.Black.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.05f)
-    }
+    // Top-lit specular glass rim
+    val borderBrush = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (isSelected) 0.38f else 0.16f),
+            Color.White.copy(alpha = if (isSelected) 0.10f else 0.04f)
+        )
+    )
 
     LiquidGlassSurface(
         shape = glassShape,
         isDark = isDark,
         tintColor = cardBgColor,
         highlightIntensity = 0f,
-        shadowElevation = 0.dp,
+        shadowElevation = if (isDark) 0.dp else 4.dp,
         modifier = Modifier
             .fillMaxWidth()
             .border(
-                width = 0.6.dp,
-                color = borderColor,
+                width = 0.8.dp,
+                brush = borderBrush,
                 shape = glassShape
             )
             .expressiveClickable(scaleDown = 0.98f, onClick = onClick)
@@ -538,17 +539,17 @@ private fun LiquidGlassStyleOptionCard(
                 .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Calm frosted glass icon vessel matching dock buttons
+            // Frosted glass icon vessel
             Box(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
-                        if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
+                        if (isDark) Color(0x22FFFFFF) else Color(0x0C000000)
                     )
                     .border(
                         width = 0.5.dp,
-                        color = Color.White.copy(alpha = if (isDark) 0.10f else 0.20f),
+                        color = Color.White.copy(alpha = if (isDark) 0.18f else 0.25f),
                         shape = RoundedCornerShape(14.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -590,7 +591,7 @@ private fun LiquidGlassStyleOptionCard(
                     )
                     .border(
                         width = if (isSelected) 0.dp else 1.5.dp,
-                        color = if (isSelected) Color.Transparent else Color.White.copy(alpha = if (isDark) 0.18f else 0.35f),
+                        color = if (isSelected) Color.Transparent else Color.White.copy(alpha = if (isDark) 0.22f else 0.35f),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
