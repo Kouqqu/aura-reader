@@ -293,7 +293,8 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             return (userHighlightDelayMs.toFloat() / speechRate.coerceIn(0.5f, 3.0f)).toLong()
         }
         val isBt = isBluetoothAudioConnected()
-        val baseDelay = if (isBt) 450f else 200f
+        // Increased base delays: BT has larger audio buffer, speaker is smaller but still needs ~350ms
+        val baseDelay = if (isBt) 600f else 350f
         return (baseDelay / speechRate.coerceIn(0.5f, 3.0f)).toLong()
     }
 
@@ -308,10 +309,21 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
 
                 val delayCompensation = getEffectiveHighlightDelayMs()
                 val targetTime = event.arrivalUptimeMs + delayCompensation
-                val minWordDurationMs = (100f / speechRate.coerceIn(0.5f, 3.0f)).toLong()
+                val minWordDurationMs = (80f / speechRate.coerceIn(0.5f, 3.0f)).toLong()
                 val scheduledTime = maxOf(targetTime, lastWordDisplayUptime + minWordDurationMs)
 
-                val waitMs = scheduledTime - android.os.SystemClock.uptimeMillis()
+                val now = android.os.SystemClock.uptimeMillis()
+                // Drop stale events: if we're running >2x the expected delay behind schedule,
+                // it means the channel backlog is consuming old callbacks that are already
+                // "in the past" relative to audio — skip them to avoid a highlight burst
+                val maxAcceptableAge = delayCompensation * 2 + 200L
+                val eventAge = now - event.arrivalUptimeMs
+                if (eventAge > maxAcceptableAge && highlightChannel.isEmpty) {
+                    // Only drop if there's nothing newer waiting — otherwise just let it pass
+                    continue
+                }
+
+                val waitMs = scheduledTime - now
                 if (waitMs > 0) {
                     delay(waitMs)
                 }
@@ -757,6 +769,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 val targetIdx = intent.getIntExtra(EXTRA_PARAGRAPH_INDEX, 0)
                 if (paragraphs.isNotEmpty()) {
                     currentBlockCharOffset = 0
+                    drainHighlightChannel()
                     currentIndex = targetIdx.coerceIn(0, paragraphs.size - 1)
                     _ttsState.value = _ttsState.value.copy(
                         currentParagraphIndex = currentIndex,
@@ -825,9 +838,16 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         updateMediaSessionState(isPlaying = true)
     }
 
+    private fun drainHighlightChannel() {
+        while (!highlightChannel.isEmpty) {
+            highlightChannel.tryReceive()
+        }
+    }
+
     private fun pausePlayback() {
         currentActiveUtteranceId = null
         tts?.stop()
+        drainHighlightChannel()
         abandonAudioFocus()
         _ttsState.value = _ttsState.value.copy(
             isPlaying = false,
@@ -850,6 +870,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
 
     private fun nextParagraph() {
         currentBlockCharOffset = 0
+        drainHighlightChannel()
         if (currentIndex < paragraphs.size - 1) {
             currentIndex++
             speakCurrentParagraph()
@@ -864,6 +885,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
 
     private fun previousParagraph() {
         currentBlockCharOffset = 0
+        drainHighlightChannel()
         if (currentIndex > 0) {
             currentIndex--
             speakCurrentParagraph()
@@ -875,6 +897,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
     private fun stopPlayback() {
         currentActiveUtteranceId = null
         tts?.stop()
+        drainHighlightChannel()
         abandonAudioFocus()
         _ttsState.value = TtsState(isPlaying = false, isServiceRunning = false)
         stopForeground(STOP_FOREGROUND_REMOVE)

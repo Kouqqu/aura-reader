@@ -430,7 +430,7 @@ fun TtsBottomSheet(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            val delayOptions = listOf(-1, 0, 150, 300, 450, 600)
+            val delayOptions = listOf(-1, 0, 150, 300, 450, 600, 750, 900)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
