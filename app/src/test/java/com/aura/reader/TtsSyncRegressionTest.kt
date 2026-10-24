@@ -89,6 +89,59 @@ class TtsSyncRegressionTest {
         assertFalse(state.isServiceRunning)
         assertEquals(-1, state.currentWordStart)
         assertEquals(-1, state.currentWordEnd)
+        assertEquals(-1, state.highlightDelayMs)
+    }
+
+    @Test
+    fun testSplitBlockOffsetAdjustment() {
+        val fullParagraph = "Первая часть длинного абзаца, которая целиком помещается на первой странице. Вторая часть абзаца переносится на следующую страницу."
+        val splitPoint = fullParagraph.indexOf("Вторая часть")
+        val chunk1 = fullParagraph.substring(0, splitPoint).trim()
+        val chunk2 = fullParagraph.substring(splitPoint).trim()
+        val chunk2SourceOffset = splitPoint
+
+        // Suppose TTS is currently speaking "Вторая" in the second chunk
+        val globalWordStart = fullParagraph.indexOf("Вторая")
+        val globalWordEnd = globalWordStart + "Вторая".length
+
+        // On Page 1 (chunk1):
+        val p1AdjustedStart = globalWordStart - 0
+        val p1InChunk = p1AdjustedStart in 0 until chunk1.length
+        assertFalse("Page 1 should NOT highlight word from Page 2", p1InChunk)
+
+        // On Page 2 (chunk2):
+        val p2AdjustedStart = globalWordStart - chunk2SourceOffset
+        val p2AdjustedEnd = globalWordEnd - chunk2SourceOffset
+        val p2InChunk = p2AdjustedStart in 0 until chunk2.length
+        assertTrue("Page 2 SHOULD highlight word", p2InChunk)
+        assertEquals("Вторая", chunk2.substring(p2AdjustedStart, p2AdjustedEnd))
+    }
+
+    @Test
+    fun testWhitespaceDetectionHandlesNonBreakingSpace() {
+        val textWithNbsp = "слово\u00A0— следующее"
+        var spaceIdx = -1
+        for (i in 0 until textWithNbsp.length) {
+            if (textWithNbsp[i].isWhitespace()) {
+                spaceIdx = i
+                break
+            }
+        }
+        assertEquals(5, spaceIdx)
+        assertEquals("слово", textWithNbsp.substring(0, spaceIdx))
+    }
+
+    @Test
+    fun testShortWordDoesNotFalseMatchLongerWordPrefix() {
+        val spokenWord = "в"
+        val candidateWord = "вечер"
+
+        val matches = candidateWord.isNotBlank() && spokenWord.isNotBlank() && (
+            candidateWord.equals(spokenWord, ignoreCase = true) ||
+            (candidateWord.length >= 3 && spokenWord.length >= 3 &&
+             (candidateWord.startsWith(spokenWord, ignoreCase = true) || spokenWord.startsWith(candidateWord, ignoreCase = true)))
+        )
+        assertFalse("Single letter word 'в' should NOT prefix-match 'вечер'", matches)
     }
 
     @Test

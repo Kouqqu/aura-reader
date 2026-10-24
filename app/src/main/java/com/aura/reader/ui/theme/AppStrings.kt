@@ -330,6 +330,8 @@ interface Strings {
     val ttsOnlineQuality: String
     val ttsOfflineQuality: String
     fun ttsVoiceNumber(num: Int): String
+    val ttsSyncTitle: String
+    val ttsSyncAuto: String
 
     // Currently Reading & View Mode
     val currentlyReadingBadge: String
@@ -718,6 +720,8 @@ class RuStrings : Strings {
     override val ttsOnlineQuality = "Сеть"
     override val ttsOfflineQuality = "Офлайн"
     override fun ttsVoiceNumber(num: Int) = "Голос $num"
+    override val ttsSyncTitle = "Синхронизация подсветки"
+    override val ttsSyncAuto = "Авто (компенсация задержки)"
 
     override val currentlyReadingBadge = "СЕЙЧАС ЧИТАЮ"
     override val continueReadingAction = "Продолжить чтение"
@@ -1103,6 +1107,8 @@ class EnStrings : Strings {
     override val ttsOnlineQuality = "Network"
     override val ttsOfflineQuality = "Offline"
     override fun ttsVoiceNumber(num: Int) = "Voice $num"
+    override val ttsSyncTitle = "Highlight Sync"
+    override val ttsSyncAuto = "Auto (Latency compensation)"
 
     override val currentlyReadingBadge = "CURRENTLY READING"
     override val continueReadingAction = "Continue Reading"
@@ -1488,6 +1494,8 @@ class UkStrings : Strings {
     override val ttsOnlineQuality = "Мережа"
     override val ttsOfflineQuality = "Офлайн"
     override fun ttsVoiceNumber(num: Int) = "Голос $num"
+    override val ttsSyncTitle = "Синхронізація підсвічування"
+    override val ttsSyncAuto = "Авто (компенсація затримки)"
 
     override val currentlyReadingBadge = "ЗАРАЗ ЧИТАЮ"
     override val continueReadingAction = "Продовжити читання"
@@ -1873,6 +1881,8 @@ class BeStrings : Strings {
     override val ttsOnlineQuality = "Сетка"
     override val ttsOfflineQuality = "Афлайн"
     override fun ttsVoiceNumber(num: Int) = "Голас $num"
+    override val ttsSyncTitle = "Сінхранізацыя падсветкі"
+    override val ttsSyncAuto = "Аўта (кампенсацыя затрымкі)"
 
     override val currentlyReadingBadge = "ЗАРАЗ ЧЫТАЮ"
     override val continueReadingAction = "Працягнуць чытанне"
@@ -2257,6 +2267,8 @@ class PlStrings : Strings {
     override val ttsOnlineQuality = "Sieć"
     override val ttsOfflineQuality = "Offline"
     override fun ttsVoiceNumber(num: Int) = "Głos $num"
+    override val ttsSyncTitle = "Synchronizacja podświetlenia"
+    override val ttsSyncAuto = "Automatyczna (kompensacja opóźnień)"
 
     override val currentlyReadingBadge = "TERAZ CZYTAM"
     override val continueReadingAction = "Kontynuuj czytanie"
@@ -2625,6 +2637,8 @@ class CsStrings : Strings {
     override val ttsOnlineQuality = "Síť"
     override val ttsOfflineQuality = "Offline"
     override fun ttsVoiceNumber(num: Int) = "Hlas $num"
+    override val ttsSyncTitle = "Synchronizace zvýraznění"
+    override val ttsSyncAuto = "Automaticky (kompenzace zpoždění)"
     override val currentlyReadingBadge = "Právě čtu"
     override val continueReadingAction = "Číst"
     override val viewModeList = "Seznam"
@@ -2988,6 +3002,8 @@ class HeStrings : Strings {
     override val ttsOnlineQuality = "רשת"
     override val ttsOfflineQuality = "לא מקוון"
     override fun ttsVoiceNumber(num: Int) = "קול #$num"
+    override val ttsSyncTitle = "סנכרון הדגשה"
+    override val ttsSyncAuto = "אוטומטי (פיצוי השהיה)"
     override val currentlyReadingBadge = "קורא כעת"
     override val continueReadingAction = "המשך לקרוא"
     override val viewModeList = "רשימה"

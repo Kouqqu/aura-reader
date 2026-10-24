@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.aura.reader.data.model.Bookmark
@@ -96,6 +97,7 @@ class PreferencesManager(private val context: Context) {
         val TTS_VOICE_NAME_KEY = stringPreferencesKey("tts_selected_voice_name")
         val TTS_SPEED_KEY = floatPreferencesKey("tts_speed")
         val TTS_PITCH_KEY = floatPreferencesKey("tts_pitch")
+        val TTS_HIGHLIGHT_DELAY_KEY = intPreferencesKey("tts_highlight_delay_ms")
     }
 
         val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -139,6 +141,16 @@ class PreferencesManager(private val context: Context) {
     suspend fun setTtsPitch(pitch: Float) {
         context.dataStore.edit { prefs ->
             prefs[TTS_PITCH_KEY] = pitch
+        }
+    }
+
+    val ttsHighlightDelayMs: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[TTS_HIGHLIGHT_DELAY_KEY] ?: -1
+    }
+
+    suspend fun setTtsHighlightDelay(delayMs: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[TTS_HIGHLIGHT_DELAY_KEY] = delayMs
         }
     }
 

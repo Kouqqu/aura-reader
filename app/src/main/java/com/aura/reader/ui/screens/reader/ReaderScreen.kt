@@ -1266,7 +1266,8 @@ fun ReaderScreen(
                     onPitchChange = { pitch -> com.aura.reader.service.BookTtsService.setPitch(context, pitch) },
                     onVoiceChange = { voice -> com.aura.reader.service.BookTtsService.setVoice(context, voice) },
                     onPreviewVoice = { voice -> com.aura.reader.service.BookTtsService.previewVoice(context, voice) },
-                    onSeekParagraph = { idx -> com.aura.reader.service.BookTtsService.seekParagraph(context, idx) }
+                    onSeekParagraph = { idx -> com.aura.reader.service.BookTtsService.seekParagraph(context, idx) },
+                    onHighlightDelayChange = { delay -> com.aura.reader.service.BookTtsService.setHighlightDelay(context, delay) }
                 )
             }
 
@@ -2057,6 +2058,29 @@ fun ChapterPagingView(
             }
         }
 
+        // Auto-turn page as TTS voice narration progresses
+        LaunchedEffect(ttsState.currentOriginalBlockIndex, ttsState.currentWordStart, isTtsHighlightActive) {
+            if (isTtsHighlightActive && ttsState.currentOriginalBlockIndex >= 0) {
+                val targetPageIdx = pages.indexOfFirst { page ->
+                    page.any { (origIdx, blk) ->
+                        origIdx == ttsState.currentOriginalBlockIndex &&
+                        (ttsState.currentWordStart < 0 || ttsState.currentWordStart >= blk.sourceTextOffset)
+                    }
+                }
+                if (targetPageIdx >= 0) {
+                    val targetSpread = if (isTwoColumn) targetPageIdx / 2 else targetPageIdx
+                    val targetPagerSpread = prevPageOffset + targetSpread
+                    if (targetPagerSpread != pagerState.currentPage && targetPagerSpread in prevPageOffset until (prevPageOffset + contentSpreadsCount)) {
+                        if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+                            pagerState.scrollToPage(targetPagerSpread)
+                        } else {
+                            pagerState.animateScrollToPage(targetPagerSpread)
+                        }
+                    }
+                }
+            }
+        }
+
         val instantSwipeModifier = if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
             Modifier.pointerInput(pagerState.currentPage, totalPagerSpreads) {
                 detectHorizontalDragGestures { _, dragAmount ->
@@ -2184,6 +2208,10 @@ fun ChapterPagingView(
                                     ) {
                                         for ((originalIndex, block) in leftPageBlocks) {
                                             val isSpeaking = isTtsHighlightActive && (originalIndex == ttsState.currentOriginalBlockIndex)
+                                            val blockOffset = block.sourceTextOffset
+                                            val adjustedStart = if (isSpeaking && ttsState.currentWordStart >= 0) ttsState.currentWordStart - blockOffset else -1
+                                            val adjustedEnd = if (isSpeaking && ttsState.currentWordEnd >= 0) ttsState.currentWordEnd - blockOffset else -1
+                                            val isWordInChunk = adjustedStart in 0 until block.text.length
                                             RenderBlock(
                                                 block = block,
                                                 settings = settings,
@@ -2191,9 +2219,9 @@ fun ChapterPagingView(
                                                 searchQuery = searchQuery,
                                                 footnotes = footnotes,
                                                 quotes = quotes,
-                                                ttsWordStart = if (isSpeaking) ttsState.currentWordStart else -1,
-                                                ttsWordEnd = if (isSpeaking) ttsState.currentWordEnd else -1,
-                                                ttsSpokenWord = if (isSpeaking) ttsState.currentSpokenWord else "",
+                                                ttsWordStart = if (isWordInChunk) adjustedStart else -1,
+                                                ttsWordEnd = if (isWordInChunk) adjustedEnd else -1,
+                                                ttsSpokenWord = if (isWordInChunk) ttsState.currentSpokenWord else "",
                                                 onFootnoteClick = onFootnoteClick,
                                                 onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                                 onToggleControls = onToggleControls,
@@ -2217,6 +2245,10 @@ fun ChapterPagingView(
                                     ) {
                                         for ((originalIndex, block) in rightPageBlocks) {
                                             val isSpeaking = isTtsHighlightActive && (originalIndex == ttsState.currentOriginalBlockIndex)
+                                            val blockOffset = block.sourceTextOffset
+                                            val adjustedStart = if (isSpeaking && ttsState.currentWordStart >= 0) ttsState.currentWordStart - blockOffset else -1
+                                            val adjustedEnd = if (isSpeaking && ttsState.currentWordEnd >= 0) ttsState.currentWordEnd - blockOffset else -1
+                                            val isWordInChunk = adjustedStart in 0 until block.text.length
                                             RenderBlock(
                                                 block = block,
                                                 settings = settings,
@@ -2224,9 +2256,9 @@ fun ChapterPagingView(
                                                 searchQuery = searchQuery,
                                                 footnotes = footnotes,
                                                 quotes = quotes,
-                                                ttsWordStart = if (isSpeaking) ttsState.currentWordStart else -1,
-                                                ttsWordEnd = if (isSpeaking) ttsState.currentWordEnd else -1,
-                                                ttsSpokenWord = if (isSpeaking) ttsState.currentSpokenWord else "",
+                                                ttsWordStart = if (isWordInChunk) adjustedStart else -1,
+                                                ttsWordEnd = if (isWordInChunk) adjustedEnd else -1,
+                                                ttsSpokenWord = if (isWordInChunk) ttsState.currentSpokenWord else "",
                                                 onFootnoteClick = onFootnoteClick,
                                                 onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                                 onToggleControls = onToggleControls,
@@ -2246,6 +2278,10 @@ fun ChapterPagingView(
                                 ) {
                                     for ((originalIndex, block) in pageBlocks) {
                                         val isSpeaking = isTtsHighlightActive && (originalIndex == ttsState.currentOriginalBlockIndex)
+                                        val blockOffset = block.sourceTextOffset
+                                        val adjustedStart = if (isSpeaking && ttsState.currentWordStart >= 0) ttsState.currentWordStart - blockOffset else -1
+                                        val adjustedEnd = if (isSpeaking && ttsState.currentWordEnd >= 0) ttsState.currentWordEnd - blockOffset else -1
+                                        val isWordInChunk = adjustedStart in 0 until block.text.length
                                         RenderBlock(
                                             block = block,
                                             settings = settings,
@@ -2253,9 +2289,9 @@ fun ChapterPagingView(
                                             searchQuery = searchQuery,
                                             footnotes = footnotes,
                                             quotes = quotes,
-                                            ttsWordStart = if (isSpeaking) ttsState.currentWordStart else -1,
-                                            ttsWordEnd = if (isSpeaking) ttsState.currentWordEnd else -1,
-                                            ttsSpokenWord = if (isSpeaking) ttsState.currentSpokenWord else "",
+                                            ttsWordStart = if (isWordInChunk) adjustedStart else -1,
+                                            ttsWordEnd = if (isWordInChunk) adjustedEnd else -1,
+                                            ttsSpokenWord = if (isWordInChunk) ttsState.currentSpokenWord else "",
                                             onFootnoteClick = onFootnoteClick,
                                             onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                             onToggleControls = onToggleControls,
@@ -2930,7 +2966,7 @@ fun RenderBlock(
                 lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
             )
 
-            val formattedText = remember(block.text) { formatTypography(block.text) }
+            val formattedText = remember(block.text) { formatTypography(block.text.trim()) }
 
             InteractiveText(
                 rawText = formattedText,
@@ -2987,13 +3023,25 @@ fun InteractiveText(
                 // 1. Direct offset match check (fastest and most accurate)
                 if (ttsWordStart in 0 until rawText.length) {
                     val candidateEnd = if (ttsWordEnd in (ttsWordStart + 1)..rawText.length) ttsWordEnd else {
-                        val spaceIdx = rawText.indexOf(' ', ttsWordStart)
+                        var spaceIdx = -1
+                        for (i in ttsWordStart until rawText.length) {
+                            if (rawText[i].isWhitespace()) {
+                                spaceIdx = i
+                                break
+                            }
+                        }
                         if (spaceIdx != -1) spaceIdx else rawText.length
                     }
                     val candidateWord = rawText.substring(ttsWordStart, candidateEnd).trim { it <= ' ' || it in "\"'«»“”„“.,!?:;()[]{}–—-" }
                     val cleanSpoken = ttsSpokenWord.trim { it <= ' ' || it in "\"'«»“”„“.,!?:;()[]{}–—-" }
-                    if (cleanSpoken.isEmpty() || candidateWord.equals(cleanSpoken, ignoreCase = true) ||
-                        candidateWord.startsWith(cleanSpoken, ignoreCase = true) || cleanSpoken.startsWith(candidateWord, ignoreCase = true)) {
+                    if (candidateWord.isNotBlank() && cleanSpoken.isNotBlank()) {
+                        if (candidateWord.equals(cleanSpoken, ignoreCase = true) ||
+                            (candidateWord.length >= 3 && cleanSpoken.length >= 3 &&
+                             (candidateWord.startsWith(cleanSpoken, ignoreCase = true) || cleanSpoken.startsWith(candidateWord, ignoreCase = true)))) {
+                            hlStart = ttsWordStart
+                            hlEnd = candidateEnd
+                        }
+                    } else if (candidateWord.isNotBlank() && cleanSpoken.isBlank()) {
                         hlStart = ttsWordStart
                         hlEnd = candidateEnd
                     }
@@ -3002,9 +3050,9 @@ fun InteractiveText(
                 // 2. Proximity search if typography or accents caused slight character index drift
                 if (hlStart == -1 && ttsSpokenWord.isNotBlank()) {
                     val cleanSpoken = ttsSpokenWord.trim { it <= ' ' || it in "\"'«»“”„“.,!?:;()[]{}–—-" }
-                    if (cleanSpoken.isNotBlank()) {
-                        val windowStart = if (ttsWordStart >= 0) maxOf(0, ttsWordStart - 8) else 0
-                        val windowEnd = if (ttsWordStart >= 0) minOf(rawText.length, ttsWordStart + cleanSpoken.length + 8) else rawText.length
+                    if (cleanSpoken.length >= 3) {
+                        val windowStart = if (ttsWordStart >= 0) maxOf(0, ttsWordStart - 6) else 0
+                        val windowEnd = if (ttsWordStart >= 0) minOf(rawText.length, ttsWordStart + cleanSpoken.length + 6) else rawText.length
                         val windowText = rawText.substring(windowStart, windowEnd)
                         val relIdx = windowText.indexOf(cleanSpoken, ignoreCase = true)
                         if (relIdx != -1) {
@@ -3018,7 +3066,13 @@ fun InteractiveText(
                 if (hlStart == -1 && ttsWordStart in 0 until rawText.length) {
                     hlStart = ttsWordStart
                     hlEnd = if (ttsWordEnd in (ttsWordStart + 1)..rawText.length) ttsWordEnd else {
-                        val spaceIdx = rawText.indexOf(' ', ttsWordStart)
+                        var spaceIdx = -1
+                        for (i in ttsWordStart until rawText.length) {
+                            if (rawText[i].isWhitespace()) {
+                                spaceIdx = i
+                                break
+                            }
+                        }
                         if (spaceIdx != -1) spaceIdx else rawText.length
                     }
                 }

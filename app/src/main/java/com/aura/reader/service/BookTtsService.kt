@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioAttributes
+import android.media.AudioDeviceInfo
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.session.MediaSession
@@ -26,8 +27,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -57,7 +61,16 @@ data class TtsState(
     val currentWordEnd: Int = -1,
     val currentSpokenWord: String = "",
     val currentOriginalBlockIndex: Int = -1,
-    val chapterFinishedEvent: Long = 0L
+    val chapterFinishedEvent: Long = 0L,
+    val highlightDelayMs: Int = -1
+)
+
+data class TtsHighlightEvent(
+    val utteranceId: String,
+    val start: Int,
+    val end: Int,
+    val word: String,
+    val arrivalUptimeMs: Long
 )
 
 class BookTtsService : Service(), TextToSpeech.OnInitListener {
@@ -78,7 +91,9 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         const val ACTION_SET_VOICE = "com.aura.reader.tts.SET_VOICE"
         const val ACTION_PREVIEW_VOICE = "com.aura.reader.tts.PREVIEW_VOICE"
         const val ACTION_SEEK_PARAGRAPH = "com.aura.reader.tts.SEEK_PARAGRAPH"
+        const val ACTION_SET_HIGHLIGHT_DELAY = "com.aura.reader.tts.SET_HIGHLIGHT_DELAY"
         const val EXTRA_PARAGRAPH_INDEX = "extra_paragraph_index"
+        const val EXTRA_HIGHLIGHT_DELAY = "extra_highlight_delay"
 
         const val EXTRA_BOOK_TITLE = "extra_book_title"
         const val EXTRA_CHAPTER_TITLE = "extra_chapter_title"
@@ -214,6 +229,14 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             }
             context.startService(intent)
         }
+
+        fun setHighlightDelay(context: Context, delayMs: Int) {
+            val intent = Intent(context, BookTtsService::class.java).apply {
+                action = ACTION_SET_HIGHLIGHT_DELAY
+                putExtra(EXTRA_HIGHLIGHT_DELAY, delayMs)
+            }
+            context.startService(intent)
+        }
     }
 
     private var tts: TextToSpeech? = null
@@ -237,6 +260,73 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
     private var currentActiveUtteranceId: String? = null
     private var isTtsReady: Boolean = false
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private var userHighlightDelayMs: Int = -1
+    private val highlightChannel = Channel<TtsHighlightEvent>(Channel.UNLIMITED)
+    private var highlightConsumerJob: Job? = null
+
+    private fun isBluetoothAudioConnected(): Boolean {
+        val am = audioManager ?: (getSystemService(Context.AUDIO_SERVICE) as? AudioManager) ?: return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                val devices = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+                devices.any {
+                    it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
+                    it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+                    (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && (
+                        it.type == AudioDeviceInfo.TYPE_BLE_HEADSET ||
+                        it.type == AudioDeviceInfo.TYPE_BLE_SPEAKER
+                    ))
+                }
+            } catch (_: Throwable) {
+                @Suppress("DEPRECATION")
+                am.isBluetoothA2dpOn
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            am.isBluetoothA2dpOn
+        }
+    }
+
+    private fun getEffectiveHighlightDelayMs(): Long {
+        if (userHighlightDelayMs >= 0) {
+            return (userHighlightDelayMs.toFloat() / speechRate.coerceIn(0.5f, 3.0f)).toLong()
+        }
+        val isBt = isBluetoothAudioConnected()
+        val baseDelay = if (isBt) 450f else 200f
+        return (baseDelay / speechRate.coerceIn(0.5f, 3.0f)).toLong()
+    }
+
+    private fun startHighlightConsumer() {
+        highlightConsumerJob?.cancel()
+        highlightConsumerJob = serviceScope.launch(Dispatchers.Main) {
+            var lastWordDisplayUptime = 0L
+            for (event in highlightChannel) {
+                if (event.utteranceId != currentActiveUtteranceId || !_ttsState.value.isPlaying) {
+                    continue
+                }
+
+                val delayCompensation = getEffectiveHighlightDelayMs()
+                val targetTime = event.arrivalUptimeMs + delayCompensation
+                val minWordDurationMs = (100f / speechRate.coerceIn(0.5f, 3.0f)).toLong()
+                val scheduledTime = maxOf(targetTime, lastWordDisplayUptime + minWordDurationMs)
+
+                val waitMs = scheduledTime - android.os.SystemClock.uptimeMillis()
+                if (waitMs > 0) {
+                    delay(waitMs)
+                }
+
+                if (event.utteranceId == currentActiveUtteranceId && _ttsState.value.isPlaying) {
+                    _ttsState.value = _ttsState.value.copy(
+                        currentWordStart = event.start,
+                        currentWordEnd = event.end,
+                        currentSpokenWord = event.word
+                    )
+                    lastWordDisplayUptime = android.os.SystemClock.uptimeMillis()
+                }
+            }
+        }
+    }
 
     private val noisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -385,6 +475,16 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             noisyReceiver,
             IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
         )
+
+        serviceScope.launch {
+            try {
+                com.aura.reader.data.preferences.PreferencesManager(applicationContext).ttsHighlightDelayMs.collect { delay ->
+                    userHighlightDelayMs = delay
+                    _ttsState.value = _ttsState.value.copy(highlightDelayMs = delay)
+                }
+            } catch (_: Exception) {}
+        }
+        startHighlightConsumer()
     }
 
     override fun onInit(status: Int) {
@@ -464,10 +564,14 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                         val word = if (adjustedStart in 0..fullText.length && adjustedEnd in adjustedStart..fullText.length) {
                             fullText.substring(adjustedStart, adjustedEnd).trim()
                         } else ""
-                        _ttsState.value = _ttsState.value.copy(
-                            currentWordStart = adjustedStart,
-                            currentWordEnd = adjustedEnd,
-                            currentSpokenWord = word
+                        highlightChannel.trySend(
+                            TtsHighlightEvent(
+                                utteranceId = utteranceId,
+                                start = adjustedStart,
+                                end = adjustedEnd,
+                                word = word,
+                                arrivalUptimeMs = android.os.SystemClock.uptimeMillis()
+                            )
                         )
                     }
                 }
@@ -665,6 +769,16 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                     if (_ttsState.value.isPlaying && isTtsReady) {
                         speakCurrentParagraph()
                     }
+                }
+            }
+            ACTION_SET_HIGHLIGHT_DELAY -> {
+                val delayMs = intent.getIntExtra(EXTRA_HIGHLIGHT_DELAY, -1)
+                userHighlightDelayMs = delayMs
+                _ttsState.value = _ttsState.value.copy(highlightDelayMs = delayMs)
+                serviceScope.launch {
+                    try {
+                        com.aura.reader.data.preferences.PreferencesManager(applicationContext).setTtsHighlightDelay(delayMs)
+                    } catch (_: Exception) {}
                 }
             }
         }

@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -95,7 +96,8 @@ fun TtsBottomSheet(
     onPitchChange: (Float) -> Unit,
     onVoiceChange: (String) -> Unit,
     onPreviewVoice: (String) -> Unit = {},
-    onSeekParagraph: (Int) -> Unit = {}
+    onSeekParagraph: (Int) -> Unit = {},
+    onHighlightDelayChange: (Int) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val strings = LocalAppStrings.current
@@ -395,6 +397,56 @@ fun TtsBottomSheet(
                 steps = 4,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // Highlight Synchronization Control
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Sync,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = strings.ttsSyncTitle,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Text(
+                    text = if (ttsState.highlightDelayMs < 0) strings.ttsSyncAuto else "${ttsState.highlightDelayMs} ms",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val delayOptions = listOf(-1, 0, 150, 300, 450, 600)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                delayOptions.forEach { delayMs ->
+                    val isSelected = ttsState.highlightDelayMs == delayMs
+                    val label = if (delayMs < 0) strings.ttsSyncAuto.take(4) else "${delayMs}ms"
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { onHighlightDelayChange(delayMs) },
+                        label = { Text(label) }
+                    )
+                }
+            }
 
             // Voice / Language Selector
             if (ttsState.availableVoices.isNotEmpty()) {
