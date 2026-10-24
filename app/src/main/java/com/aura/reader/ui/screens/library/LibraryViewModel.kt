@@ -61,6 +61,7 @@ sealed interface LibraryUiState {
     data object Loading : LibraryUiState
     data class Success(val book: Book) : LibraryUiState
     data class Error(val message: String) : LibraryUiState
+    data class Message(val message: String) : LibraryUiState
 }
 
 class LibraryViewModel(
@@ -612,8 +613,11 @@ class LibraryViewModel(
         AppUpdateManager.openReleasePage(context, releaseUrl)
     }
 
+    private var scanJob: kotlinx.coroutines.Job? = null
+
     fun scanDeviceForBooks() {
-        viewModelScope.launch(Dispatchers.IO) {
+        scanJob?.cancel()
+        scanJob = viewModelScope.launch(Dispatchers.IO) {
             val list = mutableListOf<File>()
             val candidates = listOf(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
@@ -688,10 +692,10 @@ class LibraryViewModel(
 
             if (addedCount > 0) {
                 if (errors.isEmpty()) {
-                    _uiState.value = LibraryUiState.Error("Добавлено книг в библиотеку: $addedCount")
+                    _uiState.value = LibraryUiState.Message("Добавлено книг в библиотеку: $addedCount")
                 } else {
                     val firstErr = errors.first()
-                    _uiState.value = LibraryUiState.Error("Добавлено книг: $addedCount. $firstErr")
+                    _uiState.value = LibraryUiState.Message("Добавлено книг: $addedCount. $firstErr")
                 }
             } else {
                 val firstErr = errors.firstOrNull() ?: "Не удалось добавить выбранные файлы"
@@ -762,9 +766,9 @@ class LibraryViewModel(
             }
 
             if (addedCount > 0) {
-                _uiState.value = LibraryUiState.Error("Найдено и добавлено книг в библиотеку: $addedCount")
+                _uiState.value = LibraryUiState.Message("Найдено и добавлено книг в библиотеку: $addedCount")
             } else {
-                _uiState.value = LibraryUiState.Error("Книги из папки уже есть в библиотеке")
+                _uiState.value = LibraryUiState.Message("Книги из папки уже есть в библиотеке")
             }
         }
     }

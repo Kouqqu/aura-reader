@@ -27,6 +27,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
@@ -42,7 +43,6 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Settings
@@ -600,7 +600,7 @@ fun SettingsBottomSheet(
                         )
                         ExpressiveThemePill(
                             label = strings.themeSepia,
-                            icon = Icons.Default.MenuBook,
+                            icon = Icons.AutoMirrored.Filled.MenuBook,
                             isSelected = currentTheme == ReaderThemeMode.SEPIA,
                             previewBgColor = SepiaBackground,
                             previewTextColor = SepiaText,
@@ -678,7 +678,7 @@ fun SettingsBottomSheet(
                 ExpressiveSettingsRow(
                     title = strings.readerThemeSettingsTitle,
                     subtitle = strings.readerThemeSettingsSubtitle,
-                    icon = { SettingsIconBox(Icons.Default.MenuBook) },
+                    icon = { SettingsIconBox(Icons.AutoMirrored.Filled.MenuBook) },
                     onClick = { onOpenReaderThemeSettings() },
                     trailing = {
                         Icon(
@@ -1187,7 +1187,7 @@ fun SettingsBottomSheet(
                     subtitle = strings.quickGuideSubtitle,
                     icon = {
                         SettingsIconBox(
-                            icon = Icons.Default.MenuBook,
+                            icon = Icons.AutoMirrored.Filled.MenuBook,
                             tint = MaterialTheme.colorScheme.primary,
                             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                         )

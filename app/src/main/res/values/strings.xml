@@ -13,4 +13,9 @@
     <string name="theme_mode">Тема оформления</string>
     <string name="chapters">Оглавление</string>
     <string name="settings">Настройки</string>
+    <string name="tts_action_pause">Пауза</string>
+    <string name="tts_action_play">Слушать</string>
+    <string name="tts_action_prev">Назад</string>
+    <string name="tts_action_next">Вперед</string>
+    <string name="tts_action_stop">Стоп</string>
 </resources>

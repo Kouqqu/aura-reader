@@ -36,12 +36,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -132,7 +132,7 @@ fun OnboardingScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.MenuBook,
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
@@ -703,7 +703,7 @@ private fun OnboardingFormatsSlide() {
         verticalArrangement = Arrangement.Center
     ) {
         ExpressiveScallopedBadge(
-            icon = Icons.Default.MenuBook,
+            icon = Icons.AutoMirrored.Filled.MenuBook,
             petalColor = MaterialTheme.colorScheme.secondaryContainer,
             iconTint = MaterialTheme.colorScheme.secondary
         )
@@ -738,7 +738,7 @@ private fun OnboardingFormatsSlide() {
         Spacer(modifier = Modifier.height(12.dp))
 
         FeatureHighlightCard(
-            icon = Icons.Default.MenuBook,
+            icon = Icons.AutoMirrored.Filled.MenuBook,
             title = "Каталоги OPDS",
             description = "Поиск и загрузка тысяч книг напрямую из онлайн-библиотек"
         )
@@ -770,7 +770,7 @@ private fun OnboardingTtsSlide() {
         verticalArrangement = Arrangement.Center
     ) {
         ExpressiveScallopedBadge(
-            icon = Icons.Default.VolumeUp,
+            icon = Icons.AutoMirrored.Filled.VolumeUp,
             petalColor = MaterialTheme.colorScheme.tertiaryContainer,
             iconTint = MaterialTheme.colorScheme.tertiary
         )
@@ -805,7 +805,7 @@ private fun OnboardingTtsSlide() {
         Spacer(modifier = Modifier.height(12.dp))
 
         FeatureHighlightCard(
-            icon = Icons.Default.MenuBook,
+            icon = Icons.AutoMirrored.Filled.MenuBook,
             title = "Озвучка с любого места",
             description = "Нажмите на любое слово в книге, чтобы начать чтение именно с него"
         )
@@ -813,7 +813,7 @@ private fun OnboardingTtsSlide() {
         Spacer(modifier = Modifier.height(12.dp))
 
         FeatureHighlightCard(
-            icon = Icons.Default.VolumeUp,
+            icon = Icons.AutoMirrored.Filled.VolumeUp,
             title = "Большой выбор голосов",
             description = "Высокое качество речи, регулировка темпа и высоты тона"
         )

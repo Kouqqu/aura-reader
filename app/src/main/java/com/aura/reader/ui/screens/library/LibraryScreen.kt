@@ -470,6 +470,12 @@ fun LibraryScreen(
                 }
                 viewModel.resetUiState()
             }
+            is LibraryUiState.Message -> {
+                scope.launch {
+                    snackbarHostState.showSnackbar(state.message)
+                }
+                viewModel.resetUiState()
+            }
             else -> Unit
         }
     }
@@ -1484,7 +1490,7 @@ fun LibraryScreen(
                 ) {
                     if (userCollections.isEmpty()) {
                         Text(
-                            text = "Р СџР С•Р С”Р В° Р Р…Р ВµРЎвЂљ РЎРѓР С•Р В·Р Т‘Р В°Р Р…Р Р…РЎвЂ№РЎвЂ¦ Р С—Р С•Р В»Р С•Р С”",
+                            text = "Пока нет созданных полок",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 8.dp)
@@ -1925,7 +1931,7 @@ fun BookCard(
 
                 if (!book.series.isNullOrBlank()) {
                     val seriesText = if (book.seriesNumber != null) {
-                        "${book.series} вЂў #${book.seriesNumber}"
+                        "${book.series} • #${book.seriesNumber}"
                     } else {
                         book.series.orEmpty()
                     }
@@ -2392,7 +2398,7 @@ fun BookGridCard(
 
             if (!book.series.isNullOrBlank()) {
                 val seriesText = if (book.seriesNumber != null) {
-                    "${book.series} вЂў #${book.seriesNumber}"
+                    "${book.series} • #${book.seriesNumber}"
                 } else {
                     book.series.orEmpty()
                 }

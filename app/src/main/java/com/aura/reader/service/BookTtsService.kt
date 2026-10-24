@@ -230,7 +230,26 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         }
     }
 
+    @Volatile
     private var pendingPreviewVoice: String? = null
+
+    private fun findVoiceByName(name: String): android.speech.tts.Voice? {
+        return try {
+            tts?.voices?.firstOrNull { it.name == name }
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun applyVoiceByName(name: String): Boolean {
+        val matched = findVoiceByName(name) ?: return false
+        return try {
+            tts?.voice = matched
+            true
+        } catch (_: Throwable) {
+            false
+        }
+    }
 
     private fun detectGoogleOrSystemGender(rawName: String, features: Set<String>?): String {
         if (features != null) {
@@ -380,7 +399,9 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                         currentSpokenWord = ""
                     )
                     if (_ttsState.value.isPlaying) {
-                        nextParagraph()
+                        serviceScope.launch(Dispatchers.Main) {
+                            nextParagraph()
+                        }
                     }
                 }
 
@@ -392,7 +413,9 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                         currentSpokenWord = ""
                     )
                     if (_ttsState.value.isPlaying) {
-                        nextParagraph()
+                        serviceScope.launch(Dispatchers.Main) {
+                            nextParagraph()
+                        }
                     }
                 }
 
@@ -463,10 +486,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             }
             isTtsReady = true
             if (selectedVoice != null) {
-                try {
-                    val matched = tts?.voices?.firstOrNull { it.name == selectedVoice }
-                    if (matched != null) tts?.voice = matched
-                } catch (_: Throwable) {}
+                applyVoiceByName(selectedVoice!!)
             }
             _ttsState.value = _ttsState.value.copy(
                 isInitialized = true,
@@ -502,10 +522,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 tts?.setSpeechRate(speechRate)
                 tts?.setPitch(speechPitch)
                 if (selectedVoice != null) {
-                    try {
-                        val matched = tts?.voices?.firstOrNull { it.name == selectedVoice }
-                        if (matched != null) tts?.voice = matched
-                    } catch (e: Throwable) {}
+                    applyVoiceByName(selectedVoice!!)
                 }
 
                 _ttsState.value = _ttsState.value.copy(
@@ -574,23 +591,17 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             ACTION_SET_VOICE -> {
                 val voiceName = intent.getStringExtra(EXTRA_VOICE_NAME)
                 if (!voiceName.isNullOrBlank()) {
-                    try {
-                        val matched = tts?.voices?.firstOrNull { it.name == voiceName }
-                        if (matched != null) {
-                            tts?.voice = matched
-                            selectedVoice = voiceName
-                            _ttsState.value = _ttsState.value.copy(selectedVoiceName = voiceName)
-                            serviceScope.launch {
-                                try {
-                                    com.aura.reader.data.preferences.PreferencesManager(applicationContext).setTtsSelectedVoice(voiceName)
-                                } catch (_: Exception) {}
-                            }
-                            if (_ttsState.value.isPlaying) {
-                                speakCurrentParagraph()
-                            }
+                    if (applyVoiceByName(voiceName)) {
+                        selectedVoice = voiceName
+                        _ttsState.value = _ttsState.value.copy(selectedVoiceName = voiceName)
+                        serviceScope.launch {
+                            try {
+                                com.aura.reader.data.preferences.PreferencesManager(applicationContext).setTtsSelectedVoice(voiceName)
+                            } catch (_: Exception) {}
                         }
-                    } catch (e: Throwable) {
-                        e.printStackTrace()
+                        if (_ttsState.value.isPlaying) {
+                            speakCurrentParagraph()
+                        }
                     }
                 }
             }
@@ -763,7 +774,10 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         val currentSnippet = paragraphs.getOrNull(currentIndex)?.take(120) ?: ""
 
         val playPauseIcon = if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
-        val playPauseTitle = if (isPlaying) "Пауза" else "Слушать"
+        val playPauseTitle = if (isPlaying) getString(R.string.tts_action_pause) else getString(R.string.tts_action_play)
+        val prevTitle = getString(R.string.tts_action_prev)
+        val nextTitle = getString(R.string.tts_action_next)
+        val stopTitle = getString(R.string.tts_action_stop)
 
         val builder = Notification.Builder(this, CHANNEL_ID)
             .setContentTitle(bookTitle.ifBlank { "Aura Reader" })
@@ -772,10 +786,10 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(contentIntent)
             .setOngoing(isPlaying)
-            .addAction(Notification.Action.Builder(android.R.drawable.ic_media_previous, "Назад", prevIntent).build())
+            .addAction(Notification.Action.Builder(android.R.drawable.ic_media_previous, prevTitle, prevIntent).build())
             .addAction(Notification.Action.Builder(playPauseIcon, playPauseTitle, playPauseIntent).build())
-            .addAction(Notification.Action.Builder(android.R.drawable.ic_media_next, "Вперед", nextIntent).build())
-            .addAction(Notification.Action.Builder(android.R.drawable.ic_menu_close_clear_cancel, "Стоп", stopIntent).build())
+            .addAction(Notification.Action.Builder(android.R.drawable.ic_media_next, nextTitle, nextIntent).build())
+            .addAction(Notification.Action.Builder(android.R.drawable.ic_menu_close_clear_cancel, stopTitle, stopIntent).build())
             .setStyle(
                 Notification.MediaStyle()
                     .setMediaSession(mediaSession?.sessionToken)
