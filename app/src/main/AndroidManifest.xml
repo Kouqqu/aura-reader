@@ -74,6 +74,9 @@
                 <data android:pathPattern=".*\\.epub" />
                 <data android:pathPattern=".*\\.pdf" />
                 <data android:pathPattern=".*\\.txt" />
+                <data android:pathPattern=".*\\.mobi" />
+                <data android:pathPattern=".*\\.azw3" />
+                <data android:pathPattern=".*\\.cbz" />
             </intent-filter>
 
             <!-- Support opening books without explicit MIME type -->
@@ -88,6 +91,9 @@
                 <data android:pathPattern=".*\\.epub" />
                 <data android:pathPattern=".*\\.pdf" />
                 <data android:pathPattern=".*\\.txt" />
+                <data android:pathPattern=".*\\.mobi" />
+                <data android:pathPattern=".*\\.azw3" />
+                <data android:pathPattern=".*\\.cbz" />
             </intent-filter>
         </activity>
 
