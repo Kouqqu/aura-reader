@@ -21,15 +21,6 @@ android {
     }
 
     signingConfigs {
-        getByName("debug") {
-            val dbgFile = file("debug.keystore")
-            if (dbgFile.exists()) {
-                storeFile = dbgFile
-                storePassword = "androiddebugkey"
-                keyAlias = "androiddebugkey"
-                keyPassword = "androiddebugkey"
-            }
-        }
         create("release") {
             val ksPath = System.getenv("SIGNING_KEY_STORE_PATH")
                 ?: project.findProperty("RELEASE_STORE_FILE") as String?
@@ -50,17 +41,8 @@ android {
                 storePassword = storePass
                 keyAlias = alias
                 keyPassword = keyPass
-                enableV1Signing = true
                 enableV2Signing = true
                 enableV3Signing = true
-            } else {
-                val dbgFile = file("debug.keystore")
-                if (dbgFile.exists()) {
-                    storeFile = dbgFile
-                    storePassword = "androiddebugkey"
-                    keyAlias = "androiddebugkey"
-                    keyPassword = "androiddebugkey"
-                }
             }
         }
     }
