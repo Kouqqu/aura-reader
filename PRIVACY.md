@@ -6,10 +6,11 @@ updated. Aura Reader is an open-source Android e-book reader
 
 **Short version:** the app has no accounts, no ads and no advertising ID. Your
 books, reading positions, bookmarks and settings stay on your device. The only
-automatic thing sent anywhere is a single anonymous "app opened" counter, which
-you can switch off in Settings. Features that need the internet (cover search,
-dictionary, translation, OPDS, update check) contact the service in question
-only when you use them, and send only the text needed for that request.
+automatic data sent anywhere is an anonymous "app opened" counter, which you can
+switch off in Settings; the optional update check only asks GitHub for the latest
+release number. Features that need the internet (cover search, dictionary,
+translation, OPDS) contact the service in question only when you use them, and
+send only the text needed for that request.
 
 ---
 
@@ -35,7 +36,8 @@ location you choose.
 
 Aura Reader uses [TelemetryDeck](https://telemetrydeck.com) to count how many
 people use the app. There is a toggle in **Settings → Anonymous statistics**;
-turning it off stops all telemetry immediately, from the next launch onward.
+turning it off stops all further telemetry, and the change applies from the next
+app launch.
 
 ### What is sent
 
@@ -44,7 +46,7 @@ turning it off stops all telemetry immediately, from the next launch onward.
 | `app_open` | once per app launch |
 | `app_first_open` | once per installation |
 
-Each event carries exactly these fields:
+Each event also carries exactly these three fields:
 
 | Field | Value |
 |---|---|
@@ -68,10 +70,13 @@ data.
 
 ### What is never sent
 
-Book titles, authors, file names, book content, reading positions, bookmarks,
-search queries, your OPDS servers, your IP-derived location, your name, your
-email, your contacts. There is no advertising identifier, no crash-reporting SDK
-and no other analytics service in the app.
+Your library contents — book files, extracted text, covers, file names, authors,
+reading positions, bookmarks, collections, statistics and in-book search queries
+— are never uploaded. The only exception is text you type yourself into cover
+search, the dictionary or translation, which goes to the provider named in
+section 3. Your OPDS servers, your name, your email and your contacts are never
+sent. There is no advertising identifier, no crash-reporting SDK and no other
+analytics service in the app.
 
 ### Who processes it
 
@@ -153,9 +158,10 @@ or the Telegram channel <https://t.me/koukkuteka>.
 **Коротко:** в приложении нет аккаунтов, рекламы и рекламного идентификатора.
 Книги, позиции чтения, закладки и настройки остаются на устройстве. Единственное,
 что отправляется автоматически, — анонимный счётчик «приложение открыто», и его
-можно выключить в настройках. Всё остальное (поиск обложек, словарь, перевод,
-OPDS, проверка обновлений) обращается в сеть только по вашему действию и передаёт
-лишь текст, необходимый для запроса.
+можно выключить в настройках; необязательная проверка обновлений лишь спрашивает
+у GitHub номер последней версии. Остальное (поиск обложек, словарь, перевод,
+OPDS) обращается в сеть только по вашему действию и передаёт лишь текст,
+необходимый для запроса.
 
 ## 1. Что остаётся на устройстве
 
@@ -194,10 +200,13 @@ SDK создаёт случайный идентификатор установ�
 Он не связан с аккаунтом Google, почтой или идентификатором устройства и
 удаляется при удалении приложения или очистке его данных.
 
-**Что не отправляется никогда:** названия и авторы книг, имена файлов,
-содержимое книг, позиции чтения, закладки, поисковые запросы, ваши OPDS-серверы,
-местоположение по IP, имя, почта, контакты. Рекламного идентификатора,
-SDK сбора падений и других аналитических сервисов в приложении нет.
+**Что не отправляется никогда:** содержимое вашей библиотеки — файлы книг,
+извлечённый текст, обложки, имена файлов, авторы, позиции чтения, закладки,
+коллекции, статистика, поиск по тексту книги. Исключение — текст, который вы сами
+вводите в поиск обложек, словарь или перевод: он уходит сервису из раздела 3.
+Ваши OPDS-серверы, имя, почта и контакты не отправляются. Рекламного
+идентификатора, SDK сбора падений и других аналитических сервисов в приложении
+нет.
 
 **Кто обрабатывает.** Сигналы уходят по HTTPS в TelemetryDeck GmbH (Германия,
 ЕС). Как и при любом HTTPS-запросе, сервер видит IP-адрес соединения; приложение
