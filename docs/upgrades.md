@@ -61,7 +61,7 @@ predictive back, etc.).
 | Library | Change | Fix |
 |---|---|---|
 | Haze 1.7 | `Modifier.hazeChild(shape = ...)` was removed ("Remove shape clipping", haze #287) | clip explicitly: `Modifier.clip(shape).hazeChild(...)` in `LiquidGlass.kt` (3 call sites) |
-| Compose 1.9+ | `Modifier.sharedElement(state = ...)` renamed | `sharedContentState = ...` in `LibraryScreen.kt`, `ReaderScreen.kt` |
+| Compose 1.12 (BOM 2026.09) | `Modifier.sharedElement(state = ...)` renamed | `sharedContentState = ...` in `LibraryScreen.kt`, `ReaderScreen.kt` |
 
 Both are visual: see the manual checklist below.
 
