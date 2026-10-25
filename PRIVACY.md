@@ -21,7 +21,7 @@ Stored in the app's private storage and never uploaded by the app:
 - reading progress, bookmarks, quotes, collections, reading statistics and
   streaks;
 - all settings (theme, typography, TTS voice/speed, language, etc.);
-- OPDS server addresses and any credentials you enter for them;
+- OPDS server addresses;
 - the library index.
 
 The app also looks for book files in `Downloads`, `Documents` and a `Books`
@@ -90,7 +90,7 @@ optional.
 | Cover search | `api.litres.ru`, `api.fantlab.ru`, `itunes.apple.com`, `openlibrary.org` | the book title and/or author you search for |
 | Dictionary | `ru.wiktionary.org`, `ru.wikipedia.org`, `en.wikipedia.org` | the word you look up |
 | Translation | `translate.googleapis.com` | the selected text and target language |
-| OPDS catalogs | the server you added | your OPDS requests, including any credentials you configured for that server |
+| OPDS catalogs | the server you added | your OPDS requests. The app does not support catalog logins, so no username or password is sent. An `http://` catalog is unencrypted — prefer `https://` |
 | Update check | `api.github.com`, `github.com` | nothing but a standard request; the new APK is downloaded from GitHub releases |
 | Telegram / GitHub links | `t.me`, `github.com` | opened in your browser, subject to that site's own policy |
 
@@ -162,8 +162,7 @@ OPDS, проверка обновлений) обращается в сеть т
 В приватном хранилище приложения и никуда не загружается: импортированные книги,
 извлечённый текст, обложки и миниатюры; прогресс чтения, закладки, цитаты,
 коллекции, статистика и серии; все настройки (тема, шрифты, голос и скорость TTS,
-язык); адреса OPDS-серверов и введённые для них учётные данные; индекс
-библиотеки.
+язык); адреса OPDS-серверов; индекс библиотеки.
 
 При поиске новых книг приложение просматривает папки `Downloads`, `Documents` и
 `Books`. Этот просмотр полностью локальный, имена файлов никуда не передаются.
@@ -214,7 +213,7 @@ SDK сбора падений и других аналитических сер�
 | Поиск обложек | `api.litres.ru`, `api.fantlab.ru`, `itunes.apple.com`, `openlibrary.org` | название и/или автор книги, которую вы ищете |
 | Словарь | `ru.wiktionary.org`, `ru.wikipedia.org`, `en.wikipedia.org` | искомое слово |
 | Перевод | `translate.googleapis.com` | выделенный текст и язык перевода |
-| OPDS-каталоги | сервер, который вы добавили | ваши OPDS-запросы, включая настроенные для этого сервера учётные данные |
+| OPDS-каталоги | сервер, который вы добавили | ваши OPDS-запросы. Вход в каталоги не поддерживается, логин и пароль не передаются. Каталог по `http://` не шифруется — лучше `https://` |
 | Проверка обновлений | `api.github.com`, `github.com` | обычный запрос; новый APK скачивается из релизов GitHub |
 | Ссылки Telegram / GitHub | `t.me`, `github.com` | открываются в браузере, действует политика этих сайтов |
 
