@@ -14,6 +14,7 @@ import com.aura.reader.data.opds.OpdsUrl
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.repository.BookRepository
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +22,7 @@ import java.io.File
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 
 enum class CatalogSortOption {
@@ -44,6 +46,12 @@ sealed interface OpdsUiState {
         val searchResult: OpdsSearchResult? = null
     ) : OpdsUiState
     data class Error(val message: String, val isConnectionError: Boolean = false) : OpdsUiState
+}
+
+enum class CatalogConnectionState {
+    CHECKING,
+    ONLINE,
+    OFFLINE
 }
 
 class OpdsViewModel(
@@ -111,13 +119,53 @@ class OpdsViewModel(
 
     val baseUrl: StateFlow<String> = combine(
         preferencesManager.customOpdsEnabled,
-        preferencesManager.catalogBaseUrl
-    ) { customEnabled, url ->
+        preferencesManager.catalogBaseUrl,
+        ::resolveBaseUrl
+    ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OpdsService.DEFAULT_BASE_URL)
+
+    private fun resolveBaseUrl(customEnabled: Boolean, url: String): String {
         // Ignore values that the user cannot have entered on purpose (old builds
         // stored raw text), otherwise the catalog stays broken forever.
         val storedUrl = OpdsUrl.normalize(url)
-        if (customEnabled && storedUrl != null) storedUrl else OpdsService.DEFAULT_BASE_URL
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OpdsService.DEFAULT_BASE_URL)
+        return if (customEnabled && storedUrl != null) storedUrl else OpdsService.DEFAULT_BASE_URL
+    }
+
+    private val _connectionState = MutableStateFlow(CatalogConnectionState.CHECKING)
+    val connectionState: StateFlow<CatalogConnectionState> = _connectionState.asStateFlow()
+
+    private var connectionCheckJob: kotlinx.coroutines.Job? = null
+
+    private fun updateConnectionStateFromRequest(error: Throwable?) {
+        // An actual catalog request is more trustworthy than a probe that may
+        // have started earlier and timed out meanwhile.
+        connectionCheckJob?.cancel()
+        _connectionState.value = when {
+            error == null -> CatalogConnectionState.ONLINE
+            OpdsService.isConnectionError(error) -> CatalogConnectionState.OFFLINE
+            else -> CatalogConnectionState.ONLINE
+        }
+    }
+
+    fun refreshConnectionStatus() {
+        connectionCheckJob?.cancel()
+        connectionCheckJob = viewModelScope.launch {
+            _connectionState.value = CatalogConnectionState.CHECKING
+            // Read the saved preferences directly: the baseUrl StateFlow may still
+            // hold its default value right after the screen is opened.
+            val target = combine(
+                preferencesManager.customOpdsEnabled,
+                preferencesManager.catalogBaseUrl,
+                ::resolveBaseUrl
+            ).first()
+            val reachable = OpdsService.isCatalogReachable(target)
+            ensureActive()
+            _connectionState.value = if (reachable) {
+                CatalogConnectionState.ONLINE
+            } else {
+                CatalogConnectionState.OFFLINE
+            }
+        }
+    }
 
     val vpnNoticeDismissed: StateFlow<Boolean> = preferencesManager.vpnNoticeDismissed
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
@@ -218,6 +266,8 @@ class OpdsViewModel(
             _canGoBack.value = false
             _searchQuery.value = ""
             currentEntry = CatalogHistoryEntry(title = "Главная", isHome = true)
+            connectionCheckJob?.cancel()
+            _connectionState.value = CatalogConnectionState.CHECKING
             executeCategory("", "Главная", normalizedUrl)
         }
     }
@@ -285,9 +335,11 @@ class OpdsViewModel(
             val result = OpdsService.getCategory(path, currentBase)
             result.onSuccess { list ->
                 matchCatalogWithLibrary(list)
+                updateConnectionStateFromRequest(null)
                 _uiState.value = OpdsUiState.Success(list, categoryTitle)
             }.onFailure { error ->
                 val isConn = OpdsService.isConnectionError(error)
+                updateConnectionStateFromRequest(error)
                 _uiState.value = OpdsUiState.Error(
                     message = error.localizedMessage ?: "Ошибка связи с каталогом",
                     isConnectionError = isConn
@@ -310,6 +362,7 @@ class OpdsViewModel(
                     OpdsSearchType.AUTHORS -> searchRes.authors
                 }
                 matchCatalogWithLibrary(flatBooks)
+                updateConnectionStateFromRequest(null)
                 _uiState.value = OpdsUiState.Success(
                     books = flatBooks,
                     currentTitle = "Результаты поиска: $q",
@@ -317,6 +370,7 @@ class OpdsViewModel(
                 )
             }.onFailure { error ->
                 val isConn = OpdsService.isConnectionError(error)
+                updateConnectionStateFromRequest(error)
                 _uiState.value = OpdsUiState.Error(
                     message = error.localizedMessage ?: "Ошибка связи с каталогом",
                     isConnectionError = isConn

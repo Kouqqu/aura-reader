@@ -36,6 +36,13 @@ object OpdsService {
         .followSslRedirects(true)
         .build()
 
+    // Short timeouts: the status light must answer quickly even on a slow VPN.
+    private val statusClient = client.newBuilder()
+        .connectTimeout(6, TimeUnit.SECONDS)
+        .readTimeout(6, TimeUnit.SECONDS)
+        .callTimeout(10, TimeUnit.SECONDS)
+        .build()
+
     private val YEAR_REGEX = Regex("""Год(?:\s+издания)?:\s*(\d{4})""", RegexOption.IGNORE_CASE)
     private val FORMAT_REGEX = Regex("""Формат:\s*([a-zA-Z0-9]+)""", RegexOption.IGNORE_CASE)
     private val LANG_REGEX = Regex("""Язык:\s*([a-zA-Zа-яА-Я]+)""", RegexOption.IGNORE_CASE)
@@ -209,6 +216,27 @@ object OpdsService {
     suspend fun searchBooks(query: String, baseUrl: String = DEFAULT_BASE_URL): Result<List<OpdsBook>> {
         return searchCatalog(query, OpdsSearchType.ALL, baseUrl).map { result ->
             if (result.books.isNotEmpty()) result.books else (result.series + result.authors)
+        }
+    }
+
+    /**
+     * Cheap availability probe for the status light: sends a GET and closes the
+     * body without reading it, so only the response code matters.
+     */
+    suspend fun isCatalogReachable(baseUrl: String = DEFAULT_BASE_URL): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val httpUrl = baseUrl.trimEnd('/').toHttpUrlOrNull() ?: return@withContext false
+            val request = Request.Builder()
+                .url(httpUrl)
+                .header("User-Agent", USER_AGENT)
+                .build()
+            statusClient.newCall(request).execute().use { response ->
+                response.isSuccessful
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            false
         }
     }
 
@@ -584,6 +612,8 @@ object OpdsService {
                 e is java.io.InterruptedIOException ||
                 e.message?.contains("timed out", ignoreCase = true) == true ||
                 e.message?.contains("failed to connect", ignoreCase = true) == true ||
-                e.message?.contains("Unable to resolve host", ignoreCase = true) == true
+                e.message?.contains("Unable to resolve host", ignoreCase = true) == true ||
+                // Cloudflare and friends answer with 5xx when the origin is down.
+                e.message?.startsWith("HTTP 5") == true
     }
 }
