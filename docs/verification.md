@@ -2,7 +2,9 @@
 
 ## Local checks
 
-Use JDK 17 or 21 and Android SDK 35 (set ANDROID_HOME or local.properties).
+Use JDK 21 (CI) or another JDK supported by Gradle 9.8, and Android SDK 37 (set
+ANDROID_HOME or local.properties). See docs/upgrades.md for the toolchain
+rationale and the signing requirements.
 
 ~~~sh
 ./gradlew testDebugUnitTest lintDebug assembleDebug
