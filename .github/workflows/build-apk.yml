@@ -20,16 +20,16 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: '21'
           distribution: 'temurin'
 
       - name: Set up Gradle build cache
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
@@ -75,10 +75,12 @@ jobs:
 
       - name: Publish Error Details to Release if failed
         if: failure() && github.event_name != 'pull_request'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: "build-failure-log"
           name: "Build Failure Log"
+          prerelease: true
+          make_latest: false
           body: "Gradle build failed. Attached gradle-build.log contains the full build trace."
           files: gradle-build.log
         env:
@@ -86,7 +88,7 @@ jobs:
 
       - name: Upload Build Log on Failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: gradle-build-log
           path: gradle-build.log
@@ -97,7 +99,7 @@ jobs:
 
       - name: Upload Release APK Artifact
         if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AuraReader-release-apk
           path: AuraReader.apk
@@ -130,7 +132,7 @@ jobs:
 
       - name: Publish GitHub Release
         if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: "v${{ env.APP_VERSION }}"
           target_commitish: ${{ github.sha }}
@@ -164,7 +166,7 @@ jobs:
 
       - name: Publish GitHub Beta Release
         if: github.ref == 'refs/heads/beta' && contains(env.APP_VERSION, 'beta')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: "v${{ env.APP_VERSION }}"
           target_commitish: ${{ github.sha }}
