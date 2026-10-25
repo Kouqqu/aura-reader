@@ -30,7 +30,7 @@ Crafted for immersive and comfortable reading without ads or trackers.
 - **Reading Statistics**: Track daily streaks, reading speed (words/min), total hours, and weekly interactive activity charts.
 - **Typography & Theming**: Custom font sizes, line height, serif/sans/mono fonts, plus Light, Dark, Sepia, and Pure Black (AMOLED) palettes.
 - **Backup & Restore**: Export and import your library, bookmarks, and reading progress locally.
-- **Privacy First**: No ads. Includes optional anonymous reader telemetry (TelemetryDeck) counting active launches without collecting personal data, with a direct opt-out toggle in Settings.
+- **Privacy First**: No ads. Includes optional anonymous reader telemetry (TelemetryDeck) counting active launches without collecting personal data, with a direct opt-out toggle in Settings. See [PRIVACY.md](PRIVACY.md).
 - **Multilingual**: Fully localized into **6 languages**: 🇬🇧 English, 🇷🇺 Русский, 🇺🇦 Українська, 🇧🇾 Беларуская, 🇵🇱 Polski, 🇨🇿 Čeština.
 - **Auto-Updates**: In-app one-tap update checks and seamless installation.
 
