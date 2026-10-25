@@ -101,6 +101,7 @@ import coil.request.ImageRequest
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.BookFormat
 import com.aura.reader.data.model.OpdsBook
+import com.aura.reader.data.opds.OpdsUrl
 import com.aura.reader.ui.theme.LocalAppStrings
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -138,6 +139,7 @@ fun OpdsScreen(
 
     // Mirror Settings Dialog
     if (showMirrorDialog) {
+        val isUrlValid = OpdsUrl.isValid(mirrorInput)
         AlertDialog(
             onDismissRequest = { showMirrorDialog = false },
             title = { Text(strings.opdsMirrorTitle, fontWeight = FontWeight.Bold) },
@@ -153,6 +155,12 @@ fun OpdsScreen(
                         value = mirrorInput,
                         onValueChange = { mirrorInput = it },
                         singleLine = true,
+                        isError = mirrorInput.isNotBlank() && !isUrlValid,
+                        supportingText = if (mirrorInput.isNotBlank() && !isUrlValid) {
+                            { Text(strings.opdsUrlInvalid) }
+                        } else {
+                            null
+                        },
                         label = { Text("URL OPDS") },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -160,6 +168,7 @@ fun OpdsScreen(
             },
             confirmButton = {
                 Button(
+                    enabled = isUrlValid,
                     onClick = {
                         viewModel.setBaseUrl(mirrorInput)
                         showMirrorDialog = false
@@ -171,8 +180,7 @@ fun OpdsScreen(
             dismissButton = {
                 TextButton(
                     onClick = {
-                        mirrorInput = "OpdsService.DEFAULT_BASE_URL"
-                        viewModel.setBaseUrl(mirrorInput)
+                        viewModel.resetBaseUrl()
                         showMirrorDialog = false
                     }
                 ) {
@@ -598,7 +606,7 @@ fun OpdsScreen(
                         OpdsErrorView(
                             isConnectionError = state.isConnectionError,
                             errorMessage = state.message,
-                            showMirrorOption = customOpdsEnabled,
+                            showMirrorOption = true,
                             onRetry = { viewModel.retry() },
                             onOpenMirrorSettings = { showMirrorDialog = true }
                         )

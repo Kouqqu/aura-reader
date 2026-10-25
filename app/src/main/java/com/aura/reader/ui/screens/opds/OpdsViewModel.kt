@@ -10,6 +10,7 @@ import com.aura.reader.data.model.OpdsBook
 import com.aura.reader.data.model.OpdsSearchResult
 import com.aura.reader.data.model.OpdsSearchType
 import com.aura.reader.data.opds.OpdsService
+import com.aura.reader.data.opds.OpdsUrl
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.repository.BookRepository
 import kotlinx.coroutines.flow.combine
@@ -112,7 +113,10 @@ class OpdsViewModel(
         preferencesManager.customOpdsEnabled,
         preferencesManager.catalogBaseUrl
     ) { customEnabled, url ->
-        if (customEnabled && url.isNotBlank()) url.trim() else OpdsService.DEFAULT_BASE_URL
+        // Ignore values that the user cannot have entered on purpose (old builds
+        // stored raw text), otherwise the catalog stays broken forever.
+        val storedUrl = OpdsUrl.normalize(url)
+        if (customEnabled && storedUrl != null) storedUrl else OpdsService.DEFAULT_BASE_URL
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OpdsService.DEFAULT_BASE_URL)
 
     val vpnNoticeDismissed: StateFlow<Boolean> = preferencesManager.vpnNoticeDismissed
@@ -196,9 +200,25 @@ class OpdsViewModel(
     }
 
     fun setBaseUrl(url: String) {
+        applyBaseUrl(OpdsUrl.normalize(url) ?: OpdsService.DEFAULT_BASE_URL)
+    }
+
+    fun resetBaseUrl() {
+        applyBaseUrl(OpdsService.DEFAULT_BASE_URL)
+    }
+
+    private fun applyBaseUrl(normalizedUrl: String) {
         viewModelScope.launch {
-            preferencesManager.setCatalogBaseUrl(url)
-            retry()
+            preferencesManager.setCatalogBaseUrl(normalizedUrl)
+            // A custom address only takes effect together with this flag.
+            preferencesManager.setCustomOpdsEnabled(normalizedUrl != OpdsService.DEFAULT_BASE_URL)
+            // Reload the root of the new catalog right away instead of retrying
+            // the previous request against the address that just failed.
+            navStack.clear()
+            _canGoBack.value = false
+            _searchQuery.value = ""
+            currentEntry = CatalogHistoryEntry(title = "Главная", isHome = true)
+            executeCategory("", "Главная", normalizedUrl)
         }
     }
 
@@ -257,11 +277,11 @@ class OpdsViewModel(
         lastAction = null
     }
 
-    private fun executeCategory(path: String, categoryTitle: String) {
-        lastAction = { executeCategory(path, categoryTitle) }
+    private fun executeCategory(path: String, categoryTitle: String, baseUrlOverride: String? = null) {
+        lastAction = { executeCategory(path, categoryTitle, baseUrlOverride) }
         viewModelScope.launch {
             _uiState.value = OpdsUiState.Loading
-            val currentBase = baseUrl.value
+            val currentBase = baseUrlOverride ?: baseUrl.value
             val result = OpdsService.getCategory(path, currentBase)
             result.onSuccess { list ->
                 matchCatalogWithLibrary(list)

@@ -72,6 +72,7 @@ interface Strings {
     val opdsSearchHint: String
     val opdsMirrorTitle: String
     val opdsMirrorSubtitle: String
+    val opdsUrlInvalid: String
     val opdsConnectionErrorTitle: String
     val opdsConnectionErrorSubtitle: String
     val downloadFb2: String
@@ -510,6 +511,7 @@ class RuStrings : Strings {
     override val opdsSearchHint = "Поиск по автору или названию..."
     override val opdsMirrorTitle = "Настройки OPDS"
     override val opdsMirrorSubtitle = "Адрес OPDS-сервера. При блокировках можно указать рабочее зеркало."
+    override val opdsUrlInvalid = "Некорректный адрес каталога"
     override val opdsConnectionErrorTitle = "Не удалось связаться с сервером"
     override val opdsConnectionErrorSubtitle = "Возможно, с IP-адресов других стран всё заработает."
     override val downloadFb2 = "Скачать FB2"
@@ -899,6 +901,7 @@ class EnStrings : Strings {
     override val opdsSearchHint = "Search by author or title..."
     override val opdsMirrorTitle = "OPDS Settings"
     override val opdsMirrorSubtitle = "OPDS server address. You can specify a working mirror if blocked."
+    override val opdsUrlInvalid = "Invalid catalog address"
     override val opdsConnectionErrorTitle = "Could not connect to server"
     override val opdsConnectionErrorSubtitle = "It might work when connecting from other countries."
     override val downloadFb2 = "Download FB2"
@@ -1288,6 +1291,7 @@ class UkStrings : Strings {
     override val opdsSearchHint = "Пошук за автором або назвою..."
     override val opdsMirrorTitle = "Налаштування OPDS"
     override val opdsMirrorSubtitle = "Адреса OPDS-сервера. У разі блокувань можна вказати робоче дзеркало."
+    override val opdsUrlInvalid = "Некоректна адреса каталогу"
     override val opdsConnectionErrorTitle = "Не вдалося з'єднатися з сервером"
     override val opdsConnectionErrorSubtitle = "Можливо, з IP-адрес інших країн усе запрацює."
     override val downloadFb2 = "Завантажити FB2"
@@ -1677,6 +1681,7 @@ class BeStrings : Strings {
     override val opdsSearchHint = "Пошук па аўтару або назве..."
     override val opdsMirrorTitle = "Налады OPDS"
     override val opdsMirrorSubtitle = "Адрас OPDS-сервера. Пры блакіроўках можна ўказаць працоўнае люстэрка."
+    override val opdsUrlInvalid = "Няправільны адрас каталога"
     override val opdsConnectionErrorTitle = "Не ўдалося звязацца з серверам"
     override val opdsConnectionErrorSubtitle = "Магчыма, з IP-адрасоў іншых краін усё запрацуе."
     override val downloadFb2 = "Спампаваць FB2"
@@ -2066,6 +2071,7 @@ class PlStrings : Strings {
     override val opdsSearchHint = "Szukaj według autora lub tytułu..."
     override val opdsMirrorTitle = "Ustawienia OPDS"
     override val opdsMirrorSubtitle = "Adres serwera OPDS. W przypadku blokad można podać działające lustro."
+    override val opdsUrlInvalid = "Nieprawidłowy adres katalogu"
     override val opdsConnectionErrorTitle = "Nie udało się połączyć z serwerem"
     override val opdsConnectionErrorSubtitle = "Być może połączenie zadziała z adresów IP innych krajów."
     override val downloadFb2 = "Pobierz FB2"
@@ -2417,6 +2423,7 @@ class CsStrings : Strings {
     override val opdsSearchHint = "Hledat v katalogu OPDS..."
     override val opdsMirrorTitle = "Vybrat zrcadlo"
     override val opdsMirrorSubtitle = "Přepnout alternativní server katalogu"
+    override val opdsUrlInvalid = "Neplatná adresa katalogu"
     override val opdsConnectionErrorTitle = "Chyba připojení"
     override val opdsConnectionErrorSubtitle = "Nepodařilo se připojit ke katalogu. Zkontrolujte připojení k internetu."
     override val downloadFb2 = "Stáhnout FB2"
@@ -2819,6 +2826,7 @@ class HeStrings : Strings {
     override val opdsSearchHint = "חיפוש בקטלוג..."
     override val opdsMirrorTitle = "כתובת מראה לקטלוג"
     override val opdsMirrorSubtitle = "השתמש בשרת חלופי אם השרת הראשי אינו זמין"
+    override val opdsUrlInvalid = "כתובת קטלוג לא תקינה"
     override val opdsConnectionErrorTitle = "שגיאת חיבור"
     override val opdsConnectionErrorSubtitle = "לא ניתן להתחבר לקטלוג. בדוק את החיבור לרשת או השתמש ב-VPN"
     override val downloadFb2 = "הורד FB2"
