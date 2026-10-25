@@ -79,6 +79,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -88,9 +89,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -127,8 +131,13 @@ fun OpdsScreen(
     val canGoBack by viewModel.canGoBack.collectAsState()
     val vpnNoticeDismissed by viewModel.vpnNoticeDismissed.collectAsState()
     val searchScope by viewModel.searchScope.collectAsState()
+    val connectionState by viewModel.connectionState.collectAsState()
     var isSearchFocused by remember { mutableStateOf(false) }
     var inspectingCoverBook by remember { mutableStateOf<OpdsBook?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshConnectionStatus()
+    }
 
     BackHandler(enabled = canGoBack) {
         viewModel.navigateBack()
@@ -220,10 +229,14 @@ fun OpdsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = strings.opdsCatalog,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = strings.opdsCatalog,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        CatalogConnectionIndicator(status = connectionState)
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = {
@@ -1125,6 +1138,34 @@ fun OpdsBookCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CatalogConnectionIndicator(status: CatalogConnectionState) {
+    val strings = LocalAppStrings.current
+    val (color, label) = when (status) {
+        CatalogConnectionState.CHECKING -> Color(0xFFFFC107) to strings.opdsStatusChecking
+        CatalogConnectionState.ONLINE -> Color(0xFF34C759) to strings.opdsStatusOnline
+        CatalogConnectionState.OFFLINE -> Color(0xFFFF3B30) to strings.opdsStatusOffline
+    }
+
+    Box(
+        modifier = Modifier
+            .size(16.dp)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(16.dp)
+                .background(color.copy(alpha = 0.22f), CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(color, CircleShape)
+        )
     }
 }
 
