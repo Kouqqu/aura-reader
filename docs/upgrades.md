@@ -3,7 +3,7 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-10-25, release `2.2.0-beta.9` (`versionCode 126`).
+Last updated: 2026-10-25, release `2.2.0-beta.10` (`versionCode 127`).
 
 ## Current versions
 
