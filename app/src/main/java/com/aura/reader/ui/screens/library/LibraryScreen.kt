@@ -1997,7 +1997,7 @@ fun BookCoverView(
     val sharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && bookId != null) {
         with(sharedTransitionScope) {
             Modifier.sharedElement(
-                state = rememberSharedContentState(key = "book_cover_$bookId"),
+                sharedContentState = rememberSharedContentState(key = "book_cover_$bookId"),
                 animatedVisibilityScope = animatedVisibilityScope,
                 boundsTransform = { _, _ ->
                     tween(durationMillis = 350, easing = FastOutSlowInEasing)

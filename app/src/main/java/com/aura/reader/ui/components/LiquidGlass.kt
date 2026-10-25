@@ -119,9 +119,8 @@ fun LiquidGlassSurface(
     content: @Composable () -> Unit
 ) {
     val hazeModifier = if (hazeState != null) {
-        Modifier.hazeChild(
+        Modifier.clip(shape).hazeChild(
             state = hazeState,
-            shape = shape,
             style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
         )
     } else Modifier
@@ -213,9 +212,8 @@ fun FloatingNavigationIsland(
         val dockShape = RoundedCornerShape(30.dp)
         val hazeState = LocalHazeState.current
         val hazeModifier = if (hazeState != null) {
-            Modifier.hazeChild(
+            Modifier.clip(dockShape).hazeChild(
                 state = hazeState,
-                shape = dockShape,
                 style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
             )
         } else Modifier
@@ -758,9 +756,8 @@ fun FloatingAddGlassButton(
     val shape = CircleShape
     val hazeState = LocalHazeState.current
     val hazeModifier = if (hazeState != null) {
-        Modifier.hazeChild(
+        Modifier.clip(shape).hazeChild(
             state = hazeState,
-            shape = shape,
             style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
         )
     } else Modifier
