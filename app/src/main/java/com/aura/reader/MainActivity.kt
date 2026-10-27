@@ -5,6 +5,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.ComposeFoundationFlags
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.navigation.compose.rememberNavController
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.repository.BookRepository
@@ -35,7 +37,13 @@ class MainActivity : ComponentActivity() {
     private lateinit var readerViewModel: ReaderViewModel
     private lateinit var opdsViewModel: com.aura.reader.ui.screens.opds.OpdsViewModel
 
+    @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Compose 1.12 starts using a new context-menu implementation for text
+        // selection, and that path ignores the app's custom LocalTextToolbar.
+        // The reader relies on that toolbar for its quote/dictionary/translate/
+        // TTS actions, so keep the classic selection toolbar for the whole app.
+        ComposeFoundationFlags.isNewContextMenuEnabled = false
         enableEdgeToEdge(
             statusBarStyle = androidx.activity.SystemBarStyle.auto(
                 android.graphics.Color.TRANSPARENT,

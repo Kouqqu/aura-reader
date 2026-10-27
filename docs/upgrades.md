@@ -3,9 +3,11 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-10-27, release `2.2.0-beta.14` (`versionCode 131`).
-`2.2.0-beta.14` changed no build files: it merges the UI-file split (see
-`docs/verification.md`) and bumps the version only.
+Last updated: 2026-10-27, release `2.2.0-beta.15` (`versionCode 132`).
+`2.2.0-beta.14` changed no build files: it merged the UI-file split (see
+`docs/verification.md`) and bumped the version only. `2.2.0-beta.15` turns off
+Compose's new text context menu so the reader keeps its custom selection
+toolbar (see the table below).
 
 ## Current versions
 
@@ -64,6 +66,7 @@ predictive back, etc.).
 |---|---|---|
 | Haze 1.7 | `Modifier.hazeChild(shape = ...)` was removed ("Remove shape clipping", haze #287) | clip explicitly: `Modifier.clip(shape).hazeChild(...)` in `LiquidGlass.kt` (3 call sites) |
 | Compose 1.12 (BOM 2026.09) | `Modifier.sharedElement(state = ...)` renamed | `sharedContentState = ...` in `LibraryScreen.kt`, `ReaderScreen.kt` |
+| Compose 1.12 (BOM 2026.09) | text selection moved to the new context-menu path, which ignores `LocalTextToolbar`, so the reader's custom selection menu (quote, dictionary, translation, TTS) never appeared | `ComposeFoundationFlags.isNewContextMenuEnabled = false` in `MainActivity.onCreate`, before the first composition; the classic `TextToolbar` path is used again |
 
 Both are visual: see the manual checklist below.
 

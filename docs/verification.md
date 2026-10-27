@@ -127,3 +127,15 @@ No version bump in the refactor commits themselves: this carries no user-visible
 The refactor is structural only, so the expected result on a device is "looks and behaves exactly like beta.13". The items worth a manual look are the library top bar, banners and collection chips, every settings section (including the seven-tap version label), and the reader bars/selection toolbar.
 
 Verification status: CI green on the PR before the merge; the beta.14 build itself is checked by the release workflow run for `versionCode 131`. No emulator was available locally, so the visual pass is left to the tester.
+
+## 2.2.0-beta.15 — text selection menu and chapter list
+
+Two regressions reported on beta.14.
+
+**Selection menu missing.** Not caused by the file split: the moved toolbar code is unchanged. Foundation 1.12 (Compose BOM 2026.09, shipped since beta.10) enabled `ComposeFoundationFlags.isNewContextMenuEnabled` by default, and `SelectionManager` only calls `TextToolbar.showMenu` when that flag is off. With the flag on, selection goes through the new context-menu path, which never uses the app's `LocalTextToolbar`, so the custom quote/dictionary/translation/TTS popup could not appear. Checked by decompiling `foundation-android-1.12.1`: `ComposeFoundationFlags.isNewContextMenuInitiallyEnabled()` returns `true`, and `SelectionManager` reads the flag before branching to `TextToolbar.showMenu`.
+
+Fix: `ComposeFoundationFlags.isNewContextMenuEnabled = false` at the top of `MainActivity.onCreate`, before the first composition (`@OptIn(ExperimentalFoundationApi::class)`). This restores the pre-1.12 behaviour for the whole app, so text fields keep the platform toolbar and the reader gets its custom menu back.
+
+**Chapter list scrolling.** `ChaptersBottomSheet` put a `LazyColumn` inside a `Column` without a height bound; the column measures non-weighted children with an unlimited height, so the list laid out all chapters at full height and there was nothing left to scroll. The list now uses `Modifier.weight(1f, fill = false)`: long books scroll inside the sheet, short books keep the sheet compact.
+
+Both changes verified with `testDebugUnitTest lintDebug assembleDebug`; on-device confirmation is the next step.
