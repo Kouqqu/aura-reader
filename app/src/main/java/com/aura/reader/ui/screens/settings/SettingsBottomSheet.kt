@@ -1416,7 +1416,7 @@ private fun ExpressiveThemePill(
 private fun SettingsIconBox(
     icon: ImageVector,
     tint: Color = MaterialTheme.colorScheme.primary,
-    containerColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f),
     contentDescription: String? = null
 ) {
     val isGlass = LocalIsLiquidGlass.current

@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.components.LiquidGlassSurface
+import com.aura.reader.ui.components.liquidGlassMenuAppearance
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Rect
@@ -385,7 +386,8 @@ fun ReaderScreen(
 
     AuraReaderTheme(
         themeMode = settings.themeMode,
-        materialYou = materialYouEnabled
+        materialYou = materialYouEnabled,
+        readerMode = true
     ) {
       CompositionLocalProvider(LocalTextToolbar provides customTextToolbar, LocalClipboardManager provides interceptedClipboardManager) {
         val resolvedFontFamily = remember(settings.fontFamily, settings.fontName) {
@@ -797,25 +799,14 @@ fun ReaderScreen(
                                 )
                             }
 
+                            val readerMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
                             DropdownMenu(
                                 expanded = showReaderMenu,
                                 onDismissRequest = { showReaderMenu = false },
                                 shape = RoundedCornerShape(20.dp),
-                                containerColor = if (isGlass) {
-                                    if (isThemeDark) Color(0xF2181C28) else Color(0xF8FFFFFF)
-                                } else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                border = if (isGlass) {
-                                    BorderStroke(
-                                        0.85.dp,
-                                        Brush.verticalGradient(
-                                            listOf(
-                                                Color.White.copy(alpha = if (isThemeDark) 0.35f else 0.70f),
-                                                Color.White.copy(alpha = 0.05f)
-                                            )
-                                        )
-                                    )
-                                } else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
-                                shadowElevation = if (isGlass) 16.dp else 6.dp
+                                containerColor = readerMenuAppearance.containerColor,
+                                border = readerMenuAppearance.border,
+                                shadowElevation = readerMenuAppearance.shadowElevation
                             ) {
                                 DropdownMenuItem(
                                     text = { Text(strings.ttsListenAction) },

@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.palette.graphics.Palette
 import com.aura.reader.data.model.Book
+import com.aura.reader.ui.components.liquidGlassMenuAppearance
 import com.aura.reader.ui.theme.LocalAppStrings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -237,20 +238,14 @@ fun CurrentlyReadingHeroCard(
                                     )
                                 }
 
+                                val heroMenuAppearance = liquidGlassMenuAppearance(isGlass, isDark)
                                 DropdownMenu(
                                     expanded = showMenu,
                                     onDismissRequest = { showMenu = false },
                                     shape = RoundedCornerShape(20.dp),
-                                    containerColor = if (isGlass) {
-                                        if (isDark) Color(0xF2181C28) else Color(0xF8FFFFFF)
-                                    } else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    border = if (isGlass) {
-                                        BorderStroke(
-                                            0.5.dp,
-                                            if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
-                                        )
-                                    } else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
-                                    shadowElevation = if (isGlass) 16.dp else 6.dp
+                                    containerColor = heroMenuAppearance.containerColor,
+                                    border = heroMenuAppearance.border,
+                                    shadowElevation = heroMenuAppearance.shadowElevation
                                 ) {
                                     DropdownMenuItem(
                                         text = { Text(strings.shareBookFile) },

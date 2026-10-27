@@ -2,6 +2,7 @@ package com.aura.reader.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -9,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -69,8 +71,10 @@ private val SepiaColorScheme = lightColorScheme(
 private val AmoledColorScheme = darkColorScheme(
     primary = AmoledPrimary,
     onPrimary = AmoledOnPrimary,
-    primaryContainer = AmoledSurface,
-    onPrimaryContainer = AmoledText,
+    // "Container" roles must stay visible on a black background. Using the
+    // AMOLED surface here made selected cards and icon plates disappear.
+    primaryContainer = Color(0xFF4F378B),
+    onPrimaryContainer = Color(0xFFEADDFF),
     secondary = AmoledSecondaryText,
     onSecondary = AmoledOnPrimary,
     background = AmoledBackground,
@@ -83,15 +87,43 @@ private val AmoledColorScheme = darkColorScheme(
     surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF1C1C1C)
 )
 
+private val ReaderDarkBackground = Color(0xFF151515)
+
+/**
+ * Reading pages use a neutral dark base instead of the wallpaper-tinted
+ * dynamic surface, so the page colour does not shift between books or themes.
+ */
+private fun ColorScheme.withNeutralReaderSurfaces(background: Color): ColorScheme = copy(
+    background = background,
+    surface = background,
+    surfaceContainerLowest = Color(0xFF0E0E0E),
+    surfaceContainerLow = Color(0xFF181818),
+    surfaceContainer = Color(0xFF1C1C1C),
+    surfaceContainerHigh = Color(0xFF242424),
+    surfaceContainerHighest = Color(0xFF2C2C2C)
+)
+
+private fun ColorScheme.withAmoledReaderSurfaces(): ColorScheme = copy(
+    background = Color.Black,
+    surface = Color.Black,
+    surfaceContainerLowest = Color.Black,
+    surfaceContainerLow = Color(0xFF0A0A0A),
+    surfaceContainer = Color(0xFF101010),
+    surfaceContainerHigh = Color(0xFF181818),
+    surfaceContainerHighest = Color(0xFF202020)
+)
+
 @Composable
 fun AuraReaderTheme(
     themeMode: ReaderThemeMode = ReaderThemeMode.DARK,
     materialYou: Boolean = false,
     appFont: String = "DEFAULT",
+    readerMode: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
     val hasDynamic = materialYou && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val systemDark = isSystemInDarkTheme()
 
     val typography = remember(appFont) {
         val fontFamily = when (appFont) {
@@ -144,8 +176,7 @@ fun AuraReaderTheme(
             }
         }
         ReaderThemeMode.SYSTEM_DYNAMIC -> {
-            val isSystemDark = androidx.compose.foundation.isSystemInDarkTheme()
-            if (isSystemDark) {
+            if (systemDark) {
                 if (hasDynamic) dynamicDarkColorScheme(context) else DarkColorScheme
             } else {
                 if (hasDynamic) dynamicLightColorScheme(context) else LightColorScheme
@@ -153,8 +184,20 @@ fun AuraReaderTheme(
         }
     }
 
+    val finalColorScheme = if (!readerMode) {
+        colorScheme
+    } else {
+        when (themeMode) {
+            ReaderThemeMode.DARK -> colorScheme.withNeutralReaderSurfaces(ReaderDarkBackground)
+            ReaderThemeMode.AMOLED -> colorScheme.withAmoledReaderSurfaces()
+            ReaderThemeMode.SYSTEM_DYNAMIC ->
+                if (systemDark) colorScheme.withNeutralReaderSurfaces(ReaderDarkBackground) else colorScheme
+            else -> colorScheme
+        }
+    }
+
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = finalColorScheme,
         typography = typography,
         content = content
     )

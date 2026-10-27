@@ -34,6 +34,7 @@ import com.aura.reader.ui.components.FloatingNavigationIsland
 import com.aura.reader.ui.components.FloatingAddGlassButton
 import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.ui.components.LiquidGlassCard
+import com.aura.reader.ui.components.liquidGlassMenuAppearance
 import com.aura.reader.ui.components.ParallaxCoverViewer
 import com.aura.reader.util.BookShareUtils
 import androidx.compose.material.icons.filled.Share
@@ -1122,20 +1123,14 @@ fun LibraryScreen(
                                         }
                                     }
 
+                                    val sortMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
                                     DropdownMenu(
                                         expanded = showSortMenu,
                                         onDismissRequest = { showSortMenu = false },
                                         shape = RoundedCornerShape(20.dp),
-                                        containerColor = if (isGlass) {
-                                            if (isThemeDark) Color(0xF2181C28) else Color(0xF8FFFFFF)
-                                        } else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        border = if (isGlass) {
-                                            BorderStroke(
-                                                0.5.dp,
-                                                if (isThemeDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
-                                            )
-                                        } else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
-                                        shadowElevation = if (isGlass) 16.dp else 6.dp
+                                        containerColor = sortMenuAppearance.containerColor,
+                                        border = sortMenuAppearance.border,
+                                        shadowElevation = sortMenuAppearance.shadowElevation
                                     ) {
                                         DropdownMenuItem(
                                             text = { Text(strings.sortByRecent) },
@@ -1829,20 +1824,14 @@ fun BookCard(
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
+                            val bookMenuAppearance = liquidGlassMenuAppearance(isGlass, isDark)
                             DropdownMenu(
                                 expanded = showMenu,
                                 onDismissRequest = { showMenu = false },
                                 shape = RoundedCornerShape(20.dp),
-                                containerColor = if (isGlass) {
-                                    if (isDark) Color(0xF2181C28) else Color(0xF8FFFFFF)
-                                } else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                border = if (isGlass) {
-                                    BorderStroke(
-                                        0.5.dp,
-                                        if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
-                                    )
-                                } else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
-                                shadowElevation = if (isGlass) 16.dp else 6.dp
+                                containerColor = bookMenuAppearance.containerColor,
+                                border = bookMenuAppearance.border,
+                                shadowElevation = bookMenuAppearance.shadowElevation
                             ) {
                                 DropdownMenuItem(
                                     text = { Text(strings.shareBookFile) },
@@ -2413,20 +2402,14 @@ fun BookGridCard(
                 )
             }
 
+            val gridMenuAppearance = liquidGlassMenuAppearance(isGlass, isDark)
             DropdownMenu(
                 expanded = showMenu,
                 onDismissRequest = { showMenu = false },
                 shape = RoundedCornerShape(18.dp),
-                containerColor = if (isGlass) {
-                    if (isDark) Color(0xF4181A20) else Color(0xF8F6F7FA)
-                } else MaterialTheme.colorScheme.surfaceContainerHigh,
-                border = if (isGlass) {
-                    BorderStroke(
-                        0.5.dp,
-                        if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
-                    )
-                } else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
-                shadowElevation = if (isGlass) 12.dp else 6.dp
+                containerColor = gridMenuAppearance.containerColor,
+                border = gridMenuAppearance.border,
+                shadowElevation = gridMenuAppearance.shadowElevation
             ) {
                 DropdownMenuItem(
                     text = { Text(if (book.isFavorite) strings.colFavorites else strings.addToCollection) },

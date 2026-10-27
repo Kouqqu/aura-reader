@@ -78,6 +78,7 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -101,6 +102,55 @@ import kotlin.math.roundToInt
  * CompositionLocal for ambient Haze backdrop blur across Liquid Glass surfaces.
  */
 val LocalHazeState = compositionLocalOf<HazeState?> { null }
+
+/**
+ * Shared appearance for dropdown menus.
+ *
+ * A real Haze blur is not available inside a Compose `Popup`, so the glass
+ * variant uses a neutral, nearly opaque frosted fill and a light rim instead
+ * of the old blue-tinted translucent rectangle.
+ */
+data class LiquidGlassMenuAppearance(
+    val containerColor: Color,
+    val border: BorderStroke?,
+    val shadowElevation: Dp
+)
+
+@Composable
+fun liquidGlassMenuAppearance(
+    isGlass: Boolean,
+    isDark: Boolean
+): LiquidGlassMenuAppearance {
+    if (!isGlass) {
+        return LiquidGlassMenuAppearance(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+            shadowElevation = 6.dp
+        )
+    }
+
+    val container = if (isDark) Color(0xF51A1A1D) else Color(0xF9FCFCFD)
+    val rim = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.22f),
+                Color.White.copy(alpha = 0.04f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.90f),
+                Color.Black.copy(alpha = 0.06f)
+            )
+        )
+    }
+    return LiquidGlassMenuAppearance(
+        containerColor = container,
+        border = BorderStroke(0.85.dp, rim),
+        shadowElevation = 16.dp
+    )
+}
 
 /**
  * Authentic Apple iOS-inspired Liquid Glass Surface.
@@ -938,8 +988,11 @@ fun LiquidGlassFilterChip(
  * 1. Idle state: Clean, minimal Apple pill toggle with solid white thumb.
  * 2. Pressed / Held state: Thumb expands and swells OUTSIDE the track geometry into
  *    a large horizontal optical glass capsule (overflowing vertically and horizontally),
- *    with AGSL Snell refraction, specular rim highlights, and green reflex (as shown in reference).
+ *    with AGSL Snell refraction and specular rim highlights.
  * 3. Interaction: Spring physics for expansion, drag & drop tracking, and snappy release.
+ *
+ * The ON track uses the Material You accent instead of iOS green, so the switch
+ * follows the same palette as the rest of the app.
  */
 @Composable
 fun LiquidGlassSwitch(
@@ -950,7 +1003,9 @@ fun LiquidGlassSwitch(
 ) {
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
-    val isDark = isSystemInDarkTheme()
+    // Follow the app theme, not the system theme: the app can be dark while
+    // the system is light (and the other way round).
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
     // Base track geometry
     val trackWidth = 54.dp
@@ -1030,9 +1085,15 @@ fun LiquidGlassSwitch(
     val thumbLeftInOuterPx = trackLeftInOuterPx + thumbLeftInTrackPx
     val thumbLeftInOuterDp = with(density) { thumbLeftInOuterPx.toDp() }
 
-    // Track colors: Apple-signature vibrant green capsule when ON, neutral frosted glass when OFF
+    // Track colors: Material You accent capsule when ON, neutral frosted glass when OFF.
+    // In a dark theme the accent container is the tone that keeps the white thumb readable.
     val offTrackColor = if (isDark) Color(0x35FFFFFF) else Color(0x1F000000)
-    val onTrackColor = if (isDark) Color(0xFF30D158) else Color(0xFF34C759)
+    val onTrackColor = if (isDark) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+    val accentColor = MaterialTheme.colorScheme.primary
     val currentTrackColor = lerp(offTrackColor, onTrackColor, travelFraction)
 
     val trackShape = RoundedCornerShape(percent = 50)
@@ -1160,9 +1221,8 @@ fun LiquidGlassSwitch(
 
             // LAYER B: Pure Liquid Glass Capsule (NO inner oval! Single uniform optical lens)
             if (heldProgress > 0.01f) {
-                val greenReflex = Color(0xFF34C759)
                 val bottomRimColor = if (travelFraction > 0.30f) {
-                    lerp(Color.White.copy(alpha = 0.50f), greenReflex.copy(alpha = 0.85f), travelFraction)
+                    lerp(Color.White.copy(alpha = 0.50f), accentColor.copy(alpha = 0.85f), travelFraction)
                 } else {
                     Color.White.copy(alpha = 0.40f)
                 }
