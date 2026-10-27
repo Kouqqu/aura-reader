@@ -3,13 +3,14 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-10-28, release `2.2.0-beta.16` (`versionCode 133`).
+Last updated: 2026-10-28, release `2.2.0-beta.17` (`versionCode 134`).
 `2.2.0-beta.14` changed no build files: it merged the UI-file split (see
 `docs/verification.md`) and bumped the version only. `2.2.0-beta.15` turned off
 Compose's new text context menu so the reader keeps its custom selection
 toolbar (see the table below). `2.2.0-beta.16` also changed no build files: it
 adds the translation language picker and stops selection actions from copying
-to the clipboard.
+to the clipboard. `2.2.0-beta.17` adds `androidx.core:core-splashscreen 1.2.0`
+for the new starting window (see below).
 
 ## Current versions
 
@@ -27,6 +28,7 @@ to the clipboard.
 | Lifecycle | 2.11.0 | |
 | Core KTX | 1.19.1 | |
 | Activity Compose | 1.13.0 | |
+| Core SplashScreen | 1.2.0 | starting window on Android 12+ and compat below |
 | DataStore | 1.3.0 | |
 | Coroutines | 1.11.0 | |
 | Haze | 1.7.3 | Liquid Glass blur |
@@ -93,6 +95,28 @@ Additional cleanup in `2.2.0-beta.12`:
 - `app_update` is sent once when `versionCode` changes, with
   `previous_version_code`. A normal update keeps the same anonymous installation
   ID, so it does not inflate the unique-user count.
+
+## Starting window (splash)
+
+`2.2.0-beta.17` replaces the blank white launch window with a system splash:
+
+- dependency `androidx.core:core-splashscreen 1.2.0` (Android 12+ shows the
+  platform splash, older versions the library's compatibility view);
+- `Theme.AuraReader.Starting` (`Theme.SplashScreen`) sets the background
+  (`@color/splash_background`, with a `values-night` variant), the logo
+  (`@drawable/ic_splash_logo`) and `postSplashScreenTheme`;
+- the theme is applied to `MainActivity` only, so widgets and other components
+  keep the normal theme;
+- `installSplashScreen()` runs before `super.onCreate()`, and
+  `setKeepOnScreenCondition` keeps the logo visible until the onboarding flag
+  has been read;
+- that flag is read in `lifecycleScope` with a 3 s timeout instead of the old
+  blocking `runBlocking`, so the first frame is no longer delayed. If the
+  preference cannot be read, the library opens and onboarding is shown on the
+  next launch instead of hanging on the splash.
+
+`Theme.AuraReader` also sets `android:windowBackground` to the same colour, so
+there is no light flash between the splash and the first Compose frame.
 
 ## Deliberately not upgraded
 

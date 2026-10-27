@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.text.selection.SelectionState
+import androidx.compose.foundation.text.selection.rememberSelectionState
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.runtime.snapshotFlow
 import com.aura.reader.ui.theme.LocalAppStrings
@@ -86,7 +86,7 @@ fun ChapterContentView(
     isTtsHighlightActive: Boolean = false,
     onSelectionTextChange: (String) -> Unit = {}
 ) {
-    val selectionState = remember { SelectionState() }
+    val selectionState = rememberSelectionState()
 
     LaunchedEffect(selectionState.selectedTexts) {
         onSelectionTextChange(

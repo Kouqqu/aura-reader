@@ -147,3 +147,41 @@ Both changes verified with `testDebugUnitTest lintDebug assembleDebug`; on-devic
 **Selected text no longer goes through the clipboard.** The selection actions used to call the copy callback just to read the selected text, which overwrote the clipboard on every quote, dictionary, translation and read-from-here tap. Both reader views now own a `SelectionState` and report `selectedTexts` upward through `onSelectionTextChange`, so `ReaderScreen` has the text without copying; `currentSelectionText()` uses it and keeps the old copy-based path only as a fallback. The `SelectionState` is per view because two pager pages are composed at once and a shared state can only be bound to one container.
 
 Verified with `testDebugUnitTest lintDebug assembleDebug`. On-device checks: the two chip menus in the translation dialog, and that the clipboard is untouched after the selection actions.
+
+## 2.2.0-beta.17 — page-turn crash fix and the system splash
+
+**Crash on page turning.** `2.2.0-beta.16` gave each reader view a
+`SelectionState` and bound it to its `SelectionContainer`, which fixed the
+clipboard problem but broke paged mode. `ChapterPagingView` remembered the state
+at the top of the composable and reused it inside the page lambda of its own
+`HorizontalPager`; the pager keeps the neighbouring page composed while a swipe
+starts, so two `SelectionContainer`s tried to bind the same state. Compose
+rejects that with `IllegalStateException: A SelectionState can only be bound to
+one SelectionContainer`, thrown during composition — the app died on the first
+swipe. The state is now created inside the page content
+(`rememberSelectionState()` next to `SelectionContainer`, inside the existing
+`key(selectionResetKey)` block), so every page has its own. Continuous mode was
+not affected (each chapter page is its own composition), but it uses the same
+saveable helper for consistency.
+
+**System splash and non-blocking start.** `MainActivity` used to call
+`runBlocking { preferencesManager.hasCompletedOnboarding.first() }` before
+`setContent`, holding the main thread until DataStore answered and showing a
+blank white window meanwhile (the app theme was
+`Theme.Material.Light.NoActionBar`). The starting window is now a real splash:
+`androidx.core:core-splashscreen 1.2.0`, a `Theme.AuraReader.Starting` theme with
+the brand background, a dedicated `ic_splash_logo` vector and
+`postSplashScreenTheme`, applied to `MainActivity` only. `installSplashScreen()`
+runs before `super.onCreate()`, `setKeepOnScreenCondition` keeps the logo on
+screen until the onboarding flag is known, and the flag is read in
+`lifecycleScope` with a 3 s timeout; the nav graph is composed once the value
+arrives. A timeout or a DataStore error opens the library (onboarding
+reappears on the next launch) instead of freezing the splash.
+`Theme.AuraReader` now uses the same `@color/splash_background` as its
+`windowBackground` (with a `values-night` variant), so the transition to the
+first Compose frame has no light flash.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug`. On-device checks:
+swiping pages forward and back in paged mode, the selection menu after a page
+turn, and a cold start (splash → library, and onboarding on a clean install).
+

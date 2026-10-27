@@ -8,6 +8,9 @@
     <color name="amoled_text">#E0E0E0</color>
     <color name="ic_launcher_background">#6750A4</color>
 
+    <!-- Splash / window background (system light theme) -->
+    <color name="splash_background">#F5F2FA</color>
+
     <!-- Widget Colors -->
     <color name="widget_bg">#1E1B2E</color>
     <color name="widget_accent">#A084E8</color>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash / window background in system dark mode, so the launch does not
+         flash a light window before Compose draws the dark reader theme. -->
+    <color name="splash_background">#14111C</color>
+</resources>

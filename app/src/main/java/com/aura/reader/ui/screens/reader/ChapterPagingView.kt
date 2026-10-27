@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.text.selection.SelectionState
+import androidx.compose.foundation.text.selection.rememberSelectionState
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
@@ -121,13 +121,6 @@ fun ChapterPagingView(
     isTtsHighlightActive: Boolean = false,
     onSelectionTextChange: (String) -> Unit = {}
 ) {
-    val selectionState = remember { SelectionState() }
-
-    LaunchedEffect(selectionState.selectedTexts) {
-        onSelectionTextChange(
-            selectionState.selectedTexts.joinToString("\n") { it.text }.trim()
-        )
-    }
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenHeightDp = maxHeight.value
         val screenWidthDp = maxWidth.value
@@ -458,7 +451,19 @@ fun ChapterPagingView(
                 } else {
                     val contentSpreadIdx = spreadIdx - prevPageOffset
                     androidx.compose.runtime.key(selectionResetKey) {
-                        SelectionContainer(state = selectionState) {
+                        // Each pager page must own its SelectionState: the pager keeps
+                        // neighbouring pages composed at the same time, and one state can
+                        // only be bound to one SelectionContainer (otherwise the framework
+                        // throws "A SelectionState can only be bound to one SelectionContainer").
+                        val pageSelectionState = rememberSelectionState()
+                        LaunchedEffect(pageSelectionState.selectedTexts) {
+                            onSelectionTextChange(
+                                pageSelectionState.selectedTexts
+                                    .joinToString("\n") { it.text }
+                                    .trim()
+                            )
+                        }
+                        SelectionContainer(state = pageSelectionState) {
                             if (isTwoColumn) {
                                 Row(
                                     modifier = Modifier

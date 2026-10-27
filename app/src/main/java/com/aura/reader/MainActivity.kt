@@ -24,10 +24,13 @@ import com.aura.reader.ui.theme.AppLanguage
 import com.aura.reader.ui.theme.LocalAppStrings
 import com.aura.reader.ui.theme.getStrings
 
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.aura.reader.data.analytics.AnalyticsManager
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class MainActivity : ComponentActivity() {
 
@@ -39,6 +42,9 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Takes over the system starting window; must run before super.onCreate().
+        val splashScreen = installSplashScreen()
+
         // Compose 1.12 starts using a new context-menu implementation for text
         // selection, and that path ignores the app's custom LocalTextToolbar.
         // The reader relies on that toolbar for its quote/dictionary/translate/
@@ -72,12 +78,27 @@ class MainActivity : ComponentActivity() {
         // Handle opening a book from external intent (e.g. file manager)
         handleIncomingIntent(intent)
 
-        val hasCompletedOnboarding = runBlocking {
-            preferencesManager.hasCompletedOnboarding.first()
+        // Read the onboarding flag off the main thread. The old blocking read froze
+        // the first frame, and the app drew a blank white window until it finished.
+        // The system splash stays on screen until the value is known, so the user
+        // only ever sees the logo, then the real screen.
+        val onboardingState = MutableStateFlow<Boolean?>(null)
+        splashScreen.setKeepOnScreenCondition { onboardingState.value == null }
+        lifecycleScope.launch {
+            val completed = try {
+                withTimeoutOrNull(3_000) {
+                    preferencesManager.hasCompletedOnboarding.first()
+                }
+            } catch (error: Exception) {
+                null
+            }
+            // If the preference cannot be read in time, open the library rather
+            // than hanging on the splash; onboarding is shown on the next launch.
+            onboardingState.value = completed ?: true
         }
-        val startDestination = if (!hasCompletedOnboarding) NavRoutes.ONBOARDING else NavRoutes.LIBRARY
 
         setContent {
+            val hasCompletedOnboarding by onboardingState.collectAsState()
             val settings by preferencesManager.readerSettings.collectAsState(
                 initial = ReaderSettings()
             )
@@ -91,23 +112,30 @@ class MainActivity : ComponentActivity() {
                 initial = "DEFAULT"
             )
 
-            CompositionLocalProvider(
-                LocalAppStrings provides getStrings(appLanguage)
-            ) {
-                AuraReaderTheme(
-                    themeMode = settings.appThemeMode,
-                    materialYou = materialYouEnabled,
-                    appFont = appFont
+            val completed = hasCompletedOnboarding
+            if (completed != null) {
+                CompositionLocalProvider(
+                    LocalAppStrings provides getStrings(appLanguage)
                 ) {
-                    val navController = rememberNavController()
-                    AuraNavGraph(
-                        navController = navController,
-                        libraryViewModel = libraryViewModel,
-                        readerViewModel = readerViewModel,
-                        opdsViewModel = opdsViewModel,
-                        preferencesManager = preferencesManager,
-                        startDestination = startDestination
-                    )
+                    AuraReaderTheme(
+                        themeMode = settings.appThemeMode,
+                        materialYou = materialYouEnabled,
+                        appFont = appFont
+                    ) {
+                        val navController = rememberNavController()
+                        AuraNavGraph(
+                            navController = navController,
+                            libraryViewModel = libraryViewModel,
+                            readerViewModel = readerViewModel,
+                            opdsViewModel = opdsViewModel,
+                            preferencesManager = preferencesManager,
+                            startDestination = if (completed) {
+                                NavRoutes.LIBRARY
+                            } else {
+                                NavRoutes.ONBOARDING
+                            }
+                        )
+                    }
                 }
             }
         }

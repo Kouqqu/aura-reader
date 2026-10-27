@@ -3,5 +3,19 @@
     <style name="Theme.AuraReader" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- Matches the starting window so there is no white flash between the
+             splash and the first Compose frame. -->
+        <item name="android:windowBackground">@color/splash_background</item>
+    </style>
+
+    <!--
+        Starting-window theme for androidx.core:core-splashscreen.
+        Android 12+ uses the platform splash screen; older versions get the
+        library's compatible implementation with the same background and logo.
+    -->
+    <style name="Theme.AuraReader.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.AuraReader</item>
     </style>
 </resources>
