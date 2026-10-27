@@ -40,10 +40,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalTextToolbar
 import androidx.compose.ui.platform.TextToolbar
 import androidx.compose.ui.platform.TextToolbarStatus
@@ -137,11 +135,6 @@ import com.aura.reader.data.model.Chapter
 import com.aura.reader.data.model.ReaderFontFamily
 import com.aura.reader.ui.theme.AuraReaderTheme
 import kotlinx.coroutines.launch
-import android.content.Context
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
@@ -173,7 +166,6 @@ fun ReaderScreen(
     val appLanguage by viewModel.appLanguage.collectAsState()
 
     // Search state
-    var isSearchActive by remember { mutableStateOf(false) }
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val currentSearchIndex by viewModel.currentSearchIndex.collectAsState()
@@ -238,12 +230,8 @@ fun ReaderScreen(
     var currentPagingPage by remember { mutableIntStateOf(0) }
     var totalPagingPages by remember { mutableIntStateOf(1) }
     var requestPagingPage by remember { mutableStateOf<Int?>(null) }
-    var showReaderMenu by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
-    val haptic = LocalHapticFeedback.current
-    var lastPageSliderStep by remember { mutableIntStateOf(-1) }
-    var lastChapterSliderStep by remember { mutableIntStateOf(-1) }
 
     var dictionaryWord by remember { mutableStateOf<String?>(null) }
     var dictionaryLoading by remember { mutableStateOf(false) }
@@ -496,646 +484,44 @@ fun ReaderScreen(
                 }
             }
 
-        // Floating Top Bar with Material 3 Expressive Floating Card
-        AnimatedVisibility(
+        ReaderTopBar(
             visible = showControls,
-            enter = fadeIn() + slideInVertically { -it },
-            exit = fadeOut() + slideOutVertically { -it },
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 10.dp)
-        ) {
-            val topBarContent: @Composable () -> Unit = {
-                if (isSearchActive) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = {
-                            isSearchActive = false
-                            viewModel.clearSearch()
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = strings.closeSearch
-                            )
-                        }
+            book = book,
+            currentChapter = currentChapter,
+            searchQuery = searchQuery,
+            searchResults = searchResults,
+            currentSearchIndex = currentSearchIndex,
+            isCurrentChapterBookmarked = isCurrentChapterBookmarked,
+            ttsState = ttsState,
+            isGlass = isGlass,
+            isThemeDark = isThemeDark,
+            isSepiaTheme = isSepiaTheme,
+            viewModel = viewModel,
+            onNavigateBack = onNavigateBack,
+            onOpenBookInfo = { showBookInfoDialog = true },
+            onOpenTtsSheet = { showTtsSheet = true },
+            onOpenBookmarks = { showBookmarksQuotesSheet = true },
+            onOpenSettings = { showSettingsSheet = true }
+        )
 
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(42.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                                .padding(horizontal = 12.dp),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            if (searchQuery.isEmpty()) {
-                                Text(
-                                    text = strings.searchInBookHint,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            BasicTextField(
-                                value = searchQuery,
-                                onValueChange = { viewModel.performSearch(it) },
-                                singleLine = true,
-                                textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                    color = MaterialTheme.colorScheme.onSurface
-                                ),
-                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
 
-                        if (searchResults.isNotEmpty()) {
-                            Text(
-                                text = "${currentSearchIndex + 1}/${searchResults.size}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 4.dp)
-                            )
-                            IconButton(
-                                onClick = { viewModel.prevSearchResult() },
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(Icons.Default.KeyboardArrowUp, contentDescription = strings.previous)
-                            }
-                            IconButton(
-                                onClick = { viewModel.nextSearchResult() },
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = strings.next)
-                            }
-                        }
-
-                        IconButton(
-                            onClick = {
-                                isSearchActive = false
-                                viewModel.clearSearch()
-                            },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = strings.clear)
-                        }
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = {
-                            viewModel.saveCurrentProgress()
-                            onNavigateBack()
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = strings.back
-                            )
-                        }
-
-                        val currentBook = book
-                        val sharedTransitionScope = com.aura.reader.ui.navigation.LocalSharedTransitionScope.current
-                        val animatedVisibilityScope = com.aura.reader.ui.navigation.LocalNavAnimatedVisibilityScope.current
-                        val coverSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && currentBook != null) {
-                            with(sharedTransitionScope) {
-                                Modifier.sharedElement(
-                                    sharedContentState = rememberSharedContentState(key = "book_cover_${currentBook.id}"),
-                                    animatedVisibilityScope = animatedVisibilityScope,
-                                    boundsTransform = { _, _ ->
-                                        tween(durationMillis = 350, easing = FastOutSlowInEasing)
-                                    },
-                                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(6.dp))
-                                )
-                            }
-                        } else Modifier
-
-                        val topBarCoverBitmap = remember(currentBook?.coverBase64) {
-                            currentBook?.coverBase64?.let { base64 ->
-                                try {
-                                    val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
-                                    android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
-                                } catch (e: Exception) {
-                                    null
-                                }
-                            }
-                        }
-
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { showBookInfoDialog = true }
-                                .padding(horizontal = 4.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = coverSharedModifier
-                                    .size(width = 28.dp, height = 40.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(MaterialTheme.colorScheme.primaryContainer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (topBarCoverBitmap != null) {
-                                    Image(
-                                        bitmap = topBarCoverBitmap,
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Default.AutoStories,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 8.dp, end = 4.dp)
-                            ) {
-                                Text(
-                                    text = book?.title ?: strings.appName,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = currentChapter?.title ?: "",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.65f)) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-
-                        // Audio Narration (TTS)
-                        IconButton(onClick = {
-                            if (!ttsState.isServiceRunning) {
-                                viewModel.startTts(context)
-                            }
-                            showTtsSheet = true
-                        }) {
-                            Icon(
-                                imageVector = if (ttsState.isPlaying) Icons.Default.VolumeUp else Icons.Default.Headphones,
-                                contentDescription = strings.ttsListenAction,
-                                tint = if (ttsState.isServiceRunning) MaterialTheme.colorScheme.primary else if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        // Bookmark Toggle Icon
-                        IconButton(onClick = {
-                            val preview = currentChapter?.content?.take(100) ?: ""
-                            viewModel.toggleBookmark(preview)
-                        }) {
-                            Icon(
-                                imageVector = if (isCurrentChapterBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                contentDescription = strings.bookmarks,
-                                tint = if (isCurrentChapterBookmarked) MaterialTheme.colorScheme.primary else if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        // Three-dots Overflow Menu
-                        Box {
-                            IconButton(onClick = { showReaderMenu = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = strings.moreOptions,
-                                    tint = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-
-                            val readerMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
-                            DropdownMenu(
-                                expanded = showReaderMenu,
-                                onDismissRequest = { showReaderMenu = false },
-                                shape = RoundedCornerShape(20.dp),
-                                containerColor = readerMenuAppearance.containerColor,
-                                border = readerMenuAppearance.border,
-                                shadowElevation = readerMenuAppearance.shadowElevation
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(strings.ttsListenAction) },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Headphones, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        if (!ttsState.isServiceRunning) {
-                                            viewModel.startTts(context)
-                                        }
-                                        showTtsSheet = true
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(strings.searchInBook) },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Search, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        isSearchActive = true
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(strings.shareBookFile) },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Share, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        book?.let { BookShareUtils.shareBookFile(context, it) }
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(strings.bookmarksAndQuotes) },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.CollectionsBookmark, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        showBookmarksQuotesSheet = true
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(strings.fontAndTheme) },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.FormatSize, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        showSettingsSheet = true
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (isGlass) {
-                val topBarBg = if (isSepiaTheme) Color(0xF4FAF0E6) else null
-                LiquidGlassSurface(
-                    shape = RoundedCornerShape(24.dp),
-                    shadowElevation = 10.dp,
-                    isDark = isThemeDark,
-                    tintColor = topBarBg,
-                    modifier = Modifier.fillMaxWidth(),
-                    content = topBarContent
-                )
-            } else {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    content = { topBarContent() }
-                )
-            }
-        }
-
-        // Bottom Controls Bar with Material 3 Expressive Floating Card
-        AnimatedVisibility(
+        ReaderBottomBar(
             visible = showControls,
-            enter = fadeIn() + slideInVertically { it },
-            exit = fadeOut() + slideOutVertically { it },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 20.dp)
-        ) {
-                    val bottomBarContent: @Composable () -> Unit = {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 14.dp)
-                        ) {
-                            if (chapters.isNotEmpty()) {
-                                if (settings.pagingMode) {
-                                    // --- Paging Mode: Chapter Switcher Header + Page Slider ---
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        IconButton(
-                                            onClick = { viewModel.prevChapter() },
-                                            enabled = currentChapterIndex > 0,
-                                            modifier = Modifier.size(36.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.SkipPrevious,
-                                                contentDescription = strings.prevChapter,
-                                                tint = if (currentChapterIndex > 0) {
-                                                    if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
-                                                } else {
-                                                    (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
-                                                }
-                                            )
-                                        }
+            chapters = chapters,
+            currentChapter = currentChapter,
+            currentChapterIndex = currentChapterIndex,
+            currentPagingPage = currentPagingPage,
+            totalPagingPages = totalPagingPages,
+            bookProgressPercent = book?.progressPercent ?: 0,
+            onRequestPage = { requestPagingPage = it },
+            onOpenChapters = { showChaptersSheet = true },
+            settings = settings,
+            isGlass = isGlass,
+            isThemeDark = isThemeDark,
+            isSepiaTheme = isSepiaTheme,
+            viewModel = viewModel
+        )
 
-                                        Row(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .clickable { showChaptersSheet = true }
-                                                .padding(horizontal = 6.dp, vertical = 4.dp),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column(
-                                                modifier = Modifier.weight(1f, fill = false),
-                                                horizontalAlignment = Alignment.CenterHorizontally
-                                            ) {
-                                                Text(
-                                                    text = "${strings.chapter} ${currentChapterIndex + 1} ${strings.ofChapters} ${chapters.size}",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                                Text(
-                                                    text = currentChapter?.title ?: "",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Icon(
-                                                imageVector = Icons.Default.ChevronRight,
-                                                contentDescription = strings.contents,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-
-                                        IconButton(
-                                            onClick = { viewModel.nextChapter() },
-                                            enabled = currentChapterIndex < chapters.size - 1,
-                                            modifier = Modifier.size(36.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.SkipNext,
-                                                contentDescription = strings.nextChapter,
-                                                tint = if (currentChapterIndex < chapters.size - 1) {
-                                                    if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
-                                                } else {
-                                                    (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
-                                                }
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    // Page Slider
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        IconButton(
-                                            onClick = {
-                                                if (currentPagingPage > 0) {
-                                                    val target = currentPagingPage - 1
-                                                    lastPageSliderStep = target
-                                                    if (settings.hapticFeedbackEnabled) {
-                                                        performSliderTick(context, haptic)
-                                                    }
-                                                    requestPagingPage = target
-                                                }
-                                            },
-                                            enabled = currentPagingPage > 0,
-                                            modifier = Modifier.size(36.dp)
-                                         ) {
-                                             Icon(
-                                                 Icons.Default.ChevronLeft,
-                                                 contentDescription = strings.prevPage,
-                                                 tint = if (currentPagingPage > 0) {
-                                                     if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
-                                                 } else {
-                                                     (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
-                                                 }
-                                             )
-                                         }
-
-                                         Slider(
-                                             value = currentPagingPage.toFloat().coerceIn(0f, (totalPagingPages - 1).coerceAtLeast(0).toFloat()),
-                                             onValueChange = { newVal ->
-                                                 val step = newVal.toInt()
-                                                 if (step != lastPageSliderStep) {
-                                                     lastPageSliderStep = step
-                                                     if (settings.hapticFeedbackEnabled) {
-                                                         performSliderTick(context, haptic)
-                                                     }
-                                                 }
-                                                 requestPagingPage = step
-                                             },
-                                             valueRange = 0f..(totalPagingPages - 1).coerceAtLeast(1).toFloat(),
-                                             steps = (totalPagingPages - 2).coerceAtLeast(0),
-                                             modifier = Modifier.weight(1f),
-                                             colors = SliderDefaults.colors(
-                                                 thumbColor = MaterialTheme.colorScheme.primary,
-                                                 activeTrackColor = MaterialTheme.colorScheme.primary,
-                                                 inactiveTrackColor = if (isGlass) {
-                                                     if (isThemeDark) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f)
-                                                 } else MaterialTheme.colorScheme.surfaceContainerHighest
-                                             )
-                                         )
-
-                                         IconButton(
-                                             onClick = {
-                                                 if (currentPagingPage < totalPagingPages - 1) {
-                                                     val target = currentPagingPage + 1
-                                                     lastPageSliderStep = target
-                                                     if (settings.hapticFeedbackEnabled) {
-                                                         performSliderTick(context, haptic)
-                                                     }
-                                                     requestPagingPage = target
-                                                 }
-                                             },
-                                             enabled = currentPagingPage < totalPagingPages - 1,
-                                             modifier = Modifier.size(36.dp)
-                                         ) {
-                                             Icon(
-                                                 Icons.Default.ChevronRight,
-                                                 contentDescription = strings.nextPage,
-                                                 tint = if (currentPagingPage < totalPagingPages - 1) {
-                                                     if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
-                                                 } else {
-                                                     (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
-                                                 }
-                                             )
-                                         }
-                                    }
-
-                                    Text(
-                                        text = "${strings.page} ${currentPagingPage + 1} ${strings.ofPages} $totalPagingPages  •  ${strings.pagingHint}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.65f)) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                                    )
-                                } else {
-                                    // --- Continuous Mode: Chapter Slider ---
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .clickable { showChaptersSheet = true }
-                                            .padding(horizontal = 6.dp, vertical = 4.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.weight(1f, fill = false)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.AutoStories,
-                                                contentDescription = strings.contents,
-                                                modifier = Modifier.size(18.dp),
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = "${strings.chapter} ${currentChapterIndex + 1} ${strings.ofChapters} ${chapters.size}: ${currentChapter?.title ?: ""}",
-                                                style = MaterialTheme.typography.labelMedium,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Icon(
-                                                imageVector = Icons.Default.ChevronRight,
-                                                contentDescription = strings.contents,
-                                                modifier = Modifier.size(18.dp),
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-
-                                        val progress = book?.progressPercent ?: 0
-                                        Text(
-                                            text = "$progress%",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.padding(start = 8.dp)
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.height(6.dp))
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        IconButton(
-                                            onClick = { viewModel.prevChapter() },
-                                            enabled = currentChapterIndex > 0,
-                                            modifier = Modifier.size(36.dp)
-                                        ) {
-                                            Icon(
-                                                 Icons.Default.ChevronLeft,
-                                                 contentDescription = strings.prevChapter,
-                                                 tint = if (currentChapterIndex > 0) {
-                                                     if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
-                                                 } else {
-                                                     (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
-                                                 }
-                                             )
-                                        }
-
-                                        Slider(
-                                            value = currentChapterIndex.toFloat(),
-                                            onValueChange = { newVal ->
-                                                val step = newVal.toInt()
-                                                if (step != lastChapterSliderStep) {
-                                                    lastChapterSliderStep = step
-                                                    if (settings.hapticFeedbackEnabled) {
-                                                        performSliderTick(context, haptic)
-                                                    }
-                                                }
-                                                viewModel.setChapter(step)
-                                            },
-                                            valueRange = 0f..(chapters.size - 1).coerceAtLeast(1).toFloat(),
-                                            steps = (chapters.size - 2).coerceAtLeast(0),
-                                            modifier = Modifier.weight(1f),
-                                            colors = SliderDefaults.colors(
-                                                thumbColor = MaterialTheme.colorScheme.primary,
-                                                activeTrackColor = MaterialTheme.colorScheme.primary
-                                            )
-                                        )
-
-                                        IconButton(
-                                            onClick = { viewModel.nextChapter() },
-                                            enabled = currentChapterIndex < chapters.size - 1,
-                                            modifier = Modifier.size(36.dp)
-                                        ) {
-                                            Icon(
-                                                 Icons.Default.ChevronRight,
-                                                 contentDescription = strings.nextChapter,
-                                                 tint = if (currentChapterIndex < chapters.size - 1) {
-                                                     if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
-                                                 } else {
-                                                     (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
-                                                 }
-                                             )
-                                        }
-                                    }
-
-                                    Text(
-                                        text = strings.chaptersNavigationHint,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.65f)) else MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    if (isGlass) {
-                        val bottomBarBg = if (isSepiaTheme) Color(0xF4FAF0E6) else null
-                        LiquidGlassSurface(
-                            shape = RoundedCornerShape(24.dp),
-                            shadowElevation = 10.dp,
-                            isDark = isThemeDark,
-                            tintColor = bottomBarBg,
-                            modifier = Modifier.fillMaxWidth(),
-                            content = bottomBarContent
-                        )
-                    } else {
-                        Card(
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
-                                contentColor = MaterialTheme.colorScheme.onSurface
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                            content = { bottomBarContent() }
-                        )
-                    }
-                }
 
                 // Floating TTS Player Bar when active
                 androidx.compose.animation.AnimatedVisibility(
@@ -1293,201 +679,86 @@ fun ReaderScreen(
             // Selection toolbar popup (no full-screen scrim so selection handles can be freely dragged)
             val currentSelectionRect = selectionRect
             if (selectedQuoteCopyAction != null && currentSelectionRect != null) {
-                val density = LocalDensity.current
-                val rect = currentSelectionRect
-
-                Popup(
-                    popupPositionProvider = object : PopupPositionProvider {
-                        override fun calculatePosition(
-                            anchorBounds: IntRect,
-                            windowSize: IntSize,
-                            layoutDirection: LayoutDirection,
-                            popupContentSize: IntSize
-                        ): IntOffset {
-                            val targetX = (rect.left + (rect.width - popupContentSize.width) / 2f).toInt()
-                            val minX = with(density) { 12.dp.toPx() }.toInt()
-                            val maxX = (windowSize.width - popupContentSize.width - minX).coerceAtLeast(minX)
-                            val clampedX = targetX.coerceIn(minX, maxX)
-
-                            val spaceAbove = rect.top - with(density) { 8.dp.toPx() }
-                            val targetY = if (spaceAbove >= popupContentSize.height + with(density) { 48.dp.toPx() }) {
-                                (rect.top - popupContentSize.height - with(density) { 8.dp.toPx() }).toInt()
-                            } else {
-                                (rect.bottom + with(density) { 8.dp.toPx() }).toInt()
-                            }
-                            val minY = with(density) { 40.dp.toPx() }.toInt()
-                            val maxY = (windowSize.height - popupContentSize.height - with(density) { 20.dp.toPx() }).toInt()
-                            val clampedY = targetY.coerceIn(minY, maxY.coerceAtLeast(minY))
-
-                            return IntOffset(clampedX, clampedY)
-                        }
-                    },
+                ReaderSelectionToolbar(
+                    anchorRect = currentSelectionRect,
                     onDismissRequest = {
                         selectionResetKey++
                         customTextToolbar.hide()
                     },
-                    properties = PopupProperties(
-                        focusable = false,
-                        dismissOnBackPress = true,
-                        dismissOnClickOutside = false
-                    )
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(18.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        shadowElevation = 8.dp,
-                        tonalElevation = 6.dp,
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-                        ),
-                        modifier = Modifier.widthIn(max = (LocalConfiguration.current.screenWidthDp.dp - 24.dp))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            // 1. Copy
-                            TextButton(
-                                onClick = {
-                                    val action = selectedQuoteCopyAction
-                                    action?.invoke()
-                                    selectionResetKey++
-                                    customTextToolbar.hide()
-                                },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
-                                modifier = Modifier.height(34.dp)
-                            ) {
-                                Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(15.dp))
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(strings.copy, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
-                            }
-
-                            Box(modifier = Modifier.height(14.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
-
-                            // 2. Quote
-                            TextButton(
-                                onClick = {
-                                    val action = selectedQuoteCopyAction
-                                    action?.invoke()
-                                    val clip = clipboardManager.getText()?.text
-                                    if (!clip.isNullOrBlank()) {
-                                        quoteToSave = clip.trim()
+                    onCopy = {
+                        selectedQuoteCopyAction?.invoke()
+                        selectionResetKey++
+                        customTextToolbar.hide()
+                    },
+                    onQuote = {
+                        selectedQuoteCopyAction?.invoke()
+                        val clip = clipboardManager.getText()?.text
+                        if (!clip.isNullOrBlank()) {
+                            quoteToSave = clip.trim()
+                        }
+                        selectionResetKey++
+                        customTextToolbar.hide()
+                    },
+                    onDictionary = {
+                        selectedQuoteCopyAction?.invoke()
+                        val clip = clipboardManager.getText()?.text?.trim()
+                        selectionResetKey++
+                        customTextToolbar.hide()
+                        if (!clip.isNullOrBlank()) {
+                            val word = clip.take(60)
+                            dictionaryWord = word
+                            dictionaryLoading = true
+                            dictionaryDefinition = null
+                            dictionaryError = null
+                            coroutineScope.launch {
+                                 DictionaryService.lookupDefinition(word)
+                                    .onSuccess { def ->
+                                        dictionaryDefinition = def
+                                        dictionaryLoading = false
                                     }
-                                    selectionResetKey++
-                                    customTextToolbar.hide()
-                                },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
-                                modifier = Modifier.height(34.dp)
-                            ) {
-                                Icon(Icons.Default.FormatQuote, contentDescription = null, modifier = Modifier.size(15.dp))
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(strings.quoteAction, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
-                            }
-
-                            Box(modifier = Modifier.height(14.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
-
-                            // 3. Dictionary
-                            TextButton(
-                                onClick = {
-                                    val action = selectedQuoteCopyAction
-                                    action?.invoke()
-                                    val clip = clipboardManager.getText()?.text?.trim()
-                                    selectionResetKey++
-                                    customTextToolbar.hide()
-                                    if (!clip.isNullOrBlank()) {
-                                        val word = clip.take(60)
-                                        dictionaryWord = word
-                                        dictionaryLoading = true
-                                        dictionaryDefinition = null
-                                        dictionaryError = null
-                                        coroutineScope.launch {
-                                             DictionaryService.lookupDefinition(word)
-                                                .onSuccess { def ->
-                                                    dictionaryDefinition = def
-                                                    dictionaryLoading = false
-                                                }
-                                                .onFailure { err ->
-                                                    dictionaryError = err.message ?: strings.dictionaryNotFound
-                                                    dictionaryLoading = false
-                                                }
-                                        }
+                                    .onFailure { err ->
+                                        dictionaryError = err.message ?: strings.dictionaryNotFound
+                                        dictionaryLoading = false
                                     }
-                                },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
-                                modifier = Modifier.height(34.dp)
-                            ) {
-                                Icon(Icons.Default.AutoStories, contentDescription = null, modifier = Modifier.size(15.dp))
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(strings.dictionaryAction, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
-                            }
-
-                            Box(modifier = Modifier.height(14.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
-
-                            // 4. Translation
-                            TextButton(
-                                onClick = {
-                                    val action = selectedQuoteCopyAction
-                                    action?.invoke()
-                                    val clip = clipboardManager.getText()?.text?.trim()
-                                    selectionResetKey++
-                                    customTextToolbar.hide()
-                                    if (!clip.isNullOrBlank()) {
-                                        translationText = clip
-                                        translationLoading = true
-                                        translationResult = null
-                                        translationError = null
-                                        coroutineScope.launch {
-                                             DictionaryService.translateText(clip, targetLang = appLanguage.code)
-                                                .onSuccess { res ->
-                                                    translationResult = res
-                                                    translationLoading = false
-                                                }
-                                                .onFailure { err ->
-                                                    translationError = err.message ?: strings.translationFailed
-                                                    translationLoading = false
-                                                }
-                                        }
-                                    }
-                                },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
-                                modifier = Modifier.height(34.dp)
-                            ) {
-                                Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(15.dp))
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(strings.translateAction, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
-                            }
-
-                            Box(modifier = Modifier.height(14.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)))
-
-                            // 5. Read from here (TTS)
-                            TextButton(
-                                onClick = {
-                                    val action = selectedQuoteCopyAction
-                                    action?.invoke()
-                                    val clip = (lastCopiedText ?: clipboardManager.getText()?.text)?.trim()
-                                    selectionResetKey++
-                                    customTextToolbar.hide()
-                                    if (!clip.isNullOrBlank()) {
-                                        viewModel.startTts(context, selectedText = clip)
-                                    } else {
-                                        viewModel.startTts(context)
-                                    }
-                                    showTtsSheet = true
-                                },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
-                                modifier = Modifier.height(34.dp)
-                            ) {
-                                Icon(Icons.Default.VolumeUp, contentDescription = null, modifier = Modifier.size(15.dp))
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(strings.ttsStartFromHere, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
                             }
                         }
+                    },
+                    onTranslate = {
+                        selectedQuoteCopyAction?.invoke()
+                        val clip = clipboardManager.getText()?.text?.trim()
+                        selectionResetKey++
+                        customTextToolbar.hide()
+                        if (!clip.isNullOrBlank()) {
+                            translationText = clip
+                            translationLoading = true
+                            translationResult = null
+                            translationError = null
+                            coroutineScope.launch {
+                                 DictionaryService.translateText(clip, targetLang = appLanguage.code)
+                                    .onSuccess { res ->
+                                        translationResult = res
+                                        translationLoading = false
+                                    }
+                                    .onFailure { err ->
+                                        translationError = err.message ?: strings.translationFailed
+                                        translationLoading = false
+                                    }
+                            }
+                        }
+                    },
+                    onReadFromHere = {
+                        selectedQuoteCopyAction?.invoke()
+                        val clip = (lastCopiedText ?: clipboardManager.getText()?.text)?.trim()
+                        selectionResetKey++
+                        customTextToolbar.hide()
+                        if (!clip.isNullOrBlank()) {
+                            viewModel.startTts(context, selectedText = clip)
+                        } else {
+                            viewModel.startTts(context)
+                        }
+                        showTtsSheet = true
                     }
-                }
+                )
             }
 
             quoteToSave?.let { quoteText ->
@@ -1524,23 +795,5 @@ fun ReaderScreen(
             }
         }
       }
-    }
-}
-
-
-
-
-
-
-private fun performSliderTick(context: Context, haptic: HapticFeedback) {
-    try {
-        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && vibrator?.hasVibrator() == true) {
-            vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
-        } else {
-            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-        }
-    } catch (_: Exception) {
-        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
 }
