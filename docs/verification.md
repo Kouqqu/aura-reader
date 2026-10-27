@@ -102,9 +102,12 @@ Structural refactor only: the bodies of the moved functions were copied verbatim
 
 - `ReaderScreen.kt`: 3382 → 799 lines. Moved the continuous scroll view (`ChapterContentView.kt`), the paging view and chapter transition (`ChapterPagingView.kt`), the block renderer with `InteractiveText` and footnote helpers (`ReaderBlocks.kt`), the pagination algorithm (`ReaderPagination.kt`, `paginateBlocks` became `internal`), then the floating top bar (`ReaderTopBar.kt`), the bottom controls (`ReaderBottomBar.kt`) and the text-selection popup (`ReaderSelectionToolbar.kt`).
 - `LibraryScreen.kt`: 2466 → 1414 lines. Moved the list/grid cards and cover view (`BookCards.kt`), the empty state with the logo (`LibraryEmptyState.kt`), and the update/new-collection/delete-collection/book-collections dialogs (`LibraryDialogs.kt`).
+- `SettingsBottomSheet.kt`: 1641 → 1355 lines. Moved the theme picker with the appearance rows (`SettingsThemeSection.kt`) and the backup plus about/GitHub/donate sections (`SettingsInfoSections.kt`). Their private helpers became `internal` so both files can share them.
 
 The two reader bars keep their composables untouched. State that only they used (`isSearchActive`, `showReaderMenu`, the slider step trackers) now lives inside them; opening the info dialog, TTS, bookmarks, settings and chapters sheets arrives as callbacks, and `performSliderTick` moved with the bottom bar. The selection toolbar is now a plain popup that reports its five actions, while the clipboard, dictionary and translation logic stayed in `ReaderScreen`.
 
 `LibraryDialogs` keeps the four library dialogs exactly as they were, with view-model calls replaced by callbacks and the dialog visibility flags still owned by `LibraryScreen`.
+
+In `SettingsBottomSheet` the whole-sheet state (burst animation, sheet coordinates, dialogs) stays in the screen lambda. The theme section receives the picked theme through one `onThemePicked(mode, origin, colors)` callback that still triggers the pixel burst before changing the theme, so the animation timing is unchanged.
 
 No version bump: this carries no user-visible change and ships together with the next release.
