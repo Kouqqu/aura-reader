@@ -413,132 +413,18 @@ fun LibraryScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             if (currentMainTab == 0) {
-                AnimatedContent(
-                    targetState = isSearchExpanded && !isGlass,
-                    transitionSpec = {
-                        if (targetState) {
-                            (fadeIn(animationSpec = tween(220, delayMillis = 40)) +
-                             slideInVertically(animationSpec = tween(260)) { -it / 2 } +
-                             expandVertically(animationSpec = tween(260)))
-                                .togetherWith(
-                                    fadeOut(animationSpec = tween(160)) +
-                                    shrinkVertically(animationSpec = tween(180))
-                                )
-                        } else {
-                            (fadeIn(animationSpec = tween(220, delayMillis = 40)) +
-                             expandVertically(animationSpec = tween(240)))
-                                .togetherWith(
-                                    fadeOut(animationSpec = tween(160)) +
-                                    slideOutVertically(animationSpec = tween(180)) { -it / 2 } +
-                                    shrinkVertically(animationSpec = tween(180))
-                                )
-                        }
-                    },
-                    label = "materialSearchTopBarTransition"
-                ) { searching ->
-                    if (searching) {
-                        val searchFocusRequester = remember { FocusRequester() }
-                        LaunchedEffect(Unit) {
-                            kotlinx.coroutines.delay(120)
-                            searchFocusRequester.requestFocus()
-                        }
-                        TopAppBar(
-                            title = {
-                                OutlinedTextField(
-                                    value = searchQuery,
-                                    onValueChange = { viewModel.setSearchQuery(it) },
-                                    placeholder = { Text(strings.searchLibraryPlaceholder) },
-                                    singleLine = true,
-                                    shape = RoundedCornerShape(14.dp),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .focusRequester(searchFocusRequester)
-                                )
-                            },
-                            navigationIcon = {
-                                IconButton(onClick = {
-                                    isSearchExpanded = false
-                                    viewModel.setSearchQuery("")
-                                }) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = strings.cancel)
-                                }
-                            },
-                            actions = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                        Icon(Icons.Default.Close, contentDescription = strings.clear)
-                                    }
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            )
-                        )
-                    } else {
-                        LargeTopAppBar(
-                        title = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    modifier = Modifier.size(38.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        AuraLogoIcon(
-                                            modifier = Modifier.size(width = 20.dp, height = 24.dp),
-                                            bookColor = MaterialTheme.colorScheme.primary,
-                                            lineColor = MaterialTheme.colorScheme.primaryContainer
-                                        )
-                                    }
-                                }
-                                Text(
-                                    text = strings.appName,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        },
-                        actions = {
-                            // View Mode Switcher
-                            IconButton(onClick = { viewModel.toggleLibraryViewMode() }) {
-                                Icon(
-                                    imageVector = if (libraryViewMode == "GRID") Icons.Default.ViewList else Icons.Default.GridView,
-                                    contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid
-                                )
-                            }
-
-                            if (!isGlass) {
-                                // Search Button in Material mode
-                                IconButton(onClick = { isSearchExpanded = true }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Search,
-                                        contentDescription = strings.searchInLibrary
-                                    )
-                                }
-
-                                // Settings Button in Material mode
-                                IconButton(onClick = { showSettingsSheet = true }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Settings,
-                                        contentDescription = strings.settingsTitle
-                                    )
-                                }
-                            }
-                        },
-                        scrollBehavior = scrollBehavior,
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.background,
-                            scrolledContainerColor = if (isGlass) {
-                                if (isThemeDark) Color(0xB3000000) else Color(0xB3FFFFFF)
-                            } else {
-                                MaterialTheme.colorScheme.surfaceContainer
-                            }
-                        )
-                    )
-                    }
-                }
+                LibraryTopBar(
+                    isSearchExpanded = isSearchExpanded,
+                    isGlass = isGlass,
+                    isThemeDark = isThemeDark,
+                    searchQuery = searchQuery,
+                    libraryViewMode = libraryViewMode,
+                    scrollBehavior = scrollBehavior,
+                    onSearchExpandedChange = { isSearchExpanded = it },
+                    onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                    onToggleViewMode = { viewModel.toggleLibraryViewMode() },
+                    onOpenSettings = { showSettingsSheet = true }
+                )
             }
         },
         floatingActionButton = {
@@ -756,197 +642,40 @@ fun LibraryScreen(
                     val curUpdate = updateInfo
                     if (curUpdate != null && curUpdate.isAvailable && updateNotificationsEnabled) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            LiquidGlassCard(
+                            LibraryUpdateBanner(
+                                update = curUpdate,
                                 isGlass = isGlass,
-                                isDark = isThemeDark,
-                                shape = RoundedCornerShape(20.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.SystemUpdate,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(28.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = strings.updateAvailableTitle(curUpdate.latestVersion),
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = strings.updateBannerSubtitle,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Button(
-                                        onClick = {
-                                            viewModel.openUpdatePage(context, curUpdate.releaseUrl)
-                                        },
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.primary
-                                        )
-                                    ) {
-                                        Text(strings.download)
-                                    }
-                                }
-                            }
+                                isThemeDark = isThemeDark,
+                                onOpenUpdatePage = { url -> viewModel.openUpdatePage(context, url) }
+                            )
                         }
                     }
 
                     // Daily Reading Stats (Toggleable in Settings)
                     if (readingStatsEnabled) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            LiquidGlassCard(
+                            LibraryReadingStatsBanner(
                                 isGlass = isGlass,
-                                isDark = isThemeDark,
-                                shape = RoundedCornerShape(20.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .expressiveClickable { showReadingStatsSheet = true }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Timer,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        text = if (todayMinutes > 0) "${strings.todayReadingTime}: ${strings.minutesRead(todayMinutes)}" else strings.readingStatsEmpty,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    if (readingStatsData.currentStreakDays > 0) {
-                                        Text(
-                                            text = "\uD83D\uDD25 ${readingStatsData.currentStreakDays}",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                    }
-                                    Icon(
-                                        imageVector = Icons.Default.ChevronRight,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
+                                isThemeDark = isThemeDark,
+                                todayMinutes = todayMinutes,
+                                currentStreakDays = readingStatsData.currentStreakDays,
+                                onClick = { showReadingStatsSheet = true }
+                            )
                         }
                     }
 
                     // Collections Filter Chips Row
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            LiquidGlassFilterChip(
-                                selected = activeCollectionFilter.type == CollectionFilterType.ALL,
-                                onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.ALL)) },
-                                label = { Text(strings.colAll) },
-                                isGlass = isGlass,
-                                isDark = isThemeDark
-                            )
-                            LiquidGlassFilterChip(
-                                selected = activeCollectionFilter.type == CollectionFilterType.READING,
-                                onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.READING)) },
-                                label = { Text(strings.colReading) },
-                                isGlass = isGlass,
-                                isDark = isThemeDark
-                            )
-                            LiquidGlassFilterChip(
-                                selected = activeCollectionFilter.type == CollectionFilterType.FAVORITES,
-                                onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FAVORITES)) },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Favorite,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                label = { Text(strings.colFavorites) },
-                                isGlass = isGlass,
-                                isDark = isThemeDark
-                            )
-                            LiquidGlassFilterChip(
-                                selected = activeCollectionFilter.type == CollectionFilterType.UNREAD,
-                                onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.UNREAD)) },
-                                label = { Text(strings.colUnread) },
-                                isGlass = isGlass,
-                                isDark = isThemeDark
-                            )
-                            LiquidGlassFilterChip(
-                                selected = activeCollectionFilter.type == CollectionFilterType.FINISHED,
-                                onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FINISHED)) },
-                                label = { Text(strings.colFinished) },
-                                isGlass = isGlass,
-                                isDark = isThemeDark
-                            )
-                            val hasAnySeries = remember(recentBooks) {
-                                recentBooks.any { !it.series.isNullOrBlank() }
-                            }
-                            if (hasAnySeries) {
-                                LiquidGlassFilterChip(
-                                    selected = activeCollectionFilter.type == CollectionFilterType.SERIES,
-                                    onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.SERIES)) },
-                                    label = { Text(strings.colSeries) },
-                                    isGlass = isGlass,
-                                    isDark = isThemeDark
-                                )
-                            }
-                            for (colName in userCollections) {
-                                val isSelected = activeCollectionFilter.type == CollectionFilterType.CUSTOM && activeCollectionFilter.customName == colName
-                                LiquidGlassFilterChip(
-                                    selected = isSelected,
-                                    onClick = { viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.CUSTOM, colName)) },
-                                    trailingIcon = {
-                                        Icon(
-                                            Icons.Default.Close,
-                                            contentDescription = strings.delete,
-                                            modifier = Modifier
-                                                .size(14.dp)
-                                                .clickable { collectionToDelete = colName }
-                                        )
-                                    },
-                                    label = { Text(colName) },
-                                    isGlass = isGlass,
-                                    isDark = isThemeDark
-                                )
-                            }
-                            LiquidGlassFilterChip(
-                                selected = false,
-                                onClick = { showNewCollectionDialog = true },
-                                leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                                label = { Text(strings.newCollection) },
-                                isGlass = isGlass,
-                                isDark = isThemeDark
-                            )
-                        }
+                        LibraryCollectionChips(
+                            activeFilter = activeCollectionFilter,
+                            hasSeries = remember(recentBooks) { recentBooks.any { !it.series.isNullOrBlank() } },
+                            userCollections = userCollections,
+                            isGlass = isGlass,
+                            isThemeDark = isThemeDark,
+                            onFilterChange = { viewModel.setCollectionFilter(it) },
+                            onDeleteCollection = { collectionToDelete = it },
+                            onNewCollection = { showNewCollectionDialog = true }
+                        )
                     }
 
                     val currentHeroBook = recentBooks.firstOrNull()
