@@ -241,6 +241,7 @@ interface Strings {
     val dictionaryTitle: String
     val dictionaryAction: String
     val translateAction: String
+    val translateAuto: String
     val copyAction: String
     val dictionaryLoading: String
     val dictionaryNotFound: String
@@ -647,6 +648,7 @@ class RuStrings : Strings {
     override val dictionaryTitle = "Толковый словарь"
     override val dictionaryAction = "Словарь"
     override val translateAction = "Перевод"
+    override val translateAuto = "Авто"
     override val copyAction = "Копировать"
     override val dictionaryLoading = "Поиск толкования…"
     override val dictionaryNotFound = "Толкование не найдено"
@@ -1040,6 +1042,7 @@ class EnStrings : Strings {
     override val dictionaryTitle = "Dictionary"
     override val dictionaryAction = "Dictionary"
     override val translateAction = "Translate"
+    override val translateAuto = "Auto"
     override val copyAction = "Copy"
     override val dictionaryLoading = "Looking up definition…"
     override val dictionaryNotFound = "No definition found"
@@ -1433,6 +1436,7 @@ class UkStrings : Strings {
     override val dictionaryTitle = "Тлумачний словник"
     override val dictionaryAction = "Словник"
     override val translateAction = "Переклад"
+    override val translateAuto = "Авто"
     override val copyAction = "Копіювати"
     override val dictionaryLoading = "Пошук тлумачення…"
     override val dictionaryNotFound = "Тлумачення не знайдено"
@@ -1826,6 +1830,7 @@ class BeStrings : Strings {
     override val dictionaryTitle = "Тлумачальны слоўнік"
     override val dictionaryAction = "Слоўнік"
     override val translateAction = "Пераклад"
+    override val translateAuto = "Аўта"
     override val copyAction = "Капіяваць"
     override val dictionaryLoading = "Пошук тлумачэння…"
     override val dictionaryNotFound = "Тлумачэнне не знойдзена"
@@ -2219,6 +2224,7 @@ class PlStrings : Strings {
     override val dictionaryTitle = "Słownik definicji"
     override val dictionaryAction = "Słownik"
     override val translateAction = "Tłumacz"
+    override val translateAuto = "Auto"
     override val copyAction = "Kopiuj"
     override val dictionaryLoading = "Szukanie definicji…"
     override val dictionaryNotFound = "Nie znaleziono definicji"
@@ -2598,6 +2604,7 @@ class CsStrings : Strings {
     override val dictionaryTitle = "Slovník"
     override val dictionaryAction = "Definice"
     override val translateAction = "Přeložit"
+    override val translateAuto = "Auto"
     override val copyAction = "Kopírovat"
     override val dictionaryLoading = "Hledání ve slovníku..."
     override val dictionaryNotFound = "Význam slova nebyl nalezen"
@@ -2969,6 +2976,7 @@ class HeStrings : Strings {
     override val dictionaryTitle = "מילון"
     override val dictionaryAction = "מילון"
     override val translateAction = "תרגם"
+    override val translateAuto = "אוטומטי"
     override val copyAction = "העתק"
     override val dictionaryLoading = "מחפש הגדרה…"
     override val dictionaryNotFound = "לא נמצאה הגדרה"

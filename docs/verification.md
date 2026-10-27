@@ -139,3 +139,11 @@ Fix: `ComposeFoundationFlags.isNewContextMenuEnabled = false` at the top of `Mai
 **Chapter list scrolling.** `ChaptersBottomSheet` put a `LazyColumn` inside a `Column` without a height bound; the column measures non-weighted children with an unlimited height, so the list laid out all chapters at full height and there was nothing left to scroll. The list now uses `Modifier.weight(1f, fill = false)`: long books scroll inside the sheet, short books keep the sheet compact.
 
 Both changes verified with `testDebugUnitTest lintDebug assembleDebug`; on-device confirmation is the next step.
+
+## 2.2.0-beta.16 — translation languages and a clean clipboard
+
+**Translation from any language to any language.** `DictionaryService.translateText` gained a `sourceLang` parameter (default `auto`) and the cache key now includes it, so the same text can be cached for several directions. The translation dialog gets two chip menus: source (with an "Auto" entry) and target. The target defaults to the app language and the choice is remembered for the session; changing either menu re-runs the translation through the existing `runTranslation` path. The labels are the languages' own names, so no localization is needed; the only new string is `translateAuto` ("Auto"), added to all seven string sets.
+
+**Selected text no longer goes through the clipboard.** The selection actions used to call the copy callback just to read the selected text, which overwrote the clipboard on every quote, dictionary, translation and read-from-here tap. Both reader views now own a `SelectionState` and report `selectedTexts` upward through `onSelectionTextChange`, so `ReaderScreen` has the text without copying; `currentSelectionText()` uses it and keeps the old copy-based path only as a fallback. The `SelectionState` is per view because two pager pages are composed at once and a shared state can only be bound to one container.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug`. On-device checks: the two chip menus in the translation dialog, and that the clipboard is untouched after the selection actions.

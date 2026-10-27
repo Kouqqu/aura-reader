@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.text.selection.SelectionState
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
@@ -117,8 +118,16 @@ fun ChapterPagingView(
     onUpdateProgress: (Int, Int, Int, Int, Boolean) -> Unit,
     onBookFinished: () -> Unit = {},
     ttsState: com.aura.reader.service.TtsState = com.aura.reader.service.TtsState(),
-    isTtsHighlightActive: Boolean = false
+    isTtsHighlightActive: Boolean = false,
+    onSelectionTextChange: (String) -> Unit = {}
 ) {
+    val selectionState = remember { SelectionState() }
+
+    LaunchedEffect(selectionState.selectedTexts) {
+        onSelectionTextChange(
+            selectionState.selectedTexts.joinToString("\n") { it.text }.trim()
+        )
+    }
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenHeightDp = maxHeight.value
         val screenWidthDp = maxWidth.value
@@ -449,7 +458,7 @@ fun ChapterPagingView(
                 } else {
                     val contentSpreadIdx = spreadIdx - prevPageOffset
                     androidx.compose.runtime.key(selectionResetKey) {
-                        SelectionContainer {
+                        SelectionContainer(state = selectionState) {
                             if (isTwoColumn) {
                                 Row(
                                     modifier = Modifier

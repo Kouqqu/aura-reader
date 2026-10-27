@@ -3,11 +3,13 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-10-27, release `2.2.0-beta.15` (`versionCode 132`).
+Last updated: 2026-10-28, release `2.2.0-beta.16` (`versionCode 133`).
 `2.2.0-beta.14` changed no build files: it merged the UI-file split (see
-`docs/verification.md`) and bumped the version only. `2.2.0-beta.15` turns off
+`docs/verification.md`) and bumped the version only. `2.2.0-beta.15` turned off
 Compose's new text context menu so the reader keeps its custom selection
-toolbar (see the table below).
+toolbar (see the table below). `2.2.0-beta.16` also changed no build files: it
+adds the translation language picker and stops selection actions from copying
+to the clipboard.
 
 ## Current versions
 

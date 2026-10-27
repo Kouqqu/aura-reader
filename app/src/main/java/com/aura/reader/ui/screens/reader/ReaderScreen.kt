@@ -242,6 +242,8 @@ fun ReaderScreen(
     var translationLoading by remember { mutableStateOf(false) }
     var translationResult by remember { mutableStateOf<String?>(null) }
     var translationError by remember { mutableStateOf<String?>(null) }
+    var translationSourceLang by remember { mutableStateOf("auto") }
+    var translationTargetLang by remember(appLanguage.code) { mutableStateOf(appLanguage.code) }
 
     val defaultToolbar = LocalTextToolbar.current
     val clipboardManager = LocalClipboardManager.current
@@ -258,6 +260,7 @@ fun ReaderScreen(
     }
     var selectedQuoteCopyAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var selectionRect by remember { mutableStateOf<Rect?>(null) }
+    var selectedReaderText by remember { mutableStateOf<String?>(null) }
     var textToolbarStatus by remember { mutableStateOf(TextToolbarStatus.Hidden) }
     var selectionResetKey by remember { mutableIntStateOf(0) }
 
@@ -270,6 +273,7 @@ fun ReaderScreen(
                 textToolbarStatus = TextToolbarStatus.Hidden
                 selectedQuoteCopyAction = null
                 selectionRect = null
+                selectedReaderText = null
                 lastCopiedText = null
             }
 
@@ -290,6 +294,37 @@ fun ReaderScreen(
     BackHandler(enabled = selectedQuoteCopyAction != null) {
         selectionResetKey++
         customTextToolbar.hide()
+    }
+
+    fun currentSelectionText(): String? {
+        val fromState = selectedReaderText?.trim()
+        if (!fromState.isNullOrBlank()) return fromState
+        // Safety net: if the selection state is empty, fall back to the old
+        // copy-to-read path so quote/dictionary/translation keep working.
+        selectedQuoteCopyAction?.invoke()
+        return clipboardManager.getText()?.text?.trim()?.takeIf { it.isNotBlank() }
+    }
+
+    fun runTranslation(text: String, sourceLang: String, targetLang: String) {
+        translationText = text
+        translationLoading = true
+        translationResult = null
+        translationError = null
+        coroutineScope.launch {
+            DictionaryService.translateText(
+                text = text,
+                sourceLang = sourceLang,
+                targetLang = targetLang
+            )
+                .onSuccess { res ->
+                    translationResult = res
+                    translationLoading = false
+                }
+                .onFailure { err ->
+                    translationError = err.message ?: strings.translationFailed
+                    translationLoading = false
+                }
+        }
     }
 
     AuraReaderTheme(
@@ -383,7 +418,10 @@ fun ReaderScreen(
                                     }
                                 },
                                 ttsState = ttsState,
-                                isTtsHighlightActive = isTtsHighlightActive
+                                isTtsHighlightActive = isTtsHighlightActive,
+                                onSelectionTextChange = { text ->
+                                    if (text.isNotEmpty()) selectedReaderText = text
+                                }
                             )
                         }
                     } else {
@@ -455,7 +493,10 @@ fun ReaderScreen(
                                     nextBookInSeries = nextBookInSeries,
                                     onOpenNextBook = { viewModel.openNextBookInSeries(it) },
                                     ttsState = ttsState,
-                                    isTtsHighlightActive = isTtsHighlightActive
+                                    isTtsHighlightActive = isTtsHighlightActive,
+                                    onSelectionTextChange = { text ->
+                                        if (text.isNotEmpty()) selectedReaderText = text
+                                    }
                                 )
                             }
                         }
@@ -691,17 +732,15 @@ fun ReaderScreen(
                         customTextToolbar.hide()
                     },
                     onQuote = {
-                        selectedQuoteCopyAction?.invoke()
-                        val clip = clipboardManager.getText()?.text
-                        if (!clip.isNullOrBlank()) {
-                            quoteToSave = clip.trim()
+                        val selection = currentSelectionText()
+                        if (!selection.isNullOrBlank()) {
+                            quoteToSave = selection.trim()
                         }
                         selectionResetKey++
                         customTextToolbar.hide()
                     },
                     onDictionary = {
-                        selectedQuoteCopyAction?.invoke()
-                        val clip = clipboardManager.getText()?.text?.trim()
+                        val clip = currentSelectionText()
                         selectionResetKey++
                         customTextToolbar.hide()
                         if (!clip.isNullOrBlank()) {
@@ -724,31 +763,15 @@ fun ReaderScreen(
                         }
                     },
                     onTranslate = {
-                        selectedQuoteCopyAction?.invoke()
-                        val clip = clipboardManager.getText()?.text?.trim()
+                        val clip = currentSelectionText()
                         selectionResetKey++
                         customTextToolbar.hide()
                         if (!clip.isNullOrBlank()) {
-                            translationText = clip
-                            translationLoading = true
-                            translationResult = null
-                            translationError = null
-                            coroutineScope.launch {
-                                 DictionaryService.translateText(clip, targetLang = appLanguage.code)
-                                    .onSuccess { res ->
-                                        translationResult = res
-                                        translationLoading = false
-                                    }
-                                    .onFailure { err ->
-                                        translationError = err.message ?: strings.translationFailed
-                                        translationLoading = false
-                                    }
-                            }
+                            runTranslation(clip, translationSourceLang, translationTargetLang)
                         }
                     },
                     onReadFromHere = {
-                        selectedQuoteCopyAction?.invoke()
-                        val clip = (lastCopiedText ?: clipboardManager.getText()?.text)?.trim()
+                        val clip = currentSelectionText()
                         selectionResetKey++
                         customTextToolbar.hide()
                         if (!clip.isNullOrBlank()) {
@@ -790,6 +813,16 @@ fun ReaderScreen(
                     isLoading = translationLoading,
                     translatedText = translationResult,
                     errorMessage = translationError,
+                    sourceLanguage = translationSourceLang,
+                    targetLanguage = translationTargetLang,
+                    onSourceLanguageChange = { code ->
+                        translationSourceLang = code
+                        runTranslation(text, code, translationTargetLang)
+                    },
+                    onTargetLanguageChange = { code ->
+                        translationTargetLang = code
+                        runTranslation(text, translationSourceLang, code)
+                    },
                     onDismiss = { translationText = null }
                 )
             }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.text.selection.SelectionState
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.runtime.snapshotFlow
 import com.aura.reader.ui.theme.LocalAppStrings
@@ -82,8 +83,16 @@ fun ChapterContentView(
     onNextChapter: () -> Unit,
     onUpdateProgress: (Int, Int, Int, Int, Boolean) -> Unit,
     ttsState: com.aura.reader.service.TtsState = com.aura.reader.service.TtsState(),
-    isTtsHighlightActive: Boolean = false
+    isTtsHighlightActive: Boolean = false,
+    onSelectionTextChange: (String) -> Unit = {}
 ) {
+    val selectionState = remember { SelectionState() }
+
+    LaunchedEffect(selectionState.selectedTexts) {
+        onSelectionTextChange(
+            selectionState.selectedTexts.joinToString("\n") { it.text }.trim()
+        )
+    }
     val blocks = remember(chapter) {
         if (chapter.blocks.isNotEmpty()) {
             chapter.blocks
@@ -135,7 +144,7 @@ fun ChapterContentView(
     val topPaddingDp = maxOf(statusBarTopInset, cutoutTopInset, 42.dp) + 6.dp
 
     androidx.compose.runtime.key(selectionResetKey) {
-        SelectionContainer {
+        SelectionContainer(state = selectionState) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier

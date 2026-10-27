@@ -11,8 +11,8 @@ android {
         applicationId = "com.aura.reader"
         minSdk = 26
         targetSdk = 36
-        versionCode = 132
-        versionName = "2.2.0-beta.15"
+        versionCode = 133
+        versionName = "2.2.0-beta.16"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

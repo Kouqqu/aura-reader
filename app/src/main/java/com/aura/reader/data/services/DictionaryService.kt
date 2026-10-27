@@ -244,20 +244,24 @@ object DictionaryService {
         return null
     }
 
-    suspend fun translateText(text: String, targetLang: String = "ru"): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun translateText(
+        text: String,
+        sourceLang: String = "auto",
+        targetLang: String = "ru"
+    ): Result<String> = withContext(Dispatchers.IO) {
         val cleanText = text.trim()
         if (cleanText.isBlank()) {
             return@withContext Result.failure(IllegalArgumentException("Empty text"))
         }
 
-        val cacheKey = "$targetLang:$cleanText"
+        val cacheKey = "$sourceLang:$targetLang:$cleanText"
         translationCache[cacheKey]?.let {
             return@withContext Result.success(it)
         }
 
         try {
             val encoded = URLEncoder.encode(cleanText, "UTF-8")
-            val url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" + targetLang + "&dt=t&q=" + encoded
+            val url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=$sourceLang&tl=" + targetLang + "&dt=t&q=" + encoded
             val request = Request.Builder()
                 .url(url)
                 .header("User-Agent", "Mozilla/5.0")

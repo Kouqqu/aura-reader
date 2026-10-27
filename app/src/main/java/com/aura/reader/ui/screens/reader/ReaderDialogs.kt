@@ -18,14 +18,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,6 +38,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -41,7 +50,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.aura.reader.data.services.AUTO_TRANSLATION_LANGUAGE
 import com.aura.reader.data.services.WordDefinition
+import com.aura.reader.data.services.translationLanguageLabel
+import com.aura.reader.data.services.translationLanguages
 import com.aura.reader.ui.theme.LocalAppStrings
 
 @Composable
@@ -310,6 +322,10 @@ fun TranslationDialog(
     isLoading: Boolean,
     translatedText: String?,
     errorMessage: String?,
+    sourceLanguage: String,
+    targetLanguage: String,
+    onSourceLanguageChange: (String) -> Unit,
+    onTargetLanguageChange: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     val clipboardManager = LocalClipboardManager.current
@@ -362,6 +378,34 @@ fun TranslationDialog(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TranslationLanguageChip(
+                        label = if (sourceLanguage == AUTO_TRANSLATION_LANGUAGE) {
+                            strings.translateAuto
+                        } else {
+                            translationLanguageLabel(sourceLanguage)
+                        },
+                        allowAuto = true,
+                        onSelect = onSourceLanguageChange
+                    )
+                    Icon(
+                        imageVector = Icons.Default.ArrowForward,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    TranslationLanguageChip(
+                        label = translationLanguageLabel(targetLanguage),
+                        allowAuto = false,
+                        onSelect = onTargetLanguageChange
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -460,6 +504,56 @@ fun TranslationDialog(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TranslationLanguageChip(
+    label: String,
+    allowAuto: Boolean,
+    onSelect: (String) -> Unit
+) {
+    val strings = LocalAppStrings.current
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        AssistChip(
+            onClick = { expanded = true },
+            label = {
+                Text(text = label, maxLines = 1, softWrap = false)
+            },
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            if (allowAuto) {
+                DropdownMenuItem(
+                    text = { Text(strings.translateAuto) },
+                    onClick = {
+                        expanded = false
+                        onSelect(AUTO_TRANSLATION_LANGUAGE)
+                    }
+                )
+            }
+            translationLanguages.forEach { language ->
+                DropdownMenuItem(
+                    text = { Text(language.label) },
+                    onClick = {
+                        expanded = false
+                        onSelect(language.code)
+                    }
+                )
             }
         }
     }
