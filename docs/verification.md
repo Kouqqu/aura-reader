@@ -114,4 +114,16 @@ In `SettingsBottomSheet` the whole-sheet state (burst animation, sheet coordinat
 
 The updates section keeps the version-label behaviour through a single `onVersionTap` callback: the seven-tap developer-mode counter, the "remaining taps" toast and opening the update-channel dialog all still run in `SettingsBottomSheet`, so the tap logic reads the same state in the same place.
 
-No version bump: this carries no user-visible change and ships together with the next release.
+No version bump in the refactor commits themselves: this carries no user-visible change and ships together with the next release.
+
+## 2.2.0-beta.14 — the refactor merged into a beta
+
+`refactor/split-large-files` was merged into `beta` with `--no-ff` (merge commit `b1d20bf`) and the version was bumped to `2.2.0-beta.14` (`versionCode 131`). The merge is the same content CI already built green on PR #5, so no source file changed again after that check.
+
+- Local `testDebugUnitTest lintDebug assembleDebug` pass on the merged tree before pushing.
+- Release notes in `.github/workflows/build-apk.yml` gained a Beta 14 block that says the change is internal, keeps the Beta 13 notes under "Ранее", and lists the refactored screens in the "what to check" checklist.
+- `docs/upgrades.md` records that beta.14 changed no build files.
+
+The refactor is structural only, so the expected result on a device is "looks and behaves exactly like beta.13". The items worth a manual look are the library top bar, banners and collection chips, every settings section (including the seven-tap version label), and the reader bars/selection toolbar.
+
+Verification status: CI green on the PR before the merge; the beta.14 build itself is checked by the release workflow run for `versionCode 131`. No emulator was available locally, so the visual pass is left to the tester.
