@@ -1282,177 +1282,23 @@ fun LibraryScreen(
     }
 }
 
-    // In-App Update Dialog
-    updateInfo?.let { info ->
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissUpdateDialog() },
-            title = {
-                Text(
-                    text = strings.updateAvailableTitle(info.latestVersion),
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 280.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text(
-                        text = info.changelog,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    viewModel.dismissUpdateDialog()
-                    viewModel.openUpdatePage(context, info.releaseUrl)
-                }) {
-                    Text(strings.download)
-                }
-            },
-            dismissButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    TextButton(onClick = { viewModel.skipUpdateVersion(info.latestVersion) }) {
-                        Text(strings.skipVersion, color = MaterialTheme.colorScheme.outline)
-                    }
-                    TextButton(onClick = { viewModel.dismissUpdateDialog() }) {
-                        Text(strings.later)
-                    }
-                }
-            }
-        )
-    }
-
-    // Dialog: Create New Collection
-    if (showNewCollectionDialog) {
-        var newColName by remember { mutableStateOf("") }
-        AlertDialog(
-            onDismissRequest = { showNewCollectionDialog = false },
-            title = { Text(strings.createCollectionDialogTitle, fontWeight = FontWeight.Bold) },
-            text = {
-                OutlinedTextField(
-                    value = newColName,
-                    onValueChange = { newColName = it },
-                    placeholder = { Text(strings.collectionNamePlaceholder) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (newColName.isNotBlank()) {
-                            viewModel.addUserCollection(newColName.trim())
-                        }
-                        showNewCollectionDialog = false
-                    },
-                    enabled = newColName.isNotBlank()
-                ) {
-                    Text(strings.save)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showNewCollectionDialog = false }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
-    }
-
-    // Dialog: Delete Custom Collection
-    collectionToDelete?.let { colName ->
-        AlertDialog(
-            onDismissRequest = { collectionToDelete = null },
-            title = { Text(strings.delete, fontWeight = FontWeight.Bold) },
-            text = { Text(strings.deleteCollectionConfirm(colName)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.removeUserCollection(colName)
-                        collectionToDelete = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(strings.delete)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { collectionToDelete = null }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
-    }
-
-    // Dialog: Add/Remove Book Collections
-    bookForCollections?.let { b ->
-        val currentSelected = remember(b.collections) { b.collections.toMutableStateList() }
-        AlertDialog(
-            onDismissRequest = { bookForCollections = null },
-            title = { Text(strings.addToCollection, fontWeight = FontWeight.Bold) },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 320.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    if (userCollections.isEmpty()) {
-                        Text(
-                            text = "Пока нет созданных полок",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    } else {
-                        for (col in userCollections) {
-                            val isChecked = currentSelected.contains(col)
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        if (isChecked) currentSelected.remove(col) else currentSelected.add(col)
-                                    }
-                                    .padding(vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = isChecked,
-                                    onCheckedChange = { chk ->
-                                        if (chk) currentSelected.add(col) else currentSelected.remove(col)
-                                    }
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(col, style = MaterialTheme.typography.bodyLarge)
-                            }
-                        }
-                    }
-                    TextButton(onClick = { showNewCollectionDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(strings.newCollection)
-                    }
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    viewModel.updateBookCollections(b.id, currentSelected.toList())
-                    bookForCollections = null
-                }) {
-                    Text(strings.save)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { bookForCollections = null }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
-    }
+    LibraryDialogs(
+        updateInfo = updateInfo,
+        showNewCollectionDialog = showNewCollectionDialog,
+        collectionToDelete = collectionToDelete,
+        bookForCollections = bookForCollections,
+        userCollections = userCollections,
+        onDismissUpdate = { viewModel.dismissUpdateDialog() },
+        onOpenUpdatePage = { url -> viewModel.openUpdatePage(context, url) },
+        onSkipVersion = { version -> viewModel.skipUpdateVersion(version) },
+        onDismissNewCollection = { showNewCollectionDialog = false },
+        onCreateCollection = { name -> viewModel.addUserCollection(name) },
+        onDismissDeleteCollection = { collectionToDelete = null },
+        onRemoveCollection = { name -> viewModel.removeUserCollection(name) },
+        onDismissBookCollections = { bookForCollections = null },
+        onSaveBookCollections = { id, cols -> viewModel.updateBookCollections(id, cols) },
+        onNewCollectionRequested = { showNewCollectionDialog = true }
+    )
 
     if (showSettingsSheet) {
         SettingsBottomSheet(

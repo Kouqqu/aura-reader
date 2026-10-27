@@ -101,8 +101,10 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` locally and a green CI
 Structural refactor only: the bodies of the moved functions were copied verbatim, imports were rewritten for their new files, and no UI or behaviour changed. Checked by comparing every non-blank, non-`import` line of the previous files against the new set (each line appears exactly once, so nothing was dropped or duplicated) and by running `testDebugUnitTest lintDebug assembleDebug`.
 
 - `ReaderScreen.kt`: 3382 → 799 lines. Moved the continuous scroll view (`ChapterContentView.kt`), the paging view and chapter transition (`ChapterPagingView.kt`), the block renderer with `InteractiveText` and footnote helpers (`ReaderBlocks.kt`), the pagination algorithm (`ReaderPagination.kt`, `paginateBlocks` became `internal`), then the floating top bar (`ReaderTopBar.kt`), the bottom controls (`ReaderBottomBar.kt`) and the text-selection popup (`ReaderSelectionToolbar.kt`).
-- `LibraryScreen.kt`: 2466 → 1568 lines. Moved the list/grid cards and cover view (`BookCards.kt`) and the empty state with the logo (`LibraryEmptyState.kt`).
+- `LibraryScreen.kt`: 2466 → 1414 lines. Moved the list/grid cards and cover view (`BookCards.kt`), the empty state with the logo (`LibraryEmptyState.kt`), and the update/new-collection/delete-collection/book-collections dialogs (`LibraryDialogs.kt`).
 
 The two reader bars keep their composables untouched. State that only they used (`isSearchActive`, `showReaderMenu`, the slider step trackers) now lives inside them; opening the info dialog, TTS, bookmarks, settings and chapters sheets arrives as callbacks, and `performSliderTick` moved with the bottom bar. The selection toolbar is now a plain popup that reports its five actions, while the clipboard, dictionary and translation logic stayed in `ReaderScreen`.
+
+`LibraryDialogs` keeps the four library dialogs exactly as they were, with view-model calls replaced by callbacks and the dialog visibility flags still owned by `LibraryScreen`.
 
 No version bump: this carries no user-visible change and ships together with the next release.
