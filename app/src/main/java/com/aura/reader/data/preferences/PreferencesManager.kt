@@ -91,6 +91,7 @@ class PreferencesManager(private val context: Context) {
         val MONOSPACE_FONT_NAME_KEY = stringPreferencesKey("monospace_font_name")
         val ANONYMOUS_ANALYTICS_KEY = booleanPreferencesKey("anonymous_analytics_enabled")
         val HAS_TRACKED_FIRST_OPEN_KEY = booleanPreferencesKey("has_tracked_first_open")
+        val LAST_TRACKED_VERSION_CODE_KEY = intPreferencesKey("last_tracked_version_code")
         val APP_DESIGN_STYLE_KEY = stringPreferencesKey("app_design_style")
         val GLASS_CLARITY_KEY = floatPreferencesKey("glass_clarity")
         val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("has_completed_onboarding")
@@ -243,6 +244,16 @@ class PreferencesManager(private val context: Context) {
     suspend fun setHasTrackedFirstOpen(tracked: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[HAS_TRACKED_FIRST_OPEN_KEY] = tracked
+        }
+    }
+
+    val lastTrackedVersionCode: Flow<Int?> = context.dataStore.data.map { prefs ->
+        prefs[LAST_TRACKED_VERSION_CODE_KEY]
+    }
+
+    suspend fun setLastTrackedVersionCode(versionCode: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[LAST_TRACKED_VERSION_CODE_KEY] = versionCode
         }
     }
 

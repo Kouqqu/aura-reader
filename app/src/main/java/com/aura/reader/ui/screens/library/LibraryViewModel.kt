@@ -8,6 +8,7 @@ import android.os.Environment
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aura.reader.data.analytics.AnalyticsManager
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.repository.BookRepository
 import com.aura.reader.data.updater.AppUpdateManager
@@ -168,7 +169,14 @@ class LibraryViewModel(
     }
 
     fun setAnonymousAnalyticsEnabled(enabled: Boolean) {
-        viewModelScope.launch { preferencesManager.setAnonymousAnalyticsEnabled(enabled) }
+        viewModelScope.launch {
+            preferencesManager.setAnonymousAnalyticsEnabled(enabled)
+            if (!enabled) {
+                // Do not wait for the next launch: stop the SDK and drop queued
+                // signals as soon as the switch is turned off.
+                AnalyticsManager.stopTracking()
+            }
+        }
     }
 
     fun setReadingStatsEnabled(enabled: Boolean) {
