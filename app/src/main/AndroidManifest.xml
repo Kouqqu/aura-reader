@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -26,9 +27,17 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.AuraReader">
 
-        <meta-data
-            android:name="com.telemetrydeck.appID"
-            android:value="6480FE73-0580-48EB-AFC2-45E442B3B4DC" />
+        <!--
+            TelemetryDeck is started manually from AnalyticsManager, and only after
+            the user's "anonymous statistics" preference has been read. The SDK's
+            auto-start provider would otherwise send session signals even when the
+            toggle is off, so it is removed from the merged manifest.
+        -->
+        <provider
+            android:name="com.telemetrydeck.sdk.TelemetryDeckInitProvider"
+            android:authorities="${applicationId}.TelemetryDeckInitProvider"
+            android:exported="false"
+            tools:node="remove" />
 
         <activity
             android:name=".MainActivity"

@@ -3,7 +3,7 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-10-25, release `2.2.0-beta.11` (`versionCode 128`).
+Last updated: 2026-10-27, release `2.2.0-beta.12` (`versionCode 129`).
 
 ## Current versions
 
@@ -64,6 +64,28 @@ predictive back, etc.).
 | Compose 1.12 (BOM 2026.09) | `Modifier.sharedElement(state = ...)` renamed | `sharedContentState = ...` in `LibraryScreen.kt`, `ReaderScreen.kt` |
 
 Both are visual: see the manual checklist below.
+
+## TelemetryDeck initialization
+
+The SDK ships a `ContentProvider` that starts TelemetryDeck from the manifest
+before any activity code runs. That auto-start sent `Session.started` and
+`newInstallDetected` signals even when the in-app "anonymous statistics" toggle
+was off. The provider and the `com.telemetrydeck.appID` metadata are now removed
+from the merged manifest; `AnalyticsManager` starts the SDK manually only after
+reading the preference.
+
+Additional cleanup in `2.2.0-beta.12`:
+
+- `sendNewSessionBeganSignal(false)` — the app already sends its own `app_open`,
+  so every foreground no longer adds a duplicate session event.
+- Turning the toggle off calls `TelemetryDeck.stop()` and empties the persistent
+  signal cache immediately, instead of waiting for the next launch.
+- Every event carries `app_channel` (`stable`, `beta` or `debug`). Debug builds
+  run in TelemetryDeck test mode; beta events can be filtered out of stable
+  dashboards by this field.
+- `app_update` is sent once when `versionCode` changes, with
+  `previous_version_code`. A normal update keeps the same anonymous installation
+  ID, so it does not inflate the unique-user count.
 
 ## Deliberately not upgraded
 
@@ -150,6 +172,9 @@ Automated checks cannot see these; run them on a device with the release APK:
 6. **OPDS** — catalog browsing and download.
 7. **Widget** and **widget update** after progress changes.
 8. **Backup/restore** round trip.
+9. **Analytics toggle** — switch it off, relaunch, and confirm that no new
+   `app_open`/session events arrive in TelemetryDeck live view (allow for the
+   SDK cache delay).
 
 ## Side effect: smaller APK
 

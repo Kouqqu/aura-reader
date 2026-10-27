@@ -1,6 +1,6 @@
 # Privacy Policy — Aura Reader
 
-Applies to Aura Reader `2.2.0-beta.9` and later builds until this document is
+Applies to Aura Reader `2.2.0-beta.12` and later builds until this document is
 updated. Aura Reader is an open-source Android e-book reader
 (`com.aura.reader`), published at <https://github.com/Kouqqu/aura-reader>.
 
@@ -36,8 +36,11 @@ location you choose.
 
 Aura Reader uses [TelemetryDeck](https://telemetrydeck.com) to count how many
 people use the app. There is a toggle in **Settings → Anonymous statistics**;
-turning it off stops all further telemetry, and the change applies from the next
-app launch.
+turning it off stops telemetry immediately and discards signals that have not
+been sent yet. Turning it back on takes effect the next time the app starts.
+
+The SDK is not started automatically by the system. The app starts it only after
+checking this setting, so the toggle also works before the first event is sent.
 
 ### What is sent
 
@@ -45,14 +48,16 @@ app launch.
 |---|---|
 | `app_open` | once per app launch |
 | `app_first_open` | once per installation |
+| `app_update` | once after the app version changes, with `previous_version_code` |
 
-Each event also carries exactly these three fields:
+Each event also carries exactly these four fields:
 
 | Field | Value |
 |---|---|
 | `country` | two-letter country code, derived on the device from the SIM operator, then the mobile network, then the system locale. No GPS, no network lookup |
 | `locale` | system language, e.g. `ru-RU` |
 | `app_language` | the language selected inside the app, e.g. `ru`, `en`, `pl` |
+| `app_channel` | `stable`, `beta` or `debug`. Developer builds are sent in TelemetryDeck test mode and are hidden from live statistics |
 
 The TelemetryDeck SDK additionally attaches the environment parameters it always
 sends:
@@ -131,8 +136,9 @@ does not knowingly collect personal data from anyone, including children.
 
 ## 7. Data removal
 
-- **Telemetry:** switch it off in Settings. Previously sent signals carry only a
-  random, non-reversible installation ID and cannot be traced back to a person.
+- **Telemetry:** switch it off in Settings. The SDK stops immediately and queued
+  signals are dropped. Previously sent signals carry only a random,
+  non-reversible installation ID and cannot be traced back to a person.
 - **Everything else:** clearing the app's data or uninstalling the app removes
   all locally stored content. Exported backups are files in the location you
   chose and must be deleted by you.
@@ -151,8 +157,8 @@ or the Telegram channel <https://t.me/koukkuteka>.
 
 # Политика конфиденциальности — Aura Reader
 
-Действует для сборок Aura Reader `2.2.0-beta.9` и новее, пока документ не
-обновлён. Aura Reader — открытый Android-читалка (`com.aura.reader`),
+Действует для сборок Aura Reader `2.2.0-beta.12` и новее, пока документ не
+обновлён. Aura Reader — открытая Android-читалка (`com.aura.reader`),
 <https://github.com/Kouqqu/aura-reader>.
 
 **Коротко:** в приложении нет аккаунтов, рекламы и рекламного идентификатора.
@@ -180,16 +186,23 @@ OPDS) обращается в сеть только по вашему дейст
 
 Используется [TelemetryDeck](https://telemetrydeck.com), чтобы автор знал число
 читателей. Переключатель — **Настройки → Анонимная статистика**. После
-выключения отправка прекращается со следующего запуска.
+выключения отправка прекращается сразу, а ещё не отправленные события
+удаляются. После включения отправка возобновится со следующего запуска.
 
-**Что отправляется.** События `app_open` (один раз за запуск) и `app_first_open`
-(один раз за установку). В каждом событии ровно три поля:
+SDK не запускается системой автоматически. Приложение запускает его только после
+проверки этой настройки, поэтому переключатель работает ещё до отправки первого
+события.
+
+**Что отправляется.** События `app_open` (один раз за запуск), `app_first_open`
+(один раз за установку) и `app_update` (один раз после смены версии приложения,
+с полем `previous_version_code`). В каждом событии ровно четыре поля:
 
 | Поле | Значение |
 |---|---|
 | `country` | двухбуквенный код страны, определённый на устройстве по SIM, затем по сети оператора, затем по системной локали. Без GPS и без сетевых запросов |
 | `locale` | системный язык, например `ru-RU` |
 | `app_language` | язык, выбранный внутри приложения: `ru`, `en`, `pl` и т. д. |
+| `app_channel` | `stable`, `beta` или `debug`. Отладочные сборки отправляются в тестовом режиме TelemetryDeck и не попадают в живую статистику |
 
 SDK TelemetryDeck дополнительно прикладывает свои стандартные параметры: версию
 и номер сборки приложения; модель, бренд и архитектуру процессора устройства;
@@ -257,8 +270,9 @@ SDK создаёт случайный идентификатор установ�
 
 ## 7. Удаление данных
 
-- **Статистика:** выключается в настройках. Ранее отправленные сигналы содержат
-  только случайный необратимый идентификатор установки и не могут быть связаны с
+- **Статистика:** выключается в настройках. SDK останавливается сразу, а
+  неотправленные события удаляются. Ранее отправленные сигналы содержат только
+  случайный необратимый идентификатор установки и не могут быть связаны с
   человеком.
 - **Всё остальное:** очистка данных приложения или его удаление стирает всё
   локальное содержимое. Экспортированные резервные копии — это файлы в выбранном
