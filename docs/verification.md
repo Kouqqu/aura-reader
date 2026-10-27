@@ -86,3 +86,32 @@ The final motion is a rigid linear diagonal stream to the right and downward, wi
 - **Instant Dock Navigation Glide**:
   - Touching down on any dock tab instantly activates tab transition, causing the glass pill to smoothly glide under the finger with zero delay (no long-press required).
   - Preserves natural spring physics (`stiffness = 380f`, critically damped) for a smooth gliding motion rather than a jarring teleport.
+
+## Theme alignment for glass controls and the reader — 2.2.0-beta.13
+
+- Liquid Glass switches used the iOS green. They now take the Material You primary colour (`primaryContainer` in dark themes) and follow the app theme rather than the system theme, including the pressed-state reflex.
+- The AMOLED scheme mapped `primaryContainer` to its near-black surface, which made settings icon plates and the selected design-style card disappear when Material You colours were off. AMOLED now has a real accent container and a higher icon-plate alpha.
+- `AuraReaderTheme` gained a `readerMode` flag: the reader keeps accent colours but swaps wallpaper-tinted surfaces for neutral dark greys, so the page colour no longer shifts with the wallpaper.
+- Dropdown menus no longer use the blue-tinted translucent fill. A shared `liquidGlassMenuAppearance()` gives the list, grid, hero, sort and reader menus a neutral frosted container with a light rim.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` locally and a green CI run; the published release is a prerelease and `latest` still points at v2.1.2.
+
+## Splitting the largest screen files (refactor branch)
+
+Structural refactor only: the bodies of the moved functions were copied verbatim, imports were rewritten for their new files, and no UI or behaviour changed. Checked by comparing every non-blank, non-`import` line of the previous files against the new set (each line appears exactly once, so nothing was dropped or duplicated) and by running `testDebugUnitTest lintDebug assembleDebug`.
+
+- `ReaderScreen.kt`: 3382 → 799 lines. Moved the continuous scroll view (`ChapterContentView.kt`), the paging view and chapter transition (`ChapterPagingView.kt`), the block renderer with `InteractiveText` and footnote helpers (`ReaderBlocks.kt`), the pagination algorithm (`ReaderPagination.kt`, `paginateBlocks` became `internal`), then the floating top bar (`ReaderTopBar.kt`), the bottom controls (`ReaderBottomBar.kt`) and the text-selection popup (`ReaderSelectionToolbar.kt`).
+- `LibraryScreen.kt`: 2466 → 1143 lines. Moved the list/grid cards and cover view (`BookCards.kt`), the empty state with the logo (`LibraryEmptyState.kt`), the update/new-collection/delete-collection/book-collections dialogs (`LibraryDialogs.kt`), the top bar with the search field and view-mode switch (`LibraryTopBar.kt`, 194 lines), and the update banner, reading-stats banner and collection filter chips (`LibraryBanners.kt`, 252 lines).
+- `SettingsBottomSheet.kt`: 1641 → 928 lines. Moved the theme picker with the appearance rows (`SettingsThemeSection.kt`), the backup plus about/GitHub/donate sections (`SettingsInfoSections.kt`), and the design-style, language/fonts, additional-features and updates/analytics sections (`SettingsSections.kt`, 580 lines). Their private helpers became `internal` so both files can share them.
+
+The two reader bars keep their composables untouched. State that only they used (`isSearchActive`, `showReaderMenu`, the slider step trackers) now lives inside them; opening the info dialog, TTS, bookmarks, settings and chapters sheets arrives as callbacks, and `performSliderTick` moved with the bottom bar. The selection toolbar is now a plain popup that reports its five actions, while the clipboard, dictionary and translation logic stayed in `ReaderScreen`.
+
+`LibraryDialogs` keeps the four library dialogs exactly as they were, with view-model calls replaced by callbacks and the dialog visibility flags still owned by `LibraryScreen`.
+
+The library top bar receives the same state it read before and reports search expansion, query changes, the view-mode toggle and opening settings as callbacks; `hasSeries` for the chip row is still computed with `remember(recentBooks)` at the call site, so the chips only recompose when the series list changes.
+
+In `SettingsBottomSheet` the whole-sheet state (burst animation, sheet coordinates, dialogs) stays in the screen lambda. The theme section receives the picked theme through one `onThemePicked(mode, origin, colors)` callback that still triggers the pixel burst before changing the theme, so the animation timing is unchanged.
+
+The updates section keeps the version-label behaviour through a single `onVersionTap` callback: the seven-tap developer-mode counter, the "remaining taps" toast and opening the update-channel dialog all still run in `SettingsBottomSheet`, so the tap logic reads the same state in the same place.
+
+No version bump: this carries no user-visible change and ships together with the next release.
