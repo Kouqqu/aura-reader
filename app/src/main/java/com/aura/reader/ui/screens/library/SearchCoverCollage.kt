@@ -1,4 +1,4 @@
-package com.aura.reader.ui.screens.library
+﻿package com.aura.reader.ui.screens.library
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -21,36 +21,95 @@ import com.aura.reader.util.CoverBitmapCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * Intelligent cover selection for the search background collage.
+ * Guarantees:
+ * 1. If library has >= 12 books, ALL 12 collage slots get unique books (zero duplicates).
+ * 2. If library has < 12 books, all available books are shown before repeating.
+ * 3. Never allows vertical collisions (identical books directly above/below each other).
+ * 4. Never allows adjacent horizontal collisions.
+ */
+internal fun selectCollageCovers(books: List<Book>): List<Book> {
+    val withCovers = books.filter { !it.coverBase64.isNullOrBlank() }
+    if (withCovers.isEmpty()) return emptyList()
+
+    val totalSlots = 12
+    val slots = listOf(1, 2, 5, 10, 6, 9, 3, 7, 0, 4, 8, 11)
+    val L = withCovers.size
+    val shuffled = withCovers.shuffled()
+
+    // Rule 1: Plenty of books -> strictly 12 distinct covers
+    if (L >= totalSlots) {
+        val picked = shuffled.take(totalSlots)
+        return List(totalSlots) { picked[it] }
+    }
+
+    // Only one book
+    if (L == 1) {
+        return List(totalSlots) { shuffled[0] }
+    }
+
+    // Rule 2: Exhaustive pool before repeating
+    val pool = ArrayList<Book>(totalSlots)
+    while (pool.size < totalSlots) {
+        pool.addAll(shuffled)
+    }
+    val candidatePool = pool.take(totalSlots).toMutableList()
+
+    val cells = listOf(
+        0 to 0, 0 to 1, 0 to 2, 0 to 3,
+        1 to 0, 1 to 1, 1 to 2, 1 to 3,
+        2 to 0, 2 to 1, 2 to 2, 2 to 3
+    )
+
+    var bestGrid: Map<Pair<Int, Int>, Book>? = null
+    for (attempt in 0..120) {
+        val cand = candidatePool.shuffled().toMutableList()
+        val grid = mutableMapOf<Pair<Int, Int>, Book>()
+        var success = true
+        for ((r, c) in cells) {
+            val valid = cand.firstOrNull { book ->
+                val topMatch = r > 0 && grid[r - 1 to c]?.id == book.id
+                val leftMatch = c > 0 && grid[r to c - 1]?.id == book.id
+                val wrapLeftMatch = c == 3 && L >= 2 && grid[r to 0]?.id == book.id
+                val wrapTopMatch = r == 2 && L >= 3 && grid[0 to c]?.id == book.id
+                !topMatch && !leftMatch && !wrapLeftMatch && !wrapTopMatch
+            }
+            if (valid != null) {
+                grid[r to c] = valid
+                cand.remove(valid)
+            } else {
+                success = false
+                break
+            }
+        }
+        if (success) {
+            bestGrid = grid
+            break
+        }
+    }
+
+    val grid = bestGrid ?: run {
+        // Deterministic checkerboard fallback for extreme small L
+        val fallback = mutableMapOf<Pair<Int, Int>, Book>()
+        for ((r, c) in cells) {
+            fallback[r to c] = shuffled[(r + c) % L]
+        }
+        fallback
+    }
+
+    return List(totalSlots) { index ->
+        val slot = slots[index]
+        val r = slot / 4
+        val c = slot % 4
+        grid[r to c] ?: shuffled[index % L]
+    }
+}
+
 /** Decorative only: bounded decoding, no shared-element keys or touch targets. */
 @Composable
 fun SearchCoverCollage(books: List<Book>, subdued: Boolean, modifier: Modifier = Modifier) {
-    val covers = remember(books) {
-        val withCovers = books.filter { !it.coverBase64.isNullOrBlank() }
-        if (withCovers.isEmpty()) {
-            emptyList()
-        } else {
-            val totalSlots = 12
-            val L = withCovers.size
-            val shuffled = withCovers.shuffled()
-            if (L == 1) {
-                List(totalSlots) { shuffled[0] }
-            } else {
-                var rowStep = 1
-                for (step in 1..L + 1) {
-                    if (step % L != 0 && (step % L) != (4 % L)) {
-                        rowStep = step
-                        break
-                    }
-                }
-                List(totalSlots) { index ->
-                    val r = index / 4
-                    val c = index % 4
-                    val bookIdx = (r * rowStep + c) % L
-                    shuffled[bookIdx]
-                }
-            }
-        }
-    }
+    val covers = remember(books) { selectCollageCovers(books) }
     var images by remember { mutableStateOf<List<ImageBitmap>>(emptyList()) }
     LaunchedEffect(covers) {
         images = withContext(Dispatchers.Default) {

@@ -89,6 +89,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
@@ -448,7 +449,7 @@ fun LibraryScreen(
                 ExtendedFloatingActionButton(
                     shape = RoundedCornerShape(20.dp),
                     onClick = { isReorderMode = false },
-                    icon = { Icon(Icons.Default.Check, contentDescription = null) },
+                    icon = { Icon(Icons.Rounded.Check, contentDescription = null) },
                     text = { Text(strings.done) },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
@@ -497,7 +498,7 @@ fun LibraryScreen(
                 ExtendedFloatingActionButton(
                     shape = RoundedCornerShape(20.dp),
                     onClick = { showAddBooksSheet = true },
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
                     text = { Text(strings.addBooks) },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -834,7 +835,7 @@ fun LibraryScreen(
                                                                     },
                                                                     leadingIcon = {
                                                                         if (librarySortOrder == LibrarySortOption.RECENT) {
-                                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                                         }
                                                                     }
                                                                 )
@@ -846,7 +847,7 @@ fun LibraryScreen(
                                                                     },
                                                                     leadingIcon = {
                                                                         if (librarySortOrder == LibrarySortOption.TITLE) {
-                                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                                         }
                                                                     }
                                                                 )
@@ -858,7 +859,7 @@ fun LibraryScreen(
                                                                     },
                                                                     leadingIcon = {
                                                                         if (librarySortOrder == LibrarySortOption.AUTHOR) {
-                                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                                         }
                                                                     }
                                                                 )
@@ -870,7 +871,7 @@ fun LibraryScreen(
                                                                     },
                                                                     leadingIcon = {
                                                                         if (librarySortOrder == LibrarySortOption.SERIES) {
-                                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                                         }
                                                                     }
                                                                 )
@@ -882,7 +883,7 @@ fun LibraryScreen(
                                                                     },
                                                                     leadingIcon = {
                                                                         if (librarySortOrder == LibrarySortOption.CUSTOM) {
-                                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                                         }
                                                                     }
                                                                 )
@@ -893,7 +894,7 @@ fun LibraryScreen(
                                                                     DropdownMenuItem(
                                                                         text = { Text(strings.downloadMissingCovers) },
                                                                         leadingIcon = {
-                                                                            Icon(Icons.Default.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            Icon(Icons.Rounded.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                                         },
                                                                         onClick = {
                                                                             showSortMenu = false

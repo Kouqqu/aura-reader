@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
@@ -220,7 +221,7 @@ fun CurrentlyReadingHeroCard(
                                 modifier = Modifier.size(30.dp)
                             ) {
                                 Icon(
-                                    imageVector = if (book.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    imageVector = if (book.isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                                     contentDescription = null,
                                     tint = if (book.isFavorite) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(18.dp)
@@ -234,7 +235,7 @@ fun CurrentlyReadingHeroCard(
                                     modifier = Modifier.size(30.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.MoreVert,
+                                        imageVector = Icons.Rounded.MoreVert,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(18.dp)
@@ -252,7 +253,7 @@ fun CurrentlyReadingHeroCard(
                                 ) {
                                     DropdownMenuItem(
                                         text = { Text(strings.shareBookFile) },
-                                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                        leadingIcon = { Icon(Icons.Rounded.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                         onClick = {
                                             showMenu = false
                                             onShare()
@@ -260,7 +261,7 @@ fun CurrentlyReadingHeroCard(
                                     )
                                     DropdownMenuItem(
                                         text = { Text(if (hasCover) strings.changeCover else strings.downloadCover) },
-                                        leadingIcon = { Icon(if (hasCover) Icons.Default.Image else Icons.Default.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                        leadingIcon = { Icon(if (hasCover) Icons.Rounded.Image else Icons.Rounded.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                         onClick = {
                                             showMenu = false
                                             onChangeCover()
@@ -268,7 +269,7 @@ fun CurrentlyReadingHeroCard(
                                     )
                                     DropdownMenuItem(
                                         text = { Text(strings.addToCollection) },
-                                        leadingIcon = { Icon(Icons.Default.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                        leadingIcon = { Icon(Icons.Rounded.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                         onClick = {
                                             showMenu = false
                                             onAddToCollection()
@@ -277,7 +278,7 @@ fun CurrentlyReadingHeroCard(
                                     if (book.progressPercent < 100) {
                                         DropdownMenuItem(
                                             text = { Text(strings.markAsFinished) },
-                                            leadingIcon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                            leadingIcon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                             onClick = {
                                                 showMenu = false
                                                 onSetProgress(100)
@@ -287,7 +288,7 @@ fun CurrentlyReadingHeroCard(
                                     if (book.progressPercent > 0) {
                                         DropdownMenuItem(
                                             text = { Text(strings.resetProgress) },
-                                            leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                            leadingIcon = { Icon(Icons.Rounded.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                                             onClick = {
                                                 showMenu = false
                                                 onSetProgress(0)
@@ -296,7 +297,7 @@ fun CurrentlyReadingHeroCard(
                                     }
                                     DropdownMenuItem(
                                         text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
-                                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                                        leadingIcon = { Icon(Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                                         onClick = {
                                             showMenu = false
                                             onDelete()
@@ -372,7 +373,7 @@ fun CurrentlyReadingHeroCard(
                         modifier = Modifier.height(34.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.PlayArrow,
+                            imageVector = Icons.Rounded.PlayArrow,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp)
                         )

@@ -1,4 +1,8 @@
 package com.aura.reader.ui.components
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -643,7 +647,7 @@ fun FloatingNavigationIsland(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                            imageVector = Icons.AutoMirrored.Rounded.MenuBook,
                             contentDescription = strings.navMyBooks,
                             tint = if (isBooksActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
@@ -681,7 +685,7 @@ fun FloatingNavigationIsland(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Search,
+                            imageVector = Icons.Rounded.Search,
                             contentDescription = strings.search,
                             tint = if (isSearchActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
@@ -719,7 +723,7 @@ fun FloatingNavigationIsland(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
+                            imageVector = Icons.Rounded.Settings,
                             contentDescription = strings.settingsTitle,
                             tint = if (isSettingsActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
@@ -763,9 +767,9 @@ private fun TabDockRow(
                     verticalArrangement = Arrangement.Center
                 ) {
                     val icon = when (slotIndex) {
-                        0 -> Icons.AutoMirrored.Filled.MenuBook
-                        1 -> Icons.Default.Search
-                        else -> Icons.Default.Settings
+                        0 -> Icons.AutoMirrored.Rounded.MenuBook
+                        1 -> Icons.Rounded.Search
+                        else -> Icons.Rounded.Settings
                     }
                     val label = when (slotIndex) {
                         0 -> strings.navMyBooks
@@ -911,7 +915,7 @@ fun FloatingAddGlassButton(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.Add,
+                imageVector = Icons.Rounded.Add,
                 contentDescription = LocalAppStrings.current.addBooks,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
@@ -1189,14 +1193,8 @@ fun LiquidGlassSwitch(
                 )
             }
 
-            // LAYER B: Liquid Glass capsule with reflections & rim reflex
+            // LAYER B: Liquid Glass capsule - crystal optical glass, translucent with specular highlights
             if (heldProgress > 0.01f) {
-                val rimReflexColor = if (travelFraction > 0.25f) {
-                    lerp(Color.White.copy(alpha = 0.45f), accentColor.copy(alpha = 0.90f), travelFraction)
-                } else {
-                    Color.White.copy(alpha = 0.45f)
-                }
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -1212,19 +1210,19 @@ fun LiquidGlassSwitch(
                         .background(
                             Brush.verticalGradient(
                                 listOf(
-                                    Color.White.copy(alpha = 0.38f),
-                                    Color.White.copy(alpha = 0.08f),
-                                    Color.White.copy(alpha = 0.22f)
+                                    Color.White.copy(alpha = 0.12f),
+                                    Color.White.copy(alpha = 0.02f),
+                                    Color.White.copy(alpha = 0.07f)
                                 )
                             )
                         )
                         .border(
-                            width = 1.dp,
+                            width = 0.8.dp,
                             brush = Brush.verticalGradient(
                                 listOf(
-                                    Color.White.copy(alpha = 0.92f),
-                                    Color.White.copy(alpha = 0.20f),
-                                    rimReflexColor
+                                    Color.White.copy(alpha = 0.75f),
+                                    Color.White.copy(alpha = 0.15f),
+                                    Color.White.copy(alpha = 0.35f)
                                 )
                             ),
                             shape = thumbShape

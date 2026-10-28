@@ -1,4 +1,10 @@
 package com.aura.reader.ui.screens.library
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.automirrored.rounded.ViewList
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.AnimatedContent
@@ -113,13 +119,13 @@ AnimatedContent(
                     onSearchExpandedChange(false)
                     onSearchQueryChange("")
                 }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = strings.cancel)
+                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = strings.cancel)
                 }
             },
             actions = {
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { onSearchQueryChange("") }) {
-                        Icon(Icons.Default.Close, contentDescription = strings.clear)
+                        Icon(Icons.Rounded.Close, contentDescription = strings.clear)
                     }
                 }
             },
@@ -135,13 +141,13 @@ AnimatedContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(15.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(38.dp)
+                    modifier = Modifier.size(46.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         AuraLogoIcon(
-                            modifier = Modifier.size(width = 20.dp, height = 24.dp),
+                            modifier = Modifier.size(width = 25.dp, height = 30.dp),
                             bookColor = MaterialTheme.colorScheme.primary,
                             lineColor = MaterialTheme.colorScheme.primaryContainer
                         )
@@ -151,9 +157,9 @@ AnimatedContent(
                 Text(
                     text = strings.appName,
                     fontFamily = marcellusFamily,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontSize = 23.sp,
-                        letterSpacing = 0.5.sp
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontSize = 28.sp,
+                        letterSpacing = 0.6.sp
                     )
                 )
             }
@@ -162,7 +168,7 @@ AnimatedContent(
             // View Mode Switcher
             IconButton(onClick = { onToggleViewMode() }) {
                 Icon(
-                    imageVector = if (libraryViewMode == "GRID") Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
+                    imageVector = if (libraryViewMode == "GRID") Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
                     contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid
                 )
             }
@@ -171,7 +177,7 @@ AnimatedContent(
                 // Search Button in Material mode
                 IconButton(onClick = { onSearchExpandedChange(true) }) {
                     Icon(
-                        imageVector = Icons.Default.Search,
+                        imageVector = Icons.Rounded.Search,
                         contentDescription = strings.searchInLibrary
                     )
                 }
@@ -179,7 +185,7 @@ AnimatedContent(
                 // Settings Button in Material mode
                 IconButton(onClick = { onOpenSettings() }) {
                     Icon(
-                        imageVector = Icons.Default.Settings,
+                        imageVector = Icons.Rounded.Settings,
                         contentDescription = strings.settingsTitle
                     )
                 }

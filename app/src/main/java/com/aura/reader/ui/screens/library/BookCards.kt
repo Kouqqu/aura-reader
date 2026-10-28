@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -238,7 +239,7 @@ fun BookCard(
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
-                                imageVector = if (book.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                imageVector = if (book.isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                                 contentDescription = strings.colFavorites,
                                 tint = if (book.isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
                                 modifier = Modifier.size(18.dp)
@@ -250,7 +251,7 @@ fun BookCard(
                                 modifier = Modifier.size(32.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.MoreVert,
+                                    imageVector = Icons.Rounded.MoreVert,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -267,7 +268,7 @@ fun BookCard(
                                 DropdownMenuItem(
                                     text = { Text(strings.shareBookFile) },
                                     leadingIcon = {
-                                        Icon(Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        Icon(Icons.Rounded.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     },
                                     onClick = {
                                         showMenu = false
@@ -278,7 +279,7 @@ fun BookCard(
                                     text = { Text(if (hasCover) strings.changeCover else strings.downloadCover) },
                                     leadingIcon = {
                                         Icon(
-                                            imageVector = if (hasCover) Icons.Default.Image else Icons.Default.Download,
+                                            imageVector = if (hasCover) Icons.Rounded.Image else Icons.Rounded.Download,
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.primary
                                         )
@@ -291,7 +292,7 @@ fun BookCard(
                                 DropdownMenuItem(
                                     text = { Text(strings.addToCollection) },
                                     leadingIcon = {
-                                        Icon(Icons.Default.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        Icon(Icons.Rounded.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     },
                                     onClick = {
                                         showMenu = false
@@ -302,7 +303,7 @@ fun BookCard(
                                     DropdownMenuItem(
                                         text = { Text(strings.markAsFinished) },
                                         leadingIcon = {
-                                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                            Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                         },
                                         onClick = {
                                             showMenu = false
@@ -314,7 +315,7 @@ fun BookCard(
                                     DropdownMenuItem(
                                         text = { Text(strings.resetProgress) },
                                         leadingIcon = {
-                                            Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Icon(Icons.Rounded.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                         },
                                         onClick = {
                                             showMenu = false
@@ -326,7 +327,7 @@ fun BookCard(
                                 DropdownMenuItem(
                                     text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
                                     leadingIcon = {
-                                        Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                        Icon(Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                                     },
                                     onClick = {
                                         showMenu = false
@@ -457,7 +458,7 @@ fun BookCoverView(
                 modifier = Modifier.padding(4.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.CloudDownload,
+                    imageVector = Icons.Rounded.CloudDownload,
                     contentDescription = strings.downloadCover,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
@@ -631,7 +632,7 @@ fun BookGridCard(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                Icons.Default.Favorite,
+                                Icons.Rounded.Favorite,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(15.dp)
@@ -724,7 +725,7 @@ fun BookGridCard(
                     text = { Text(if (book.isFavorite) strings.colFavorites else strings.addToCollection) },
                     leadingIcon = {
                         Icon(
-                            if (book.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            if (book.isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                             contentDescription = null,
                             tint = if (book.isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                         )
@@ -736,7 +737,7 @@ fun BookGridCard(
                 )
                 DropdownMenuItem(
                     text = { Text(strings.addToCollection) },
-                    leadingIcon = { Icon(Icons.Default.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                    leadingIcon = { Icon(Icons.Rounded.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     onClick = {
                         showMenu = false
                         onAddToCollection()
@@ -744,7 +745,7 @@ fun BookGridCard(
                 )
                 DropdownMenuItem(
                     text = { Text(if (hasCover) strings.changeCover else strings.downloadCover) },
-                    leadingIcon = { Icon(if (hasCover) Icons.Default.Image else Icons.Default.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                    leadingIcon = { Icon(if (hasCover) Icons.Rounded.Image else Icons.Rounded.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     onClick = {
                         showMenu = false
                         onChangeCover()
@@ -752,7 +753,7 @@ fun BookGridCard(
                 )
                 DropdownMenuItem(
                     text = { Text(strings.shareBookFile) },
-                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                    leadingIcon = { Icon(Icons.Rounded.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     onClick = {
                         showMenu = false
                         onShare()
@@ -762,7 +763,7 @@ fun BookGridCard(
                 DropdownMenuItem(
                     text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
                     leadingIcon = {
-                        Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        Icon(Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                     },
                     onClick = {
                         showMenu = false

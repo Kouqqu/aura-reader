@@ -1,4 +1,9 @@
 package com.aura.reader.ui.screens.library
+import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.material.icons.automirrored.rounded.InsertDriveFile
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ChevronRight
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -140,7 +145,7 @@ fun AddBooksBottomSheet(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Default.Close,
+                                imageVector = Icons.Rounded.Close,
                                 contentDescription = strings.cancel,
                                 tint = if (isDark) Color.White else Color(0xFF1C1B1F),
                                 modifier = Modifier.size(16.dp)
@@ -164,7 +169,7 @@ fun AddBooksBottomSheet(
                     Column(modifier = Modifier.fillMaxWidth()) {
                         // Option 1: Select Files
                         AddMethodRow(
-                            icon = Icons.Default.InsertDriveFile,
+                            icon = Icons.AutoMirrored.Rounded.InsertDriveFile,
                             title = strings.selectFiles,
                             subtitle = strings.selectFilesSubtitle,
                             isDark = isDark,
@@ -182,7 +187,7 @@ fun AddBooksBottomSheet(
 
                         // Option 2: Scan Folder
                         AddMethodRow(
-                            icon = Icons.Default.FolderOpen,
+                            icon = Icons.Rounded.FolderOpen,
                             title = strings.scanFolder,
                             subtitle = strings.scanFolderSubtitle,
                             isDark = isDark,
@@ -200,7 +205,7 @@ fun AddBooksBottomSheet(
 
                         // Option 3: OPDS Online Catalog
                         AddMethodRow(
-                            icon = Icons.Default.CloudDownload,
+                            icon = Icons.Rounded.CloudDownload,
                             title = strings.opdsCatalog,
                             subtitle = strings.opdsCatalogSubtitle,
                             isDark = isDark,
@@ -231,7 +236,7 @@ fun AddBooksBottomSheet(
                 )
 
                 MaterialAddMethodItem(
-                    icon = Icons.Default.InsertDriveFile,
+                    icon = Icons.AutoMirrored.Rounded.InsertDriveFile,
                     title = strings.selectFiles,
                     subtitle = strings.selectFilesSubtitle,
                     onClick = {
@@ -241,7 +246,7 @@ fun AddBooksBottomSheet(
                 )
 
                 MaterialAddMethodItem(
-                    icon = Icons.Default.FolderOpen,
+                    icon = Icons.Rounded.FolderOpen,
                     title = strings.scanFolder,
                     subtitle = strings.scanFolderSubtitle,
                     onClick = {
@@ -251,7 +256,7 @@ fun AddBooksBottomSheet(
                 )
 
                 MaterialAddMethodItem(
-                    icon = Icons.Default.CloudDownload,
+                    icon = Icons.Rounded.CloudDownload,
                     title = strings.opdsCatalog,
                     subtitle = strings.opdsCatalogSubtitle,
                     onClick = {
@@ -369,7 +374,7 @@ private fun AddMethodRow(
         }
 
         Icon(
-            imageVector = Icons.Default.ChevronRight,
+            imageVector = Icons.Rounded.ChevronRight,
             contentDescription = null,
             tint = if (isDark) Color.White.copy(alpha = 0.40f) else Color.Black.copy(alpha = 0.35f),
             modifier = Modifier.size(18.dp)
