@@ -3,7 +3,7 @@ package com.aura.reader.ui.screens.reader
 import androidx.compose.foundation.BorderStroke
 import com.aura.reader.data.model.Quote
 import androidx.compose.foundation.background
-import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.rounded.FormatQuote
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
@@ -18,9 +18,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.widthIn
 import com.aura.reader.ui.theme.LocalAppStrings
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,7 +33,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -111,7 +111,7 @@ fun ReaderSelectionToolbar(
                     contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
                     modifier = Modifier.height(34.dp)
                 ) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(15.dp))
+                    Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(15.dp))
                     Spacer(modifier = Modifier.width(3.dp))
                     Text(strings.copy, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
                 }
@@ -122,7 +122,7 @@ fun ReaderSelectionToolbar(
                     contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
                     modifier = Modifier.height(34.dp)
                 ) {
-                    Icon(Icons.Default.FormatQuote, contentDescription = null, modifier = Modifier.size(15.dp))
+                    Icon(Icons.Rounded.FormatQuote, contentDescription = null, modifier = Modifier.size(15.dp))
                     Spacer(modifier = Modifier.width(3.dp))
                     Text(strings.quoteAction, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
                 }
@@ -133,7 +133,7 @@ fun ReaderSelectionToolbar(
                     contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
                     modifier = Modifier.height(34.dp)
                 ) {
-                    Icon(Icons.Default.AutoStories, contentDescription = null, modifier = Modifier.size(15.dp))
+                    Icon(Icons.Rounded.AutoStories, contentDescription = null, modifier = Modifier.size(15.dp))
                     Spacer(modifier = Modifier.width(3.dp))
                     Text(strings.dictionaryAction, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
                 }
@@ -144,7 +144,7 @@ fun ReaderSelectionToolbar(
                     contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
                     modifier = Modifier.height(34.dp)
                 ) {
-                    Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(15.dp))
+                    Icon(Icons.Rounded.Translate, contentDescription = null, modifier = Modifier.size(15.dp))
                     Spacer(modifier = Modifier.width(3.dp))
                     Text(strings.translateAction, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
                 }
@@ -155,7 +155,7 @@ fun ReaderSelectionToolbar(
                     contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
                     modifier = Modifier.height(34.dp)
                 ) {
-                    Icon(Icons.Default.VolumeUp, contentDescription = null, modifier = Modifier.size(15.dp))
+                    Icon(Icons.AutoMirrored.Rounded.VolumeUp, contentDescription = null, modifier = Modifier.size(15.dp))
                     Spacer(modifier = Modifier.width(3.dp))
                     Text(strings.ttsStartFromHere, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
                 }

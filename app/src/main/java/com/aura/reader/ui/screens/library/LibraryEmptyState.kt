@@ -17,10 +17,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.Book
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -57,7 +57,7 @@ fun EmptyLibraryView(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Outlined.MenuBook,
+                imageVector = Icons.AutoMirrored.Outlined.MenuBook,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer
@@ -87,7 +87,7 @@ fun EmptyLibraryView(
             onClick = onAddBooks,
             shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text(strings.addBooks)
         }
@@ -98,7 +98,7 @@ fun EmptyLibraryView(
             onClick = onOpenSample,
             shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(Icons.Default.AutoStories, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(Icons.Rounded.AutoStories, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text(strings.openSampleBook)
         }

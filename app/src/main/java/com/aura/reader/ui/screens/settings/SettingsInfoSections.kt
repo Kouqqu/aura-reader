@@ -7,12 +7,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -48,30 +48,30 @@ internal fun SettingsBackupSection(
         ExpressiveSettingsRow(
             title = strings.createBackupTitle,
             subtitle = strings.createBackupSubtitle,
-            icon = { SettingsIconBox(Icons.Default.CloudDownload) },
+            icon = { SettingsIconBox(Icons.Rounded.CloudDownload) },
             onClick = onExportBackup,
             trailing = {
-                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         )
         ExpressiveDivider()
         ExpressiveSettingsRow(
             title = strings.sendToGoogleDriveTitle,
             subtitle = strings.sendToGoogleDriveSubtitle,
-            icon = { SettingsIconBox(Icons.Default.Share) },
+            icon = { SettingsIconBox(Icons.Rounded.Share) },
             onClick = onSendToGoogleDrive,
             trailing = {
-                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         )
         ExpressiveDivider()
         ExpressiveSettingsRow(
             title = strings.restoreBackupTitle,
             subtitle = strings.restoreBackupSubtitle,
-            icon = { SettingsIconBox(Icons.Default.History) },
+            icon = { SettingsIconBox(Icons.Rounded.History) },
             onClick = onRestoreBackup,
             trailing = {
-                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         )
     }
@@ -103,7 +103,7 @@ internal fun SettingsAboutSection(
             subtitle = "https://dalink.to/koukku",
             icon = {
                 SettingsIconBox(
-                    icon = Icons.Default.Favorite,
+                    icon = Icons.Rounded.Favorite,
                     tint = MaterialTheme.colorScheme.error,
                     containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
                 )
@@ -113,7 +113,7 @@ internal fun SettingsAboutSection(
                 context.startActivity(intent)
             },
             trailing = {
-                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         )
         ExpressiveDivider()
@@ -132,7 +132,7 @@ internal fun SettingsAboutSection(
                 context.startActivity(intent)
             },
             trailing = {
-                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         )
         ExpressiveDivider()
@@ -151,7 +151,7 @@ internal fun SettingsAboutSection(
                 context.startActivity(intent)
             },
             trailing = {
-                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         )
         ExpressiveDivider()
@@ -160,7 +160,7 @@ internal fun SettingsAboutSection(
             subtitle = strings.quickGuideSubtitle,
             icon = {
                 SettingsIconBox(
-                    icon = Icons.AutoMirrored.Filled.MenuBook,
+                    icon = Icons.AutoMirrored.Rounded.MenuBook,
                     tint = MaterialTheme.colorScheme.primary,
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                 )
@@ -170,7 +170,7 @@ internal fun SettingsAboutSection(
                 onOpenOnboarding()
             },
             trailing = {
-                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         )
     }

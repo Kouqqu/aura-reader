@@ -6,8 +6,8 @@ import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -30,18 +30,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.SystemUpdate
-import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.rounded.Analytics
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Dns
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.SystemUpdate
+import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -121,7 +121,7 @@ Row(
             horizontalArrangement = Arrangement.Center
         ) {
             Icon(
-                Icons.Default.Palette,
+                Icons.Rounded.Palette,
                 contentDescription = null,
                 tint = if (isMatSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(20.dp)
@@ -164,7 +164,7 @@ Row(
             horizontalArrangement = Arrangement.Center
         ) {
             Icon(
-                Icons.Default.AutoAwesome,
+                Icons.Rounded.AutoAwesome,
                 contentDescription = null,
                 tint = if (isGlassSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(20.dp)
@@ -204,8 +204,8 @@ Text(
 ExpressiveSettingsGroup {
     ExpressiveSettingsRow(
         title = strings.languageSectionTitle,
-        subtitle = currentLanguage.title,
-        icon = { SettingsIconBox(Icons.Default.Translate) },
+        subtitle = null,
+        icon = { SettingsIconBox(Icons.Rounded.Translate) },
         onClick = { onOpenLanguagePicker() },
         trailing = {
             Surface(
@@ -224,7 +224,7 @@ ExpressiveSettingsGroup {
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
-                        imageVector = Icons.Default.ChevronRight,
+                        imageVector = Icons.Rounded.ChevronRight,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(16.dp)
@@ -319,7 +319,7 @@ ExpressiveSettingsGroup {
                 label = { Text(strings.appFontGoogleSans) },
                 isGlass = isGlass,
                 leadingIcon = if (isGoogleSans) {
-                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                 } else null
             )
 
@@ -331,7 +331,7 @@ ExpressiveSettingsGroup {
                 label = { Text(strings.appFontDefault) },
                 isGlass = isGlass,
                 leadingIcon = if (isSystem) {
-                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                 } else null
             )
 
@@ -351,11 +351,11 @@ ExpressiveSettingsGroup {
                     },
                     isGlass = isGlass,
                     leadingIcon = if (isSelected) {
-                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                        { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     } else null,
                     trailingIcon = {
                         Icon(
-                            imageVector = Icons.Default.Close,
+                            imageVector = Icons.Rounded.Close,
                             contentDescription = strings.appFontCustomDelete,
                             modifier = Modifier
                                 .size(16.dp)
@@ -393,7 +393,7 @@ ExpressiveSettingsGroup {
                 isGlass = isGlass,
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Add,
+                        imageVector = Icons.Rounded.Add,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
@@ -431,7 +431,7 @@ ExpressiveSettingsGroup {
     ExpressiveSettingsRow(
         title = strings.readingStatsToggle,
         subtitle = strings.readingStatsSubtitle,
-        icon = { SettingsIconBox(Icons.Default.BarChart) },
+        icon = { SettingsIconBox(Icons.Rounded.BarChart) },
         onClick = { onToggleReadingStats(!readingStatsEnabled) },
         trailing = {
             if (isGlass) {
@@ -462,7 +462,7 @@ ExpressiveSettingsGroup {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f).padding(end = 12.dp)
             ) {
-                SettingsIconBox(Icons.Default.Speed)
+                SettingsIconBox(Icons.Rounded.Speed)
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
@@ -487,7 +487,7 @@ ExpressiveSettingsGroup {
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
-                imageVector = Icons.Default.Speed,
+                imageVector = Icons.Rounded.Speed,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp)
             )
@@ -506,7 +506,7 @@ ExpressiveSettingsGroup {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f).padding(end = 12.dp)
             ) {
-                SettingsIconBox(Icons.Default.Dns)
+                SettingsIconBox(Icons.Rounded.Dns)
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
@@ -560,7 +560,7 @@ ExpressiveSettingsGroup {
                             urlText = ""
                             onCustomOpdsUrlChange("")
                         }) {
-                            Icon(Icons.Default.Clear, contentDescription = strings.clear)
+                            Icon(Icons.Rounded.Clear, contentDescription = strings.clear)
                         }
                     }
                 }
@@ -601,7 +601,7 @@ ExpressiveSettingsGroup {
     ExpressiveSettingsRow(
         title = strings.updateNotificationsToggle,
         subtitle = strings.updateNotificationsSubtitle,
-        icon = { SettingsIconBox(Icons.Default.Notifications) },
+        icon = { SettingsIconBox(Icons.Rounded.Notifications) },
         onClick = { onToggleUpdateNotifications(!updateNotificationsEnabled) },
         trailing = {
             if (isGlass) {
@@ -625,7 +625,7 @@ ExpressiveSettingsGroup {
     ExpressiveSettingsRow(
         title = strings.anonymousAnalyticsToggle,
         subtitle = strings.anonymousAnalyticsSubtitle,
-        icon = { SettingsIconBox(Icons.Default.Analytics) },
+        icon = { SettingsIconBox(Icons.Rounded.Analytics) },
         onClick = { onToggleAnonymousAnalytics(!anonymousAnalyticsEnabled) },
         trailing = {
             if (isGlass) {
@@ -656,7 +656,7 @@ ExpressiveSettingsGroup {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f).padding(end = 12.dp)
             ) {
-                SettingsIconBox(Icons.Default.SystemUpdate)
+                SettingsIconBox(Icons.Rounded.SystemUpdate)
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = strings.currentVersion(currentAppVersion),
@@ -671,7 +671,7 @@ ExpressiveSettingsGroup {
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.SystemUpdate,
+                    imageVector = Icons.Rounded.SystemUpdate,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp)
                 )

@@ -15,10 +15,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.FormatQuote
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -102,7 +102,7 @@ fun BookmarksAndQuotesBottomSheet(
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                Icons.Default.Bookmark,
+                                Icons.Rounded.Bookmark,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -117,7 +117,7 @@ fun BookmarksAndQuotesBottomSheet(
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                Icons.Default.FormatQuote,
+                                Icons.Rounded.FormatQuote,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -195,7 +195,7 @@ fun BookmarksAndQuotesBottomSheet(
 
                                         IconButton(onClick = { onDeleteBookmark(bm.id) }) {
                                             Icon(
-                                                Icons.Default.Delete,
+                                                Icons.Rounded.Delete,
                                                 contentDescription = "Удалить закладку",
                                                 tint = MaterialTheme.colorScheme.outline
                                             )
@@ -236,7 +236,7 @@ fun BookmarksAndQuotesBottomSheet(
                                 enabled = newQuoteText.isNotBlank(),
                                 shape = RoundedCornerShape(14.dp)
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = "Добавить")
+                                Icon(Icons.Rounded.Add, contentDescription = "Добавить")
                             }
                         }
 
@@ -306,7 +306,7 @@ fun BookmarksAndQuotesBottomSheet(
 
                                             IconButton(onClick = { onDeleteQuote(quote.id) }) {
                                                 Icon(
-                                                    Icons.Default.Delete,
+                                                    Icons.Rounded.Delete,
                                                     contentDescription = "Удалить цитату",
                                                     tint = MaterialTheme.colorScheme.outline
                                                 )

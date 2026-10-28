@@ -15,12 +15,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledIconButton
@@ -73,7 +73,7 @@ fun TtsControlBar(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Headphones,
+                    imageVector = Icons.Rounded.Headphones,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(18.dp)
@@ -104,7 +104,7 @@ fun TtsControlBar(
                 modifier = Modifier.size(30.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.SkipPrevious,
+                    imageVector = Icons.Rounded.SkipPrevious,
                     contentDescription = strings.previous,
                     modifier = Modifier.size(18.dp)
                 )
@@ -119,7 +119,7 @@ fun TtsControlBar(
                 )
             ) {
                 Icon(
-                    imageVector = if (ttsState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    imageVector = if (ttsState.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                     contentDescription = if (ttsState.isPlaying) strings.ttsPaused else strings.ttsPlaying,
                     modifier = Modifier.size(20.dp)
                 )
@@ -130,7 +130,7 @@ fun TtsControlBar(
                 modifier = Modifier.size(30.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.SkipNext,
+                    imageVector = Icons.Rounded.SkipNext,
                     contentDescription = strings.next,
                     modifier = Modifier.size(18.dp)
                 )
@@ -159,7 +159,7 @@ fun TtsControlBar(
                 modifier = Modifier.size(30.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Close,
+                    imageVector = Icons.Rounded.Close,
                     contentDescription = strings.ttsStop,
                     tint = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.size(16.dp)

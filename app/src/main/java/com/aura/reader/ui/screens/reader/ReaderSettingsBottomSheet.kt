@@ -24,9 +24,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.FormatSize
-import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.FormatSize
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ButtonDefaults
@@ -80,7 +80,7 @@ import com.aura.reader.ui.theme.AmoledText
 import com.aura.reader.ui.theme.SepiaBackground
 import com.aura.reader.ui.theme.SepiaText
 import android.widget.Toast
-import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
@@ -478,7 +478,7 @@ fun ReaderSettingsBottomSheet(
                         colors = chipColors,
                         border = chipBorder,
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.SERIF) {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                            { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                         } else null
                     )
 
@@ -491,7 +491,7 @@ fun ReaderSettingsBottomSheet(
                         colors = chipColors,
                         border = chipBorder,
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.SANS_SERIF) {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                            { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                         } else null
                     )
 
@@ -504,7 +504,7 @@ fun ReaderSettingsBottomSheet(
                         colors = chipColors,
                         border = chipBorder,
                         leadingIcon = if (settings.fontFamily == ReaderFontFamily.MONOSPACE) {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                            { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                         } else null
                     )
                 }
@@ -569,7 +569,7 @@ fun ReaderSettingsBottomSheet(
                                     fontDropdownExpanded = false
                                 },
                                 trailingIcon = if (isSelected) {
-                                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                    { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                                 } else null
                             )
                         }
@@ -886,7 +886,7 @@ fun ReaderSettingsBottomSheet(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Speed,
+                            imageVector = Icons.Rounded.Speed,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )

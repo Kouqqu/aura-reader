@@ -3,17 +3,17 @@ package com.aura.reader.ui.screens.reader
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.lazy.LazyRow
 import java.util.Locale
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.ui.graphics.Color
 
 import androidx.compose.foundation.background
@@ -35,18 +35,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.FormatColorText
-import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.RecordVoiceOver
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.FormatColorText
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.RecordVoiceOver
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -137,7 +137,7 @@ fun TtsBottomSheet(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Headphones,
+                            imageVector = Icons.Rounded.Headphones,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(22.dp)
@@ -161,7 +161,7 @@ fun TtsBottomSheet(
                 }
 
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = strings.close)
+                    Icon(Icons.Rounded.Close, contentDescription = strings.close)
                 }
             }
 
@@ -271,7 +271,7 @@ fun TtsBottomSheet(
                     modifier = Modifier.size(52.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.SkipPrevious,
+                        imageVector = Icons.Rounded.SkipPrevious,
                         contentDescription = strings.previous,
                         modifier = Modifier.size(32.dp)
                     )
@@ -286,7 +286,7 @@ fun TtsBottomSheet(
                     )
                 ) {
                     Icon(
-                        imageVector = if (ttsState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        imageVector = if (ttsState.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                         contentDescription = if (ttsState.isPlaying) strings.ttsPaused else strings.ttsPlaying,
                         modifier = Modifier.size(36.dp)
                     )
@@ -297,7 +297,7 @@ fun TtsBottomSheet(
                     modifier = Modifier.size(52.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.SkipNext,
+                        imageVector = Icons.Rounded.SkipNext,
                         contentDescription = strings.next,
                         modifier = Modifier.size(32.dp)
                     )
@@ -308,7 +308,7 @@ fun TtsBottomSheet(
                     modifier = Modifier.size(52.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Stop,
+                        imageVector = Icons.Rounded.Stop,
                         contentDescription = strings.ttsStop,
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(30.dp)
@@ -326,7 +326,7 @@ fun TtsBottomSheet(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.Speed,
+                        Icons.Rounded.Speed,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -375,7 +375,7 @@ fun TtsBottomSheet(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.RecordVoiceOver,
+                        Icons.Rounded.RecordVoiceOver,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -418,7 +418,7 @@ fun TtsBottomSheet(
                     modifier = Modifier.weight(1f).padding(end = 12.dp)
                 ) {
                     Icon(
-                        Icons.Default.FormatColorText,
+                        Icons.Rounded.FormatColorText,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -463,7 +463,7 @@ fun TtsBottomSheet(
                         modifier = Modifier.weight(1f).padding(end = 8.dp)
                     ) {
                         Icon(
-                            Icons.Default.Sync,
+                            Icons.Rounded.Sync,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.primary
@@ -546,7 +546,7 @@ fun TtsBottomSheet(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
-                        Icon(Icons.Default.ExpandMore, contentDescription = null)
+                        Icon(Icons.Rounded.ExpandMore, contentDescription = null)
                     }
                 }
 
@@ -631,7 +631,7 @@ fun TtsBottomSheet(
                                                     modifier = Modifier.weight(1f)
                                                 ) {
                                                     Icon(
-                                                        imageVector = Icons.Default.Language,
+                                                        imageVector = Icons.Rounded.Language,
                                                         contentDescription = null,
                                                         tint = MaterialTheme.colorScheme.primary,
                                                         modifier = Modifier.size(18.dp)
@@ -646,7 +646,7 @@ fun TtsBottomSheet(
                                                     )
                                                 }
                                                 Icon(
-                                                    imageVector = Icons.Default.ArrowDropDown,
+                                                    imageVector = Icons.Rounded.ArrowDropDown,
                                                     contentDescription = null,
                                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -671,7 +671,7 @@ fun TtsBottomSheet(
                                                 },
                                                 leadingIcon = {
                                                     if (selectedLangCode.isBlank()) {
-                                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                        Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                     }
                                                 }
                                             )
@@ -691,7 +691,7 @@ fun TtsBottomSheet(
                                                     },
                                                     leadingIcon = {
                                                         if (isSelected) {
-                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                            Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                         }
                                                     }
                                                 )
@@ -705,7 +705,7 @@ fun TtsBottomSheet(
                                         value = voiceSearchQuery,
                                         onValueChange = { voiceSearchQuery = it },
                                         placeholder = { Text(strings.searchLibraryPlaceholder) },
-                                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                                        leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                                         singleLine = true,
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
@@ -779,7 +779,7 @@ fun TtsBottomSheet(
                                                     modifier = Modifier.size(36.dp)
                                                 ) {
                                                     Icon(
-                                                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                                        imageVector = Icons.AutoMirrored.Rounded.VolumeUp,
                                                         contentDescription = null,
                                                         tint = MaterialTheme.colorScheme.primary,
                                                         modifier = Modifier.size(19.dp)
@@ -787,7 +787,7 @@ fun TtsBottomSheet(
                                                 }
                                                 if (isSelected) {
                                                     Icon(
-                                                        imageVector = Icons.Default.Check,
+                                                        imageVector = Icons.Rounded.Check,
                                                         contentDescription = null,
                                                         tint = MaterialTheme.colorScheme.primary,
                                                         modifier = Modifier.size(20.dp).padding(start = 2.dp)

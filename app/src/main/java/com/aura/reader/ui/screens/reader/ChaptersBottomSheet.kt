@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -82,7 +82,7 @@ fun ChaptersBottomSheet(
                         leadingContent = if (isSelected) {
                             {
                                 Icon(
-                                    Icons.Default.Bookmark,
+                                    Icons.Rounded.Bookmark,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary
                                 )

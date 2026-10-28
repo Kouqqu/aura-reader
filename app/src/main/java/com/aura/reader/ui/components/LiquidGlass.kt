@@ -39,10 +39,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
+
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -1018,20 +1015,20 @@ fun LiquidGlassSwitch(
     val haptic = LocalHapticFeedback.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-    val outerWidth = 64.dp
-    val outerHeight = 42.dp
+    val outerWidth = 72.dp
+    val outerHeight = 46.dp
 
-    val trackWidth = 52.dp
-    val trackHeight = 30.dp
+    val trackWidth = 56.dp
+    val trackHeight = 22.dp
     val trackShape = RoundedCornerShape(percent = 50)
     val thumbShape = RoundedCornerShape(percent = 50)
 
-    val idleThumbWidth = 29.dp
-    val idleThumbHeight = 25.dp
-    val heldThumbWidth = 43.dp
-    val heldThumbHeight = 36.dp
+    val idleThumbWidth = 22.dp
+    val idleThumbHeight = 18.dp
+    val heldThumbWidth = 44.dp
+    val heldThumbHeight = 34.dp
 
-    val restingOffsetDp = if (checked) 9.dp else (-9).dp
+    val restingOffsetDp = if (checked) 13.dp else (-13).dp
 
     var isPressed by remember { mutableStateOf(false) }
     var isDragging by remember { mutableStateOf(false) }
@@ -1064,7 +1061,7 @@ fun LiquidGlassSwitch(
     val currentThumbWidthDp = androidx.compose.ui.unit.lerp(idleThumbWidth, heldThumbWidth, heldProgress)
     val currentThumbHeightDp = androidx.compose.ui.unit.lerp(idleThumbHeight, heldThumbHeight, heldProgress)
 
-    val travelFraction = ((animatedOffsetDp + 9.dp) / 18.dp).coerceIn(0f, 1f)
+    val travelFraction = ((animatedOffsetDp + 13.dp) / 26.dp).coerceIn(0f, 1f)
 
     val isMaterialYou = useDynamicColor
     val offTrackColor = if (isDark) Color(0x35FFFFFF) else Color(0x1F000000)
@@ -1078,8 +1075,8 @@ fun LiquidGlassSwitch(
 
     val currentThumbWidthPx = with(density) { currentThumbWidthDp.toPx() }
     val currentThumbHeightPx = with(density) { currentThumbHeightDp.toPx() }
-    val thumbCenterInTrackXPx = with(density) { (animatedOffsetDp + 26.dp).toPx() }
-    val thumbCenterInTrackYPx = with(density) { 15.dp.toPx() }
+    val thumbCenterInTrackXPx = with(density) { (animatedOffsetDp + 28.dp).toPx() }
+    val thumbCenterInTrackYPx = with(density) { 11.dp.toPx() }
 
     Box(
         modifier = modifier
@@ -1091,7 +1088,7 @@ fun LiquidGlassSwitch(
                     val down = awaitFirstDown(requireUnconsumed = false)
                     isPressed = true
                     val startX = down.position.x
-                    val initialOffset = if (checked) 9.dp else (-9).dp
+                    val initialOffset = if (checked) 13.dp else (-13).dp
                     var hasDragged = false
                     val pointerId = down.id
                     var isSuccessRelease = false
@@ -1114,7 +1111,7 @@ fun LiquidGlassSwitch(
                             }
                             if (hasDragged) {
                                 val deltaDp = with(density) { (currentX - startX).toDp() }
-                                dragOffsetDp = (initialOffset + deltaDp).coerceIn((-9).dp, 9.dp)
+                                dragOffsetDp = (initialOffset + deltaDp).coerceIn((-13).dp, 13.dp)
                             }
                             change.consume()
                         }

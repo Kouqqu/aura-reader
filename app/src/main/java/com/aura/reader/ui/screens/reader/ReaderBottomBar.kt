@@ -9,8 +9,8 @@ import androidx.compose.foundation.clickable
 import com.aura.reader.ui.components.LiquidGlassSurface
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.aura.reader.ui.theme.LocalAppStrings
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -24,11 +24,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.ChevronLeft
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -111,7 +111,7 @@ fun BoxScope.ReaderBottomBar(
                                             modifier = Modifier.size(36.dp)
                                         ) {
                                             Icon(
-                                                Icons.Default.SkipPrevious,
+                                                Icons.Rounded.SkipPrevious,
                                                 contentDescription = strings.prevChapter,
                                                 tint = if (currentChapterIndex > 0) {
                                                     if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
@@ -151,7 +151,7 @@ fun BoxScope.ReaderBottomBar(
                                             }
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Icon(
-                                                imageVector = Icons.Default.ChevronRight,
+                                                imageVector = Icons.Rounded.ChevronRight,
                                                 contentDescription = strings.contents,
                                                 tint = MaterialTheme.colorScheme.primary,
                                                 modifier = Modifier.size(18.dp)
@@ -164,7 +164,7 @@ fun BoxScope.ReaderBottomBar(
                                             modifier = Modifier.size(36.dp)
                                         ) {
                                             Icon(
-                                                Icons.Default.SkipNext,
+                                                Icons.Rounded.SkipNext,
                                                 contentDescription = strings.nextChapter,
                                                 tint = if (currentChapterIndex < chapters.size - 1) {
                                                     if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
@@ -197,7 +197,7 @@ fun BoxScope.ReaderBottomBar(
                                             modifier = Modifier.size(36.dp)
                                          ) {
                                              Icon(
-                                                 Icons.Default.ChevronLeft,
+                                                 Icons.Rounded.ChevronLeft,
                                                  contentDescription = strings.prevPage,
                                                  tint = if (currentPagingPage > 0) {
                                                      if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
@@ -246,7 +246,7 @@ fun BoxScope.ReaderBottomBar(
                                              modifier = Modifier.size(36.dp)
                                          ) {
                                              Icon(
-                                                 Icons.Default.ChevronRight,
+                                                 Icons.Rounded.ChevronRight,
                                                  contentDescription = strings.nextPage,
                                                  tint = if (currentPagingPage < totalPagingPages - 1) {
                                                      if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
@@ -279,7 +279,7 @@ fun BoxScope.ReaderBottomBar(
                                             modifier = Modifier.weight(1f, fill = false)
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Default.AutoStories,
+                                                imageVector = Icons.Rounded.AutoStories,
                                                 contentDescription = strings.contents,
                                                 modifier = Modifier.size(18.dp),
                                                 tint = MaterialTheme.colorScheme.primary
@@ -295,7 +295,7 @@ fun BoxScope.ReaderBottomBar(
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Icon(
-                                                imageVector = Icons.Default.ChevronRight,
+                                                imageVector = Icons.Rounded.ChevronRight,
                                                 contentDescription = strings.contents,
                                                 modifier = Modifier.size(18.dp),
                                                 tint = MaterialTheme.colorScheme.primary
@@ -324,7 +324,7 @@ fun BoxScope.ReaderBottomBar(
                                             modifier = Modifier.size(36.dp)
                                         ) {
                                             Icon(
-                                                 Icons.Default.ChevronLeft,
+                                                 Icons.Rounded.ChevronLeft,
                                                  contentDescription = strings.prevChapter,
                                                  tint = if (currentChapterIndex > 0) {
                                                      if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
@@ -361,7 +361,7 @@ fun BoxScope.ReaderBottomBar(
                                             modifier = Modifier.size(36.dp)
                                         ) {
                                             Icon(
-                                                 Icons.Default.ChevronRight,
+                                                 Icons.Rounded.ChevronRight,
                                                  contentDescription = strings.nextChapter,
                                                  tint = if (currentChapterIndex < chapters.size - 1) {
                                                      if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface

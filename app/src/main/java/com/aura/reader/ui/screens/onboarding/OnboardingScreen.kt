@@ -37,13 +37,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -135,7 +135,7 @@ fun OnboardingScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                            imageVector = Icons.AutoMirrored.Rounded.MenuBook,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
@@ -281,7 +281,7 @@ fun OnboardingScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
-                                imageVector = if (isLastPage) Icons.Default.Check else Icons.AutoMirrored.Filled.ArrowForward,
+                                imageVector = if (isLastPage) Icons.Rounded.Check else Icons.AutoMirrored.Rounded.ArrowForward,
                                 contentDescription = null,
                                 tint = if (isDark) Color.White else Color(0xFF191B1F),
                                 modifier = Modifier.size(20.dp)
@@ -325,7 +325,7 @@ fun OnboardingScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
-                                imageVector = if (isLastPage) Icons.Default.Check else Icons.AutoMirrored.Filled.ArrowForward,
+                                imageVector = if (isLastPage) Icons.Rounded.Check else Icons.AutoMirrored.Rounded.ArrowForward,
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -358,7 +358,7 @@ private fun OnboardingStyleSlide(
     ) {
         // Expressive Scalloped Flower Badge
         ExpressiveScallopedBadge(
-            icon = Icons.Default.Palette,
+            icon = Icons.Rounded.Palette,
             petalColor = MaterialTheme.colorScheme.primaryContainer,
             iconTint = MaterialTheme.colorScheme.primary
         )
@@ -444,7 +444,7 @@ private fun MaterialStyleOptionCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Palette,
+                    imageVector = Icons.Rounded.Palette,
                     contentDescription = null,
                     tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
@@ -488,7 +488,7 @@ private fun MaterialStyleOptionCard(
             ) {
                 if (isSelected) {
                     Icon(
-                        imageVector = Icons.Default.Check,
+                        imageVector = Icons.Rounded.Check,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(16.dp)
@@ -561,7 +561,7 @@ private fun LiquidGlassStyleOptionCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.AutoAwesome,
+                    imageVector = Icons.Rounded.AutoAwesome,
                     contentDescription = null,
                     tint = if (isDark) Color.White else Color(0xFF191B1F),
                     modifier = Modifier.size(24.dp)
@@ -604,7 +604,7 @@ private fun LiquidGlassStyleOptionCard(
             ) {
                 if (isSelected) {
                     Icon(
-                        imageVector = Icons.Default.Check,
+                        imageVector = Icons.Rounded.Check,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(16.dp)
@@ -632,7 +632,7 @@ private fun OnboardingFormatsSlide(isGlass: Boolean = false) {
         verticalArrangement = Arrangement.Center
     ) {
         ExpressiveScallopedBadge(
-            icon = Icons.AutoMirrored.Filled.MenuBook,
+            icon = Icons.AutoMirrored.Rounded.MenuBook,
             petalColor = MaterialTheme.colorScheme.secondaryContainer,
             iconTint = MaterialTheme.colorScheme.secondary
         )
@@ -659,7 +659,7 @@ private fun OnboardingFormatsSlide(isGlass: Boolean = false) {
         Spacer(modifier = Modifier.height(28.dp))
 
         FeatureHighlightCard(
-            icon = Icons.Default.AutoAwesome,
+            icon = Icons.Rounded.AutoAwesome,
             title = "EPUB, FB2, MOBI, PDF, TXT, CBZ",
             description = "Умный парсер глав, сохранение изображений, сноски и таблицы",
             isGlass = isGlass
@@ -668,7 +668,7 @@ private fun OnboardingFormatsSlide(isGlass: Boolean = false) {
         Spacer(modifier = Modifier.height(12.dp))
 
         FeatureHighlightCard(
-            icon = Icons.AutoMirrored.Filled.MenuBook,
+            icon = Icons.AutoMirrored.Rounded.MenuBook,
             title = "Каталоги OPDS",
             description = "Поиск и загрузка тысяч книг напрямую из онлайн-библиотек",
             isGlass = isGlass
@@ -677,7 +677,7 @@ private fun OnboardingFormatsSlide(isGlass: Boolean = false) {
         Spacer(modifier = Modifier.height(12.dp))
 
         FeatureHighlightCard(
-            icon = Icons.Default.BarChart,
+            icon = Icons.Rounded.BarChart,
             title = "Статистика чтения",
             description = "Трекинг времени, ежедневный стрик и точный персональный WPM",
             isGlass = isGlass
@@ -702,7 +702,7 @@ private fun OnboardingTtsSlide(isGlass: Boolean = false) {
         verticalArrangement = Arrangement.Center
     ) {
         ExpressiveScallopedBadge(
-            icon = Icons.AutoMirrored.Filled.VolumeUp,
+            icon = Icons.AutoMirrored.Rounded.VolumeUp,
             petalColor = MaterialTheme.colorScheme.tertiaryContainer,
             iconTint = MaterialTheme.colorScheme.tertiary
         )
@@ -729,7 +729,7 @@ private fun OnboardingTtsSlide(isGlass: Boolean = false) {
         Spacer(modifier = Modifier.height(28.dp))
 
         FeatureHighlightCard(
-            icon = Icons.Default.AutoAwesome,
+            icon = Icons.Rounded.AutoAwesome,
             title = "Подсветка слов в реальном времени",
             description = "Слово, произносимое прямо сейчас, мягко подсвечивается в тексте",
             isGlass = isGlass
@@ -738,7 +738,7 @@ private fun OnboardingTtsSlide(isGlass: Boolean = false) {
         Spacer(modifier = Modifier.height(12.dp))
 
         FeatureHighlightCard(
-            icon = Icons.AutoMirrored.Filled.MenuBook,
+            icon = Icons.AutoMirrored.Rounded.MenuBook,
             title = "Озвучка с любого места",
             description = "Нажмите на любое слово в книге, чтобы начать чтение именно с него",
             isGlass = isGlass
@@ -747,7 +747,7 @@ private fun OnboardingTtsSlide(isGlass: Boolean = false) {
         Spacer(modifier = Modifier.height(12.dp))
 
         FeatureHighlightCard(
-            icon = Icons.AutoMirrored.Filled.VolumeUp,
+            icon = Icons.AutoMirrored.Rounded.VolumeUp,
             title = "Большой выбор голосов",
             description = "Высокое качество речи, регулировка темпа и высоты тона",
             isGlass = isGlass
@@ -856,7 +856,7 @@ private fun OnboardingCommunitySlide(
                     }
 
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                         contentDescription = null,
                         tint = Color(0xFF2AABEE),
                         modifier = Modifier.size(20.dp)
@@ -910,7 +910,7 @@ private fun OnboardingCommunitySlide(
                     }
 
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                         contentDescription = null,
                         tint = Color(0xFF2AABEE),
                         modifier = Modifier.size(20.dp)
@@ -974,7 +974,7 @@ private fun OnboardingCommunitySlide(
                     }
 
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
@@ -1028,7 +1028,7 @@ private fun OnboardingCommunitySlide(
                     }
 
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)

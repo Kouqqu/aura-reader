@@ -18,12 +18,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Timeline
-import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Timeline
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
@@ -133,7 +133,7 @@ fun ReadingStatsBottomSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
-                    imageVector = Icons.Default.Timeline,
+                    imageVector = Icons.Rounded.Timeline,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
@@ -162,7 +162,7 @@ fun ReadingStatsBottomSheet(
                 StatCard(
                     title = strings.readingTimeTodayCard,
                     value = strings.minutesRead(statsData.todayMinutes),
-                    icon = Icons.Default.Schedule,
+                    icon = Icons.Rounded.Schedule,
                     isGlass = isLiquidGlass,
                     isDark = isDark,
                     modifier = Modifier.weight(1f)
@@ -170,7 +170,7 @@ fun ReadingStatsBottomSheet(
                 StatCard(
                     title = strings.readingTimeTotalCard,
                     value = strings.totalHoursAndMinutes(statsData.totalMinutes / 60, statsData.totalMinutes % 60),
-                    icon = Icons.Default.CalendarMonth,
+                    icon = Icons.Rounded.CalendarMonth,
                     isGlass = isLiquidGlass,
                     isDark = isDark,
                     modifier = Modifier.weight(1.2f)
@@ -178,7 +178,7 @@ fun ReadingStatsBottomSheet(
                 StatCard(
                     title = strings.readingTimeAvgCard,
                     value = strings.minutesRead(statsData.dailyAverageMinutes),
-                    icon = Icons.Default.BarChart,
+                    icon = Icons.Rounded.BarChart,
                     isGlass = isLiquidGlass,
                     isDark = isDark,
                     modifier = Modifier.weight(1f)
@@ -262,7 +262,7 @@ fun ReadingStatsBottomSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
-                    imageVector = Icons.Default.DeleteOutline,
+                    imageVector = Icons.Rounded.DeleteOutline,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
@@ -315,7 +315,7 @@ private fun StreakBanner(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.LocalFireDepartment,
+                    imageVector = Icons.Rounded.LocalFireDepartment,
                     contentDescription = null,
                     tint = if (hasStreak) Color(0xFFFF9500) else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(26.dp)

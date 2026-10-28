@@ -9,15 +9,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.BrightnessAuto
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Contrast
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.BrightnessAuto
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Contrast
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -85,7 +85,7 @@ internal fun SettingsThemeSection(
             ) {
                 ExpressiveThemePill(
                     label = strings.themeLight,
-                    icon = Icons.Default.LightMode,
+                    icon = Icons.Rounded.LightMode,
                     isSelected = currentTheme == ReaderThemeMode.LIGHT,
                     previewBgColor = Color(0xFFFFFFFF),
                     previewTextColor = Color(0xFF1D1B20),
@@ -95,7 +95,7 @@ internal fun SettingsThemeSection(
                 )
                 ExpressiveThemePill(
                     label = strings.themeDark,
-                    icon = Icons.Default.DarkMode,
+                    icon = Icons.Rounded.DarkMode,
                     isSelected = currentTheme == ReaderThemeMode.DARK,
                     previewBgColor = Color(0xFF1E2125),
                     previewTextColor = Color(0xFFE2E2E6),
@@ -105,7 +105,7 @@ internal fun SettingsThemeSection(
                 )
                 ExpressiveThemePill(
                     label = strings.themeSepia,
-                    icon = Icons.AutoMirrored.Filled.MenuBook,
+                    icon = Icons.AutoMirrored.Rounded.MenuBook,
                     isSelected = currentTheme == ReaderThemeMode.SEPIA,
                     previewBgColor = SepiaBackground,
                     previewTextColor = SepiaText,
@@ -121,7 +121,7 @@ internal fun SettingsThemeSection(
             ) {
                 ExpressiveThemePill(
                     label = strings.themeSystem,
-                    icon = Icons.Default.BrightnessAuto,
+                    icon = Icons.Rounded.BrightnessAuto,
                     isSelected = currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC,
                     previewBgColor = if (sysDark) Color(0xFF252930) else Color(0xFFF0F3F6),
                     previewTextColor = if (sysDark) Color(0xFFE2E2E6) else Color(0xFF1D1B20),
@@ -131,7 +131,7 @@ internal fun SettingsThemeSection(
                 )
                 ExpressiveThemePill(
                     label = strings.themeAmoled,
-                    icon = Icons.Default.Contrast,
+                    icon = Icons.Rounded.Contrast,
                     isSelected = currentTheme == ReaderThemeMode.AMOLED,
                     previewBgColor = AmoledBackground,
                     previewTextColor = AmoledText,
@@ -173,7 +173,7 @@ internal fun SettingsThemeSection(
         ExpressiveSettingsRow(
             title = strings.syncThemesTitle,
             subtitle = strings.syncThemesSubtitle,
-            icon = { SettingsIconBox(Icons.Default.Palette) },
+            icon = { SettingsIconBox(Icons.Rounded.Palette) },
             onClick = { onSyncThemesChange(!syncThemesWithApp) },
             trailing = {
                 if (isGlass) {
@@ -193,11 +193,11 @@ internal fun SettingsThemeSection(
         ExpressiveSettingsRow(
             title = strings.readerThemeSettingsTitle,
             subtitle = strings.readerThemeSettingsSubtitle,
-            icon = { SettingsIconBox(Icons.AutoMirrored.Filled.MenuBook) },
+            icon = { SettingsIconBox(Icons.AutoMirrored.Rounded.MenuBook) },
             onClick = { onOpenReaderThemeSettings() },
             trailing = {
                 Icon(
-                    imageVector = Icons.Default.ChevronRight,
+                    imageVector = Icons.Rounded.ChevronRight,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -207,7 +207,7 @@ internal fun SettingsThemeSection(
         ExpressiveSettingsRow(
             title = strings.materialYouToggle,
             subtitle = strings.materialYouSubtitle,
-            icon = { SettingsIconBox(Icons.Default.AutoAwesome) },
+            icon = { SettingsIconBox(Icons.Rounded.AutoAwesome) },
             onClick = { onToggleMaterialYou(!materialYouEnabled) },
             trailing = {
                 if (isGlass) {

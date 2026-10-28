@@ -40,9 +40,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.rounded.Book
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -295,7 +295,7 @@ fun ParallaxCoverViewer(
                             .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(50))
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Download,
+                            imageVector = Icons.Rounded.Download,
                             contentDescription = strings.downloadCover,
                             tint = Color.White
                         )
@@ -308,7 +308,7 @@ fun ParallaxCoverViewer(
                         .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(50))
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Close,
+                        imageVector = Icons.Rounded.Close,
                         contentDescription = strings.closeDialog,
                         tint = Color.White
                     )
@@ -399,7 +399,7 @@ fun ParallaxCoverViewer(
                             modifier = Modifier.padding(24.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Book,
+                                imageVector = Icons.Rounded.Book,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.size(64.dp)
@@ -483,7 +483,7 @@ fun ParallaxCoverViewer(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Download,
+                            imageVector = Icons.Rounded.Download,
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(18.dp)

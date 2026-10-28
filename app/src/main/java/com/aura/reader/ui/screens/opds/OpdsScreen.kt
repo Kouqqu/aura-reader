@@ -33,22 +33,22 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import com.aura.reader.ui.components.WavyProgressIndicator
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.rounded.Close
 
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.CloudOff
+import androidx.compose.material.icons.rounded.Dns
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
@@ -60,7 +60,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.rounded.Person
 import com.aura.reader.data.model.OpdsSearchType
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -247,7 +247,7 @@ fun OpdsScreen(
                         }
                     }) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = strings.back
                         )
                     }
@@ -256,7 +256,7 @@ fun OpdsScreen(
                     if (customOpdsEnabled) {
                         IconButton(onClick = { showMirrorDialog = true }) {
                             Icon(
-                                imageVector = Icons.Default.Dns,
+                                imageVector = Icons.Rounded.Dns,
                                 contentDescription = strings.opdsMirrorTitle,
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -292,7 +292,7 @@ fun OpdsScreen(
                 },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Search,
+                        imageVector = Icons.Rounded.Search,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
@@ -305,7 +305,7 @@ fun OpdsScreen(
                             viewModel.clearSearchAndReturnHome()
                         }) {
                             Icon(
-                                imageVector = Icons.Default.Clear,
+                                imageVector = Icons.Rounded.Clear,
                                 contentDescription = strings.clear,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -345,7 +345,7 @@ fun OpdsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.History,
+                        imageVector = Icons.Rounded.History,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(16.dp)
@@ -416,7 +416,7 @@ fun OpdsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Info,
+                                imageVector = Icons.Rounded.Info,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(20.dp)
@@ -507,7 +507,7 @@ fun OpdsScreen(
                         onClick = { showSortDropdown = true },
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Default.Sort,
+                                imageVector = Icons.AutoMirrored.Rounded.Sort,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -634,7 +634,7 @@ fun OpdsScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.MenuBook,
+                                    imageVector = Icons.AutoMirrored.Rounded.MenuBook,
                                     contentDescription = null,
                                     modifier = Modifier.size(64.dp),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -686,7 +686,7 @@ fun OpdsScreen(
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                                             ) {
                                                 Icon(
-                                                    imageVector = Icons.Default.AutoStories,
+                                                    imageVector = Icons.Rounded.AutoStories,
                                                     contentDescription = null,
                                                     tint = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier.size(18.dp)
@@ -724,7 +724,7 @@ fun OpdsScreen(
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                                             ) {
                                                 Icon(
-                                                    imageVector = Icons.Default.Person,
+                                                    imageVector = Icons.Rounded.Person,
                                                     contentDescription = null,
                                                     tint = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier.size(18.dp)
@@ -762,7 +762,7 @@ fun OpdsScreen(
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                                             ) {
                                                 Icon(
-                                                    imageVector = Icons.Default.MenuBook,
+                                                    imageVector = Icons.AutoMirrored.Rounded.MenuBook,
                                                     contentDescription = null,
                                                     tint = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier.size(18.dp)
@@ -908,7 +908,7 @@ fun OpdsBookCard(
                 if (book.isCategory) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Default.AutoStories,
+                            imageVector = Icons.Rounded.AutoStories,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(28.dp)
@@ -927,7 +927,7 @@ fun OpdsBookCard(
                 } else {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Default.MenuBook,
+                            imageVector = Icons.AutoMirrored.Rounded.MenuBook,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                             modifier = Modifier.size(28.dp)
@@ -997,7 +997,7 @@ fun OpdsBookCard(
                                 modifier = Modifier.size(24.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.Close,
+                                    Icons.Rounded.Close,
                                     contentDescription = strings.cancel,
                                     tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(16.dp)
@@ -1062,7 +1062,7 @@ fun OpdsBookCard(
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
                                     Icon(
-                                        Icons.Default.Download,
+                                        Icons.Rounded.Download,
                                         contentDescription = null,
                                         modifier = Modifier.size(12.dp),
                                         tint = MaterialTheme.colorScheme.onTertiaryContainer
@@ -1113,7 +1113,7 @@ fun OpdsBookCard(
             // Action Button
             if (book.isCategory) {
                 Icon(
-                    imageVector = Icons.Default.ChevronRight,
+                    imageVector = Icons.Rounded.ChevronRight,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1131,7 +1131,7 @@ fun OpdsBookCard(
             } else if (downloadProgress == null) {
                 IconButton(onClick = onDownloadFb2) {
                     Icon(
-                        imageVector = Icons.Default.Download,
+                        imageVector = Icons.Rounded.Download,
                         contentDescription = strings.download,
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -1193,7 +1193,7 @@ fun OpdsErrorView(
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
-                    imageVector = if (isConnectionError) Icons.Default.CloudOff else Icons.Default.Refresh,
+                    imageVector = if (isConnectionError) Icons.Rounded.CloudOff else Icons.Rounded.Refresh,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(40.dp)
@@ -1227,7 +1227,7 @@ fun OpdsErrorView(
             onClick = onRetry,
             shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text(strings.retry)
         }
@@ -1238,7 +1238,7 @@ fun OpdsErrorView(
                 onClick = onOpenMirrorSettings,
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.Dns, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Rounded.Dns, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(strings.opdsMirrorTitle)
             }
@@ -1300,7 +1300,7 @@ fun OpdsBookDetailsBottomSheet(
                     } else {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Default.MenuBook,
+                                imageVector = Icons.AutoMirrored.Rounded.MenuBook,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                                 modifier = Modifier.size(40.dp)
@@ -1369,7 +1369,7 @@ fun OpdsBookDetailsBottomSheet(
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     Icon(
-                                        Icons.Default.Download,
+                                        Icons.Rounded.Download,
                                         contentDescription = null,
                                         modifier = Modifier.size(13.dp),
                                         tint = MaterialTheme.colorScheme.onTertiaryContainer
@@ -1454,7 +1454,7 @@ fun OpdsBookDetailsBottomSheet(
                                 modifier = Modifier.size(28.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.Close,
+                                    Icons.Rounded.Close,
                                     contentDescription = strings.cancel,
                                     tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(18.dp)
@@ -1477,7 +1477,7 @@ fun OpdsBookDetailsBottomSheet(
                         .fillMaxWidth()
                         .height(48.dp)
                 ) {
-                    Icon(Icons.Default.MenuBook, contentDescription = null)
+                    Icon(Icons.AutoMirrored.Rounded.MenuBook, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(strings.openBookAction, fontWeight = FontWeight.Bold)
                 }
@@ -1500,7 +1500,7 @@ fun OpdsBookDetailsBottomSheet(
                                     .weight(1f)
                                     .height(48.dp)
                             ) {
-                                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(strings.downloadFb2)
                             }
@@ -1513,7 +1513,7 @@ fun OpdsBookDetailsBottomSheet(
                                     .weight(1f)
                                     .height(48.dp)
                             ) {
-                                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(strings.downloadEpub)
                             }
@@ -1532,7 +1532,7 @@ fun OpdsBookDetailsBottomSheet(
                                         .weight(1f)
                                         .height(48.dp)
                                 ) {
-                                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(strings.opdsDownloadMobi)
                                 }
@@ -1545,7 +1545,7 @@ fun OpdsBookDetailsBottomSheet(
                                         .weight(1f)
                                         .height(48.dp)
                                 ) {
-                                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(strings.opdsDownloadPdf)
                                 }
@@ -1601,7 +1601,7 @@ fun OpdsHomeView(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Default.AutoStories,
+                            imageVector = Icons.Rounded.AutoStories,
                             contentDescription = null,
                             modifier = Modifier.size(32.dp),
                             tint = MaterialTheme.colorScheme.primary
@@ -1725,7 +1725,7 @@ fun OpdsHomeCategoryCard(
             }
 
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                imageVector = Icons.Rounded.ChevronRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.size(20.dp)
@@ -1762,7 +1762,7 @@ fun OpdsCategoryItemCard(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = if (isSeries) Icons.Default.AutoStories else Icons.Default.Person,
+                        imageVector = if (isSeries) Icons.Rounded.AutoStories else Icons.Rounded.Person,
                         contentDescription = null,
                         tint = if (isSeries) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
                         modifier = Modifier.size(20.dp)
@@ -1796,7 +1796,7 @@ fun OpdsCategoryItemCard(
             }
 
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                imageVector = Icons.Rounded.ChevronRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.size(20.dp)

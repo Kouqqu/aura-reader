@@ -19,12 +19,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.automirrored.rounded.InsertDriveFile
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -81,7 +81,7 @@ fun AddBooksScreen(
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                         contentDescription = strings.cancel,
                         tint = MaterialTheme.colorScheme.onSurface
                     )
@@ -104,7 +104,7 @@ fun AddBooksScreen(
 
             // Method 1: Select files
             AddBookGlassCard(
-                icon = Icons.Default.InsertDriveFile,
+                icon = Icons.AutoMirrored.Rounded.InsertDriveFile,
                 title = strings.selectFiles,
                 subtitle = strings.selectFilesSubtitle,
                 isDark = isDark,
@@ -115,7 +115,7 @@ fun AddBooksScreen(
 
             // Method 2: Scan folder
             AddBookGlassCard(
-                icon = Icons.Default.FolderOpen,
+                icon = Icons.Rounded.FolderOpen,
                 title = strings.scanFolder,
                 subtitle = strings.scanFolderSubtitle,
                 isDark = isDark,
@@ -126,7 +126,7 @@ fun AddBooksScreen(
 
             // Method 3: Online OPDS catalog
             AddBookGlassCard(
-                icon = Icons.Default.CloudDownload,
+                icon = Icons.Rounded.CloudDownload,
                 title = strings.opdsCatalog,
                 subtitle = strings.opdsCatalogSubtitle,
                 isDark = isDark,
@@ -150,7 +150,7 @@ fun AddBooksScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Info,
+                        imageVector = Icons.Rounded.Info,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
@@ -228,7 +228,7 @@ private fun AddBookGlassCard(
             }
 
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                imageVector = Icons.Rounded.ChevronRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.size(20.dp)

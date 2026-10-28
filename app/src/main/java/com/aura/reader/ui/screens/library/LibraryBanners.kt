@@ -3,7 +3,7 @@ package com.aura.reader.ui.screens.library
 import com.aura.reader.ui.components.expressiveClickable
 import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.ui.components.LiquidGlassCard
-import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,11 +17,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.SystemUpdate
-import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.SystemUpdate
+import androidx.compose.material.icons.rounded.Timer
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,7 +58,7 @@ internal fun LibraryUpdateBanner(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.SystemUpdate,
+                imageVector = Icons.Rounded.SystemUpdate,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(28.dp)
@@ -117,7 +117,7 @@ internal fun LibraryReadingStatsBanner(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Timer,
+                imageVector = Icons.Rounded.Timer,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
@@ -140,7 +140,7 @@ internal fun LibraryReadingStatsBanner(
                 Spacer(modifier = Modifier.width(6.dp))
             }
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                imageVector = Icons.Rounded.ChevronRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.size(18.dp)
@@ -188,7 +188,7 @@ internal fun LibraryCollectionChips(
             onClick = { onFilterChange(ActiveCollectionFilter(CollectionFilterType.FAVORITES)) },
             leadingIcon = {
                 Icon(
-                    Icons.Default.Favorite,
+                    Icons.Rounded.Favorite,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.error
@@ -228,7 +228,7 @@ internal fun LibraryCollectionChips(
                 onClick = { onFilterChange(ActiveCollectionFilter(CollectionFilterType.CUSTOM, colName)) },
                 trailingIcon = {
                     Icon(
-                        Icons.Default.Close,
+                        Icons.Rounded.Close,
                         contentDescription = strings.delete,
                         modifier = Modifier
                             .size(14.dp)
@@ -243,7 +243,7 @@ internal fun LibraryCollectionChips(
         LiquidGlassFilterChip(
             selected = false,
             onClick = { onNewCollection() },
-            leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp)) },
+            leadingIcon = { Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(16.dp)) },
             label = { Text(strings.newCollection) },
             isGlass = isGlass,
             isDark = isThemeDark

@@ -25,8 +25,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.runtime.snapshotFlow
 import com.aura.reader.ui.theme.LocalAppStrings
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material.icons.rounded.SkipNext
 import kotlin.math.roundToInt
 import com.aura.reader.data.model.PageTurnAnimation
 import com.aura.reader.data.model.TwoColumnMode
@@ -48,12 +48,12 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.automirrored.rounded.List
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -700,9 +700,9 @@ fun ChapterPagingView(
             ) {
                 Icon(
                     imageVector = when (bottomProgressMode) {
-                        0 -> Icons.Default.MenuBook
-                        1 -> Icons.Default.Timer
-                        else -> Icons.Default.AutoStories
+                        0 -> Icons.AutoMirrored.Rounded.MenuBook
+                        1 -> Icons.Rounded.Timer
+                        else -> Icons.Rounded.AutoStories
                     },
                     contentDescription = null,
                     modifier = Modifier.size(13.dp),
@@ -764,7 +764,7 @@ fun ChapterTransitionSpread(
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            imageVector = if (isNext) Icons.Default.SkipNext else Icons.Default.SkipPrevious,
+            imageVector = if (isNext) Icons.Rounded.SkipNext else Icons.Rounded.SkipPrevious,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
             modifier = Modifier.size(40.dp)

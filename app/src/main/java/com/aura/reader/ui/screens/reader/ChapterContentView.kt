@@ -2,7 +2,7 @@ package com.aura.reader.ui.screens.reader
 
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.Quote
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -29,9 +29,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.rounded.ChevronLeft
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -200,7 +200,7 @@ fun ChapterContentView(
                             shape = RoundedCornerShape(14.dp)
                         ) {
                             Icon(
-                                Icons.Default.ChevronLeft,
+                                Icons.Rounded.ChevronLeft,
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -219,7 +219,7 @@ fun ChapterContentView(
                             Text(strings.next, maxLines = 1)
                             Spacer(modifier = Modifier.width(6.dp))
                             Icon(
-                                Icons.Default.ChevronRight,
+                                Icons.Rounded.ChevronRight,
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -254,7 +254,7 @@ fun ChapterContentView(
                                     ) {
                                         Text(strings.nextInSeriesAction)
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
                                     }
                                 }
                             }

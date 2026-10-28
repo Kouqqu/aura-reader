@@ -5,7 +5,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import com.aura.reader.data.model.Book
 import com.aura.reader.util.BookShareUtils
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.animation.AnimatedVisibility
@@ -15,14 +15,14 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.DropdownMenu
 import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.ui.components.liquidGlassMenuAppearance
 import androidx.compose.material3.DropdownMenuItem
 import com.aura.reader.ui.theme.LocalAppStrings
-import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -37,16 +37,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CollectionsBookmark
-import androidx.compose.material.icons.filled.FormatSize
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.BookmarkBorder
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.CollectionsBookmark
+import androidx.compose.material.icons.rounded.FormatSize
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -118,7 +118,7 @@ fun BoxScope.ReaderTopBar(
                             viewModel.clearSearch()
                         }) {
                             Icon(
-                                imageVector = Icons.Default.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = strings.closeSearch
                             )
                         }
@@ -163,13 +163,13 @@ fun BoxScope.ReaderTopBar(
                                 onClick = { viewModel.prevSearchResult() },
                                 modifier = Modifier.size(36.dp)
                             ) {
-                                Icon(Icons.Default.KeyboardArrowUp, contentDescription = strings.previous)
+                                Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = strings.previous)
                             }
                             IconButton(
                                 onClick = { viewModel.nextSearchResult() },
                                 modifier = Modifier.size(36.dp)
                             ) {
-                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = strings.next)
+                                Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = strings.next)
                             }
                         }
 
@@ -180,7 +180,7 @@ fun BoxScope.ReaderTopBar(
                             },
                             modifier = Modifier.size(36.dp)
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = strings.clear)
+                            Icon(Icons.Rounded.Close, contentDescription = strings.clear)
                         }
                     }
                 } else {
@@ -195,7 +195,7 @@ fun BoxScope.ReaderTopBar(
                             onNavigateBack()
                         }) {
                             Icon(
-                                imageVector = Icons.Default.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = strings.back
                             )
                         }
@@ -251,7 +251,7 @@ fun BoxScope.ReaderTopBar(
                                     )
                                 } else {
                                     Icon(
-                                        imageVector = Icons.Default.AutoStories,
+                                        imageVector = Icons.Rounded.AutoStories,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(16.dp)
@@ -290,7 +290,7 @@ fun BoxScope.ReaderTopBar(
                             onOpenTtsSheet()
                         }) {
                             Icon(
-                                imageVector = if (ttsState.isPlaying) Icons.Default.VolumeUp else Icons.Default.Headphones,
+                                imageVector = if (ttsState.isPlaying) Icons.AutoMirrored.Rounded.VolumeUp else Icons.Rounded.Headphones,
                                 contentDescription = strings.ttsListenAction,
                                 tint = if (ttsState.isServiceRunning) MaterialTheme.colorScheme.primary else if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
                             )
@@ -302,7 +302,7 @@ fun BoxScope.ReaderTopBar(
                             viewModel.toggleBookmark(preview)
                         }) {
                             Icon(
-                                imageVector = if (isCurrentChapterBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                imageVector = if (isCurrentChapterBookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
                                 contentDescription = strings.bookmarks,
                                 tint = if (isCurrentChapterBookmarked) MaterialTheme.colorScheme.primary else if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
                             )
@@ -312,7 +312,7 @@ fun BoxScope.ReaderTopBar(
                         Box {
                             IconButton(onClick = { showReaderMenu = true }) {
                                 Icon(
-                                    imageVector = Icons.Default.MoreVert,
+                                    imageVector = Icons.Rounded.MoreVert,
                                     contentDescription = strings.moreOptions,
                                     tint = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
                                 )
@@ -330,7 +330,7 @@ fun BoxScope.ReaderTopBar(
                                 DropdownMenuItem(
                                     text = { Text(strings.ttsListenAction) },
                                     leadingIcon = {
-                                        Icon(Icons.Default.Headphones, contentDescription = null)
+                                        Icon(Icons.Rounded.Headphones, contentDescription = null)
                                     },
                                     onClick = {
                                         showReaderMenu = false
@@ -343,7 +343,7 @@ fun BoxScope.ReaderTopBar(
                                 DropdownMenuItem(
                                     text = { Text(strings.searchInBook) },
                                     leadingIcon = {
-                                        Icon(Icons.Default.Search, contentDescription = null)
+                                        Icon(Icons.Rounded.Search, contentDescription = null)
                                     },
                                     onClick = {
                                         showReaderMenu = false
@@ -353,7 +353,7 @@ fun BoxScope.ReaderTopBar(
                                 DropdownMenuItem(
                                     text = { Text(strings.shareBookFile) },
                                     leadingIcon = {
-                                        Icon(Icons.Default.Share, contentDescription = null)
+                                        Icon(Icons.Rounded.Share, contentDescription = null)
                                     },
                                     onClick = {
                                         showReaderMenu = false
@@ -363,7 +363,7 @@ fun BoxScope.ReaderTopBar(
                                 DropdownMenuItem(
                                     text = { Text(strings.bookmarksAndQuotes) },
                                     leadingIcon = {
-                                        Icon(Icons.Default.CollectionsBookmark, contentDescription = null)
+                                        Icon(Icons.Rounded.CollectionsBookmark, contentDescription = null)
                                     },
                                     onClick = {
                                         showReaderMenu = false
@@ -373,7 +373,7 @@ fun BoxScope.ReaderTopBar(
                                 DropdownMenuItem(
                                     text = { Text(strings.fontAndTheme) },
                                     leadingIcon = {
-                                        Icon(Icons.Default.FormatSize, contentDescription = null)
+                                        Icon(Icons.Rounded.FormatSize, contentDescription = null)
                                     },
                                     onClick = {
                                         showReaderMenu = false
