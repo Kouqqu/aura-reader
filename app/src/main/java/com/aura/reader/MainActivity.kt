@@ -135,7 +135,8 @@ class MainActivity : ComponentActivity() {
                     AuraReaderTheme(
                         themeMode = settings.appThemeMode,
                         materialYou = materialYouEnabled,
-                        appFont = appFont
+                        appFont = appFont,
+                        holidaySeason = holidaySeason
                     ) {
                         val navController = rememberNavController()
                         AuraNavGraph(

@@ -43,26 +43,44 @@ class HolidaySeasonTest {
     }
 
     @Test
-    fun testNewYearDateRange() {
+    fun testWinterHolidaysDateRange() {
         // Dec 19 -> NONE
         val dec19 = createCalendar(2026, Calendar.DECEMBER, 19)
         assertEquals(HolidaySeason.NONE, HolidaySeason.resolve(calendar = dec19))
 
-        // Dec 20 -> NEW_YEAR
+        // Dec 20..26 -> Western / Catholic Christmas (25 Dec)
         val dec20 = createCalendar(2026, Calendar.DECEMBER, 20)
-        assertEquals(HolidaySeason.NEW_YEAR, HolidaySeason.resolve(calendar = dec20))
+        assertEquals(HolidaySeason.CHRISTMAS_WESTERN, HolidaySeason.resolve(calendar = dec20))
+        val dec25 = createCalendar(2026, Calendar.DECEMBER, 25)
+        assertEquals(HolidaySeason.CHRISTMAS_WESTERN, HolidaySeason.resolve(calendar = dec25))
+        val dec26 = createCalendar(2026, Calendar.DECEMBER, 26)
+        assertEquals(HolidaySeason.CHRISTMAS_WESTERN, HolidaySeason.resolve(calendar = dec26))
 
-        // Dec 31 -> NEW_YEAR
+        // Dec 27..Jan 5 -> New Year (31 Dec / 1 Jan)
+        val dec27 = createCalendar(2026, Calendar.DECEMBER, 27)
+        assertEquals(HolidaySeason.NEW_YEAR, HolidaySeason.resolve(calendar = dec27))
         val dec31 = createCalendar(2026, Calendar.DECEMBER, 31)
         assertEquals(HolidaySeason.NEW_YEAR, HolidaySeason.resolve(calendar = dec31))
-
-        // Jan 1 -> NEW_YEAR
         val jan1 = createCalendar(2027, Calendar.JANUARY, 1)
         assertEquals(HolidaySeason.NEW_YEAR, HolidaySeason.resolve(calendar = jan1))
+        val jan5 = createCalendar(2027, Calendar.JANUARY, 5)
+        assertEquals(HolidaySeason.NEW_YEAR, HolidaySeason.resolve(calendar = jan5))
 
-        // Jan 15 -> NEW_YEAR
+        // Jan 6..8 -> Orthodox Christmas (7 Jan)
+        val jan6 = createCalendar(2027, Calendar.JANUARY, 6)
+        assertEquals(HolidaySeason.CHRISTMAS_ORTHODOX, HolidaySeason.resolve(calendar = jan6))
+        val jan7 = createCalendar(2027, Calendar.JANUARY, 7)
+        assertEquals(HolidaySeason.CHRISTMAS_ORTHODOX, HolidaySeason.resolve(calendar = jan7))
+        val jan8 = createCalendar(2027, Calendar.JANUARY, 8)
+        assertEquals(HolidaySeason.CHRISTMAS_ORTHODOX, HolidaySeason.resolve(calendar = jan8))
+
+        // Jan 9..15 -> Old New Year & Winter Yuletide (13-14 Jan)
+        val jan9 = createCalendar(2027, Calendar.JANUARY, 9)
+        assertEquals(HolidaySeason.OLD_NEW_YEAR, HolidaySeason.resolve(calendar = jan9))
+        val jan14 = createCalendar(2027, Calendar.JANUARY, 14)
+        assertEquals(HolidaySeason.OLD_NEW_YEAR, HolidaySeason.resolve(calendar = jan14))
         val jan15 = createCalendar(2027, Calendar.JANUARY, 15)
-        assertEquals(HolidaySeason.NEW_YEAR, HolidaySeason.resolve(calendar = jan15))
+        assertEquals(HolidaySeason.OLD_NEW_YEAR, HolidaySeason.resolve(calendar = jan15))
 
         // Jan 16 -> NONE
         val jan16 = createCalendar(2027, Calendar.JANUARY, 16)
@@ -78,8 +96,10 @@ class HolidaySeasonTest {
     @Test
     fun testDisabledSetting() {
         val halloween = createCalendar(2026, Calendar.OCTOBER, 31)
-        // Disabled should always return NONE
         assertEquals(HolidaySeason.NONE, HolidaySeason.resolve(enabled = false, calendar = halloween))
+
+        val christmas = createCalendar(2026, Calendar.DECEMBER, 25)
+        assertEquals(HolidaySeason.NONE, HolidaySeason.resolve(enabled = false, calendar = christmas))
 
         val newYear = createCalendar(2026, Calendar.DECEMBER, 31)
         assertEquals(HolidaySeason.NONE, HolidaySeason.resolve(enabled = false, calendar = newYear))
@@ -89,20 +109,24 @@ class HolidaySeasonTest {
     fun testManualOverrides() {
         val summerDay = createCalendar(2026, Calendar.JULY, 15)
 
-        // Force Halloween in summer
         assertEquals(
             HolidaySeason.HALLOWEEN,
             HolidaySeason.resolve(enabled = true, override = "HALLOWEEN", calendar = summerDay)
         )
-
-        // Force New Year in summer
+        assertEquals(
+            HolidaySeason.CHRISTMAS_WESTERN,
+            HolidaySeason.resolve(enabled = true, override = "CHRISTMAS_WESTERN", calendar = summerDay)
+        )
         assertEquals(
             HolidaySeason.NEW_YEAR,
             HolidaySeason.resolve(enabled = true, override = "NEW_YEAR", calendar = summerDay)
         )
+        assertEquals(
+            HolidaySeason.CHRISTMAS_ORTHODOX,
+            HolidaySeason.resolve(enabled = true, override = "CHRISTMAS_ORTHODOX", calendar = summerDay)
+        )
 
         val halloween = createCalendar(2026, Calendar.OCTOBER, 31)
-        // Force OFF on Halloween
         assertEquals(
             HolidaySeason.NONE,
             HolidaySeason.resolve(enabled = true, override = "OFF", calendar = halloween)
@@ -115,9 +139,14 @@ class HolidaySeasonTest {
         assertTrue(HolidaySeason.HALLOWEEN.burstSymbols.contains("🎃"))
         assertTrue(HolidaySeason.HALLOWEEN.burstSymbols.contains("🦇"))
 
+        assertTrue(HolidaySeason.CHRISTMAS_WESTERN.burstColors.isNotEmpty())
+        assertTrue(HolidaySeason.CHRISTMAS_WESTERN.burstSymbols.contains("🎄"))
+
         assertTrue(HolidaySeason.NEW_YEAR.burstColors.isNotEmpty())
         assertTrue(HolidaySeason.NEW_YEAR.burstSymbols.contains("❄️"))
-        assertTrue(HolidaySeason.NEW_YEAR.burstSymbols.contains("🎄"))
+
+        assertTrue(HolidaySeason.CHRISTMAS_ORTHODOX.burstColors.isNotEmpty())
+        assertTrue(HolidaySeason.CHRISTMAS_ORTHODOX.burstSymbols.contains("⭐"))
 
         assertTrue(HolidaySeason.NONE.burstColors.isNotEmpty())
     }

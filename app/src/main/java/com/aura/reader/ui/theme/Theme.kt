@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import com.aura.reader.R
+import com.aura.reader.data.model.HolidaySeason
 import com.aura.reader.data.model.ReaderThemeMode
 
 private val LightColorScheme = lightColorScheme(
@@ -119,6 +120,7 @@ fun AuraReaderTheme(
     materialYou: Boolean = false,
     appFont: String = "GOOGLE_SANS",
     readerMode: Boolean = false,
+    holidaySeason: HolidaySeason = HolidaySeason.NONE,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
@@ -193,8 +195,63 @@ fun AuraReaderTheme(
         }
     }
 
+    val festiveColorScheme = if (holidaySeason != HolidaySeason.NONE && !readerMode) {
+        val isDark = when (themeMode) {
+            ReaderThemeMode.LIGHT -> false
+            ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
+            ReaderThemeMode.SEPIA -> false
+            ReaderThemeMode.SYSTEM_DYNAMIC -> systemDark
+        }
+        val festivePrimary = holidaySeason.primaryAccent
+        val festiveContainer = if (isDark) {
+            when (holidaySeason) {
+                HolidaySeason.HALLOWEEN -> Color(0xFF4A1F00)
+                HolidaySeason.CHRISTMAS_WESTERN -> Color(0xFF421010)
+                HolidaySeason.NEW_YEAR -> Color(0xFF003859)
+                HolidaySeason.CHRISTMAS_ORTHODOX -> Color(0xFF423200)
+                HolidaySeason.OLD_NEW_YEAR -> Color(0xFF003859)
+                HolidaySeason.NONE -> finalColorScheme.primaryContainer
+            }
+        } else {
+            when (holidaySeason) {
+                HolidaySeason.HALLOWEEN -> Color(0xFFFFDBC8)
+                HolidaySeason.CHRISTMAS_WESTERN -> Color(0xFFFFDAD6)
+                HolidaySeason.NEW_YEAR -> Color(0xFFC7E7FF)
+                HolidaySeason.CHRISTMAS_ORTHODOX -> Color(0xFFFFE082)
+                HolidaySeason.OLD_NEW_YEAR -> Color(0xFFC7E7FF)
+                HolidaySeason.NONE -> finalColorScheme.primaryContainer
+            }
+        }
+        val festiveOnContainer = if (isDark) {
+            when (holidaySeason) {
+                HolidaySeason.HALLOWEEN -> Color(0xFFFFDBC8)
+                HolidaySeason.CHRISTMAS_WESTERN -> Color(0xFFFFDAD6)
+                HolidaySeason.NEW_YEAR -> Color(0xFFC7E7FF)
+                HolidaySeason.CHRISTMAS_ORTHODOX -> Color(0xFFFFF8E1)
+                HolidaySeason.OLD_NEW_YEAR -> Color(0xFFC7E7FF)
+                HolidaySeason.NONE -> finalColorScheme.onPrimaryContainer
+            }
+        } else {
+            when (holidaySeason) {
+                HolidaySeason.HALLOWEEN -> Color(0xFF381400)
+                HolidaySeason.CHRISTMAS_WESTERN -> Color(0xFF410002)
+                HolidaySeason.NEW_YEAR -> Color(0xFF001E30)
+                HolidaySeason.CHRISTMAS_ORTHODOX -> Color(0xFF261900)
+                HolidaySeason.OLD_NEW_YEAR -> Color(0xFF001E30)
+                HolidaySeason.NONE -> finalColorScheme.onPrimaryContainer
+            }
+        }
+        finalColorScheme.copy(
+            primary = festivePrimary,
+            primaryContainer = festiveContainer,
+            onPrimaryContainer = festiveOnContainer
+        )
+    } else {
+        finalColorScheme
+    }
+
     MaterialTheme(
-        colorScheme = finalColorScheme,
+        colorScheme = festiveColorScheme,
         typography = typography,
         content = content
     )

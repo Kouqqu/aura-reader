@@ -18,6 +18,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -735,7 +737,9 @@ ExpressiveSettingsGroup {
             )
             Spacer(modifier = Modifier.height(10.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 LiquidGlassFilterChip(
@@ -748,13 +752,25 @@ ExpressiveSettingsGroup {
                     selected = holidayOverride == "HALLOWEEN",
                     isGlass = isGlass,
                     onClick = { onHolidayOverrideChange("HALLOWEEN") },
-                    label = { Text("🎃") }
+                    label = { Text("🎃 Хэллоуин") }
+                )
+                LiquidGlassFilterChip(
+                    selected = holidayOverride == "CHRISTMAS_WESTERN",
+                    isGlass = isGlass,
+                    onClick = { onHolidayOverrideChange("CHRISTMAS_WESTERN") },
+                    label = { Text("🎄 Рождество (25 дек)") }
                 )
                 LiquidGlassFilterChip(
                     selected = holidayOverride == "NEW_YEAR",
                     isGlass = isGlass,
                     onClick = { onHolidayOverrideChange("NEW_YEAR") },
-                    label = { Text("❄️") }
+                    label = { Text("❄️ Новый год") }
+                )
+                LiquidGlassFilterChip(
+                    selected = holidayOverride == "CHRISTMAS_ORTHODOX",
+                    isGlass = isGlass,
+                    onClick = { onHolidayOverrideChange("CHRISTMAS_ORTHODOX") },
+                    label = { Text("⭐ Рождество (7 янв)") }
                 )
                 LiquidGlassFilterChip(
                     selected = holidayOverride == "OFF",

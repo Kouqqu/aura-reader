@@ -103,9 +103,9 @@ fun Modifier.jellyOverscroll(
     enabled: Boolean = true,
     allowTopBounce: Boolean = true,
     allowBottomBounce: Boolean = true,
-    dampingRatio: Float = 0.98f,
+    dampingRatio: Float = Spring.DampingRatioNoBouncy,
     stiffness: Float = Spring.StiffnessMediumLow,
-    maxOverscroll: Float = 72f
+    maxOverscroll: Float = 60f
 ): Modifier = composed {
     if (!enabled) return@composed this
 
@@ -148,38 +148,39 @@ fun Modifier.jellyOverscroll(
             }
 
             override suspend fun onPreFling(available: Velocity): Velocity {
-                if (offsetY.value != 0f) {
+                val current = offsetY.value
+                if (current != 0f) {
+                    // Finger was released while overscrolled: spring back cleanly to 0
                     offsetY.animateTo(
                         targetValue = 0f,
                         animationSpec = spring(dampingRatio = dampingRatio, stiffness = stiffness),
-                        initialVelocity = available.y * 0.12f
+                        initialVelocity = (available.y * 0.08f).coerceIn(-maxOverscroll, maxOverscroll)
                     )
+                    // Consume available velocity completely so onPostFling never triggers a duplicate bounce!
+                    return available
                 }
                 return Velocity.Zero
             }
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                val current = offsetY.value
-                val allowBounce = if (available.y > 0f) allowTopBounce else allowBottomBounce
-                if (allowBounce && (available.y != 0f || current != 0f)) {
-                    val bounceImpulse = (available.y * 0.055f).coerceIn(-maxOverscroll * 0.75f, maxOverscroll * 0.75f)
-                    if (bounceImpulse != 0f && current == 0f) {
-                        offsetY.snapTo(bounceImpulse)
+                if (available.y != 0f) {
+                    val allowBounce = if (available.y > 0f) allowTopBounce else allowBottomBounce
+                    if (allowBounce) {
+                        val bounceImpulse = (available.y * 0.045f).coerceIn(-maxOverscroll * 0.65f, maxOverscroll * 0.65f)
+                        if (bounceImpulse != 0f) {
+                            offsetY.snapTo(bounceImpulse)
+                            offsetY.animateTo(
+                                targetValue = 0f,
+                                animationSpec = spring(dampingRatio = dampingRatio, stiffness = stiffness)
+                            )
+                            return available
+                        }
                     }
-                    offsetY.animateTo(
-                        targetValue = 0f,
-                        animationSpec = spring(dampingRatio = dampingRatio, stiffness = stiffness),
-                        initialVelocity = available.y * 0.14f
-                    )
-                    return Velocity.Zero
-                } else if (current != 0f) {
+                } else if (offsetY.value != 0f) {
                     offsetY.animateTo(
                         targetValue = 0f,
                         animationSpec = spring(dampingRatio = dampingRatio, stiffness = stiffness)
                     )
-                    return Velocity.Zero
-                }
-                if (!allowTopBounce && available.y > 0f) {
                     return available
                 }
                 return Velocity.Zero

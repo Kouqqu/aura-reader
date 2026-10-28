@@ -39,47 +39,108 @@ enum class HolidaySeason(
         iconEmoji = "🎃",
         badgeText = "🎃 Хэллоуин",
         greetingText = "Жутко интересного чтения!",
-        primaryAccent = Color(0xFFFF7518), // Pumpkin Orange
-        secondaryAccent = Color(0xFF8A2BE2), // Witch Purple
+        primaryAccent = Color(0xFFFF6D00), // Rich Vivid Pumpkin Orange
+        secondaryAccent = Color(0xFF9C27B0), // Witch Violet
         burstColors = listOf(
-            Color(0xFFFF7518), // Pumpkin Orange
-            Color(0xFFFFA500), // Bright Orange
-            Color(0xFF8A2BE2), // Witch Violet
-            Color(0xFF9C27B0), // Purple
+            Color(0xFFFF6D00), // Pumpkin Orange
+            Color(0xFFFF9100), // Bright Orange
+            Color(0xFFFFAB40), // Warm Amber
+            Color(0xFF9C27B0), // Witch Violet
+            Color(0xFFBA68C8), // Soft Purple
             Color(0xFF32CD32), // Slime Green
-            Color(0xFFFFD700), // Gold
-            Color(0xFFFF5722)  // Deep Orange
+            Color(0xFFFFD700)  // Gold
         ),
         burstSymbols = listOf("🎃", "👻", "🦇", "🍬", "🕷️", "✨", "🕸️", "🕯️")
+    ),
+    CHRISTMAS_WESTERN(
+        id = "CHRISTMAS_WESTERN",
+        displayName = "Рождество",
+        iconEmoji = "🎄",
+        badgeText = "🎄 Рождество",
+        greetingText = "Светлого и уютного Рождества!",
+        primaryAccent = Color(0xFFE53935), // Holiday Crimson Red
+        secondaryAccent = Color(0xFF2E7D32), // Pine Tree Green
+        burstColors = listOf(
+            Color(0xFFE53935), // Crimson Red
+            Color(0xFFFF5252), // Bright Red
+            Color(0xFF2E7D32), // Pine Green
+            Color(0xFF4CAF50), // Festive Green
+            Color(0xFFFFD700), // Sparkle Gold
+            Color(0xFFFFFFFF)  // Snow White
+        ),
+        burstSymbols = listOf("🎄", "⭐", "🎁", "🕯️", "🔔", "✨", "❄️")
     ),
     NEW_YEAR(
         id = "NEW_YEAR",
         displayName = "Новый год",
         iconEmoji = "❄️",
-        badgeText = "❄️ Зимнее чтение",
-        greetingText = "Уютного новогоднего чтения!",
-        primaryAccent = Color(0xFF4FC3F7), // Frost Blue
-        secondaryAccent = Color(0xFFE53935), // Holiday Red
+        badgeText = "❄️ Новый год",
+        greetingText = "Счастливого Нового года!",
+        primaryAccent = Color(0xFF00B0FF), // Vibrant Frost Ice Blue
+        secondaryAccent = Color(0xFFFFD700), // Sparkle Gold
         burstColors = listOf(
-            Color(0xFF4FC3F7), // Frost Blue
-            Color(0xFFE53935), // Holiday Red
-            Color(0xFF43A047), // Pine Green
+            Color(0xFF00B0FF), // Ice Blue
+            Color(0xFF40C4FF), // Sky Blue
+            Color(0xFF80D8FF), // Light Ice
             Color(0xFFFFD700), // Sparkle Gold
             Color(0xFFFFFFFF), // Snow White
-            Color(0xFF81D4FA), // Ice Blue
-            Color(0xFFFFB300)  // Warm Amber
+            Color(0xFFE040FB)  // Festive Magenta
         ),
-        burstSymbols = listOf("❄️", "🎄", "⛄", "🎁", "✨", "🔔", "⭐", "🌟")
+        burstSymbols = listOf("❄️", "🍾", "🎉", "⛄", "✨", "🌟", "🎊", "⭐")
+    ),
+    CHRISTMAS_ORTHODOX(
+        id = "CHRISTMAS_ORTHODOX",
+        displayName = "Рождество",
+        iconEmoji = "⭐",
+        badgeText = "⭐ Рождество",
+        greetingText = "Со светлым Рождеством Христовым!",
+        primaryAccent = Color(0xFFFFB300), // Star Gold
+        secondaryAccent = Color(0xFF4FC3F7), // Heavenly Blue
+        burstColors = listOf(
+            Color(0xFFFFB300), // Star Gold
+            Color(0xFFFFD54F), // Light Gold
+            Color(0xFF4FC3F7), // Frost Blue
+            Color(0xFF81D4FA), // Ice Blue
+            Color(0xFFFFFFFF), // Pure White
+            Color(0xFFFFF9C4)  // Candle Light
+        ),
+        burstSymbols = listOf("⭐", "🌟", "🕊️", "🕯️", "✨", "❄️", "🎄")
+    ),
+    OLD_NEW_YEAR(
+        id = "OLD_NEW_YEAR",
+        displayName = "Зимние праздники",
+        iconEmoji = "❄️",
+        badgeText = "❄️ Зимние праздники",
+        greetingText = "Уютных зимних дней и чтения!",
+        primaryAccent = Color(0xFF29B6F6), // Crystal Blue
+        secondaryAccent = Color(0xFFB0BEC5), // Frost Silver
+        burstColors = listOf(
+            Color(0xFF29B6F6), // Crystal Blue
+            Color(0xFF81D4FA), // Soft Blue
+            Color(0xFFB0BEC5), // Silver
+            Color(0xFFFFFFFF), // White
+            Color(0xFFFFD700)  // Star Gold
+        ),
+        burstSymbols = listOf("❄️", "⛄", "✨", "🌟", "☕", "🤍")
     );
+
+    val isWinterSeason: Boolean
+        get() = this == CHRISTMAS_WESTERN || this == NEW_YEAR || this == CHRISTMAS_ORTHODOX || this == OLD_NEW_YEAR
+
+    val isHalloween: Boolean
+        get() = this == HALLOWEEN
 
     companion object {
         /**
          * Resolves the active holiday season based on calendar date or manual override.
-         * override: "AUTO", "HALLOWEEN", "NEW_YEAR", "OFF"
+         * override: "AUTO", "HALLOWEEN", "CHRISTMAS_WESTERN", "NEW_YEAR", "CHRISTMAS_ORTHODOX", "OLD_NEW_YEAR", "OFF"
          *
          * Default calendar dates:
-         * Halloween: Oct 28 - Nov 3
-         * New Year & Christmas: Dec 20 - Jan 15
+         * - Halloween: Oct 28 - Nov 3
+         * - Western / Catholic Christmas: Dec 20 - Dec 26
+         * - New Year: Dec 27 - Jan 5
+         * - Orthodox Christmas: Jan 6 - Jan 8
+         * - Old New Year & Winter Yuletide: Jan 9 - Jan 15
          */
         fun resolve(
             enabled: Boolean = true,
@@ -90,7 +151,10 @@ enum class HolidaySeason(
 
             return when (override.uppercase()) {
                 "HALLOWEEN" -> HALLOWEEN
-                "NEW_YEAR", "CHRISTMAS" -> NEW_YEAR
+                "CHRISTMAS_WESTERN", "CHRISTMAS" -> CHRISTMAS_WESTERN
+                "NEW_YEAR" -> NEW_YEAR
+                "CHRISTMAS_ORTHODOX" -> CHRISTMAS_ORTHODOX
+                "OLD_NEW_YEAR", "WINTER" -> OLD_NEW_YEAR
                 "OFF", "NONE" -> NONE
                 else -> calculateFromCalendar(calendar)
             }
@@ -105,9 +169,24 @@ enum class HolidaySeason(
                 return HALLOWEEN
             }
 
-            // New Year & Christmas: Dec 20 to Jan 15
-            if ((month == Calendar.DECEMBER && day >= 20) || (month == Calendar.JANUARY && day <= 15)) {
+            // Western / Catholic Christmas: Dec 20 to Dec 26
+            if (month == Calendar.DECEMBER && day in 20..26) {
+                return CHRISTMAS_WESTERN
+            }
+
+            // New Year: Dec 27 to Jan 5
+            if ((month == Calendar.DECEMBER && day >= 27) || (month == Calendar.JANUARY && day <= 5)) {
                 return NEW_YEAR
+            }
+
+            // Orthodox Christmas: Jan 6 to Jan 8
+            if (month == Calendar.JANUARY && day in 6..8) {
+                return CHRISTMAS_ORTHODOX
+            }
+
+            // Old New Year & Winter Yuletide: Jan 9 to Jan 15
+            if (month == Calendar.JANUARY && day in 9..15) {
+                return OLD_NEW_YEAR
             }
 
             return NONE

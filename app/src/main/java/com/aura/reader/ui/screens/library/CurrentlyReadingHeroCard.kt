@@ -120,11 +120,27 @@ fun CurrentlyReadingHeroCard(
         }
     }
 
-    val primaryAccent = accentColor ?: MaterialTheme.colorScheme.primary
-    val cardBg = dominantColor ?: MaterialTheme.colorScheme.primaryContainer
+    val holidaySeason = com.aura.reader.data.model.LocalHolidaySeason.current
+    val isFestive = holidaySeason != com.aura.reader.data.model.HolidaySeason.NONE
+
+    val primaryAccent = if (isFestive) {
+        holidaySeason.primaryAccent
+    } else {
+        accentColor ?: MaterialTheme.colorScheme.primary
+    }
+    val cardBg = if (isFestive) {
+        holidaySeason.primaryAccent
+    } else {
+        dominantColor ?: MaterialTheme.colorScheme.primaryContainer
+    }
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
 
-    val heroBorder = if (isGlass) {
+    val heroBorder = if (isFestive) {
+        BorderStroke(
+            1.2.dp,
+            holidaySeason.primaryAccent.copy(alpha = if (isDark) 0.38f else 0.28f)
+        )
+    } else if (isGlass) {
         BorderStroke(
             0.5.dp,
             if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
@@ -360,6 +376,20 @@ fun CurrentlyReadingHeroCard(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 2.dp)
                     )
+
+                    if (isFestive) {
+                        Text(
+                            text = holidaySeason.greetingText,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = primaryAccent,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(10.dp))
 
