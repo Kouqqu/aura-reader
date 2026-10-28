@@ -147,12 +147,8 @@ fun OpdsScreen(
         viewModel.refreshConnectionStatus()
     }
 
-    BackHandler(enabled = true) {
-        if (canGoBack) {
-            viewModel.navigateBack()
-        } else {
-            onNavigateBack()
-        }
+    BackHandler(enabled = canGoBack) {
+        viewModel.navigateBack()
     }
 
     var showMirrorDialog by remember { mutableStateOf(false) }

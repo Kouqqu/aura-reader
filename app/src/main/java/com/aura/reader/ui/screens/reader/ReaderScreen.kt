@@ -299,13 +299,9 @@ fun ReaderScreen(
         }
     }
 
-    BackHandler(enabled = true) {
-        if (selectedQuoteCopyAction != null) {
-            selectionResetKey++
-            customTextToolbar.hide()
-        } else {
-            onNavigateBack()
-        }
+    BackHandler(enabled = selectedQuoteCopyAction != null) {
+        selectionResetKey++
+        customTextToolbar.hide()
     }
 
     fun currentSelectionText(): String? {

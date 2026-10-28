@@ -544,8 +544,8 @@ fun LibraryScreen(
                     onClick = { showAddBooksSheet = true },
                     icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
                     text = { Text(strings.addBooks) },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             }
         },

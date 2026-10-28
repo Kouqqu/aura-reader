@@ -5,6 +5,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.pm.ServiceInfo
+import androidx.core.app.ServiceCompat
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -147,10 +149,18 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                     putIntegerArrayListExtra(EXTRA_ORIGINAL_BLOCK_INDICES, originalBlockIndices)
                 }
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            } catch (e: Exception) {
+                try {
+                    context.startService(intent)
+                } catch (e2: Exception) {
+                    android.util.Log.e("BookTtsService", "Failed to start service", e2)
+                }
             }
         }
 
@@ -716,7 +726,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 )
 
                 requestAudioFocus()
-                startForeground(NOTIFICATION_ID, buildNotification(isPlaying = true))
+                safeStartForeground(buildNotification(isPlaying = true))
                 updateMediaSessionState(isPlaying = true)
 
                 if (isTtsReady) {
@@ -871,8 +881,25 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
         )
 
         val notification = buildNotification(isPlaying = true)
-        startForeground(NOTIFICATION_ID, notification)
+        safeStartForeground(notification)
         updateMediaSessionState(isPlaying = true)
+    }
+
+    private fun safeStartForeground(notification: Notification) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ServiceCompat.startForeground(
+                    this,
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("BookTtsService", "Failed to start foreground service", e)
+        }
     }
 
     private fun drainHighlightChannel() {

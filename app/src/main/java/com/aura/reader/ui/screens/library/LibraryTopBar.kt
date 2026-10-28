@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.graphics.Color
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.LocalTextStyle
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -53,6 +55,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -160,16 +163,15 @@ AnimatedContent(
         LargeTopAppBar(
         title = {
             val holidaySeason = LocalHolidaySeason.current
-            val collapsedFraction = scrollBehavior.state.collapsedFraction
+            val isSmallTitle = LocalTextStyle.current.fontSize <= MaterialTheme.typography.titleLarge.fontSize
 
-            val logoBoxSize = androidx.compose.ui.unit.lerp(46.dp, 28.dp, collapsedFraction)
-            val logoCorner = androidx.compose.ui.unit.lerp(15.dp, 8.dp, collapsedFraction)
-            val logoWidth = androidx.compose.ui.unit.lerp(25.dp, 15.dp, collapsedFraction)
-            val logoHeight = androidx.compose.ui.unit.lerp(30.dp, 18.dp, collapsedFraction)
-            val titleFontSize = androidx.compose.ui.unit.lerp(28.sp, 18.sp, collapsedFraction)
-            val titleSpacing = androidx.compose.ui.unit.lerp(12.dp, 8.dp, collapsedFraction)
-            val greetingAlpha = (1f - collapsedFraction * 2.5f).coerceIn(0f, 1f)
-            val badgeScale = androidx.compose.ui.util.lerp(1f, 0.82f, collapsedFraction)
+            val logoBoxSize = if (isSmallTitle) 28.dp else 46.dp
+            val logoCorner = if (isSmallTitle) 8.dp else 15.dp
+            val logoWidth = if (isSmallTitle) 15.dp else 25.dp
+            val logoHeight = if (isSmallTitle) 18.dp else 30.dp
+            val titleFontSize = if (isSmallTitle) 18.sp else 28.sp
+            val titleSpacing = if (isSmallTitle) 8.dp else 12.dp
+            val badgeScale = if (isSmallTitle) 0.85f else 1f
 
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(
@@ -193,10 +195,20 @@ AnimatedContent(
                     Text(
                         text = strings.appName,
                         fontFamily = marcellusFamily,
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontSize = titleFontSize,
-                            letterSpacing = androidx.compose.ui.unit.lerp(0.6.sp, 0.2.sp, collapsedFraction)
-                        )
+                        style = if (isSmallTitle) {
+                            MaterialTheme.typography.titleLarge.copy(
+                                fontSize = titleFontSize,
+                                letterSpacing = 0.2.sp
+                            )
+                        } else {
+                            MaterialTheme.typography.headlineMedium.copy(
+                                fontSize = titleFontSize,
+                                letterSpacing = 0.6.sp
+                            )
+                        },
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     if (holidaySeason != HolidaySeason.NONE) {
@@ -208,18 +220,15 @@ AnimatedContent(
                     }
                 }
 
-                if (holidaySeason != HolidaySeason.NONE && greetingAlpha > 0.05f) {
+                if (!isSmallTitle && holidaySeason != HolidaySeason.NONE) {
                     Text(
                         text = holidaySeason.greetingText,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = holidaySeason.primaryAccent.copy(alpha = greetingAlpha),
+                        color = holidaySeason.primaryAccent,
                         letterSpacing = 0.2.sp,
                         maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        modifier = Modifier.graphicsLayer {
-                            alpha = greetingAlpha
-                        }
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -290,6 +299,7 @@ private fun SeasonalHeaderBadge(
         color = holidaySeason.primaryAccent.copy(alpha = 0.16f),
         border = BorderStroke(1.dp, holidaySeason.primaryAccent.copy(alpha = 0.35f)),
         modifier = Modifier
+            .heightIn(max = 28.dp)
             .onGloballyPositioned { badgeCoordinates = it }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -306,20 +316,24 @@ private fun SeasonalHeaderBadge(
             }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
                 text = holidaySeason.iconEmoji,
-                fontSize = 15.sp
+                fontSize = 14.sp,
+                maxLines = 1
             )
             Text(
                 text = holidaySeason.displayName,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = holidaySeason.primaryAccent,
-                fontSize = 11.sp
+                fontSize = 11.sp,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

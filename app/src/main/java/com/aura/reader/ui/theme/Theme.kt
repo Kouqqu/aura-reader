@@ -203,18 +203,19 @@ fun AuraReaderTheme(
             ReaderThemeMode.SYSTEM_DYNAMIC -> systemDark
         }
         val festivePrimary = holidaySeason.primaryAccent
+        val festiveOnPrimary = if (isDark) Color(0xFF1E0A00) else Color(0xFFFFFFFF)
         val festiveContainer = if (isDark) {
             when (holidaySeason) {
-                HolidaySeason.HALLOWEEN -> Color(0xFF4A1F00)
-                HolidaySeason.CHRISTMAS_WESTERN -> Color(0xFF421010)
-                HolidaySeason.NEW_YEAR -> Color(0xFF003859)
-                HolidaySeason.CHRISTMAS_ORTHODOX -> Color(0xFF423200)
-                HolidaySeason.OLD_NEW_YEAR -> Color(0xFF003859)
+                HolidaySeason.HALLOWEEN -> Color(0xFF2C1608)
+                HolidaySeason.CHRISTMAS_WESTERN -> Color(0xFF320E0E)
+                HolidaySeason.NEW_YEAR -> Color(0xFF002238)
+                HolidaySeason.CHRISTMAS_ORTHODOX -> Color(0xFF2A2000)
+                HolidaySeason.OLD_NEW_YEAR -> Color(0xFF002238)
                 HolidaySeason.NONE -> finalColorScheme.primaryContainer
             }
         } else {
             when (holidaySeason) {
-                HolidaySeason.HALLOWEEN -> Color(0xFFFFDBC8)
+                HolidaySeason.HALLOWEEN -> Color(0xFFFFE0D0)
                 HolidaySeason.CHRISTMAS_WESTERN -> Color(0xFFFFDAD6)
                 HolidaySeason.NEW_YEAR -> Color(0xFFC7E7FF)
                 HolidaySeason.CHRISTMAS_ORTHODOX -> Color(0xFFFFE082)
@@ -224,7 +225,7 @@ fun AuraReaderTheme(
         }
         val festiveOnContainer = if (isDark) {
             when (holidaySeason) {
-                HolidaySeason.HALLOWEEN -> Color(0xFFFFDBC8)
+                HolidaySeason.HALLOWEEN -> Color(0xFFFFB787)
                 HolidaySeason.CHRISTMAS_WESTERN -> Color(0xFFFFDAD6)
                 HolidaySeason.NEW_YEAR -> Color(0xFFC7E7FF)
                 HolidaySeason.CHRISTMAS_ORTHODOX -> Color(0xFFFFF8E1)
@@ -243,6 +244,7 @@ fun AuraReaderTheme(
         }
         finalColorScheme.copy(
             primary = festivePrimary,
+            onPrimary = festiveOnPrimary,
             primaryContainer = festiveContainer,
             onPrimaryContainer = festiveOnContainer
         )

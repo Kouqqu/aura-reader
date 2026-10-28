@@ -272,15 +272,6 @@ fun ReaderSettingsBottomSheet(
         modifier = Modifier
             .statusBarsPadding()
             .padding(top = 24.dp)
-            .then(
-                if (isGlass) {
-                    Modifier.border(
-                        width = 0.6.dp,
-                        color = sheetBorderColor,
-                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-                    )
-                } else Modifier
-            )
     ) {
         SyncBottomSheetSystemBars(isThemeDark = isThemeDark)
         val contentScrollState = rememberScrollState()
