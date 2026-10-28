@@ -1015,20 +1015,20 @@ fun LiquidGlassSwitch(
     val haptic = LocalHapticFeedback.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-    val outerWidth = 72.dp
-    val outerHeight = 46.dp
+    val outerWidth = 66.dp
+    val outerHeight = 44.dp
 
-    val trackWidth = 56.dp
-    val trackHeight = 22.dp
+    val trackWidth = 50.dp
+    val trackHeight = 26.dp
     val trackShape = RoundedCornerShape(percent = 50)
     val thumbShape = RoundedCornerShape(percent = 50)
 
-    val idleThumbWidth = 22.dp
-    val idleThumbHeight = 18.dp
-    val heldThumbWidth = 44.dp
-    val heldThumbHeight = 34.dp
+    val idleThumbWidth = 26.dp
+    val idleThumbHeight = 22.dp
+    val heldThumbWidth = 38.dp
+    val heldThumbHeight = 32.dp
 
-    val restingOffsetDp = if (checked) 13.dp else (-13).dp
+    val restingOffsetDp = if (checked) 10.dp else (-10).dp
 
     var isPressed by remember { mutableStateOf(false) }
     var isDragging by remember { mutableStateOf(false) }
@@ -1061,7 +1061,7 @@ fun LiquidGlassSwitch(
     val currentThumbWidthDp = androidx.compose.ui.unit.lerp(idleThumbWidth, heldThumbWidth, heldProgress)
     val currentThumbHeightDp = androidx.compose.ui.unit.lerp(idleThumbHeight, heldThumbHeight, heldProgress)
 
-    val travelFraction = ((animatedOffsetDp + 13.dp) / 26.dp).coerceIn(0f, 1f)
+    val travelFraction = ((animatedOffsetDp + 10.dp) / 20.dp).coerceIn(0f, 1f)
 
     val isMaterialYou = useDynamicColor
     val offTrackColor = if (isDark) Color(0x35FFFFFF) else Color(0x1F000000)
@@ -1073,10 +1073,7 @@ fun LiquidGlassSwitch(
     val accentColor = if (isMaterialYou) MaterialTheme.colorScheme.primary else Color(0xFF34C759)
     val currentTrackColor = lerp(offTrackColor, onTrackColor, travelFraction)
 
-    val currentThumbWidthPx = with(density) { currentThumbWidthDp.toPx() }
-    val currentThumbHeightPx = with(density) { currentThumbHeightDp.toPx() }
-    val thumbCenterInTrackXPx = with(density) { (animatedOffsetDp + 28.dp).toPx() }
-    val thumbCenterInTrackYPx = with(density) { 11.dp.toPx() }
+
 
     Box(
         modifier = modifier
@@ -1088,7 +1085,7 @@ fun LiquidGlassSwitch(
                     val down = awaitFirstDown(requireUnconsumed = false)
                     isPressed = true
                     val startX = down.position.x
-                    val initialOffset = if (checked) 13.dp else (-13).dp
+                    val initialOffset = if (checked) 10.dp else (-10).dp
                     var hasDragged = false
                     val pointerId = down.id
                     var isSuccessRelease = false
@@ -1111,7 +1108,7 @@ fun LiquidGlassSwitch(
                             }
                             if (hasDragged) {
                                 val deltaDp = with(density) { (currentX - startX).toDp() }
-                                dragOffsetDp = (initialOffset + deltaDp).coerceIn((-13).dp, 13.dp)
+                                dragOffsetDp = (initialOffset + deltaDp).coerceIn((-10).dp, 10.dp)
                             }
                             change.consume()
                         }
@@ -1135,22 +1132,10 @@ fun LiquidGlassSwitch(
             },
         contentAlignment = Alignment.Center
     ) {
-        // 1. The Track: clean optical refraction matching dock (zero blur)
+        // 1. The Track: clean capsule channel
         Box(
             modifier = Modifier
                 .size(width = trackWidth, height = trackHeight)
-                .then(
-                    if (heldProgress > 0.01f) {
-                        Modifier.liquidRefraction(
-                            centerPx = Offset(thumbCenterInTrackXPx, thumbCenterInTrackYPx),
-                            sizePx = Size(currentThumbWidthPx, currentThumbHeightPx),
-                            radiusPx = currentThumbHeightPx / 2f,
-                            refractiveIndex = 1.018f,
-                            refractionWidthPx = with(density) { 18.dp.toPx() },
-                            intensity = heldProgress
-                        )
-                    } else Modifier
-                )
                 .clip(trackShape)
                 .background(currentTrackColor)
                 .border(
@@ -1190,38 +1175,18 @@ fun LiquidGlassSwitch(
                 )
             }
 
-            // LAYER B: Liquid Glass capsule - crystal optical glass, translucent with specular highlights
+            // LAYER B: Held state - clean transparent lens
             if (heldProgress > 0.01f) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer { alpha = heldProgress }
-                        .liquidRefraction(
-                            centerPx = Offset(currentThumbWidthPx / 2f, currentThumbHeightPx / 2f),
-                            sizePx = Size(currentThumbWidthPx, currentThumbHeightPx),
-                            radiusPx = currentThumbHeightPx / 2f,
-                            refractiveIndex = 1.018f,
-                            refractionWidthPx = with(density) { 18.dp.toPx() },
-                            intensity = heldProgress
-                        )
                         .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.12f),
-                                    Color.White.copy(alpha = 0.02f),
-                                    Color.White.copy(alpha = 0.07f)
-                                )
-                            )
+                            Color.White.copy(alpha = 0.08f)
                         )
                         .border(
-                            width = 0.8.dp,
-                            brush = Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.75f),
-                                    Color.White.copy(alpha = 0.15f),
-                                    Color.White.copy(alpha = 0.35f)
-                                )
-                            ),
+                            width = 0.6.dp,
+                            color = Color.White.copy(alpha = 0.40f),
                             shape = thumbShape
                         )
                 )

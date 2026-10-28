@@ -24,7 +24,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
@@ -411,6 +414,7 @@ fun SettingsBottomSheet(
                     .verticalScroll(rememberScrollState())
             ) {
                 // Header
+                val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -419,23 +423,115 @@ fun SettingsBottomSheet(
                         .then(if (isFullScreen) Modifier.padding(top = 16.dp, bottom = 4.dp) else Modifier)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Rounded.Settings,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        if (isGlass) {
+                            Icon(
+                                imageVector = Icons.Rounded.Settings,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                        }
                         Text(
                             text = strings.settingsTitle,
-                            style = MaterialTheme.typography.titleLarge,
+                            style = if (isGlass) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
 
-            Spacer(modifier = Modifier.height(20.dp))
+                if (!isGlass) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    // Material Expressive: Search pill bar matching screenshot
+                    Surface(
+                        shape = RoundedCornerShape(percent = 50),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Настройки поиска",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Material Expressive: App Profile Hero Card matching screenshot
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    modifier = Modifier.size(44.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Person,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column {
+                                    Text(
+                                        text = "Aura Reader",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = strings.currentVersion(currentAppVersion),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                    )
+                                }
+                            }
+                            Icon(
+                                imageVector = Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                } else {
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
 
             val sysDark = isSystemInDarkTheme()
             val isThemeDark = when (currentTheme) {
@@ -444,8 +540,6 @@ fun SettingsBottomSheet(
                 ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
             }
             val isSepia = currentTheme == ReaderThemeMode.SEPIA
-            val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
-
             SettingsDesignStyleSection(
                 appDesignStyle = appDesignStyle,
                 isThemeDark = isThemeDark,
@@ -712,30 +806,41 @@ internal fun SettingsIconBox(
     contentDescription: String? = null
 ) {
     val isGlass = LocalIsLiquidGlass.current
-    val isDark = LocalIsThemeDark.current
-    val isMatYou = com.aura.reader.ui.components.LocalMaterialYouEnabled.current
-    val bg = if (isGlass) {
-        if (isDark) {
+    if (isGlass) {
+        val isDark = LocalIsThemeDark.current
+        val isMatYou = com.aura.reader.ui.components.LocalMaterialYouEnabled.current
+        val bg = if (isDark) {
             if (isMatYou) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
             else Color(0x35283448)
         } else {
             if (isMatYou) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
             else Color(0x10000000)
         }
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = bg,
+            modifier = Modifier.size(38.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    tint = tint,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
     } else {
-        containerColor
-    }
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = bg,
-        modifier = Modifier.size(38.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
+        // Material Expressive: clean vector icon with 24dp size and onSurfaceVariant tint, matching M3 Expressive!
+        Box(
+            modifier = Modifier.size(28.dp),
+            contentAlignment = Alignment.Center
+        ) {
             Icon(
                 imageVector = icon,
                 contentDescription = contentDescription,
-                tint = tint,
-                modifier = Modifier.size(20.dp)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
             )
         }
     }
@@ -749,30 +854,40 @@ internal fun SettingsPainterIconBox(
     contentDescription: String? = null
 ) {
     val isGlass = LocalIsLiquidGlass.current
-    val isDark = LocalIsThemeDark.current
-    val isMatYou = com.aura.reader.ui.components.LocalMaterialYouEnabled.current
-    val bg = if (isGlass) {
-        if (isDark) {
+    if (isGlass) {
+        val isDark = LocalIsThemeDark.current
+        val isMatYou = com.aura.reader.ui.components.LocalMaterialYouEnabled.current
+        val bg = if (isDark) {
             if (isMatYou) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
             else Color(0x35283448)
         } else {
             if (isMatYou) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
             else Color(0x10000000)
         }
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = bg,
+            modifier = Modifier.size(38.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painter,
+                    contentDescription = contentDescription,
+                    tint = tint,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
     } else {
-        containerColor
-    }
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = bg,
-        modifier = Modifier.size(38.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.size(28.dp),
+            contentAlignment = Alignment.Center
+        ) {
             Icon(
                 painter = painter,
                 contentDescription = contentDescription,
-                tint = tint,
-                modifier = Modifier.size(20.dp)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
             )
         }
     }
@@ -888,11 +1003,11 @@ internal fun ExpressiveSettingsGroup(
 internal fun ExpressiveDivider() {
     val isGlass = LocalIsLiquidGlass.current
     HorizontalDivider(
-        modifier = Modifier.padding(start = 66.dp, end = 16.dp),
+        modifier = Modifier.padding(start = if (isGlass) 66.dp else 56.dp, end = 16.dp),
         color = if (isGlass) {
             if (LocalIsThemeDark.current) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.08f)
         } else {
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.20f)
         }
     )
 }
@@ -905,16 +1020,20 @@ internal fun ExpressiveSettingsRow(
     onClick: (() -> Unit)? = null,
     trailing: @Composable () -> Unit
 ) {
+    val isGlass = LocalIsLiquidGlass.current
+    val hPad = if (isGlass) 16.dp else 18.dp
+    val vPad = if (isGlass) 14.dp else 16.dp
+
     val rowModifier = if (onClick != null) {
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(if (isGlass) 14.dp else 18.dp))
             .expressiveClickable(scaleDown = 0.98f, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .padding(horizontal = hPad, vertical = vPad)
     } else {
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .padding(horizontal = hPad, vertical = vPad)
     }
 
     Row(
@@ -927,12 +1046,12 @@ internal fun ExpressiveSettingsRow(
             modifier = Modifier.weight(1f).padding(end = 12.dp)
         ) {
             icon()
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(if (isGlass) 12.dp else 16.dp))
             Column {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    style = if (isGlass) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.titleMedium,
+                    fontWeight = if (isGlass) FontWeight.SemiBold else FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 if (!subtitle.isNullOrBlank()) {
@@ -940,7 +1059,7 @@ internal fun ExpressiveSettingsRow(
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.80f)
                     )
                 }
             }

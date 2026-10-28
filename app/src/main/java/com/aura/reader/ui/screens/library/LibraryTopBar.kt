@@ -165,14 +165,6 @@ AnimatedContent(
             }
         },
         actions = {
-            // View Mode Switcher
-            IconButton(onClick = { onToggleViewMode() }) {
-                Icon(
-                    imageVector = if (libraryViewMode == "GRID") Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
-                    contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid
-                )
-            }
-
             if (!isGlass) {
                 // Search Button in Material mode
                 IconButton(onClick = { onSearchExpandedChange(true) }) {

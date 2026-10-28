@@ -1,4 +1,6 @@
 package com.aura.reader.ui.screens.library
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.spring
@@ -763,154 +765,319 @@ fun LibraryScreen(
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .padding(top = 4.dp, bottom = 4.dp),
+                                                        .padding(top = 8.dp, bottom = 8.dp),
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    val sectionHeader = if (searchQuery.isNotBlank()) {
-                                                        strings.searchResultsCount(displayedRecentBooks.size)
+                                                    val count = displayedRecentBooks.size
+                                                    val countWord = when {
+                                                        count % 100 in 11..19 -> "книг"
+                                                        count % 10 == 1 -> "книга"
+                                                        count % 10 in 2..4 -> "книги"
+                                                        else -> "книг"
+                                                    }
+                                                    val countLabel = if (searchQuery.isNotBlank()) {
+                                                        strings.searchResultsCount(count)
                                                     } else {
-                                                        when (librarySortOrder) {
-                                                            LibrarySortOption.RECENT -> strings.recentBooks
-                                                            LibrarySortOption.TITLE -> strings.sortByTitle
-                                                            LibrarySortOption.AUTHOR -> strings.sortByAuthor
-                                                            LibrarySortOption.SERIES -> strings.sortBySeries
-                                                            LibrarySortOption.CUSTOM -> strings.sortCustomOrder
-                                                        }
+                                                        "$count $countWord"
                                                     }
                                                     Text(
-                                                        text = sectionHeader,
+                                                        text = countLabel,
                                                         style = MaterialTheme.typography.titleMedium,
+                                                        fontWeight = FontWeight.Medium,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                                     )
 
-                                                    if (searchQuery.isBlank()) {
-                                                        Box {
-                                                            var showSortMenu by remember { mutableStateOf(false) }
-                                                            val sortLabel = when (librarySortOrder) {
-                                                                LibrarySortOption.RECENT -> strings.sortByRecent
-                                                                LibrarySortOption.TITLE -> strings.sortByTitle
-                                                                LibrarySortOption.AUTHOR -> strings.sortByAuthor
-                                                                LibrarySortOption.SERIES -> strings.sortBySeries
-                                                                LibrarySortOption.CUSTOM -> strings.sortCustomOrder
-                                                            }
-                                                            Surface(
-                                                                onClick = { showSortMenu = true },
-                                                                shape = RoundedCornerShape(8.dp),
-                                                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                                                            ) {
-                                                                Row(
-                                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                                                    verticalAlignment = Alignment.CenterVertically,
-                                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                                                ) {
-                                                                    Icon(
-                                                                        imageVector = Icons.AutoMirrored.Rounded.Sort,
-                                                                        contentDescription = strings.sortTitle,
-                                                                        modifier = Modifier.size(16.dp),
-                                                                        tint = MaterialTheme.colorScheme.primary
-                                                                    )
-                                                                    Text(
-                                                                        text = sortLabel,
-                                                                        style = MaterialTheme.typography.labelSmall,
-                                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                                    )
+                                                    val buttonBg = if (isGlass) {
+                                                        if (isThemeDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
+                                                    } else {
+                                                        MaterialTheme.colorScheme.surfaceContainerHigh
+                                                    }
+                                                    val buttonBorder = if (isGlass) {
+                                                        BorderStroke(0.5.dp, if (isThemeDark) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.10f))
+                                                    } else null
+
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        // 1. Sort Button [ = Последние ]
+                                                        if (searchQuery.isBlank()) {
+                                                            Box {
+                                                                var showSortMenu by remember { mutableStateOf(false) }
+                                                                val sortLabel = when (librarySortOrder) {
+                                                                    LibrarySortOption.RECENT -> strings.sortByRecent
+                                                                    LibrarySortOption.TITLE -> strings.sortByTitle
+                                                                    LibrarySortOption.AUTHOR -> strings.sortByAuthor
+                                                                    LibrarySortOption.SERIES -> strings.sortBySeries
+                                                                    LibrarySortOption.CUSTOM -> strings.sortCustomOrder
                                                                 }
-                                                            }
+                                                                Surface(
+                                                                    onClick = { showSortMenu = true },
+                                                                    shape = RoundedCornerShape(12.dp),
+                                                                    color = buttonBg,
+                                                                    border = buttonBorder,
+                                                                    modifier = Modifier.height(34.dp)
+                                                                ) {
+                                                                    Row(
+                                                                        modifier = Modifier.padding(horizontal = 10.dp),
+                                                                        verticalAlignment = Alignment.CenterVertically,
+                                                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                                    ) {
+                                                                        Icon(
+                                                                            imageVector = Icons.AutoMirrored.Rounded.Sort,
+                                                                            contentDescription = strings.sortTitle,
+                                                                            modifier = Modifier.size(16.dp),
+                                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                                        )
+                                                                        Text(
+                                                                            text = sortLabel,
+                                                                            style = MaterialTheme.typography.labelMedium,
+                                                                            fontWeight = FontWeight.Medium,
+                                                                            color = MaterialTheme.colorScheme.onSurface
+                                                                        )
+                                                                    }
+                                                                }
 
-                                                            val sortMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
-                                                            DropdownMenu(
-                                                                expanded = showSortMenu,
-                                                                onDismissRequest = { showSortMenu = false },
-                                                                shape = RoundedCornerShape(20.dp),
-                                                                containerColor = sortMenuAppearance.containerColor,
-                                                                border = sortMenuAppearance.border,
-                                                                shadowElevation = sortMenuAppearance.shadowElevation
-                                                            ) {
-                                                                DropdownMenuItem(
-                                                                    text = { Text(strings.sortByRecent) },
-                                                                    onClick = {
-                                                                        viewModel.setLibrarySortOrder(LibrarySortOption.RECENT)
-                                                                        showSortMenu = false
-                                                                    },
-                                                                    leadingIcon = {
-                                                                        if (librarySortOrder == LibrarySortOption.RECENT) {
-                                                                            Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                                        }
-                                                                    }
-                                                                )
-                                                                DropdownMenuItem(
-                                                                    text = { Text(strings.sortByTitle) },
-                                                                    onClick = {
-                                                                        viewModel.setLibrarySortOrder(LibrarySortOption.TITLE)
-                                                                        showSortMenu = false
-                                                                    },
-                                                                    leadingIcon = {
-                                                                        if (librarySortOrder == LibrarySortOption.TITLE) {
-                                                                            Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                                        }
-                                                                    }
-                                                                )
-                                                                DropdownMenuItem(
-                                                                    text = { Text(strings.sortByAuthor) },
-                                                                    onClick = {
-                                                                        viewModel.setLibrarySortOrder(LibrarySortOption.AUTHOR)
-                                                                        showSortMenu = false
-                                                                    },
-                                                                    leadingIcon = {
-                                                                        if (librarySortOrder == LibrarySortOption.AUTHOR) {
-                                                                            Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                                        }
-                                                                    }
-                                                                )
-                                                                DropdownMenuItem(
-                                                                    text = { Text(strings.sortBySeries) },
-                                                                    onClick = {
-                                                                        viewModel.setLibrarySortOrder(LibrarySortOption.SERIES)
-                                                                        showSortMenu = false
-                                                                    },
-                                                                    leadingIcon = {
-                                                                        if (librarySortOrder == LibrarySortOption.SERIES) {
-                                                                            Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                                        }
-                                                                    }
-                                                                )
-                                                                DropdownMenuItem(
-                                                                    text = { Text(strings.sortCustomOrder) },
-                                                                    onClick = {
-                                                                        viewModel.setLibrarySortOrder(LibrarySortOption.CUSTOM)
-                                                                        showSortMenu = false
-                                                                    },
-                                                                    leadingIcon = {
-                                                                        if (librarySortOrder == LibrarySortOption.CUSTOM) {
-                                                                            Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                                        }
-                                                                    }
-                                                                )
-
-                                                                val booksWithoutCovers = remember(recentBooks) { recentBooks.filter { it.coverBase64.isNullOrBlank() } }
-                                                                if (booksWithoutCovers.isNotEmpty()) {
-                                                                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                                                val sortMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
+                                                                DropdownMenu(
+                                                                    expanded = showSortMenu,
+                                                                    onDismissRequest = { showSortMenu = false },
+                                                                    shape = RoundedCornerShape(20.dp),
+                                                                    containerColor = sortMenuAppearance.containerColor,
+                                                                    border = sortMenuAppearance.border,
+                                                                    shadowElevation = sortMenuAppearance.shadowElevation
+                                                                ) {
                                                                     DropdownMenuItem(
-                                                                        text = { Text(strings.downloadMissingCovers) },
-                                                                        leadingIcon = {
-                                                                            Icon(Icons.Rounded.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                                        },
+                                                                        text = { Text(strings.sortByRecent) },
                                                                         onClick = {
+                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.RECENT)
                                                                             showSortMenu = false
-                                                                            Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
-                                                                            viewModel.autoDownloadMissingCovers(recentBooks) { count ->
-                                                                                Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
+                                                                        },
+                                                                        leadingIcon = {
+                                                                            if (librarySortOrder == LibrarySortOption.RECENT) {
+                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                                             }
                                                                         }
                                                                     )
+                                                                    DropdownMenuItem(
+                                                                        text = { Text(strings.sortByTitle) },
+                                                                        onClick = {
+                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.TITLE)
+                                                                            showSortMenu = false
+                                                                        },
+                                                                        leadingIcon = {
+                                                                            if (librarySortOrder == LibrarySortOption.TITLE) {
+                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            }
+                                                                        }
+                                                                    )
+                                                                    DropdownMenuItem(
+                                                                        text = { Text(strings.sortByAuthor) },
+                                                                        onClick = {
+                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.AUTHOR)
+                                                                            showSortMenu = false
+                                                                        },
+                                                                        leadingIcon = {
+                                                                            if (librarySortOrder == LibrarySortOption.AUTHOR) {
+                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            }
+                                                                        }
+                                                                    )
+                                                                    DropdownMenuItem(
+                                                                        text = { Text(strings.sortBySeries) },
+                                                                        onClick = {
+                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.SERIES)
+                                                                            showSortMenu = false
+                                                                        },
+                                                                        leadingIcon = {
+                                                                            if (librarySortOrder == LibrarySortOption.SERIES) {
+                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            }
+                                                                        }
+                                                                    )
+                                                                    DropdownMenuItem(
+                                                                        text = { Text(strings.sortCustomOrder) },
+                                                                        onClick = {
+                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.CUSTOM)
+                                                                            showSortMenu = false
+                                                                        },
+                                                                        leadingIcon = {
+                                                                            if (librarySortOrder == LibrarySortOption.CUSTOM) {
+                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            }
+                                                                        }
+                                                                    )
+
+                                                                    val booksWithoutCovers = remember(recentBooks) { recentBooks.filter { it.coverBase64.isNullOrBlank() } }
+                                                                    if (booksWithoutCovers.isNotEmpty()) {
+                                                                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                                                        DropdownMenuItem(
+                                                                            text = { Text(strings.downloadMissingCovers) },
+                                                                            leadingIcon = {
+                                                                                Icon(Icons.Rounded.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            },
+                                                                            onClick = {
+                                                                                showSortMenu = false
+                                                                                Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
+                                                                                viewModel.autoDownloadMissingCovers(recentBooks) { count ->
+                                                                                    Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
+                                                                                }
+                                                                            }
+                                                                        )
+                                                                    }
                                                                 }
+                                                            }
+                                                        }
+
+                                                        // 2. Filters Button [ = Фильтры ]
+                                                        if (searchQuery.isBlank()) {
+                                                            Box {
+                                                                var showFilterMenu by remember { mutableStateOf(false) }
+                                                                val isFilterActive = activeCollectionFilter.type != CollectionFilterType.ALL
+                                                                val filterLabel = when (activeCollectionFilter.type) {
+                                                                    CollectionFilterType.ALL -> "Фильтры"
+                                                                    CollectionFilterType.FAVORITES -> strings.colFavorites
+                                                                    CollectionFilterType.SERIES -> strings.colSeries
+                                                                    CollectionFilterType.READING -> strings.colReading
+                                                                    CollectionFilterType.UNREAD -> strings.colUnread
+                                                                    CollectionFilterType.FINISHED -> strings.colFinished
+                                                                    CollectionFilterType.CUSTOM -> activeCollectionFilter.customName ?: "Фильтры"
+                                                                }
+                                                                val filterBg = if (isFilterActive) {
+                                                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (isGlass) 0.40f else 0.60f)
+                                                                } else buttonBg
+                                                                val filterBorder = if (isFilterActive) {
+                                                                    BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                                                                } else buttonBorder
+
+                                                                Surface(
+                                                                    onClick = { showFilterMenu = true },
+                                                                    shape = RoundedCornerShape(12.dp),
+                                                                    color = filterBg,
+                                                                    border = filterBorder,
+                                                                    modifier = Modifier.height(34.dp)
+                                                                ) {
+                                                                    Row(
+                                                                        modifier = Modifier.padding(horizontal = 10.dp),
+                                                                        verticalAlignment = Alignment.CenterVertically,
+                                                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                                    ) {
+                                                                        Icon(
+                                                                            imageVector = Icons.Rounded.FilterList,
+                                                                            contentDescription = "Фильтры",
+                                                                            modifier = Modifier.size(16.dp),
+                                                                            tint = if (isFilterActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                                        )
+                                                                        Text(
+                                                                            text = filterLabel,
+                                                                            style = MaterialTheme.typography.labelMedium,
+                                                                            fontWeight = FontWeight.Medium,
+                                                                            color = if (isFilterActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                                                        )
+                                                                    }
+                                                                }
+
+                                                                val filterMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
+                                                                DropdownMenu(
+                                                                    expanded = showFilterMenu,
+                                                                    onDismissRequest = { showFilterMenu = false },
+                                                                    shape = RoundedCornerShape(20.dp),
+                                                                    containerColor = filterMenuAppearance.containerColor,
+                                                                    border = filterMenuAppearance.border,
+                                                                    shadowElevation = filterMenuAppearance.shadowElevation
+                                                                ) {
+                                                                    DropdownMenuItem(
+                                                                        text = { Text(strings.colAll) },
+                                                                        onClick = {
+                                                                            viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.ALL))
+                                                                            showFilterMenu = false
+                                                                        },
+                                                                        leadingIcon = {
+                                                                            if (activeCollectionFilter.type == CollectionFilterType.ALL) {
+                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            }
+                                                                        }
+                                                                    )
+                                                                    DropdownMenuItem(
+                                                                        text = { Text(strings.colFavorites) },
+                                                                        onClick = {
+                                                                            viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.FAVORITES))
+                                                                            showFilterMenu = false
+                                                                        },
+                                                                        leadingIcon = {
+                                                                            if (activeCollectionFilter.type == CollectionFilterType.FAVORITES) {
+                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                            }
+                                                                        }
+                                                                    )
+                                                                    val hasSeries = remember(recentBooks) { recentBooks.any { !it.series.isNullOrBlank() } }
+                                                                    if (hasSeries) {
+                                                                        DropdownMenuItem(
+                                                                            text = { Text(strings.colSeries) },
+                                                                            onClick = {
+                                                                                viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.SERIES))
+                                                                                showFilterMenu = false
+                                                                            },
+                                                                            leadingIcon = {
+                                                                                if (activeCollectionFilter.type == CollectionFilterType.SERIES) {
+                                                                                    Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                                }
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                    if (userCollections.isNotEmpty()) {
+                                                                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                                                        userCollections.forEach { colName ->
+                                                                            DropdownMenuItem(
+                                                                                text = { Text(colName) },
+                                                                                onClick = {
+                                                                                    viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.CUSTOM, colName))
+                                                                                    showFilterMenu = false
+                                                                                },
+                                                                                leadingIcon = {
+                                                                                    if (activeCollectionFilter.type == CollectionFilterType.CUSTOM && activeCollectionFilter.customName == colName) {
+                                                                                        Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                                    }
+                                                                                }
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                                                    DropdownMenuItem(
+                                                                        text = { Text(strings.createCollectionDialogTitle) },
+                                                                        leadingIcon = {
+                                                                            Icon(Icons.Rounded.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                        },
+                                                                        onClick = {
+                                                                            showFilterMenu = false
+                                                                            showNewCollectionDialog = true
+                                                                        }
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+
+                                                        // 3. Layout Toggle Button [ ☷ ] / [ ☰ ]
+                                                        Surface(
+                                                            onClick = { viewModel.toggleLibraryViewMode() },
+                                                            shape = RoundedCornerShape(12.dp),
+                                                            color = buttonBg,
+                                                            border = buttonBorder,
+                                                            modifier = Modifier.size(34.dp)
+                                                        ) {
+                                                            Box(contentAlignment = Alignment.Center) {
+                                                                Icon(
+                                                                    imageVector = if (libraryViewMode == "GRID") Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
+                                                                    contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid,
+                                                                    tint = MaterialTheme.colorScheme.onSurface,
+                                                                    modifier = Modifier.size(17.dp)
+                                                                )
                                                             }
                                                         }
                                                     }
                                                 }
                                             }
-
                                             if (displayedRecentBooks.isEmpty() && searchQuery.isNotBlank()) {
                                                 item(span = { GridItemSpan(maxLineSpan) }) {
                                                     Text(
