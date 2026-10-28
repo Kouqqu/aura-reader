@@ -953,12 +953,12 @@ fun LiquidGlassFilterChip(
         Box(
             modifier = modifier
                 .height(34.dp)
-                .clip(CircleShape)
+                .clip(RoundedCornerShape(12.dp))
                 .background(bg)
                 .border(
                     width = 0.5.dp,
                     color = borderColor,
-                    shape = CircleShape
+                    shape = RoundedCornerShape(12.dp)
                 )
                 .expressiveClickable(scaleDown = 0.94f, onClick = onClick)
                 .padding(horizontal = 14.dp),
@@ -978,15 +978,32 @@ fun LiquidGlassFilterChip(
             }
         }
     } else {
-        androidx.compose.material3.FilterChip(
-            selected = selected,
+        val containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer
+        val labelColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+        Surface(
             onClick = onClick,
-            label = label,
-            leadingIcon = leadingIcon,
-            trailingIcon = trailingIcon,
             shape = RoundedCornerShape(12.dp),
-            modifier = modifier
-        )
+            color = containerColor,
+            modifier = modifier.height(34.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (leadingIcon != null) {
+                    leadingIcon()
+                }
+                androidx.compose.runtime.CompositionLocalProvider(
+                    androidx.compose.material3.LocalContentColor provides labelColor
+                ) {
+                    label()
+                }
+                if (trailingIcon != null) {
+                    trailingIcon()
+                }
+            }
+        }
     }
 }
 
