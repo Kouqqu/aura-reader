@@ -19,6 +19,7 @@ import com.aura.reader.ui.theme.AuraReaderTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.ui.theme.AppLanguage
 import com.aura.reader.ui.theme.LocalAppStrings
@@ -111,11 +112,24 @@ class MainActivity : ComponentActivity() {
             val appFont by preferencesManager.appFont.collectAsState(
                 initial = "GOOGLE_SANS"
             )
+            val seasonalEffectsEnabled by preferencesManager.seasonalEffectsEnabled.collectAsState(
+                initial = true
+            )
+            val holidayOverride by preferencesManager.holidayOverride.collectAsState(
+                initial = "AUTO"
+            )
+            val holidaySeason = remember(seasonalEffectsEnabled, holidayOverride) {
+                com.aura.reader.data.model.HolidaySeason.resolve(
+                    enabled = seasonalEffectsEnabled,
+                    override = holidayOverride
+                )
+            }
 
             val completed = hasCompletedOnboarding
             if (completed != null) {
                 CompositionLocalProvider(
                     LocalAppStrings provides getStrings(appLanguage),
+                    com.aura.reader.data.model.LocalHolidaySeason provides holidaySeason,
                     com.aura.reader.ui.components.LocalMaterialYouEnabled provides materialYouEnabled
                 ) {
                     AuraReaderTheme(

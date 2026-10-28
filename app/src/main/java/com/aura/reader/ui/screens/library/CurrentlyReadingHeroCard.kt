@@ -205,15 +205,26 @@ fun CurrentlyReadingHeroCard(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
+                            val holidaySeason = com.aura.reader.data.model.LocalHolidaySeason.current
+                            val festiveBadgeColor = if (holidaySeason != com.aura.reader.data.model.HolidaySeason.NONE) {
+                                holidaySeason.primaryAccent
+                            } else {
+                                primaryAccent
+                            }
+                            val festiveBadgeText = if (holidaySeason != com.aura.reader.data.model.HolidaySeason.NONE) {
+                                "${holidaySeason.iconEmoji} ${strings.currentlyReadingBadge}"
+                            } else {
+                                strings.currentlyReadingBadge
+                            }
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = primaryAccent.copy(alpha = 0.18f)
+                                color = festiveBadgeColor.copy(alpha = 0.18f)
                             ) {
                                 Text(
-                                    text = strings.currentlyReadingBadge,
+                                    text = festiveBadgeText,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = primaryAccent,
+                                    color = festiveBadgeColor,
                                     letterSpacing = 0.08.sp,
                                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                                 )

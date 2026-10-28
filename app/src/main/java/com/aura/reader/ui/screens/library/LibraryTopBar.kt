@@ -55,6 +55,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.aura.reader.data.model.HolidaySeason
+import com.aura.reader.data.model.LocalHolidaySeason
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +89,8 @@ internal fun LibraryTopBar(
     onSearchExpandedChange: (Boolean) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onToggleViewMode: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onHolidayBadgeClick: (Offset) -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
 
@@ -162,6 +184,14 @@ AnimatedContent(
                         letterSpacing = 0.6.sp
                     )
                 )
+
+                val holidaySeason = LocalHolidaySeason.current
+                if (holidaySeason != HolidaySeason.NONE) {
+                    SeasonalHeaderBadge(
+                        holidaySeason = holidaySeason,
+                        onClick = onHolidayBadgeClick
+                    )
+                }
             }
         },
         actions = {
@@ -195,4 +225,67 @@ AnimatedContent(
     )
     }
 }
+}
+
+@Composable
+private fun SeasonalHeaderBadge(
+    holidaySeason: HolidaySeason,
+    onClick: (Offset) -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "holidayBadge")
+    val offsetY by infiniteTransition.animateFloat(
+        initialValue = -2.5f,
+        targetValue = 2.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "holidayOffsetY"
+    )
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "holidayRotation"
+    )
+
+    var badgeCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = holidaySeason.primaryAccent.copy(alpha = 0.16f),
+        border = BorderStroke(1.dp, holidaySeason.primaryAccent.copy(alpha = 0.35f)),
+        modifier = Modifier
+            .onGloballyPositioned { badgeCoordinates = it }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                val center = badgeCoordinates?.boundsInRoot()?.center ?: Offset.Zero
+                onClick(center)
+            }
+            .offset(y = offsetY.dp)
+            .graphicsLayer { rotationZ = rotation }
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = holidaySeason.iconEmoji,
+                fontSize = 15.sp
+            )
+            Text(
+                text = holidaySeason.displayName,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = holidaySeason.primaryAccent,
+                fontSize = 11.sp
+            )
+        }
+    }
 }

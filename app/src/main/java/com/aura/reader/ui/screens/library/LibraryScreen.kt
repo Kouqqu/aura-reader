@@ -132,10 +132,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import com.aura.reader.ui.components.PixelFullScreenBurst
+import com.aura.reader.ui.components.triggerThemeHaptic
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -224,6 +227,11 @@ fun LibraryScreen(
     val developerModeEnabled by viewModel.developerModeEnabled.collectAsState()
     val updateChannel by viewModel.updateChannel.collectAsState()
     val appFont by viewModel.appFont.collectAsState()
+    val seasonalEffectsEnabled by viewModel.seasonalEffectsEnabled.collectAsState()
+    val holidayOverride by viewModel.holidayOverride.collectAsState()
+
+    var holidayBurstKey by remember { mutableLongStateOf(0L) }
+    var holidayBurstOrigin by remember { mutableStateOf(Offset.Zero) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -442,7 +450,12 @@ fun LibraryScreen(
                     onSearchExpandedChange = { isSearchExpanded = it },
                     onSearchQueryChange = { viewModel.setSearchQuery(it) },
                     onToggleViewMode = { viewModel.toggleLibraryViewMode() },
-                    onOpenSettings = { showSettingsSheet = true }
+                    onOpenSettings = { showSettingsSheet = true },
+                    onHolidayBadgeClick = { origin ->
+                        holidayBurstKey = System.currentTimeMillis()
+                        holidayBurstOrigin = origin
+                        triggerThemeHaptic(context)
+                    }
                 )
             }
         },
@@ -595,6 +608,10 @@ fun LibraryScreen(
                                         anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
                                         readingStatsEnabled = readingStatsEnabled,
                                         materialYouEnabled = materialYouEnabled,
+                                        seasonalEffectsEnabled = seasonalEffectsEnabled,
+                                        onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
+                                        holidayOverride = holidayOverride,
+                                        onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
                                         isFullScreen = true,
                                         onDismiss = { currentMainTab = 0 },
                                         onOpenOnboarding = onOpenOnboarding,
@@ -1133,6 +1150,10 @@ fun LibraryScreen(
             anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
             readingStatsEnabled = readingStatsEnabled,
             materialYouEnabled = materialYouEnabled,
+            seasonalEffectsEnabled = seasonalEffectsEnabled,
+            onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
+            holidayOverride = holidayOverride,
+            onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
             onDismiss = { showSettingsSheet = false },
             onOpenOnboarding = onOpenOnboarding,
             onThemeChange = { viewModel.setAppThemeMode(it) },
@@ -1232,6 +1253,24 @@ fun LibraryScreen(
             },
             isLiquidGlass = isGlass,
             isDark = isThemeDark
+        )
+    }
+
+    if (holidayBurstKey != 0L) {
+        val holidaySeason = com.aura.reader.data.model.LocalHolidaySeason.current
+        PixelFullScreenBurst(
+            triggerKey = holidayBurstKey,
+            origin = if (holidayBurstOrigin != Offset.Zero) {
+                holidayBurstOrigin
+            } else {
+                Offset(
+                    x = context.resources.displayMetrics.widthPixels / 2f,
+                    y = context.resources.displayMetrics.heightPixels / 4f
+                )
+            },
+            colors = holidaySeason.burstColors,
+            symbols = holidaySeason.burstSymbols,
+            durationMillis = 2600
         )
     }
     }

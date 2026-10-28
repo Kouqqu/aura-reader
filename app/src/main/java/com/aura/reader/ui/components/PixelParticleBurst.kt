@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlin.math.cos
@@ -35,7 +36,8 @@ private data class PixelParticle(
     val distance: Float,
     val radius: Float,
     val color: Color,
-    val speedMult: Float
+    val speedMult: Float,
+    val symbol: String? = null
 )
 
 @Composable
@@ -43,6 +45,7 @@ fun PixelFullScreenBurst(
     triggerKey: Long,
     origin: Offset,
     colors: List<Color>,
+    symbols: List<String> = emptyList(),
     durationMillis: Int = 2400,
     modifier: Modifier = Modifier
 ) {
@@ -50,21 +53,27 @@ fun PixelFullScreenBurst(
 
     val progress = remember(triggerKey) { Animatable(0f) }
 
-    val particles = remember(triggerKey) {
+    val particles = remember(triggerKey, symbols) {
         val rand = Random(triggerKey)
-        List(180) {
+        val count = if (symbols.isNotEmpty()) 150 else 180
+        List(count) { idx ->
             val angle = rand.nextDouble(0.0, Math.PI * 2)
             // Radiating smoothly across the screen from the button center
             val distance = rand.nextFloat() * 1400f + 180f
             val radius = rand.nextFloat() * 4.2f + 2.2f
             val color = colors[rand.nextInt(colors.size)]
             val speedMult = rand.nextFloat() * 0.5f + 0.75f // range 0.75 to 1.25 for organic cloud
+            // Every 4th particle displays a festive symbol if symbols are provided
+            val sym = if (symbols.isNotEmpty() && idx % 4 == 0) {
+                symbols[rand.nextInt(symbols.size)]
+            } else null
             PixelParticle(
                 angle = angle,
                 distance = distance,
                 radius = radius,
                 color = color,
-                speedMult = speedMult
+                speedMult = speedMult,
+                symbol = sym
             )
         }
     }
@@ -81,6 +90,13 @@ fun PixelFullScreenBurst(
         )
     }
 
+    val textPaint = remember {
+        android.graphics.Paint().apply {
+            textAlign = android.graphics.Paint.Align.CENTER
+            isAntiAlias = true
+        }
+    }
+
     // Pure Canvas without Popup - NEVER intercepts touches or blocks clicks!
     Canvas(
         modifier = modifier.graphicsLayer(clip = false)
@@ -92,7 +108,7 @@ fun PixelFullScreenBurst(
         // Stays bright and vibrant for the first 60%, then softly dissolves
         val alpha = if (pVal < 0.6f) 1f else ((1f - pVal) / 0.4f).coerceIn(0f, 1f)
 
-        // Luminous glowing stardust dots with outer glow and solid core
+        // Luminous glowing stardust dots or seasonal symbols
         for (p in particles) {
             val particleProgress = (pVal * p.speedMult).coerceIn(0f, 1f)
             val dist = p.distance * particleProgress
@@ -100,19 +116,30 @@ fun PixelFullScreenBurst(
             val y = origin.y + (dist * sin(p.angle)).toFloat()
             val particleRadius = (p.radius * (1f - pVal * 0.3f)).coerceAtLeast(1.0f)
 
-            // Outer soft glow: provides strong contrast on both dark and light backgrounds
-            drawCircle(
-                color = p.color.copy(alpha = alpha * 0.35f),
-                radius = particleRadius * 1.85f,
-                center = Offset(x, y)
-            )
+            if (p.symbol != null) {
+                textPaint.textSize = particleRadius * 4.2f + 16f
+                textPaint.alpha = (alpha * 255).toInt().coerceIn(0, 255)
+                drawContext.canvas.nativeCanvas.drawText(
+                    p.symbol,
+                    x,
+                    y + textPaint.textSize / 3f,
+                    textPaint
+                )
+            } else {
+                // Outer soft glow: provides strong contrast on both dark and light backgrounds
+                drawCircle(
+                    color = p.color.copy(alpha = alpha * 0.35f),
+                    radius = particleRadius * 1.85f,
+                    center = Offset(x, y)
+                )
 
-            // Bright sparkling core
-            drawCircle(
-                color = p.color.copy(alpha = alpha),
-                radius = particleRadius,
-                center = Offset(x, y)
-            )
+                // Bright sparkling core
+                drawCircle(
+                    color = p.color.copy(alpha = alpha),
+                    radius = particleRadius,
+                    center = Offset(x, y)
+                )
+            }
         }
     }
 }

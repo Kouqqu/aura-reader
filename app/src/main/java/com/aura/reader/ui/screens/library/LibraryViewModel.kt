@@ -28,10 +28,12 @@ import java.io.OutputStream
 
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.AppDesignStyle
+import com.aura.reader.data.model.HolidaySeason
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.service.CoverSearchService
 import com.aura.reader.ui.theme.AppLanguage
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 
 enum class LibrarySortOption {
@@ -201,6 +203,27 @@ class LibraryViewModel(
 
     fun setUpdateChannel(channel: String) {
         viewModelScope.launch { preferencesManager.setUpdateChannel(channel) }
+    }
+
+    val seasonalEffectsEnabled: StateFlow<Boolean> = preferencesManager.seasonalEffectsEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val holidayOverride: StateFlow<String> = preferencesManager.holidayOverride
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "AUTO")
+
+    val holidaySeason: StateFlow<HolidaySeason> = combine(
+        preferencesManager.seasonalEffectsEnabled,
+        preferencesManager.holidayOverride
+    ) { enabled, override ->
+        HolidaySeason.resolve(enabled = enabled, override = override)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HolidaySeason.resolve())
+
+    fun setSeasonalEffectsEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setSeasonalEffectsEnabled(enabled) }
+    }
+
+    fun setHolidayOverride(override: String) {
+        viewModelScope.launch { preferencesManager.setHolidayOverride(override) }
     }
 
     fun resetReadingStats() {

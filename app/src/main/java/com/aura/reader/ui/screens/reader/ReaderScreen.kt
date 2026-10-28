@@ -591,21 +591,33 @@ fun ReaderScreen(
         )
 
 
-                if (celebrationTriggerKey != 0L) {
-                PixelFullScreenBurst(
-                    triggerKey = celebrationTriggerKey,
-                    origin = Offset(
-                        x = context.resources.displayMetrics.widthPixels / 2f,
-                        y = context.resources.displayMetrics.heightPixels / 2.8f
-                    ),
-                    colors = listOf(
+            if (celebrationTriggerKey != 0L) {
+                val holidaySeason = com.aura.reader.data.model.LocalHolidaySeason.current
+                val burstColors = if (holidaySeason != com.aura.reader.data.model.HolidaySeason.NONE) {
+                    holidaySeason.burstColors
+                } else {
+                    listOf(
                         Color(0xFFFFD700),
                         Color(0xFFFF69B4),
                         Color(0xFF00E5FF),
                         Color(0xFF76FF03),
                         Color(0xFFFF9100),
                         Color(0xFFE040FB)
+                    )
+                }
+                val burstSymbols = if (holidaySeason != com.aura.reader.data.model.HolidaySeason.NONE) {
+                    holidaySeason.burstSymbols
+                } else {
+                    listOf("✨", "⭐", "🎉", "✦", "★")
+                }
+                PixelFullScreenBurst(
+                    triggerKey = celebrationTriggerKey,
+                    origin = Offset(
+                        x = context.resources.displayMetrics.widthPixels / 2f,
+                        y = context.resources.displayMetrics.heightPixels / 2.8f
                     ),
+                    colors = burstColors,
+                    symbols = burstSymbols,
                     durationMillis = 2800
                 )
             }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Celebration
 import androidx.compose.material.icons.rounded.BrightnessAuto
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Contrast
@@ -53,6 +54,8 @@ internal fun SettingsThemeSection(
     onSyncThemesChange: (Boolean) -> Unit,
     materialYouEnabled: Boolean,
     onToggleMaterialYou: (Boolean) -> Unit,
+    seasonalEffectsEnabled: Boolean = true,
+    onToggleSeasonalEffects: (Boolean) -> Unit = {},
     onOpenReaderThemeSettings: () -> Unit,
     onThemePicked: (ReaderThemeMode, Offset, List<Color>) -> Unit
 ) {
@@ -219,6 +222,30 @@ internal fun SettingsThemeSection(
                     Switch(
                         checked = materialYouEnabled,
                         onCheckedChange = onToggleMaterialYou,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    )
+                }
+            }
+        )
+        ExpressiveDivider()
+        ExpressiveSettingsRow(
+            title = strings.seasonalEffectsToggle,
+            subtitle = strings.seasonalEffectsSubtitle,
+            icon = { SettingsIconBox(Icons.Rounded.Celebration) },
+            onClick = { onToggleSeasonalEffects(!seasonalEffectsEnabled) },
+            trailing = {
+                if (isGlass) {
+                    LiquidGlassSwitch(
+                        checked = seasonalEffectsEnabled,
+                        onCheckedChange = onToggleSeasonalEffects
+                    )
+                } else {
+                    Switch(
+                        checked = seasonalEffectsEnabled,
+                        onCheckedChange = onToggleSeasonalEffects,
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = MaterialTheme.colorScheme.primary,
                             checkedTrackColor = MaterialTheme.colorScheme.primaryContainer

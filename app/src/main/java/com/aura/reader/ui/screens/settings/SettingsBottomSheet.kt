@@ -134,6 +134,10 @@ fun SettingsBottomSheet(
     updateNotificationsEnabled: Boolean,
     readingStatsEnabled: Boolean,
     materialYouEnabled: Boolean,
+    seasonalEffectsEnabled: Boolean = true,
+    onToggleSeasonalEffects: (Boolean) -> Unit = {},
+    holidayOverride: String = "AUTO",
+    onHolidayOverrideChange: (String) -> Unit = {},
     anonymousAnalyticsEnabled: Boolean = true,
     isFullScreen: Boolean = false,
     onDismiss: () -> Unit,
@@ -469,6 +473,8 @@ fun SettingsBottomSheet(
                 onSyncThemesChange = onSyncThemesChange,
                 materialYouEnabled = materialYouEnabled,
                 onToggleMaterialYou = onToggleMaterialYou,
+                seasonalEffectsEnabled = seasonalEffectsEnabled,
+                onToggleSeasonalEffects = onToggleSeasonalEffects,
                 onOpenReaderThemeSettings = onOpenReaderThemeSettings,
                 onThemePicked = { mode, origin, colors ->
                     burstOrigin = origin
@@ -511,6 +517,8 @@ fun SettingsBottomSheet(
                 developerModeEnabled = developerModeEnabled,
                 updateChannel = updateChannel,
                 onUpdateChannelChange = onUpdateChannelChange,
+                holidayOverride = holidayOverride,
+                onHolidayOverrideChange = onHolidayOverrideChange,
                 onCheckUpdates = onCheckUpdates,
                 onVersionTap = {
                     if (developerModeEnabled) {

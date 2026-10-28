@@ -96,6 +96,14 @@ interface Strings {
     val selectThirdPartySubtitle: String
     val materialYouToggle: String
     val materialYouSubtitle: String
+    val seasonalEffectsToggle: String get() = "Праздничная атмосфера"
+    val seasonalEffectsSubtitle: String get() = "Тематическое оформление и эффекты к праздникам"
+    val holidayModeTitle: String get() = "Сезонный режим (тест)"
+    val holidayModeSubtitle: String get() = "Принудительное включение для проверки"
+    val holidayModeAuto: String get() = "Авто"
+    val holidayModeOff: String get() = "Выкл"
+    val holidayHalloween: String get() = "Хэллоуин"
+    val holidayNewYear: String get() = "Новый год"
     val sortTitle: String
     val sortByDefault: String
     val sortByRecent: String
@@ -450,6 +458,14 @@ class RuStrings : Strings {
     override val selectThirdPartySubtitle = "Samsung «Мои файлы», Xiaomi, проводники"
     override val materialYouToggle = "Цвета Material You"
     override val materialYouSubtitle = "Адаптировать акцентные цвета под обои устройства"
+    override val seasonalEffectsToggle = "Праздничная атмосфера"
+    override val seasonalEffectsSubtitle = "Тематическое оформление и эффекты к праздникам"
+    override val holidayModeTitle = "Сезонный режим (тест)"
+    override val holidayModeSubtitle = "Принудительное включение для проверки"
+    override val holidayModeAuto = "Авто"
+    override val holidayModeOff = "Выкл"
+    override val holidayHalloween = "Хэллоуин"
+    override val holidayNewYear = "Новый год"
     override val sortTitle = "Сортировка"
     override val sortByDefault = "По умолчанию"
     override val sortByRecent = "Недавние"
@@ -849,6 +865,14 @@ class EnStrings : Strings {
     override val selectThirdPartySubtitle = "Samsung My Files, Xiaomi, file managers"
     override val materialYouToggle = "Material You colors"
     override val materialYouSubtitle = "Adapt accent colors to device wallpaper"
+    override val seasonalEffectsToggle = "Holiday atmosphere"
+    override val seasonalEffectsSubtitle = "Seasonal themes and effects during holidays"
+    override val holidayModeTitle = "Holiday mode (test)"
+    override val holidayModeSubtitle = "Force active holiday for testing"
+    override val holidayModeAuto = "Auto"
+    override val holidayModeOff = "Off"
+    override val holidayHalloween = "Halloween"
+    override val holidayNewYear = "New Year"
     override val sortTitle = "Sort by"
     override val sortByDefault = "Default"
     override val sortByRecent = "Recent"
