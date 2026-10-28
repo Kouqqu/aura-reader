@@ -407,10 +407,16 @@ fun LibraryScreen(
     val hazeState = remember { HazeState() }
 
     CompositionLocalProvider(LocalHazeState provides hazeState) {
+        val mainScreenBg = if (isThemeDark && materialYouEnabled && readerSettings.appThemeMode != ReaderThemeMode.AMOLED) {
+            MaterialTheme.colorScheme.surface
+        } else {
+            MaterialTheme.colorScheme.background
+        }
         Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = mainScreenBg,
         topBar = {
             if (currentMainTab == 0) {
                 LibraryTopBar(

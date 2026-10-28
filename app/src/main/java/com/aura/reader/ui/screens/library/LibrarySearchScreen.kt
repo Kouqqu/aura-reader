@@ -84,8 +84,9 @@ fun LibrarySearchScreen(
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
-    val screenBg = MaterialTheme.colorScheme.background
-    val isAmoled = isDark && screenBg == Color.Black
+    val isMaterialYou = com.aura.reader.ui.components.LocalMaterialYouEnabled.current
+    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
+    val screenBg = if (isDark && isMaterialYou && !isAmoled) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background
 
     BackHandler {
         if (searchQuery.isNotEmpty()) {

@@ -295,7 +295,7 @@ object MobiParser {
                 }
             }
 
-            mobiDoc.body()?.html() ?: textContent
+            mobiDoc.body().html()
         } catch (e: Exception) {
             textContent
         }

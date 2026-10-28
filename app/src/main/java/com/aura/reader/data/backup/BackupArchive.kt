@@ -96,7 +96,7 @@ internal class BackupArchive private constructor(
                     }
                 }
                 require(!manifestText.isNullOrBlank()) { "Backup has no manifest.json" }
-                val manifest = JSONObject(manifestText!!)
+                val manifest = JSONObject(manifestText)
                 validate(manifest)
                 val installedNames = books.associate { book ->
                     val stem = book.name.substringBeforeLast('.', book.name).replace(Regex("\\.aura-[0-9a-f]{32}$"), "").take(180)

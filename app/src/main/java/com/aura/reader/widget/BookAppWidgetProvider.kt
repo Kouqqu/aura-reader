@@ -130,7 +130,7 @@ class BookAppWidgetProvider : AppWidgetProvider() {
                     id = o.getString("id"),
                     title = o.getString("title"),
                     author = o.optString("author", ""),
-                    coverBase64 = o.optString("coverBase64", null),
+                    coverBase64 = if (o.has("coverBase64") && !o.isNull("coverBase64")) o.getString("coverBase64") else null,
                     format = com.aura.reader.data.model.BookFormat.valueOf(o.optString("format", "EPUB")),
                     uriString = o.optString("uriString", ""),
                     progressPercent = o.optInt("progressPercent", 0),

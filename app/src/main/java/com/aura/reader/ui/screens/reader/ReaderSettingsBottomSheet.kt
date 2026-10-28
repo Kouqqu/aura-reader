@@ -401,7 +401,7 @@ fun ReaderSettingsBottomSheet(
                             if (isGlass) {
                                 LiquidGlassSwitch(
                                     checked = materialYouEnabled,
-                                    onCheckedChange = { onMaterialYouChange?.invoke(it) }
+                                    onCheckedChange = onMaterialYouChange
                                 )
                             } else {
                                 Switch(
@@ -510,15 +510,26 @@ fun ReaderSettingsBottomSheet(
                 }
 
                 // Specific Font Typeface Dropdown
-                val fontChoices = when (settings.fontFamily) {
+                val customFonts = remember(context) {
+                    val dir = java.io.File(context.filesDir, "custom_fonts")
+                    dir.listFiles { file ->
+                        file.isFile && (file.extension.equals("ttf", ignoreCase = true) || file.extension.equals("otf", ignoreCase = true))
+                    }?.sortedBy { it.nameWithoutExtension.lowercase() } ?: emptyList()
+                }
+
+                val fontChoices = (when (settings.fontFamily) {
                     ReaderFontFamily.SERIF -> listOf(strings.fontDefault, "Literata", "PT Serif", "Lora")
                     ReaderFontFamily.SANS_SERIF -> listOf(strings.fontDefault, "Google Sans", "Inter")
                     ReaderFontFamily.MONOSPACE -> listOf(strings.fontDefault, "JetBrains Mono")
                     ReaderFontFamily.SYSTEM_DEFAULT -> listOf(strings.fontDefault)
-                }
+                }) + customFonts.map { "CUSTOM:${it.name}" }
 
                 var fontDropdownExpanded by remember { mutableStateOf(false) }
-                val currentFontLabel = if (settings.fontName.isBlank() || settings.fontName == strings.fontDefault) strings.fontDefault else settings.fontName
+                val currentFontLabel = when {
+                    settings.fontName.isBlank() || settings.fontName == strings.fontDefault -> strings.fontDefault
+                    settings.fontName.startsWith("CUSTOM:") -> settings.fontName.removePrefix("CUSTOM:").substringBeforeLast(".")
+                    else -> settings.fontName
+                }
 
                 ExposedDropdownMenuBox(
                     expanded = fontDropdownExpanded,
@@ -534,7 +545,7 @@ fun ReaderSettingsBottomSheet(
                         label = { Text(strings.specificFontTitle) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = fontDropdownExpanded) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(androidx.compose.material3.ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = textFieldColors
@@ -545,8 +556,13 @@ fun ReaderSettingsBottomSheet(
                     ) {
                         fontChoices.forEach { fontOption ->
                             val isSelected = (settings.fontName.isBlank() && fontOption == strings.fontDefault) || settings.fontName == fontOption
+                            val fontDisplay = if (fontOption.startsWith("CUSTOM:")) {
+                                fontOption.removePrefix("CUSTOM:").substringBeforeLast(".")
+                            } else {
+                                fontOption
+                            }
                             DropdownMenuItem(
-                                text = { Text(fontOption) },
+                                text = { Text(fontDisplay) },
                                 onClick = {
                                     val toSave = if (fontOption == strings.fontDefault) "" else fontOption
                                     onFontNameChange(toSave)
@@ -866,7 +882,7 @@ fun ReaderSettingsBottomSheet(
                         } else ButtonDefaults.outlinedButtonColors(),
                         border = if (isGlass) {
                             BorderStroke(0.8.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
-                        } else ButtonDefaults.outlinedButtonBorder,
+                        } else ButtonDefaults.outlinedButtonBorder(enabled = true),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(

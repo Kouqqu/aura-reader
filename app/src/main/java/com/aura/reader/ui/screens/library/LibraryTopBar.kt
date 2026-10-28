@@ -181,7 +181,9 @@ AnimatedContent(
         },
         scrollBehavior = scrollBehavior,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.background,
+            containerColor = if (isGlass) Color.Transparent else {
+                if (isThemeDark && com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background
+            },
             scrolledContainerColor = if (isGlass) {
                 if (isThemeDark) Color(0xB3000000) else Color(0xB3FFFFFF)
             } else {

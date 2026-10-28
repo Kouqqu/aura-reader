@@ -34,6 +34,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
+import android.graphics.drawable.Icon
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 data class TtsVoiceInfo(
     val name: String,
@@ -74,6 +76,7 @@ data class TtsHighlightEvent(
     val arrivalUptimeMs: Long
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class BookTtsService : Service(), TextToSpeech.OnInitListener {
 
     companion object {
@@ -524,7 +527,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             val langResult = tts?.setLanguage(Locale.getDefault())
             if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
                 // Fallback to Russian or English
-                val ruResult = tts?.setLanguage(Locale("ru", "RU"))
+                val ruResult = tts?.setLanguage(Locale.Builder().setLanguage("ru").setRegion("RU").build())
                 if (ruResult == TextToSpeech.LANG_MISSING_DATA || ruResult == TextToSpeech.LANG_NOT_SUPPORTED) {
                     tts?.setLanguage(Locale.US)
                 }
@@ -617,8 +620,8 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                     if (a == currentLang) -1
                     else if (b == currentLang) 1
                     else {
-                        val nameA = Locale(a).getDisplayLanguage(Locale.getDefault())
-                        val nameB = Locale(b).getDisplayLanguage(Locale.getDefault())
+                        val nameA = Locale.Builder().setLanguage(a).build().getDisplayLanguage(Locale.getDefault())
+                        val nameB = Locale.Builder().setLanguage(b).build().getDisplayLanguage(Locale.getDefault())
                         nameA.compareTo(nameB, ignoreCase = true)
                     }
                 }
@@ -626,7 +629,7 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
                 val result = mutableListOf<TtsVoiceInfo>()
                 for (langCode in sortedLangCodes) {
                     val voicesInLang = grouped[langCode] ?: continue
-                    val langDisplay = Locale(langCode).getDisplayLanguage(Locale.getDefault())
+                    val langDisplay = Locale.Builder().setLanguage(langCode).build().getDisplayLanguage(Locale.getDefault())
                         .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
 
                     val sortedVoices = voicesInLang.sortedWith(compareBy({ it.isNetworkConnectionRequired }, { it.name }))
@@ -1021,10 +1024,10 @@ class BookTtsService : Service(), TextToSpeech.OnInitListener {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(contentIntent)
             .setOngoing(isPlaying)
-            .addAction(Notification.Action.Builder(android.R.drawable.ic_media_previous, prevTitle, prevIntent).build())
-            .addAction(Notification.Action.Builder(playPauseIcon, playPauseTitle, playPauseIntent).build())
-            .addAction(Notification.Action.Builder(android.R.drawable.ic_media_next, nextTitle, nextIntent).build())
-            .addAction(Notification.Action.Builder(android.R.drawable.ic_menu_close_clear_cancel, stopTitle, stopIntent).build())
+            .addAction(Notification.Action.Builder(Icon.createWithResource(this, android.R.drawable.ic_media_previous), prevTitle, prevIntent).build())
+            .addAction(Notification.Action.Builder(Icon.createWithResource(this, playPauseIcon), playPauseTitle, playPauseIntent).build())
+            .addAction(Notification.Action.Builder(Icon.createWithResource(this, android.R.drawable.ic_media_next), nextTitle, nextIntent).build())
+            .addAction(Notification.Action.Builder(Icon.createWithResource(this, android.R.drawable.ic_menu_close_clear_cancel), stopTitle, stopIntent).build())
             .setStyle(
                 Notification.MediaStyle()
                     .setMediaSession(mediaSession?.sessionToken)

@@ -246,8 +246,10 @@ fun ReaderScreen(
     var translationTargetLang by remember(appLanguage.code) { mutableStateOf(appLanguage.code) }
 
     val defaultToolbar = LocalTextToolbar.current
+    @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
     var lastCopiedText by remember { mutableStateOf<String?>(null) }
+    @Suppress("DEPRECATION")
     val interceptedClipboardManager = remember(clipboardManager) {
         object : androidx.compose.ui.platform.ClipboardManager {
             override fun getText(): androidx.compose.ui.text.AnnotatedString? = clipboardManager.getText()
@@ -332,6 +334,7 @@ fun ReaderScreen(
         materialYou = materialYouEnabled,
         readerMode = true
     ) {
+      @Suppress("DEPRECATION")
       CompositionLocalProvider(LocalTextToolbar provides customTextToolbar, LocalClipboardManager provides interceptedClipboardManager) {
         val resolvedFontFamily = remember(settings.fontFamily, settings.fontName) {
             val fallback = when (settings.fontFamily) {
@@ -340,13 +343,23 @@ fun ReaderScreen(
                 ReaderFontFamily.MONOSPACE -> FontFamily.Monospace
                 ReaderFontFamily.SYSTEM_DEFAULT -> FontFamily.Default
             }
-            when (settings.fontName) {
-                "Literata" -> FontFamily(Font(R.font.literata_regular))
-                "PT Serif" -> FontFamily(Font(R.font.pt_serif_regular))
-                "Lora" -> FontFamily(Font(R.font.lora_regular))
-                "Inter" -> FontFamily(Font(R.font.inter_regular))
-                "Google Sans" -> FontFamily(Font(R.font.google_sans_regular))
-                "JetBrains Mono" -> FontFamily(Font(R.font.jetbrains_mono_regular))
+            when {
+                settings.fontName.startsWith("CUSTOM:") -> {
+                    val fileName = settings.fontName.removePrefix("CUSTOM:")
+                    val file = java.io.File(context.filesDir, "custom_fonts/$fileName")
+                    if (file.exists()) {
+                        runCatching {
+                            val tf = android.graphics.Typeface.createFromFile(file)
+                            if (tf != null) FontFamily(tf) else fallback
+                        }.getOrDefault(fallback)
+                    } else fallback
+                }
+                settings.fontName == "Literata" -> FontFamily(Font(R.font.literata_regular))
+                settings.fontName == "PT Serif" -> FontFamily(Font(R.font.pt_serif_regular))
+                settings.fontName == "Lora" -> FontFamily(Font(R.font.lora_regular))
+                settings.fontName == "Inter" -> FontFamily(Font(R.font.inter_regular))
+                settings.fontName == "Google Sans" -> FontFamily(Font(R.font.google_sans_regular))
+                settings.fontName == "JetBrains Mono" -> FontFamily(Font(R.font.jetbrains_mono_regular))
                 else -> fallback
             }
         }
@@ -676,7 +689,7 @@ fun ReaderScreen(
                     onDismissRequest = { showNextInSeriesDialog = false },
                     title = {
                         Text(
-                            text = if (!currentBook?.series.isNullOrBlank()) "${strings.seriesLabel}: ${currentBook?.series}" else strings.nextInSeriesAction,
+                            text = if (!currentBook?.series.isNullOrBlank()) "${strings.seriesLabel}: ${currentBook.series}" else strings.nextInSeriesAction,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )

@@ -133,7 +133,9 @@ fun CurrentlyReadingHeroCard(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
-                if (isDark) (if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)) else Color(0xF6F7FA)
+                if (isDark) {
+                    if (isAmoled) Color(0xF2121316) else if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.90f) else Color(0xEE181A20)
+                } else Color(0xF6F7FA)
             } else MaterialTheme.colorScheme.surfaceContainerHigh
         ),
         border = heroBorder,

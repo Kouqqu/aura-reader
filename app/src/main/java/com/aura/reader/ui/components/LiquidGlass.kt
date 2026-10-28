@@ -102,6 +102,7 @@ import kotlin.math.roundToInt
  * CompositionLocal for ambient Haze backdrop blur across Liquid Glass surfaces.
  */
 val LocalHazeState = compositionLocalOf<HazeState?> { null }
+val LocalMaterialYouEnabled = compositionLocalOf { false }
 
 /**
  * Shared appearance for dropdown menus.
@@ -999,7 +1000,8 @@ fun LiquidGlassSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    useDynamicColor: Boolean = LocalMaterialYouEnabled.current
 ) {
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
@@ -1085,15 +1087,20 @@ fun LiquidGlassSwitch(
     val thumbLeftInOuterPx = trackLeftInOuterPx + thumbLeftInTrackPx
     val thumbLeftInOuterDp = with(density) { thumbLeftInOuterPx.toDp() }
 
-    // Track colors: Material You accent capsule when ON, neutral frosted glass when OFF.
-    // In a dark theme the accent container is the tone that keeps the white thumb readable.
+    // Track colors: Authentic Apple green (#34C759 / #30D158) when Material You is OFF.
+    // When Material You is ON, follows the dynamic wallpaper accent color.
+    val isMaterialYou = useDynamicColor
     val offTrackColor = if (isDark) Color(0x35FFFFFF) else Color(0x1F000000)
-    val onTrackColor = if (isDark) {
-        MaterialTheme.colorScheme.primaryContainer
+    val onTrackColor = if (isMaterialYou) {
+        if (isDark) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.primary
     } else {
-        MaterialTheme.colorScheme.primary
+        if (isDark) Color(0xFF30D158) else Color(0xFF34C759)
     }
-    val accentColor = MaterialTheme.colorScheme.primary
+    val accentColor = if (isMaterialYou) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        Color(0xFF34C759)
+    }
     val currentTrackColor = lerp(offTrackColor, onTrackColor, travelFraction)
 
     val trackShape = RoundedCornerShape(percent = 50)
@@ -1188,7 +1195,8 @@ fun LiquidGlassSwitch(
                         radiusPx = pillRadiusPx,
                         refractiveIndex = 1.030f,
                         refractionWidthPx = with(density) { 14.dp.toPx() },
-                        intensity = heldProgress
+                        intensity = heldProgress,
+                        blurRadiusPx = with(density) { 10.dp.toPx() }
                     )
             )
         }
@@ -1219,7 +1227,7 @@ fun LiquidGlassSwitch(
                 )
             }
 
-            // LAYER B: Pure Liquid Glass Capsule (NO inner oval! Single uniform optical lens)
+            // LAYER B: Pure Liquid Glass Capsule with optical refraction & blur
             if (heldProgress > 0.01f) {
                 val bottomRimColor = if (travelFraction > 0.30f) {
                     lerp(Color.White.copy(alpha = 0.50f), accentColor.copy(alpha = 0.85f), travelFraction)
@@ -1227,10 +1235,19 @@ fun LiquidGlassSwitch(
                     Color.White.copy(alpha = 0.40f)
                 }
 
+                val hazeState = LocalHazeState.current
+                val hazeModifier = if (hazeState != null) {
+                    Modifier.clip(thumbShape).hazeChild(
+                        state = hazeState,
+                        style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
+                    )
+                } else Modifier
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer { alpha = heldProgress }
+                        .then(hazeModifier)
                         .background(
                             Brush.verticalGradient(
                                 listOf(

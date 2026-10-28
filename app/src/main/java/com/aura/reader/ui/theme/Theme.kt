@@ -117,7 +117,7 @@ private fun ColorScheme.withAmoledReaderSurfaces(): ColorScheme = copy(
 fun AuraReaderTheme(
     themeMode: ReaderThemeMode = ReaderThemeMode.DARK,
     materialYou: Boolean = false,
-    appFont: String = "DEFAULT",
+    appFont: String = "GOOGLE_SANS",
     readerMode: Boolean = false,
     content: @Composable () -> Unit
 ) {
@@ -126,10 +126,7 @@ fun AuraReaderTheme(
     val systemDark = isSystemInDarkTheme()
 
     val typography = remember(appFont) {
-        val fontFamily = when (appFont) {
-            "GOOGLE_SANS" -> FontFamily(Font(R.font.google_sans_regular))
-            else -> FontFamily.Default
-        }
+        val fontFamily = resolveAppFontFamily(context, appFont)
         createAppTypography(fontFamily)
     }
 
@@ -201,4 +198,24 @@ fun AuraReaderTheme(
         typography = typography,
         content = content
     )
+}
+
+
+fun resolveAppFontFamily(context: android.content.Context, appFont: String): FontFamily {
+    return when {
+        appFont == "SYSTEM" || appFont == "DEFAULT" -> FontFamily.Default
+        appFont.startsWith("CUSTOM:") -> {
+            val fileName = appFont.removePrefix("CUSTOM:")
+            val file = java.io.File(context.filesDir, "custom_fonts/$fileName")
+            if (file.exists()) {
+                runCatching {
+                    val tf = android.graphics.Typeface.createFromFile(file)
+                    if (tf != null) FontFamily(tf) else FontFamily(Font(R.font.google_sans_regular))
+                }.getOrDefault(FontFamily(Font(R.font.google_sans_regular)))
+            } else {
+                FontFamily(Font(R.font.google_sans_regular))
+            }
+        }
+        else -> FontFamily(Font(R.font.google_sans_regular))
+    }
 }

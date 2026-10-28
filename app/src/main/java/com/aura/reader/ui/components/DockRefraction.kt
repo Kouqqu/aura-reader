@@ -63,12 +63,13 @@ fun Modifier.liquidRefraction(
     radiusPx: Float,
     refractiveIndex: Float = 1.018f,
     refractionWidthPx: Float = 24f,
-    intensity: Float = 1f
+    intensity: Float = 1f,
+    blurRadiusPx: Float = 0f
 ): Modifier {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return this
     val rayTravelPx = with(LocalDensity.current) { 70.dp.toPx() }
     return dockRefractionLayer(centerPx, sizePx, radiusPx, refractiveIndex,
-        refractionWidthPx, rayTravelPx, intensity)
+        refractionWidthPx, rayTravelPx, intensity, blurRadiusPx)
 }
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -80,7 +81,8 @@ private fun Modifier.dockRefractionLayer(
     refractiveIndex: Float,
     refractionWidthPx: Float,
     rayTravelPx: Float,
-    intensity: Float
+    intensity: Float,
+    blurRadiusPx: Float
 ): Modifier {
     // Compile once per mounted dock, including while resting. Animation frames
     // rebind uniform snapshots; a new gesture does not compile a fresh shader.
@@ -100,9 +102,14 @@ private fun Modifier.dockRefractionLayer(
             shader.setFloatUniform("uRefractiveIndex", refractiveIndex.coerceIn(1f, 2f))
             shader.setFloatUniform("uRayTravel", rayTravelPx)
             shader.setFloatUniform("uIntensity", intensity.coerceIn(0f, 1f))
-            // RenderEffect snapshots the current uniforms; rebind after updating
-            // them while retaining the already compiled RuntimeShader.
-            renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "composable").asComposeRenderEffect()
+            val shaderEffect = RenderEffect.createRuntimeShaderEffect(shader, "composable")
+            renderEffect = if (blurRadiusPx > 0.5f) {
+                val blur = (blurRadiusPx * intensity).coerceAtLeast(1f)
+                val blurEffect = RenderEffect.createBlurEffect(blur, blur, android.graphics.Shader.TileMode.CLAMP)
+                RenderEffect.createChainEffect(shaderEffect, blurEffect).asComposeRenderEffect()
+            } else {
+                shaderEffect.asComposeRenderEffect()
+            }
         } else renderEffect = null
     }
 }

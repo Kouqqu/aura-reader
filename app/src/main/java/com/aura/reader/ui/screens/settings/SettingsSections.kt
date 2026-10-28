@@ -1,6 +1,21 @@
 package com.aura.reader.ui.screens.settings
 
 import android.widget.Toast
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -218,6 +233,65 @@ ExpressiveSettingsGroup {
             }
         }
     )
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var customFonts by remember { mutableStateOf(getCustomFontFiles(context)) }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        var name = "font_${System.currentTimeMillis()}.ttf"
+                        context.contentResolver.query(
+                            uri,
+                            arrayOf(OpenableColumns.DISPLAY_NAME),
+                            null,
+                            null,
+                            null
+                        )?.use { cursor ->
+                            if (cursor.moveToFirst()) {
+                                val nameIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                                if (nameIdx != -1) {
+                                    val fetched = cursor.getString(nameIdx)
+                                    if (!fetched.isNullOrBlank()) {
+                                        name = fetched
+                                    }
+                                }
+                            }
+                        }
+                        val sanitizedName = name.replace(Regex("[^a-zA-Z0-9._\\- ]"), "_")
+                        val dir = File(context.filesDir, "custom_fonts").apply { mkdirs() }
+                        val targetFile = File(dir, sanitizedName)
+                        context.contentResolver.openInputStream(uri)?.use { input ->
+                            targetFile.outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        } ?: error("Cannot open font stream")
+
+                        // Validate font
+                        val tf = android.graphics.Typeface.createFromFile(targetFile)
+                        if (tf == null) {
+                            targetFile.delete()
+                            error("Invalid font file")
+                        }
+                        sanitizedName
+                    }
+                }
+                if (result.isSuccess) {
+                    val fileName = result.getOrThrow()
+                    customFonts = getCustomFontFiles(context)
+                    onAppFontChange("CUSTOM:$fileName")
+                    Toast.makeText(context, strings.appFontImportSuccess, Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, strings.appFontImportError, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
     ExpressiveDivider()
     Column(modifier = Modifier.padding(16.dp)) {
         Text(
@@ -232,28 +306,98 @@ ExpressiveSettingsGroup {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(10.dp))
-        Row(
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // 1. Google Sans (Default)
+            val isGoogleSans = appFont == "GOOGLE_SANS"
             LiquidGlassFilterChip(
-                selected = appFont == "DEFAULT",
-                onClick = { onAppFontChange("DEFAULT") },
-                label = { Text(strings.appFontDefault) },
+                selected = isGoogleSans,
+                onClick = { onAppFontChange("GOOGLE_SANS") },
+                label = { Text(strings.appFontGoogleSans) },
                 isGlass = isGlass,
-                leadingIcon = if (appFont == "DEFAULT") {
+                leadingIcon = if (isGoogleSans) {
                     { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                 } else null
             )
 
+            // 2. System Default ("Системный")
+            val isSystem = appFont == "SYSTEM" || appFont == "DEFAULT"
             LiquidGlassFilterChip(
-                selected = appFont == "GOOGLE_SANS",
-                onClick = { onAppFontChange("GOOGLE_SANS") },
-                label = { Text(strings.appFontGoogleSans) },
+                selected = isSystem,
+                onClick = { onAppFontChange("SYSTEM") },
+                label = { Text(strings.appFontDefault) },
                 isGlass = isGlass,
-                leadingIcon = if (appFont == "GOOGLE_SANS") {
+                leadingIcon = if (isSystem) {
                     { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                 } else null
+            )
+
+            // 3. User Imported Custom Fonts
+            customFonts.forEach { fontFile ->
+                val fontKey = "CUSTOM:${fontFile.name}"
+                val isSelected = appFont == fontKey
+                LiquidGlassFilterChip(
+                    selected = isSelected,
+                    onClick = { onAppFontChange(fontKey) },
+                    label = {
+                        Text(
+                            text = fontFile.nameWithoutExtension.take(16),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    isGlass = isGlass,
+                    leadingIcon = if (isSelected) {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else null,
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = strings.appFontCustomDelete,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clickable {
+                                    fontFile.delete()
+                                    customFonts = getCustomFontFiles(context)
+                                    if (isSelected) {
+                                        onAppFontChange("GOOGLE_SANS")
+                                    }
+                                },
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                )
+            }
+
+            // 4. Add Custom Font button
+            LiquidGlassFilterChip(
+                selected = false,
+                onClick = {
+                    filePickerLauncher.launch(
+                        arrayOf(
+                            "font/*",
+                            "font/ttf",
+                            "font/otf",
+                            "application/x-font-ttf",
+                            "application/x-font-otf",
+                            "application/font-sfnt",
+                            "application/octet-stream",
+                            "*/*"
+                        )
+                    )
+                },
+                label = { Text(strings.appFontAddCustom) },
+                isGlass = isGlass,
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             )
         }
     }
@@ -577,4 +721,12 @@ ExpressiveSettingsGroup {
     }
 }
 
+}
+
+
+private fun getCustomFontFiles(context: android.content.Context): List<java.io.File> {
+    val dir = java.io.File(context.filesDir, "custom_fonts")
+    return dir.listFiles { file ->
+        file.isFile && (file.extension.equals("ttf", ignoreCase = true) || file.extension.equals("otf", ignoreCase = true))
+    }?.sortedBy { it.nameWithoutExtension.lowercase() } ?: emptyList()
 }

@@ -208,7 +208,7 @@ class LibraryViewModel(
     }
 
     val appFont: StateFlow<String> = preferencesManager.appFont
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "DEFAULT")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "GOOGLE_SANS")
 
     fun setAppFont(font: String) {
         viewModelScope.launch { preferencesManager.setAppFont(font) }

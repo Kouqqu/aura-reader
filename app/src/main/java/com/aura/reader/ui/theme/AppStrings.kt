@@ -387,6 +387,10 @@ interface Strings {
     val appFontSubtitle: String
     val appFontDefault: String
     val appFontGoogleSans: String
+    val appFontAddCustom: String
+    val appFontCustomDelete: String
+    val appFontImportSuccess: String
+    val appFontImportError: String
     val readingSpeedSettingTitle: String
     val resetReadingSpeedTitle: String
     val resetReadingSpeedSubtitle: String
@@ -780,8 +784,12 @@ class RuStrings : Strings {
     // Beta 1.4.3 additions
     override val appFontTitle = "Шрифт приложения"
     override val appFontSubtitle = "Шрифт элементов интерфейса"
-    override val appFontDefault = "По умолчанию"
+    override val appFontDefault = "Системный"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontAddCustom = "Добавить свой шрифт"
+    override val appFontCustomDelete = "Удалить шрифт"
+    override val appFontImportSuccess = "Шрифт успешно добавлен"
+    override val appFontImportError = "Не удалось загрузить шрифт"
     override val readingSpeedSettingTitle = "Скорость чтения"
     override val resetReadingSpeedTitle = "Сбросить скорость чтения"
     override val resetReadingSpeedSubtitle = "Сброс персонального темпа для расчета времени главы на нижней плашке"
@@ -1174,8 +1182,12 @@ class EnStrings : Strings {
     // Beta 1.4.3 additions
     override val appFontTitle = "App Font"
     override val appFontSubtitle = "Font used for UI elements"
-    override val appFontDefault = "System Default"
+    override val appFontDefault = "System"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontAddCustom = "Add Custom Font"
+    override val appFontCustomDelete = "Delete font"
+    override val appFontImportSuccess = "Font added successfully"
+    override val appFontImportError = "Failed to load font"
     override val readingSpeedSettingTitle = "Reading Speed"
     override val resetReadingSpeedTitle = "Reset reading speed"
     override val resetReadingSpeedSubtitle = "Reset personalized pace for chapter time calculation on the bottom bar"
@@ -1568,8 +1580,12 @@ class UkStrings : Strings {
     // Beta 1.4.3 additions
     override val appFontTitle = "Шрифт програми"
     override val appFontSubtitle = "Шрифт елементів інтерфейсу"
-    override val appFontDefault = "За замовчуванням"
+    override val appFontDefault = "Системний"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontAddCustom = "Додати свій шрифт"
+    override val appFontCustomDelete = "Видалити шрифт"
+    override val appFontImportSuccess = "Шрифт успішно додано"
+    override val appFontImportError = "Не вдалося завантажити шрифт"
     override val readingSpeedSettingTitle = "Швидкість читання"
     override val resetReadingSpeedTitle = "Скинути швидкість читання"
     override val resetReadingSpeedSubtitle = "Скидання персонального темпу для розрахунку часу розділу на нижній плашці"
@@ -1962,8 +1978,12 @@ class BeStrings : Strings {
     // Beta 1.4.3 additions
     override val appFontTitle = "Шрыфт праграмы"
     override val appFontSubtitle = "Шрыфт элементаў інтэрфейсу"
-    override val appFontDefault = "Па змаўчанні"
+    override val appFontDefault = "Сістэмны"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontAddCustom = "Дадаць свой шрыфт"
+    override val appFontCustomDelete = "Выдаліць шрыфт"
+    override val appFontImportSuccess = "Шрыфт паспяхова дададзены"
+    override val appFontImportError = "Не ўдалося загрузіць шрыфт"
     override val readingSpeedSettingTitle = "Хуткасць чытання"
     override val resetReadingSpeedTitle = "Скінуць хуткасць чытання"
     override val resetReadingSpeedSubtitle = "Скід персанальнага тэмпу для разліку часу раздзела на ніжняй планцы"
@@ -2355,8 +2375,12 @@ class PlStrings : Strings {
     // Beta 1.4.3 additions
     override val appFontTitle = "Czcionka aplikacji"
     override val appFontSubtitle = "Czcionka elementów interfejsu"
-    override val appFontDefault = "Domyślna"
+    override val appFontDefault = "Systemowa"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontAddCustom = "Dodaj własną czcionkę"
+    override val appFontCustomDelete = "Usuń czcionkę"
+    override val appFontImportSuccess = "Czcionka została dodana"
+    override val appFontImportError = "Nie udało się załadować czcionki"
     override val readingSpeedSettingTitle = "Prędkość czytania"
     override val resetReadingSpeedTitle = "Zresetuj prędkość czytania"
     override val resetReadingSpeedSubtitle = "Resetowanie tempa do obliczania czasu rozdziału na dolnym pasku"
@@ -2727,8 +2751,12 @@ class CsStrings : Strings {
     override val channelSwitchPrompt = "Vyberte kanál aktualizací:"
     override val appFontTitle = "Písmo aplikace"
     override val appFontSubtitle = "Písmo prvků rozhraní"
-    override val appFontDefault = "Výchozí"
+    override val appFontDefault = "Systémové"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontAddCustom = "Přidat vlastní písmo"
+    override val appFontCustomDelete = "Smazat písmo"
+    override val appFontImportSuccess = "Písmo bylo úspěšně přidáno"
+    override val appFontImportError = "Nepodařilo se načíst písmo"
     override val readingSpeedSettingTitle = "Rychlost čtení"
     override val resetReadingSpeedTitle = "Obnovit rychlost čtení"
     override val resetReadingSpeedSubtitle = "Obnovení osobního tempa pro výpočet času kapitoly na spodním panelu"
@@ -3099,8 +3127,12 @@ class HeStrings : Strings {
     override val channelSwitchPrompt = "בחר ערוץ עדכונים:"
     override val appFontTitle = "גופן האפליקציה"
     override val appFontSubtitle = "גופן עבור רכיבי הממשק"
-    override val appFontDefault = "ברירת מחדל"
+    override val appFontDefault = "מערכת"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontAddCustom = "הוסף גופן מותאם אישית"
+    override val appFontCustomDelete = "מחק גופן"
+    override val appFontImportSuccess = "הגופן נוסף בהצלחה"
+    override val appFontImportError = "טעינת הגופן נכשלה"
     override val readingSpeedSettingTitle = "מהירות קריאה אישית"
     override val resetReadingSpeedTitle = "איפוס מהירות קריאה"
     override val resetReadingSpeedSubtitle = "איפוס קצב הקריאה האישי לצורך חישוב זמן הפרק בסרגל התחתון"

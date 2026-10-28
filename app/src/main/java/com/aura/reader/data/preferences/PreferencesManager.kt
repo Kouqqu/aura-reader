@@ -167,13 +167,65 @@ class PreferencesManager(private val context: Context) {
     }
 
     val appFont: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[APP_FONT_KEY] ?: "DEFAULT"
+        prefs[APP_FONT_KEY] ?: "GOOGLE_SANS"
     }
 
     suspend fun setAppFont(font: String) {
         context.dataStore.edit { prefs ->
             prefs[APP_FONT_KEY] = font
         }
+    }
+
+    fun getCustomFontsDir(): java.io.File = java.io.File(context.filesDir, "custom_fonts").apply { mkdirs() }
+
+    fun getCustomFonts(): List<java.io.File> {
+        val dir = getCustomFontsDir()
+        return dir.listFiles { file ->
+            file.isFile && (file.extension.equals("ttf", ignoreCase = true) || file.extension.equals("otf", ignoreCase = true))
+        }?.sortedBy { it.nameWithoutExtension.lowercase() } ?: emptyList()
+    }
+
+    suspend fun importCustomFont(uri: android.net.Uri): Result<String> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            var name = "font_${System.currentTimeMillis()}.ttf"
+            context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val nameIdx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (nameIdx != -1) {
+                        val fetched = cursor.getString(nameIdx)
+                        if (!fetched.isNullOrBlank()) {
+                            name = fetched
+                        }
+                    }
+                }
+            }
+            val sanitizedName = name.replace(Regex("[^a-zA-Z0-9._\\- ]"), "_")
+            val dir = getCustomFontsDir()
+            val targetFile = java.io.File(dir, sanitizedName)
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                targetFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            } ?: error("Cannot open input stream for $uri")
+
+            val tf = android.graphics.Typeface.createFromFile(targetFile)
+            if (tf == null) {
+                targetFile.delete()
+                error("Invalid font file")
+            }
+            sanitizedName
+        }
+    }
+
+    suspend fun deleteCustomFont(fontFileName: String): Boolean = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val file = java.io.File(getCustomFontsDir(), fontFileName)
+        val deleted = file.delete()
+        context.dataStore.edit { prefs ->
+            if (prefs[APP_FONT_KEY] == "CUSTOM:$fontFileName") {
+                prefs[APP_FONT_KEY] = "GOOGLE_SANS"
+            }
+        }
+        deleted
     }
 
     val libraryViewMode: Flow<String> = context.dataStore.data.map { prefs ->

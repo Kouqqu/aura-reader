@@ -50,7 +50,7 @@ class AnalyticsCountryTest {
 
         val prevLocale = Locale.getDefault()
         try {
-            Locale.setDefault(Locale("ru", "BY"))
+            Locale.setDefault(Locale.Builder().setLanguage("ru").setRegion("BY").build())
             val country = AnalyticsManager.getUserCountry(context)
             assertEquals("BY", country)
         } finally {

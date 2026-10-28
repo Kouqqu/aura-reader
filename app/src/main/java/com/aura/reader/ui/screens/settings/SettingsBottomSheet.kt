@@ -163,7 +163,7 @@ fun SettingsBottomSheet(
     onAppDesignStyleChange: (AppDesignStyle) -> Unit = {},
     glassClarity: Float = 0.85f,
     onGlassClarityChange: (Float) -> Unit = {},
-    appFont: String = "DEFAULT",
+    appFont: String = "GOOGLE_SANS",
     onAppFontChange: (String) -> Unit = {},
     onResetReadingSpeed: () -> Unit = {},
     onOpenOnboarding: () -> Unit = {}

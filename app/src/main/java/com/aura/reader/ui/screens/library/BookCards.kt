@@ -166,7 +166,9 @@ fun BookCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
-                if (isDark) Color(0x281C1E26) else Color(0x65FFFFFF)
+                if (isDark) {
+                    if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.45f) else Color(0x281C1E26)
+                } else Color(0x65FFFFFF)
             } else if (isDraggingThis) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
             } else {
@@ -563,7 +565,9 @@ fun BookGridCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
-                if (isDark) Color(0x281C1E26) else Color(0x65FFFFFF)
+                if (isDark) {
+                    if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.45f) else Color(0x281C1E26)
+                } else Color(0x65FFFFFF)
             } else if (isDraggingThis) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
             } else {

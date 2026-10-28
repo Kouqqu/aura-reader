@@ -109,13 +109,14 @@ class MainActivity : ComponentActivity() {
                 initial = false
             )
             val appFont by preferencesManager.appFont.collectAsState(
-                initial = "DEFAULT"
+                initial = "GOOGLE_SANS"
             )
 
             val completed = hasCompletedOnboarding
             if (completed != null) {
                 CompositionLocalProvider(
-                    LocalAppStrings provides getStrings(appLanguage)
+                    LocalAppStrings provides getStrings(appLanguage),
+                    com.aura.reader.ui.components.LocalMaterialYouEnabled provides materialYouEnabled
                 ) {
                     AuraReaderTheme(
                         themeMode = settings.appThemeMode,

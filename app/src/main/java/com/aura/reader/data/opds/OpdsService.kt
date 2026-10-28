@@ -440,15 +440,15 @@ object OpdsService {
 
                                 val isSeriesCategory = isCat && (
                                     feedUrl.contains("searchType=sequences", ignoreCase = true) ||
-                                    currentCategoryPath?.contains("/sequence", ignoreCase = true) == true ||
-                                    currentCategoryPath?.contains("/s/", ignoreCase = true) == true ||
+                                    currentCategoryPath.contains("/sequence", ignoreCase = true) ||
+                                    currentCategoryPath.contains("/s/", ignoreCase = true) ||
                                     currentTitle.startsWith("Серия:", ignoreCase = true)
                                 )
 
                                 val isAuthorCat = isCat && (
                                     feedUrl.contains("searchType=authors", ignoreCase = true) ||
-                                    currentCategoryPath?.contains("/author", ignoreCase = true) == true ||
-                                    currentCategoryPath?.contains("/a/", ignoreCase = true) == true ||
+                                    currentCategoryPath.contains("/author", ignoreCase = true) ||
+                                    currentCategoryPath.contains("/a/", ignoreCase = true) ||
                                     currentTitle.startsWith("Автор:", ignoreCase = true)
                                 )
 
@@ -570,7 +570,7 @@ object OpdsService {
                     BookFormat.PDF -> ".pdf"
                     BookFormat.MOBI -> ".mobi"
                     BookFormat.TXT -> ".txt"
-                    else -> ".$ext"
+                    BookFormat.EPUB, BookFormat.CBZ -> ".$ext"
                 }
                 var extracted = false
                 ZipInputStream(tempDownload.inputStream()).use { zis ->
