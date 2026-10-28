@@ -59,7 +59,7 @@ class OpdsViewModel(
     private val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
-    private val _sortOption = MutableStateFlow(CatalogSortOption.DEFAULT)
+    private val _sortOption = MutableStateFlow(CatalogSortOption.POPULAR_DESC)
     val sortOption: StateFlow<CatalogSortOption> = _sortOption.asStateFlow()
 
     fun setSortOption(option: CatalogSortOption) {
@@ -74,7 +74,7 @@ class OpdsViewModel(
         val nonCats = books.filter { !it.isCategory }
 
         val sortedNonCats = when (option) {
-            CatalogSortOption.DEFAULT -> nonCats
+            CatalogSortOption.DEFAULT,
             CatalogSortOption.POPULAR_DESC -> nonCats.sortedWith(
                 compareByDescending<OpdsBook> { it.downloadsCount }
                     .thenBy { it.title.lowercase() }

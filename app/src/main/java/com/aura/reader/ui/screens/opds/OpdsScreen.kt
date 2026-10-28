@@ -36,6 +36,13 @@ import com.aura.reader.ui.components.WavyProgressIndicator
 import androidx.compose.material.icons.rounded.Close
 
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Sort
+import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.CalendarToday
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Clear
@@ -139,8 +146,12 @@ fun OpdsScreen(
         viewModel.refreshConnectionStatus()
     }
 
-    BackHandler(enabled = canGoBack) {
-        viewModel.navigateBack()
+    BackHandler(enabled = true) {
+        if (canGoBack) {
+            viewModel.navigateBack()
+        } else {
+            onNavigateBack()
+        }
     }
 
     var showMirrorDialog by remember { mutableStateOf(false) }
@@ -450,140 +461,150 @@ fun OpdsScreen(
                 }
             }
 
-            // Quick Category Filter Chips (hidden in custom OPDS mode)
-            if (!customOpdsEnabled) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 2.dp)
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = false,
-                        onClick = { viewModel.loadCategory("/opds/new", strings.catNew) },
-                        label = { Text(strings.catNew) }
-                    )
-                    FilterChip(
-                        selected = false,
-                        onClick = { viewModel.loadCategory("/opds/pop", strings.catPopular) },
-                        label = { Text(strings.catPopular) }
-                    )
-                    FilterChip(
-                        selected = false,
-                        onClick = { viewModel.loadCategory("/opds/authorsindex", strings.catAuthors) },
-                        label = { Text(strings.catAuthors) }
-                    )
-                    FilterChip(
-                        selected = false,
-                        onClick = { viewModel.loadCategory("/opds/genres", strings.catGenres) },
-                        label = { Text(strings.catGenres) }
-                    )
-                }
-            }
-
             // Sorting Selector Row (only shown when browsing categories or search results)
             if (uiState is OpdsUiState.Success) {
                 var showSortDropdown by remember { mutableStateOf(false) }
-                val currentSortLabel = when (sortOption) {
-                    CatalogSortOption.DEFAULT -> strings.sortByDefault
-                    CatalogSortOption.POPULAR_DESC -> strings.sortByPopularDesc
-                    CatalogSortOption.POPULAR_ASC -> strings.sortByPopularAsc
-                    CatalogSortOption.TITLE_ASC -> strings.sortByTitleAsc
-                    CatalogSortOption.TITLE_DESC -> strings.sortByTitleDesc
-                    CatalogSortOption.AUTHOR_ASC -> strings.sortByAuthorAsc
-                    CatalogSortOption.AUTHOR_DESC -> strings.sortByAuthorDesc
-                    CatalogSortOption.YEAR_DESC -> strings.sortByYearDesc
-                    CatalogSortOption.YEAR_ASC -> strings.sortByYearAsc
+                val isPop = sortOption == CatalogSortOption.POPULAR_DESC || sortOption == CatalogSortOption.POPULAR_ASC || sortOption == CatalogSortOption.DEFAULT
+                val isTitle = sortOption == CatalogSortOption.TITLE_ASC || sortOption == CatalogSortOption.TITLE_DESC
+                val isAuthor = sortOption == CatalogSortOption.AUTHOR_ASC || sortOption == CatalogSortOption.AUTHOR_DESC
+                val isYear = sortOption == CatalogSortOption.YEAR_DESC || sortOption == CatalogSortOption.YEAR_ASC
+
+                val currentSortLabel = when {
+                    isPop -> "${strings.sortByPopularity}: ${if (sortOption == CatalogSortOption.POPULAR_ASC) strings.sortByPopularAsc else strings.sortByPopularDesc}"
+                    isTitle -> "${strings.sortByTitle}: ${if (sortOption == CatalogSortOption.TITLE_DESC) "Я → А" else "А → Я"}"
+                    isAuthor -> "${strings.sortByAuthor}: ${if (sortOption == CatalogSortOption.AUTHOR_DESC) "Я → А" else "А → Я"}"
+                    isYear -> "${strings.sortByYear}: ${if (sortOption == CatalogSortOption.YEAR_ASC) strings.sortByYearAsc else strings.sortByYearDesc}"
+                    else -> "${strings.sortByPopularity}: ${strings.sortByPopularDesc}"
                 }
 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 2.dp)
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
                 ) {
-                    FilterChip(
-                        selected = sortOption != CatalogSortOption.DEFAULT,
+                    Surface(
                         onClick = { showSortDropdown = true },
-                        leadingIcon = {
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        modifier = Modifier.height(38.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.Sort,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
-                        },
-                        label = {
                             Text(
-                                text = "${strings.sortTitle}: $currentSortLabel ▾",
+                                text = currentSortLabel,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1
                             )
+                            Icon(
+                                imageVector = Icons.Rounded.ArrowDropDown,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                    )
+                    }
 
                     DropdownMenu(
                         expanded = showSortDropdown,
-                        onDismissRequest = { showSortDropdown = false }
+                        onDismissRequest = { showSortDropdown = false },
+                        shape = RoundedCornerShape(16.dp),
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                     ) {
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByDefault) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.DEFAULT)
+                        // 1. По читателям / популярности
+                        val popIsDesc = sortOption != CatalogSortOption.POPULAR_ASC
+                        CatalogSortMenuItem(
+                            icon = Icons.Rounded.Star,
+                            title = strings.sortByPopularity,
+                            directionLabel = if (popIsDesc) strings.sortByPopularDesc else strings.sortByPopularAsc,
+                            directionArrow = if (popIsDesc) Icons.Rounded.ArrowDownward else Icons.Rounded.ArrowUpward,
+                            isSelected = isPop,
+                            onItemClick = {
+                                if (isPop) {
+                                    viewModel.setSortOption(if (popIsDesc) CatalogSortOption.POPULAR_ASC else CatalogSortOption.POPULAR_DESC)
+                                } else {
+                                    viewModel.setSortOption(CatalogSortOption.POPULAR_DESC)
+                                }
+                                showSortDropdown = false
+                            },
+                            onToggleDirection = {
+                                viewModel.setSortOption(if (popIsDesc) CatalogSortOption.POPULAR_ASC else CatalogSortOption.POPULAR_DESC)
                                 showSortDropdown = false
                             }
                         )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByPopularDesc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.POPULAR_DESC)
+
+                        // 2. По названию
+                        val titleIsAsc = sortOption != CatalogSortOption.TITLE_DESC
+                        CatalogSortMenuItem(
+                            icon = Icons.AutoMirrored.Rounded.Sort,
+                            title = strings.sortByTitle,
+                            directionLabel = if (titleIsAsc) "А → Я" else "Я → А",
+                            directionArrow = if (titleIsAsc) Icons.Rounded.ArrowDownward else Icons.Rounded.ArrowUpward,
+                            isSelected = isTitle,
+                            onItemClick = {
+                                if (isTitle) {
+                                    viewModel.setSortOption(if (titleIsAsc) CatalogSortOption.TITLE_DESC else CatalogSortOption.TITLE_ASC)
+                                } else {
+                                    viewModel.setSortOption(CatalogSortOption.TITLE_ASC)
+                                }
+                                showSortDropdown = false
+                            },
+                            onToggleDirection = {
+                                viewModel.setSortOption(if (titleIsAsc) CatalogSortOption.TITLE_DESC else CatalogSortOption.TITLE_ASC)
                                 showSortDropdown = false
                             }
                         )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByPopularAsc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.POPULAR_ASC)
+
+                        // 3. По автору
+                        val authorIsAsc = sortOption != CatalogSortOption.AUTHOR_DESC
+                        CatalogSortMenuItem(
+                            icon = Icons.Rounded.Person,
+                            title = strings.sortByAuthor,
+                            directionLabel = if (authorIsAsc) "А → Я" else "Я → А",
+                            directionArrow = if (authorIsAsc) Icons.Rounded.ArrowDownward else Icons.Rounded.ArrowUpward,
+                            isSelected = isAuthor,
+                            onItemClick = {
+                                if (isAuthor) {
+                                    viewModel.setSortOption(if (authorIsAsc) CatalogSortOption.AUTHOR_DESC else CatalogSortOption.AUTHOR_ASC)
+                                } else {
+                                    viewModel.setSortOption(CatalogSortOption.AUTHOR_ASC)
+                                }
+                                showSortDropdown = false
+                            },
+                            onToggleDirection = {
+                                viewModel.setSortOption(if (authorIsAsc) CatalogSortOption.AUTHOR_DESC else CatalogSortOption.AUTHOR_ASC)
                                 showSortDropdown = false
                             }
                         )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByTitleAsc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.TITLE_ASC)
+
+                        // 4. По году издания
+                        val yearIsDesc = sortOption != CatalogSortOption.YEAR_ASC
+                        CatalogSortMenuItem(
+                            icon = Icons.Rounded.CalendarToday,
+                            title = strings.sortByYear,
+                            directionLabel = if (yearIsDesc) strings.sortByYearDesc else strings.sortByYearAsc,
+                            directionArrow = if (yearIsDesc) Icons.Rounded.ArrowDownward else Icons.Rounded.ArrowUpward,
+                            isSelected = isYear,
+                            onItemClick = {
+                                if (isYear) {
+                                    viewModel.setSortOption(if (yearIsDesc) CatalogSortOption.YEAR_ASC else CatalogSortOption.YEAR_DESC)
+                                } else {
+                                    viewModel.setSortOption(CatalogSortOption.YEAR_DESC)
+                                }
                                 showSortDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByTitleDesc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.TITLE_DESC)
-                                showSortDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByAuthorAsc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.AUTHOR_ASC)
-                                showSortDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByAuthorDesc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.AUTHOR_DESC)
-                                showSortDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByYearDesc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.YEAR_DESC)
-                                showSortDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings.sortByYearAsc) },
-                            onClick = {
-                                viewModel.setSortOption(CatalogSortOption.YEAR_ASC)
+                            },
+                            onToggleDirection = {
+                                viewModel.setSortOption(if (yearIsDesc) CatalogSortOption.YEAR_ASC else CatalogSortOption.YEAR_DESC)
                                 showSortDropdown = false
                             }
                         )
@@ -1805,3 +1826,66 @@ fun OpdsCategoryItemCard(
     }
 }
 
+
+
+@Composable
+private fun CatalogSortMenuItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    directionLabel: String,
+    directionArrow: androidx.compose.ui.graphics.vector.ImageVector,
+    isSelected: Boolean,
+    onItemClick: () -> Unit,
+    onToggleDirection: () -> Unit
+) {
+    DropdownMenuItem(
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+        },
+        text = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Surface(
+                    onClick = onToggleDirection,
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = directionLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Icon(
+                            imageVector = directionArrow,
+                            contentDescription = null,
+                            tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
+            }
+        },
+        onClick = onItemClick
+    )
+}
