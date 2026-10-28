@@ -357,6 +357,12 @@ class LibraryViewModel(
         viewModelScope.launch { bookRepository.updateBookCollections(bookId, collections) }
     }
 
+    fun updateBookPlacement(bookId: String, collections: List<String>, manualShelf: String?, isFavorite: Boolean) {
+        viewModelScope.launch {
+            bookRepository.updateBookPlacement(bookId, collections, manualShelf, isFavorite)
+        }
+    }
+
     fun setBookReadingProgress(bookId: String, progress: Int) {
         viewModelScope.launch { bookRepository.setBookReadingProgress(bookId, progress) }
     }
@@ -505,30 +511,48 @@ class LibraryViewModel(
         val collectionFiltered = when (filter.type) {
             CollectionFilterType.ALL -> searchFiltered
             CollectionFilterType.READING -> searchFiltered.filter { book ->
-                val isStarted = (book.progressPercent in 1..99) ||
-                        (book.progressPercent < 100 && (
-                            book.currentChapterIndex > 0 ||
-                            book.currentScrollOffset > 0 ||
-                            book.currentBlockTextOffset > 0 ||
-                            book.currentScrollPixelOffset > 0 ||
-                            recentBooks.value.any { it.id == book.id }
-                        ))
-                isStarted
+                when (book.manualShelf) {
+                    "READING" -> true
+                    "UNREAD", "FINISHED" -> false
+                    else -> {
+                        val isStarted = (book.progressPercent in 1..99) ||
+                                (book.progressPercent < 100 && (
+                                    book.currentChapterIndex > 0 ||
+                                    book.currentScrollOffset > 0 ||
+                                    book.currentBlockTextOffset > 0 ||
+                                    book.currentScrollPixelOffset > 0 ||
+                                    recentBooks.value.any { it.id == book.id }
+                                ))
+                        isStarted
+                    }
+                }
             }
             CollectionFilterType.FAVORITES -> searchFiltered.filter { it.isFavorite }
             CollectionFilterType.SERIES -> searchFiltered.filter { !it.series.isNullOrBlank() }
             CollectionFilterType.UNREAD -> searchFiltered.filter { book ->
-                val isStarted = (book.progressPercent in 1..99) ||
-                        (book.progressPercent < 100 && (
-                            book.currentChapterIndex > 0 ||
-                            book.currentScrollOffset > 0 ||
-                            book.currentBlockTextOffset > 0 ||
-                            book.currentScrollPixelOffset > 0 ||
-                            recentBooks.value.any { it.id == book.id }
-                        ))
-                book.progressPercent == 0 && !isStarted
+                when (book.manualShelf) {
+                    "UNREAD" -> true
+                    "READING", "FINISHED" -> false
+                    else -> {
+                        val isStarted = (book.progressPercent in 1..99) ||
+                                (book.progressPercent < 100 && (
+                                    book.currentChapterIndex > 0 ||
+                                    book.currentScrollOffset > 0 ||
+                                    book.currentBlockTextOffset > 0 ||
+                                    book.currentScrollPixelOffset > 0 ||
+                                    recentBooks.value.any { it.id == book.id }
+                                ))
+                        book.progressPercent == 0 && !isStarted
+                    }
+                }
             }
-            CollectionFilterType.FINISHED -> searchFiltered.filter { it.progressPercent >= 100 }
+            CollectionFilterType.FINISHED -> searchFiltered.filter { book ->
+                when (book.manualShelf) {
+                    "FINISHED" -> true
+                    "READING", "UNREAD" -> false
+                    else -> book.progressPercent >= 100
+                }
+            }
             CollectionFilterType.CUSTOM -> {
                 val custom = filter.customName ?: ""
                 searchFiltered.filter { it.collections.contains(custom) }

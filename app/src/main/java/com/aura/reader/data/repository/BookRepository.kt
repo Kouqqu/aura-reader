@@ -66,7 +66,8 @@ class BookRepository(
                             isFavorite = obj.optBoolean("isFavorite", false),
                             collections = collectionsList,
                             series = if (obj.has("series") && !obj.isNull("series")) obj.getString("series") else null,
-                            seriesNumber = if (obj.has("seriesNumber") && !obj.isNull("seriesNumber")) obj.getInt("seriesNumber") else null
+                            seriesNumber = if (obj.has("seriesNumber") && !obj.isNull("seriesNumber")) obj.getInt("seriesNumber") else null,
+                            manualShelf = if (obj.has("manualShelf") && !obj.isNull("manualShelf")) obj.getString("manualShelf") else null
                         )
                     )
                 }
@@ -96,6 +97,9 @@ class BookRepository(
                 put("isFavorite", b.isFavorite)
                 put("series", b.series)
                 put("seriesNumber", b.seriesNumber)
+                if (b.manualShelf != null) {
+                    put("manualShelf", b.manualShelf)
+                }
                 val cArr = JSONArray()
                 for (c in b.collections) cArr.put(c)
                 put("collections", cArr)
@@ -125,7 +129,10 @@ class BookRepository(
                 currentScrollOffset = bookToOpen.currentScrollOffset,
                 currentBlockTextOffset = bookToOpen.currentBlockTextOffset,
                 currentScrollPixelOffset = bookToOpen.currentScrollPixelOffset,
-                progressPercent = bookToOpen.progressPercent
+                progressPercent = bookToOpen.progressPercent,
+                manualShelf = bookToOpen.manualShelf ?: existingInMemory.manualShelf,
+                isFavorite = bookToOpen.isFavorite,
+                collections = if (bookToOpen.collections.isNotEmpty()) bookToOpen.collections else existingInMemory.collections
             )
             _currentBook.value = updated
             addOrUpdateRecentBook(updated)
@@ -148,7 +155,10 @@ class BookRepository(
                 currentScrollOffset = bookToOpen.currentScrollOffset,
                 currentBlockTextOffset = bookToOpen.currentBlockTextOffset,
                 currentScrollPixelOffset = bookToOpen.currentScrollPixelOffset,
-                progressPercent = bookToOpen.progressPercent
+                progressPercent = bookToOpen.progressPercent,
+                manualShelf = bookToOpen.manualShelf,
+                isFavorite = bookToOpen.isFavorite,
+                collections = bookToOpen.collections
             )
             _currentBook.value = resolved
             addOrUpdateRecentBook(resolved)
@@ -178,7 +188,8 @@ class BookRepository(
                     currentScrollOffset = existing.currentScrollOffset,
                     currentBlockTextOffset = existing.currentBlockTextOffset,
                     currentScrollPixelOffset = existing.currentScrollPixelOffset,
-                    progressPercent = existing.progressPercent
+                    progressPercent = existing.progressPercent,
+                    manualShelf = existing.manualShelf
                 )
             } else {
                 book
@@ -363,6 +374,7 @@ class BookRepository(
                 currentBlockTextOffset = savedBook?.currentBlockTextOffset ?: 0,
                 currentScrollPixelOffset = savedBook?.currentScrollPixelOffset ?: 0,
                 progressPercent = savedBook?.progressPercent ?: 0,
+                manualShelf = savedBook?.manualShelf,
                 isFavorite = savedBook?.isFavorite ?: false,
                 collections = savedBook?.collections ?: emptyList(),
                 coverBase64 = savedBook?.coverBase64 ?: parsedBook.coverBase64
@@ -397,6 +409,7 @@ class BookRepository(
                 currentBlockTextOffset = savedBook?.currentBlockTextOffset ?: 0,
                 currentScrollPixelOffset = savedBook?.currentScrollPixelOffset ?: 0,
                 progressPercent = savedBook?.progressPercent ?: 0,
+                manualShelf = savedBook?.manualShelf,
                 isFavorite = savedBook?.isFavorite ?: false,
                 collections = savedBook?.collections ?: emptyList(),
                 coverBase64 = savedBook?.coverBase64 ?: parsed.coverBase64
@@ -622,6 +635,33 @@ class BookRepository(
         }
     }
 
+    suspend fun updateBookPlacement(
+        bookId: String,
+        collections: List<String>,
+        manualShelf: String?,
+        isFavorite: Boolean
+    ) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == bookId }
+        if (index >= 0) {
+            val old = currentList[index]
+            val updated = old.copy(
+                collections = collections,
+                manualShelf = manualShelf,
+                isFavorite = isFavorite
+            )
+            currentList[index] = updated
+            saveRecentBooks(currentList)
+            if (_currentBook.value?.id == bookId) {
+                _currentBook.value = _currentBook.value?.copy(
+                    collections = updated.collections,
+                    manualShelf = updated.manualShelf,
+                    isFavorite = updated.isFavorite
+                )
+            }
+        }
+    }
+
     suspend fun updateBookCollections(bookId: String, collections: List<String>) = withLibraryLock {
         val currentList = _recentBooks.value.toMutableList()
         val index = currentList.indexOfFirst { it.id == bookId }
@@ -641,14 +681,32 @@ class BookRepository(
         val index = currentList.indexOfFirst { it.id == bookId }
         if (index >= 0) {
             val old = currentList[index]
+            val newManualShelf = when {
+                progress >= 100 -> "FINISHED"
+                progress == 0 -> "UNREAD"
+                else -> old.manualShelf ?: "READING"
+            }
             val updated = old.copy(
                 progressPercent = progress.coerceIn(0, 100),
+                manualShelf = newManualShelf,
+                currentChapterIndex = if (progress == 0) 0 else old.currentChapterIndex,
+                currentScrollOffset = if (progress == 0) 0 else old.currentScrollOffset,
+                currentBlockTextOffset = if (progress == 0) 0 else old.currentBlockTextOffset,
+                currentScrollPixelOffset = if (progress == 0) 0 else old.currentScrollPixelOffset,
                 lastReadTimestamp = System.currentTimeMillis()
             )
             currentList[index] = updated
             saveRecentBooks(currentList)
             if (_currentBook.value?.id == bookId) {
-                _currentBook.value = _currentBook.value?.copy(progressPercent = updated.progressPercent, lastReadTimestamp = updated.lastReadTimestamp)
+                _currentBook.value = _currentBook.value?.copy(
+                    progressPercent = updated.progressPercent,
+                    manualShelf = updated.manualShelf,
+                    currentChapterIndex = updated.currentChapterIndex,
+                    currentScrollOffset = updated.currentScrollOffset,
+                    currentBlockTextOffset = updated.currentBlockTextOffset,
+                    currentScrollPixelOffset = updated.currentScrollPixelOffset,
+                    lastReadTimestamp = updated.lastReadTimestamp
+                )
             }
         }
     }

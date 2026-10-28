@@ -662,7 +662,9 @@ fun LibraryScreen(
                                         LazyVerticalGrid(
                                             columns = GridCells.Fixed(if (libraryViewMode == "GRID") 2 else 1),
                                             state = gridState,
-                                            modifier = Modifier.fillMaxSize(),
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .jellyOverscroll(),
                                             contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
                                             verticalArrangement = Arrangement.spacedBy(12.dp),
                                             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -728,7 +730,11 @@ fun LibraryScreen(
                                                 )
                                             }
 
-                                            val currentHeroBook = recentBooks.firstOrNull()
+                                            val currentHeroBook = recentBooks.firstOrNull { book ->
+                                                if (book.manualShelf == "UNREAD" || book.manualShelf == "FINISHED") false
+                                                else if (book.manualShelf == "READING") true
+                                                else book.progressPercent < 100
+                                            }
                                             val showHeroCard = currentHeroBook != null &&
                                                     searchQuery.isBlank() &&
                                                     (activeCollectionFilter.type == CollectionFilterType.ALL || activeCollectionFilter.type == CollectionFilterType.READING) &&
@@ -1115,6 +1121,7 @@ fun LibraryScreen(
         onRemoveCollection = { name -> viewModel.removeUserCollection(name) },
         onDismissBookCollections = { bookForCollections = null },
         onSaveBookCollections = { id, cols -> viewModel.updateBookCollections(id, cols) },
+        onSaveBookPlacement = { id, cols, shelf, fav -> viewModel.updateBookPlacement(id, cols, shelf, fav) },
         onNewCollectionRequested = { showNewCollectionDialog = true }
     )
 

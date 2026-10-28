@@ -101,9 +101,9 @@ fun Modifier.expressiveClickable(
  */
 fun Modifier.jellyOverscroll(
     enabled: Boolean = true,
-    dampingRatio: Float = 0.92f,
+    dampingRatio: Float = 0.98f,
     stiffness: Float = Spring.StiffnessMediumLow,
-    maxOverscroll: Float = 36f
+    maxOverscroll: Float = 72f
 ): Modifier = composed {
     if (!enabled) return@composed this
 
@@ -133,7 +133,7 @@ fun Modifier.jellyOverscroll(
             ): Offset {
                 if (available.y != 0f && source == NestedScrollSource.UserInput) {
                     val current = offsetY.value
-                    val resistance = (1f - (abs(current) / (maxOverscroll * 1.5f)).coerceIn(0f, 0.9f)) * 0.16f
+                    val resistance = (1f - (abs(current) / (maxOverscroll * 1.3f)).coerceIn(0f, 0.85f)) * 0.28f
                     val newOffset = (current + available.y * resistance).coerceIn(-maxOverscroll, maxOverscroll)
                     coroutineScope.launch {
                         offsetY.snapTo(newOffset)
@@ -147,7 +147,7 @@ fun Modifier.jellyOverscroll(
                     offsetY.animateTo(
                         targetValue = 0f,
                         animationSpec = spring(dampingRatio = dampingRatio, stiffness = stiffness),
-                        initialVelocity = available.y * 0.15f
+                        initialVelocity = available.y * 0.12f
                     )
                 }
                 return Velocity.Zero
@@ -156,14 +156,14 @@ fun Modifier.jellyOverscroll(
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
                 val current = offsetY.value
                 if (available.y != 0f || current != 0f) {
-                    val bounceImpulse = (available.y * 0.035f).coerceIn(-maxOverscroll * 0.6f, maxOverscroll * 0.6f)
+                    val bounceImpulse = (available.y * 0.055f).coerceIn(-maxOverscroll * 0.75f, maxOverscroll * 0.75f)
                     if (bounceImpulse != 0f && current == 0f) {
                         offsetY.snapTo(bounceImpulse)
                     }
                     offsetY.animateTo(
                         targetValue = 0f,
                         animationSpec = spring(dampingRatio = dampingRatio, stiffness = stiffness),
-                        initialVelocity = available.y * 0.18f
+                        initialVelocity = available.y * 0.14f
                     )
                 }
                 return Velocity.Zero
@@ -179,23 +179,29 @@ fun Modifier.jellyOverscroll(
 }
 
 /**
- * Isolates nested scrolling so that rapid flicking or scrolling inside a BottomSheet
- * does not accidentally trigger sheet collapse or jitter.
+ * Protects BottomSheet scroll content from accidental fling collapses while ensuring
+ * that a user can swipe down from anywhere on the sheet to dismiss it once scrolled to the top.
  */
-fun Modifier.sheetScrollIsolation(): Modifier = composed {
-    val connection = remember {
+fun Modifier.sheetScrollIsolation(
+    isAtTop: () -> Boolean = { true }
+): Modifier = composed {
+    val connection = remember(isAtTop) {
         object : NestedScrollConnection {
             override fun onPostScroll(
                 consumed: Offset,
                 available: Offset,
                 source: NestedScrollSource
             ): Offset {
-                // Absorb leftover delta when list hits boundaries so parent sheet doesn't dismiss accidentally
+                // If user is actively dragging down at the top, pass to ModalBottomSheet to dismiss smoothly from anywhere
+                if (available.y > 0f && isAtTop()) {
+                    return Offset.Zero
+                }
+                // Absorb leftover delta when hitting bottom or upward scroll so sheet doesn't jitter
                 return available
             }
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                // Absorb leftover fling velocity so user fling doesn't dismiss the sheet
+                // Absorb leftover fling velocity so rapid scroll to the top doesn't accidentally slam the sheet shut
                 return available
             }
         }

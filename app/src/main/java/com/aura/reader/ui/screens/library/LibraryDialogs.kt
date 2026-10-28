@@ -34,6 +34,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.text.style.TextOverflow
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.updater.UpdateInfo
 import com.aura.reader.ui.theme.LocalAppStrings
@@ -54,6 +59,7 @@ fun LibraryDialogs(
     onRemoveCollection: (String) -> Unit,
     onDismissBookCollections: () -> Unit,
     onSaveBookCollections: (String, List<String>) -> Unit,
+    onSaveBookPlacement: (bookId: String, collections: List<String>, manualShelf: String?, isFavorite: Boolean) -> Unit = { _, _, _, _ -> },
     onNewCollectionRequested: () -> Unit
 ) {
     val strings = LocalAppStrings.current
@@ -164,23 +170,105 @@ fun LibraryDialogs(
         )
     }
 
-    // Dialog: Add/Remove Book Collections
+    // Dialog: Add/Remove Book Collections & Manual Shelving
     bookForCollections?.let { b ->
         val currentSelected = remember(b.collections) { b.collections.toMutableStateList() }
+        var selectedManualShelf by remember(b.manualShelf) { mutableStateOf(b.manualShelf) }
+        var isFavorite by remember(b.isFavorite) { mutableStateOf(b.isFavorite) }
+
         AlertDialog(
             onDismissRequest = { onDismissBookCollections() },
-            title = { Text(strings.addToCollection, fontWeight = FontWeight.Bold) },
+            title = {
+                Column {
+                    Text(strings.addToCollection, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        b.title,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            },
             text = {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 320.dp)
+                        .heightIn(max = 380.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
+                    Text(
+                        text = "Полка книги",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+
+                    val shelves = listOf(
+                        Triple(null, "Авто (по прогрессу)", "Определяется автоматически"),
+                        Triple("READING", "Читаю", "Закрепить на полке «Читаю»"),
+                        Triple("UNREAD", "Непрочитанные", "Оставить на полке «Непрочитанные»"),
+                        Triple("FINISHED", "Прочитано", "Закрепить на полке «Прочитано»")
+                    )
+
+                    shelves.forEach { (shelfKey, title, hint) ->
+                        val isSelected = selectedManualShelf == shelfKey
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedManualShelf = shelfKey }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = { selectedManualShelf = shelfKey }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal)
+                                Text(hint, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f))
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { isFavorite = !isFavorite }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = isFavorite,
+                            onCheckedChange = { isFavorite = it }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("В избранном", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Пользовательские коллекции",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+
                     if (userCollections.isEmpty()) {
                         Text(
-                            text = "Пока нет созданных полок",
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = "Пока нет созданных коллекций",
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
@@ -193,7 +281,7 @@ fun LibraryDialogs(
                                     .clickable {
                                         if (isChecked) currentSelected.remove(col) else currentSelected.add(col)
                                     }
-                                    .padding(vertical = 6.dp),
+                                    .padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Checkbox(
@@ -203,7 +291,7 @@ fun LibraryDialogs(
                                     }
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(col, style = MaterialTheme.typography.bodyLarge)
+                                Text(col, style = MaterialTheme.typography.bodyMedium)
                             }
                         }
                     }
@@ -216,6 +304,7 @@ fun LibraryDialogs(
             },
             confirmButton = {
                 Button(onClick = {
+                    onSaveBookPlacement(b.id, currentSelected.toList(), selectedManualShelf, isFavorite)
                     onSaveBookCollections(b.id, currentSelected.toList())
                     onDismissBookCollections()
                 }) {

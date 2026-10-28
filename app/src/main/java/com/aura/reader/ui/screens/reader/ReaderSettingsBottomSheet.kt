@@ -275,6 +275,7 @@ fun ReaderSettingsBottomSheet(
             )
         } else Modifier
     ) {
+        val contentScrollState = rememberScrollState()
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -283,9 +284,8 @@ fun ReaderSettingsBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .sheetScrollIsolation()
-                    .jellyOverscroll()
-                    .verticalScroll(rememberScrollState())
+                    .sheetScrollIsolation(isAtTop = { contentScrollState.value == 0 })
+                    .verticalScroll(contentScrollState)
                     .padding(horizontal = 24.dp)
                     .padding(bottom = 32.dp)
             ) {

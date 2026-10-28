@@ -155,6 +155,7 @@ fun ChapterContentView(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
+                    .jellyOverscroll()
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null

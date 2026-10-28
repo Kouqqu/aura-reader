@@ -66,7 +66,8 @@ data class Book(
     val series: String? = null,
     val seriesNumber: Int? = null,
     val currentBlockTextOffset: Int = 0,
-    val currentScrollPixelOffset: Int = 0
+    val currentScrollPixelOffset: Int = 0,
+    val manualShelf: String? = null
 )
 
 @Immutable

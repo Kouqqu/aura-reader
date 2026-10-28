@@ -134,19 +134,21 @@ fun BoxScope.ReaderBottomBar(
                                                 modifier = Modifier.weight(1f, fill = false),
                                                 horizontalAlignment = Alignment.CenterHorizontally
                                             ) {
+                                                val realChapterTitle = currentChapter?.title?.takeIf { it.isNotBlank() }
+                                                    ?: "${strings.chapter} ${currentChapterIndex + 1}"
                                                 Text(
-                                                    text = "${strings.chapter} ${currentChapterIndex + 1} ${strings.ofChapters} ${chapters.size}",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                                Text(
-                                                    text = currentChapter?.title ?: "",
+                                                    text = realChapterTitle,
                                                     style = MaterialTheme.typography.bodySmall,
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface,
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis
+                                                )
+                                                Text(
+                                                    text = "${strings.chapter} ${currentChapterIndex + 1} ${strings.ofChapters} ${chapters.size}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    fontWeight = FontWeight.Medium
                                                 )
                                             }
                                             Spacer(modifier = Modifier.width(4.dp))
@@ -285,13 +287,22 @@ fun BoxScope.ReaderBottomBar(
                                                 tint = MaterialTheme.colorScheme.primary
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
+                                            val realChapterTitle = currentChapter?.title?.takeIf { it.isNotBlank() }
+                                                ?: "${strings.chapter} ${currentChapterIndex + 1}"
                                             Text(
-                                                text = "${strings.chapter} ${currentChapterIndex + 1} ${strings.ofChapters} ${chapters.size}: ${currentChapter?.title ?: ""}",
+                                                text = realChapterTitle,
                                                 style = MaterialTheme.typography.labelMedium,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface,
                                                 maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f, fill = false)
+                                            )
+                                            Text(
+                                                text = " (${currentChapterIndex + 1}/${chapters.size})",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.60f) else Color.Black.copy(alpha = 0.55f)) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Icon(

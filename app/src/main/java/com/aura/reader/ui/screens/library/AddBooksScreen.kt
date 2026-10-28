@@ -67,6 +67,7 @@ fun AddBooksScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .jellyOverscroll()
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {

@@ -400,6 +400,7 @@ fun SettingsBottomSheet(
     }
 
     val sheetContent = @Composable {
+        val settingsScrollState = rememberScrollState()
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -408,8 +409,9 @@ fun SettingsBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .sheetScrollIsolation(isAtTop = { settingsScrollState.value == 0 })
                     .padding(horizontal = 20.dp)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(settingsScrollState)
             ) {
                 // Header
                 val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS

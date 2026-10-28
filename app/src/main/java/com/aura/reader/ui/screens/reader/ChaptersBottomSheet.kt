@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -37,6 +38,7 @@ fun ChaptersBottomSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = currentChapterIndex.coerceIn(0, (chapters.size - 1).coerceAtLeast(0)))
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -58,10 +60,10 @@ fun ChaptersBottomSheet(
             )
 
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .sheetScrollIsolation()
-                    .jellyOverscroll()
+                    .sheetScrollIsolation(isAtTop = { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 })
                     .weight(1f, fill = false),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {

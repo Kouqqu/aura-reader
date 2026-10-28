@@ -104,4 +104,25 @@ class LibraryRegressionTest {
         assertEquals(0, repo.currentBook.value!!.currentScrollOffset)
     }
 
+    @Test fun manualShelfPlacementIsPreservedAndNotOverridden() = runBlocking {
+        val prefs = PreferencesManager(context)
+        prefs.saveRecentBooksJson("[]")
+        val repo = BookRepository(context, prefs)
+        val book = repo.openBookFromUri(source("manual_shelf", "manual_shelf.txt", "Manual shelf content")).getOrThrow()
+        repo.updateBookPlacement(book.id, listOf("Sci-Fi"), "UNREAD", true)
+
+        val reloaded = BookRepository(context, prefs)
+        reloaded.loadRecentBooks()
+        val loadedBook = reloaded.recentBooks.value.single()
+        assertEquals("UNREAD", loadedBook.manualShelf)
+        assertTrue(loadedBook.isFavorite)
+        assertEquals(listOf("Sci-Fi"), loadedBook.collections)
+
+        // Re-opening the book preserves manual placement
+        val reopened = reloaded.openBook(loadedBook).getOrThrow()
+        assertEquals("UNREAD", reopened.manualShelf)
+        assertTrue(reopened.isFavorite)
+        assertEquals(listOf("Sci-Fi"), reopened.collections)
+    }
+
 }

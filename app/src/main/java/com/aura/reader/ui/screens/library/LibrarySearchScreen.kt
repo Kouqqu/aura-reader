@@ -394,7 +394,9 @@ fun LibrarySearchScreen(
 
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(if (libraryViewMode == "GRID") 2 else 1),
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .jellyOverscroll(),
                         contentPadding = PaddingValues(top = 4.dp, bottom = 100.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
