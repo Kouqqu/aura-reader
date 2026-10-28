@@ -1134,7 +1134,7 @@ fun LiquidGlassSwitch(
             },
         contentAlignment = Alignment.Center
     ) {
-        // 1. The Track: refracts and blurs right under the thumb when held
+        // 1. The Track: clean optical refraction matching dock (zero blur)
         Box(
             modifier = Modifier
                 .size(width = trackWidth, height = trackHeight)
@@ -1144,10 +1144,9 @@ fun LiquidGlassSwitch(
                             centerPx = Offset(thumbCenterInTrackXPx, thumbCenterInTrackYPx),
                             sizePx = Size(currentThumbWidthPx, currentThumbHeightPx),
                             radiusPx = currentThumbHeightPx / 2f,
-                            refractiveIndex = 1.032f,
-                            refractionWidthPx = with(density) { 14.dp.toPx() },
-                            intensity = heldProgress,
-                            blurRadiusPx = with(density) { 8.dp.toPx() } * heldProgress
+                            refractiveIndex = 1.018f,
+                            refractionWidthPx = with(density) { 18.dp.toPx() },
+                            intensity = heldProgress
                         )
                     } else Modifier
                 )
@@ -1202,6 +1201,14 @@ fun LiquidGlassSwitch(
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer { alpha = heldProgress }
+                        .liquidRefraction(
+                            centerPx = Offset(currentThumbWidthPx / 2f, currentThumbHeightPx / 2f),
+                            sizePx = Size(currentThumbWidthPx, currentThumbHeightPx),
+                            radiusPx = currentThumbHeightPx / 2f,
+                            refractiveIndex = 1.018f,
+                            refractionWidthPx = with(density) { 18.dp.toPx() },
+                            intensity = heldProgress
+                        )
                         .background(
                             Brush.verticalGradient(
                                 listOf(

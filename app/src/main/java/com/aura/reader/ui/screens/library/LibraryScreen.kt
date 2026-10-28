@@ -1,4 +1,10 @@
 package com.aura.reader.ui.screens.library
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInHorizontally
 
 import androidx.compose.runtime.CompositionLocalProvider
 import com.aura.reader.ui.components.LocalHazeState
@@ -418,7 +424,11 @@ fun LibraryScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = mainScreenBg,
         topBar = {
-            if (currentMainTab == 0) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = currentMainTab == 0,
+                enter = fadeIn(animationSpec = tween(220)),
+                exit = fadeOut(animationSpec = tween(160))
+            ) {
                 LibraryTopBar(
                     isSearchExpanded = isSearchExpanded,
                     isGlass = isGlass,
@@ -513,507 +523,540 @@ fun LibraryScreen(
                 )
             }
 
-            if (isGlass && currentMainTab == 1) {
-            LibrarySearchScreen(
-                searchQuery = searchQuery,
-                onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                searchHistory = librarySearchHistory,
-                onSelectHistoryQuery = { query ->
-                    viewModel.setSearchQuery(query)
-                },
-                onRemoveHistoryQuery = { query ->
-                    viewModel.removeLibrarySearchQuery(query)
-                },
-                onClearSearchHistory = {
-                    viewModel.clearLibrarySearchHistory()
-                },
-                onSaveSearchQuery = { query ->
-                    viewModel.saveLibrarySearchQuery(query)
-                },
-                books = recentBooks,
-                onBookClick = onBookSelected,
-                onDeleteBook = { book -> bookToDelete = book },
-                onToggleFavorite = { book -> viewModel.toggleFavorite(book.id) },
-                onAddToCollection = { book -> bookForCollections = book },
-                onSetProgress = { book, prog -> viewModel.setBookReadingProgress(book.id, prog) },
-                onCoverClick = { book -> inspectingCoverBook = book },
-                onShare = { book -> BookShareUtils.shareBookFile(context, book) },
-                onChangeCover = { book -> bookForCoverChange = book },
-                onBack = { currentMainTab = 0 },
-                libraryViewMode = libraryViewMode,
-                isDark = isThemeDark,
-                clarity = readerSettings.glassClarity
-            )
-        } else if (currentMainTab == 2 && readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS) {
-            SettingsBottomSheet(
-                currentTheme = readerSettings.appThemeMode,
-                currentLanguage = appLanguage,
-                updateNotificationsEnabled = updateNotificationsEnabled,
-                anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
-                readingStatsEnabled = readingStatsEnabled,
-                materialYouEnabled = materialYouEnabled,
-                isFullScreen = true,
-                onDismiss = { currentMainTab = 0 },
-                onOpenOnboarding = onOpenOnboarding,
-                onThemeChange = { viewModel.setAppThemeMode(it) },
-                onLanguageChange = { viewModel.setAppLanguage(it) },
-                onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
-                onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
-                onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
-                onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
-                customOpdsEnabled = customOpdsEnabled,
-                customOpdsUrl = catalogBaseUrl,
-                onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
-                onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
-                developerModeEnabled = developerModeEnabled,
-                updateChannel = updateChannel,
-                onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
-                onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
-                onCheckUpdates = {
-                    viewModel.checkForUpdates(manual = true, context = context)
-                },
-                onExportBackup = {
-                    exportBackupLauncher.launch("AuraReader_Backup_${System.currentTimeMillis()}.aurabackup")
-                },
-                onSendToGoogleDrive = {
-                    sendToGoogleDriveAction()
-                },
-                onRestoreBackup = {
-                    restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
-                },
-                readerTheme = readerSettings.themeMode,
-                syncThemesWithApp = readerSettings.syncThemesWithApp,
-                onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
-                onReaderThemeChange = { viewModel.setThemeMode(it) },
-                onOpenReaderThemeSettings = {
-                    showReaderThemeSheet = true
-                },
-                appDesignStyle = readerSettings.appDesignStyle,
-                onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
-                glassClarity = readerSettings.glassClarity,
-                onGlassClarityChange = { viewModel.setGlassClarity(it) },
-                appFont = appFont,
-                onAppFontChange = { viewModel.setAppFont(it) },
-                onResetReadingSpeed = { viewModel.resetReadingSpeed() }
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-            if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
-                Column(Modifier.fillMaxSize()) {
-                    if (isSearchExpanded && !isGlass) {
-                        SearchCoverCollage(emptyList(), subdued = true, modifier = Modifier.height(100.dp))
-                    }
-                    Box(Modifier.weight(1f)) {
-                        EmptyLibraryView(
-                            onAddBooks = { showAddBooksSheet = true },
-                            onOpenSample = { viewModel.openSampleBook() }
-                        )
-                    }
-                }
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(if (libraryViewMode == "GRID") 2 else 1),
-                    state = gridState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    if (isSearchExpanded && !isGlass) {
-                        item(key = "searchCollage", span = { GridItemSpan(maxLineSpan) }) {
-                            val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-                            val subdued = searchQuery.isNotBlank() || keyboardOpen
-                            val height by animateDpAsState(if (subdued) 72.dp else 240.dp, tween(350), label = "materialSearchHero")
-                            AnimatedVisibility(
-                                visible = isSearchExpanded && !isGlass,
-                                enter = expandVertically(tween(320)) + fadeIn(tween(250)),
-                                exit = shrinkVertically(tween(250)) + fadeOut(tween(200))
-                            ) {
-                                SearchCoverCollage(
-                                    recentBooks,
-                                    subdued,
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(height)
-                                        .clip(RoundedCornerShape(24.dp))
-                                )
-                            }
-                        }
-                    }
-                    // Instant Update Notification Banner
-                    val curUpdate = updateInfo
-                    if (curUpdate != null && curUpdate.isAvailable && updateNotificationsEnabled) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            LibraryUpdateBanner(
-                                update = curUpdate,
-                                isGlass = isGlass,
-                                isThemeDark = isThemeDark,
-                                onOpenUpdatePage = { url -> viewModel.openUpdatePage(context, url) }
+            AnimatedContent(
+                targetState = currentMainTab,
+                transitionSpec = {
+                    val forward = targetState > initialState
+                    val slideFraction = 0.28f
+                    if (forward) {
+                        (slideInHorizontally(
+                            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
+                        ) { width -> (width * slideFraction).toInt() } + fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)))
+                            .togetherWith(
+                                slideOutHorizontally(
+                                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
+                                ) { width -> (-width * slideFraction).toInt() } + fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing))
                             )
-                        }
-                    }
-
-                    // Daily Reading Stats (Toggleable in Settings)
-                    if (readingStatsEnabled) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            LibraryReadingStatsBanner(
-                                isGlass = isGlass,
-                                isThemeDark = isThemeDark,
-                                todayMinutes = todayMinutes,
-                                currentStreakDays = readingStatsData.currentStreakDays,
-                                onClick = { showReadingStatsSheet = true }
-                            )
-                        }
-                    }
-
-                    // Collections Filter Chips Row
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        LibraryCollectionChips(
-                            activeFilter = activeCollectionFilter,
-                            hasSeries = remember(recentBooks) { recentBooks.any { !it.series.isNullOrBlank() } },
-                            userCollections = userCollections,
-                            isGlass = isGlass,
-                            isThemeDark = isThemeDark,
-                            onFilterChange = { viewModel.setCollectionFilter(it) },
-                            onDeleteCollection = { collectionToDelete = it },
-                            onNewCollection = { showNewCollectionDialog = true }
-                        )
-                    }
-
-                    val currentHeroBook = recentBooks.firstOrNull()
-                    val showHeroCard = currentHeroBook != null &&
-                            searchQuery.isBlank() &&
-                            activeCollectionFilter.type == CollectionFilterType.ALL &&
-                            librarySortOrder != LibrarySortOption.CUSTOM &&
-                            !isReorderMode
-
-                    val displayedRecentBooks = if (showHeroCard && currentHeroBook != null) {
-                        filteredRecentBooks.filter { it.id != currentHeroBook.id }
                     } else {
-                        filteredRecentBooks
-                    }
-
-                    if (showHeroCard && currentHeroBook != null) {
-                        item(key = "currently_reading_hero", span = { GridItemSpan(maxLineSpan) }) {
-                            CurrentlyReadingHeroCard(
-                                book = currentHeroBook,
-                                onBookClick = onBookSelected,
-                                onDelete = { bookToDelete = currentHeroBook },
-                                onToggleFavorite = { viewModel.toggleFavorite(currentHeroBook.id) },
-                                onAddToCollection = { bookForCollections = currentHeroBook },
-                                onSetProgress = { prog -> viewModel.setBookReadingProgress(currentHeroBook.id, prog) },
-                                onCoverClick = { inspectingCoverBook = currentHeroBook },
-                                onShare = { BookShareUtils.shareBookFile(context, currentHeroBook) },
-                                onChangeCover = { bookForCoverChange = currentHeroBook },
-                                isGlass = readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS,
-                                isDark = isThemeDark,
-                                clarity = readerSettings.glassClarity,
-                                modifier = Modifier.padding(bottom = 6.dp)
+                        (slideInHorizontally(
+                            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
+                        ) { width -> (-width * slideFraction).toInt() } + fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)))
+                            .togetherWith(
+                                slideOutHorizontally(
+                                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
+                                ) { width -> (width * slideFraction).toInt() } + fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing))
                             )
-                        }
                     }
-
-                    item(key = "section_header", span = { GridItemSpan(maxLineSpan) }) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp, bottom = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val sectionHeader = if (searchQuery.isNotBlank()) {
-                                strings.searchResultsCount(displayedRecentBooks.size)
-                            } else {
-                                when (librarySortOrder) {
-                                    LibrarySortOption.RECENT -> strings.recentBooks
-                                    LibrarySortOption.TITLE -> strings.sortByTitle
-                                    LibrarySortOption.AUTHOR -> strings.sortByAuthor
-                                    LibrarySortOption.SERIES -> strings.sortBySeries
-                                    LibrarySortOption.CUSTOM -> strings.sortCustomOrder
-                                }
-                            }
-                            Text(
-                                text = sectionHeader,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            if (searchQuery.isBlank()) {
-                                Box {
-                                    var showSortMenu by remember { mutableStateOf(false) }
-                                    val sortLabel = when (librarySortOrder) {
-                                        LibrarySortOption.RECENT -> strings.sortByRecent
-                                        LibrarySortOption.TITLE -> strings.sortByTitle
-                                        LibrarySortOption.AUTHOR -> strings.sortByAuthor
-                                        LibrarySortOption.SERIES -> strings.sortBySeries
-                                        LibrarySortOption.CUSTOM -> strings.sortCustomOrder
-                                    }
-                                    Surface(
-                                        onClick = { showSortMenu = true },
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                },
+                label = "dockTabNavigationTransition",
+                modifier = Modifier.fillMaxSize()
+            ) { tab ->
+                when (tab) {
+                    1 -> {
+                        LibrarySearchScreen(
+                                        searchQuery = searchQuery,
+                                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                                        searchHistory = librarySearchHistory,
+                                        onSelectHistoryQuery = { query ->
+                                            viewModel.setSearchQuery(query)
+                                        },
+                                        onRemoveHistoryQuery = { query ->
+                                            viewModel.removeLibrarySearchQuery(query)
+                                        },
+                                        onClearSearchHistory = {
+                                            viewModel.clearLibrarySearchHistory()
+                                        },
+                                        onSaveSearchQuery = { query ->
+                                            viewModel.saveLibrarySearchQuery(query)
+                                        },
+                                        books = recentBooks,
+                                        onBookClick = onBookSelected,
+                                        onDeleteBook = { book -> bookToDelete = book },
+                                        onToggleFavorite = { book -> viewModel.toggleFavorite(book.id) },
+                                        onAddToCollection = { book -> bookForCollections = book },
+                                        onSetProgress = { book, prog -> viewModel.setBookReadingProgress(book.id, prog) },
+                                        onCoverClick = { book -> inspectingCoverBook = book },
+                                        onShare = { book -> BookShareUtils.shareBookFile(context, book) },
+                                        onChangeCover = { book -> bookForCoverChange = book },
+                                        onBack = { currentMainTab = 0 },
+                                        libraryViewMode = libraryViewMode,
+                                        isDark = isThemeDark,
+                                        clarity = readerSettings.glassClarity
+                                    )
+                    }
+                    2 -> {
+                        SettingsBottomSheet(
+                                        currentTheme = readerSettings.appThemeMode,
+                                        currentLanguage = appLanguage,
+                                        updateNotificationsEnabled = updateNotificationsEnabled,
+                                        anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
+                                        readingStatsEnabled = readingStatsEnabled,
+                                        materialYouEnabled = materialYouEnabled,
+                                        isFullScreen = true,
+                                        onDismiss = { currentMainTab = 0 },
+                                        onOpenOnboarding = onOpenOnboarding,
+                                        onThemeChange = { viewModel.setAppThemeMode(it) },
+                                        onLanguageChange = { viewModel.setAppLanguage(it) },
+                                        onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
+                                        onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
+                                        onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
+                                        onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
+                                        customOpdsEnabled = customOpdsEnabled,
+                                        customOpdsUrl = catalogBaseUrl,
+                                        onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
+                                        onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
+                                        developerModeEnabled = developerModeEnabled,
+                                        updateChannel = updateChannel,
+                                        onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
+                                        onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
+                                        onCheckUpdates = {
+                                            viewModel.checkForUpdates(manual = true, context = context)
+                                        },
+                                        onExportBackup = {
+                                            exportBackupLauncher.launch("AuraReader_Backup_${System.currentTimeMillis()}.aurabackup")
+                                        },
+                                        onSendToGoogleDrive = {
+                                            sendToGoogleDriveAction()
+                                        },
+                                        onRestoreBackup = {
+                                            restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+                                        },
+                                        readerTheme = readerSettings.themeMode,
+                                        syncThemesWithApp = readerSettings.syncThemesWithApp,
+                                        onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
+                                        onReaderThemeChange = { viewModel.setThemeMode(it) },
+                                        onOpenReaderThemeSettings = {
+                                            showReaderThemeSheet = true
+                                        },
+                                        appDesignStyle = readerSettings.appDesignStyle,
+                                        onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
+                                        glassClarity = readerSettings.glassClarity,
+                                        onGlassClarityChange = { viewModel.setGlassClarity(it) },
+                                        appFont = appFont,
+                                        onAppFontChange = { viewModel.setAppFont(it) },
+                                        onResetReadingSpeed = { viewModel.resetReadingSpeed() }
+                                    )
+                    }
+                    else -> {
+                        Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(innerPadding)
                                     ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.AutoMirrored.Filled.Sort,
-                                                contentDescription = strings.sortTitle,
-                                                modifier = Modifier.size(16.dp),
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                            Text(
-                                                text = sortLabel,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
+                                    if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
+                                        Column(Modifier.fillMaxSize()) {
+                                            if (isSearchExpanded && !isGlass) {
+                                                SearchCoverCollage(emptyList(), subdued = true, modifier = Modifier.height(100.dp))
+                                            }
+                                            Box(Modifier.weight(1f)) {
+                                                EmptyLibraryView(
+                                                    onAddBooks = { showAddBooksSheet = true },
+                                                    onOpenSample = { viewModel.openSampleBook() }
+                                                )
+                                            }
                                         }
-                                    }
-
-                                    val sortMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
-                                    DropdownMenu(
-                                        expanded = showSortMenu,
-                                        onDismissRequest = { showSortMenu = false },
-                                        shape = RoundedCornerShape(20.dp),
-                                        containerColor = sortMenuAppearance.containerColor,
-                                        border = sortMenuAppearance.border,
-                                        shadowElevation = sortMenuAppearance.shadowElevation
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text(strings.sortByRecent) },
-                                            onClick = {
-                                                viewModel.setLibrarySortOrder(LibrarySortOption.RECENT)
-                                                showSortMenu = false
-                                            },
-                                            leadingIcon = {
-                                                if (librarySortOrder == LibrarySortOption.RECENT) {
-                                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                }
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(strings.sortByTitle) },
-                                            onClick = {
-                                                viewModel.setLibrarySortOrder(LibrarySortOption.TITLE)
-                                                showSortMenu = false
-                                            },
-                                            leadingIcon = {
-                                                if (librarySortOrder == LibrarySortOption.TITLE) {
-                                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                }
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(strings.sortByAuthor) },
-                                            onClick = {
-                                                viewModel.setLibrarySortOrder(LibrarySortOption.AUTHOR)
-                                                showSortMenu = false
-                                            },
-                                            leadingIcon = {
-                                                if (librarySortOrder == LibrarySortOption.AUTHOR) {
-                                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                }
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(strings.sortBySeries) },
-                                            onClick = {
-                                                viewModel.setLibrarySortOrder(LibrarySortOption.SERIES)
-                                                showSortMenu = false
-                                            },
-                                            leadingIcon = {
-                                                if (librarySortOrder == LibrarySortOption.SERIES) {
-                                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                }
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(strings.sortCustomOrder) },
-                                            onClick = {
-                                                viewModel.setLibrarySortOrder(LibrarySortOption.CUSTOM)
-                                                showSortMenu = false
-                                            },
-                                            leadingIcon = {
-                                                if (librarySortOrder == LibrarySortOption.CUSTOM) {
-                                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                }
-                                            }
-                                        )
-
-                                        val booksWithoutCovers = remember(recentBooks) { recentBooks.filter { it.coverBase64.isNullOrBlank() } }
-                                        if (booksWithoutCovers.isNotEmpty()) {
-                                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                                            DropdownMenuItem(
-                                                text = { Text(strings.downloadMissingCovers) },
-                                                leadingIcon = {
-                                                    Icon(Icons.Default.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                },
-                                                onClick = {
-                                                    showSortMenu = false
-                                                    Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
-                                                    viewModel.autoDownloadMissingCovers(recentBooks) { count ->
-                                                        Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        LazyVerticalGrid(
+                                            columns = GridCells.Fixed(if (libraryViewMode == "GRID") 2 else 1),
+                                            state = gridState,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
+                                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            if (isSearchExpanded && !isGlass) {
+                                                item(key = "searchCollage", span = { GridItemSpan(maxLineSpan) }) {
+                                                    val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+                                                    val subdued = searchQuery.isNotBlank() || keyboardOpen
+                                                    val height by animateDpAsState(if (subdued) 72.dp else 240.dp, tween(350), label = "materialSearchHero")
+                                                    AnimatedVisibility(
+                                                        visible = isSearchExpanded && !isGlass,
+                                                        enter = expandVertically(tween(320)) + fadeIn(tween(250)),
+                                                        exit = shrinkVertically(tween(250)) + fadeOut(tween(200))
+                                                    ) {
+                                                        SearchCoverCollage(
+                                                            recentBooks,
+                                                            subdued,
+                                                            Modifier
+                                                                .fillMaxWidth()
+                                                                .height(height)
+                                                                .clip(RoundedCornerShape(24.dp))
+                                                        )
                                                     }
                                                 }
-                                            )
+                                            }
+                                            // Instant Update Notification Banner
+                                            val curUpdate = updateInfo
+                                            if (curUpdate != null && curUpdate.isAvailable && updateNotificationsEnabled) {
+                                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                                    LibraryUpdateBanner(
+                                                        update = curUpdate,
+                                                        isGlass = isGlass,
+                                                        isThemeDark = isThemeDark,
+                                                        onOpenUpdatePage = { url -> viewModel.openUpdatePage(context, url) }
+                                                    )
+                                                }
+                                            }
+
+                                            // Daily Reading Stats (Toggleable in Settings)
+                                            if (readingStatsEnabled) {
+                                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                                    LibraryReadingStatsBanner(
+                                                        isGlass = isGlass,
+                                                        isThemeDark = isThemeDark,
+                                                        todayMinutes = todayMinutes,
+                                                        currentStreakDays = readingStatsData.currentStreakDays,
+                                                        onClick = { showReadingStatsSheet = true }
+                                                    )
+                                                }
+                                            }
+
+                                            // Collections Filter Chips Row
+                                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                                LibraryCollectionChips(
+                                                    activeFilter = activeCollectionFilter,
+                                                    hasSeries = remember(recentBooks) { recentBooks.any { !it.series.isNullOrBlank() } },
+                                                    userCollections = userCollections,
+                                                    isGlass = isGlass,
+                                                    isThemeDark = isThemeDark,
+                                                    onFilterChange = { viewModel.setCollectionFilter(it) },
+                                                    onDeleteCollection = { collectionToDelete = it },
+                                                    onNewCollection = { showNewCollectionDialog = true }
+                                                )
+                                            }
+
+                                            val currentHeroBook = recentBooks.firstOrNull()
+                                            val showHeroCard = currentHeroBook != null &&
+                                                    searchQuery.isBlank() &&
+                                                    activeCollectionFilter.type == CollectionFilterType.ALL &&
+                                                    librarySortOrder != LibrarySortOption.CUSTOM &&
+                                                    !isReorderMode
+
+                                            val displayedRecentBooks = if (showHeroCard && currentHeroBook != null) {
+                                                filteredRecentBooks.filter { it.id != currentHeroBook.id }
+                                            } else {
+                                                filteredRecentBooks
+                                            }
+
+                                            if (showHeroCard && currentHeroBook != null) {
+                                                item(key = "currently_reading_hero", span = { GridItemSpan(maxLineSpan) }) {
+                                                    CurrentlyReadingHeroCard(
+                                                        book = currentHeroBook,
+                                                        onBookClick = onBookSelected,
+                                                        onDelete = { bookToDelete = currentHeroBook },
+                                                        onToggleFavorite = { viewModel.toggleFavorite(currentHeroBook.id) },
+                                                        onAddToCollection = { bookForCollections = currentHeroBook },
+                                                        onSetProgress = { prog -> viewModel.setBookReadingProgress(currentHeroBook.id, prog) },
+                                                        onCoverClick = { inspectingCoverBook = currentHeroBook },
+                                                        onShare = { BookShareUtils.shareBookFile(context, currentHeroBook) },
+                                                        onChangeCover = { bookForCoverChange = currentHeroBook },
+                                                        isGlass = readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS,
+                                                        isDark = isThemeDark,
+                                                        clarity = readerSettings.glassClarity,
+                                                        modifier = Modifier.padding(bottom = 6.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            item(key = "section_header", span = { GridItemSpan(maxLineSpan) }) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(top = 4.dp, bottom = 4.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    val sectionHeader = if (searchQuery.isNotBlank()) {
+                                                        strings.searchResultsCount(displayedRecentBooks.size)
+                                                    } else {
+                                                        when (librarySortOrder) {
+                                                            LibrarySortOption.RECENT -> strings.recentBooks
+                                                            LibrarySortOption.TITLE -> strings.sortByTitle
+                                                            LibrarySortOption.AUTHOR -> strings.sortByAuthor
+                                                            LibrarySortOption.SERIES -> strings.sortBySeries
+                                                            LibrarySortOption.CUSTOM -> strings.sortCustomOrder
+                                                        }
+                                                    }
+                                                    Text(
+                                                        text = sectionHeader,
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+
+                                                    if (searchQuery.isBlank()) {
+                                                        Box {
+                                                            var showSortMenu by remember { mutableStateOf(false) }
+                                                            val sortLabel = when (librarySortOrder) {
+                                                                LibrarySortOption.RECENT -> strings.sortByRecent
+                                                                LibrarySortOption.TITLE -> strings.sortByTitle
+                                                                LibrarySortOption.AUTHOR -> strings.sortByAuthor
+                                                                LibrarySortOption.SERIES -> strings.sortBySeries
+                                                                LibrarySortOption.CUSTOM -> strings.sortCustomOrder
+                                                            }
+                                                            Surface(
+                                                                onClick = { showSortMenu = true },
+                                                                shape = RoundedCornerShape(8.dp),
+                                                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                                            ) {
+                                                                Row(
+                                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                                    verticalAlignment = Alignment.CenterVertically,
+                                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.AutoMirrored.Filled.Sort,
+                                                                        contentDescription = strings.sortTitle,
+                                                                        modifier = Modifier.size(16.dp),
+                                                                        tint = MaterialTheme.colorScheme.primary
+                                                                    )
+                                                                    Text(
+                                                                        text = sortLabel,
+                                                                        style = MaterialTheme.typography.labelSmall,
+                                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                                    )
+                                                                }
+                                                            }
+
+                                                            val sortMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
+                                                            DropdownMenu(
+                                                                expanded = showSortMenu,
+                                                                onDismissRequest = { showSortMenu = false },
+                                                                shape = RoundedCornerShape(20.dp),
+                                                                containerColor = sortMenuAppearance.containerColor,
+                                                                border = sortMenuAppearance.border,
+                                                                shadowElevation = sortMenuAppearance.shadowElevation
+                                                            ) {
+                                                                DropdownMenuItem(
+                                                                    text = { Text(strings.sortByRecent) },
+                                                                    onClick = {
+                                                                        viewModel.setLibrarySortOrder(LibrarySortOption.RECENT)
+                                                                        showSortMenu = false
+                                                                    },
+                                                                    leadingIcon = {
+                                                                        if (librarySortOrder == LibrarySortOption.RECENT) {
+                                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                        }
+                                                                    }
+                                                                )
+                                                                DropdownMenuItem(
+                                                                    text = { Text(strings.sortByTitle) },
+                                                                    onClick = {
+                                                                        viewModel.setLibrarySortOrder(LibrarySortOption.TITLE)
+                                                                        showSortMenu = false
+                                                                    },
+                                                                    leadingIcon = {
+                                                                        if (librarySortOrder == LibrarySortOption.TITLE) {
+                                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                        }
+                                                                    }
+                                                                )
+                                                                DropdownMenuItem(
+                                                                    text = { Text(strings.sortByAuthor) },
+                                                                    onClick = {
+                                                                        viewModel.setLibrarySortOrder(LibrarySortOption.AUTHOR)
+                                                                        showSortMenu = false
+                                                                    },
+                                                                    leadingIcon = {
+                                                                        if (librarySortOrder == LibrarySortOption.AUTHOR) {
+                                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                        }
+                                                                    }
+                                                                )
+                                                                DropdownMenuItem(
+                                                                    text = { Text(strings.sortBySeries) },
+                                                                    onClick = {
+                                                                        viewModel.setLibrarySortOrder(LibrarySortOption.SERIES)
+                                                                        showSortMenu = false
+                                                                    },
+                                                                    leadingIcon = {
+                                                                        if (librarySortOrder == LibrarySortOption.SERIES) {
+                                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                        }
+                                                                    }
+                                                                )
+                                                                DropdownMenuItem(
+                                                                    text = { Text(strings.sortCustomOrder) },
+                                                                    onClick = {
+                                                                        viewModel.setLibrarySortOrder(LibrarySortOption.CUSTOM)
+                                                                        showSortMenu = false
+                                                                    },
+                                                                    leadingIcon = {
+                                                                        if (librarySortOrder == LibrarySortOption.CUSTOM) {
+                                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                        }
+                                                                    }
+                                                                )
+
+                                                                val booksWithoutCovers = remember(recentBooks) { recentBooks.filter { it.coverBase64.isNullOrBlank() } }
+                                                                if (booksWithoutCovers.isNotEmpty()) {
+                                                                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                                                    DropdownMenuItem(
+                                                                        text = { Text(strings.downloadMissingCovers) },
+                                                                        leadingIcon = {
+                                                                            Icon(Icons.Default.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                        },
+                                                                        onClick = {
+                                                                            showSortMenu = false
+                                                                            Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
+                                                                            viewModel.autoDownloadMissingCovers(recentBooks) { count ->
+                                                                                Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
+                                                                            }
+                                                                        }
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            if (displayedRecentBooks.isEmpty() && searchQuery.isNotBlank()) {
+                                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                                    Text(
+                                                        text = strings.noSearchResultsFound(searchQuery),
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.outline,
+                                                        modifier = Modifier.padding(vertical = 16.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            gridItemsIndexed(
+                                                items = displayedRecentBooks,
+                                                key = { _, book -> book.id }
+                                            ) { index, book ->
+                                                if (libraryViewMode == "GRID") {
+                                                    BookGridCard(
+                                                        book = book,
+                                                        index = index,
+                                                        isGlass = isGlass,
+                                                        isDark = isThemeDark,
+                                                        isReorderMode = isReorderMode,
+                                                        wobbleAngle = wobbleAngle,
+                                                        wobbleOffset = wobbleOffset,
+                                                        currentlyDraggedBookId = currentlyDraggedBookId,
+                                                        currentDragOffset = currentDragOffset,
+                                                        onDragStart = {
+                                                            isReorderMode = true
+                                                            viewModel.startReorderMode(displayedRecentBooks)
+                                                            currentlyDraggedBookId = book.id
+                                                            currentDragOffset = Offset.Zero
+                                                            accumulatedDragOffset = Offset.Zero
+                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                        },
+                                                        onDrag = { dragAmount ->
+                                                            currentDragOffset += dragAmount
+                                                            accumulatedDragOffset += dragAmount
+                                                            val thresholdX = with(density) { 75.dp.toPx() }
+                                                            val thresholdY = with(density) { 100.dp.toPx() }
+                                                            if (accumulatedDragOffset.x > thresholdX) {
+                                                                viewModel.moveBookCustomOrder(book.id, 1, displayedRecentBooks)
+                                                                accumulatedDragOffset = Offset(accumulatedDragOffset.x - thresholdX, accumulatedDragOffset.y)
+                                                                currentDragOffset = Offset(currentDragOffset.x - thresholdX, currentDragOffset.y)
+                                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                            } else if (accumulatedDragOffset.x < -thresholdX) {
+                                                                viewModel.moveBookCustomOrder(book.id, -1, displayedRecentBooks)
+                                                                accumulatedDragOffset = Offset(accumulatedDragOffset.x + thresholdX, accumulatedDragOffset.y)
+                                                                currentDragOffset = Offset(currentDragOffset.x + thresholdX, currentDragOffset.y)
+                                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                            } else if (accumulatedDragOffset.y > thresholdY) {
+                                                                viewModel.moveBookCustomOrder(book.id, 2, displayedRecentBooks)
+                                                                accumulatedDragOffset = Offset(accumulatedDragOffset.x, accumulatedDragOffset.y - thresholdY)
+                                                                currentDragOffset = Offset(currentDragOffset.x, currentDragOffset.y - thresholdY)
+                                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                            } else if (accumulatedDragOffset.y < -thresholdY) {
+                                                                viewModel.moveBookCustomOrder(book.id, -2, displayedRecentBooks)
+                                                                accumulatedDragOffset = Offset(accumulatedDragOffset.x, accumulatedDragOffset.y + thresholdY)
+                                                                currentDragOffset = Offset(currentDragOffset.x, currentDragOffset.y + thresholdY)
+                                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                            }
+                                                        },
+                                                        onDragEnd = {
+                                                            currentlyDraggedBookId = null
+                                                            currentDragOffset = Offset.Zero
+                                                            accumulatedDragOffset = Offset.Zero
+                                                        },
+                                                        onClick = { onBookSelected(book) },
+                                                        onDelete = { bookToDelete = book },
+                                                        onToggleFavorite = { viewModel.toggleFavorite(book.id) },
+                                                        onAddToCollection = { bookForCollections = book },
+                                                        onSetProgress = { prog -> viewModel.setBookReadingProgress(book.id, prog) },
+                                                        onCoverClick = { inspectingCoverBook = book },
+                                                        onShare = { BookShareUtils.shareBookFile(context, book) },
+                                                        onChangeCover = { bookForCoverChange = book }
+                                                    )
+                                                } else {
+                                                    BookCard(
+                                                        book = book,
+                                                        index = index,
+                                                        isGlass = isGlass,
+                                                        isDark = isThemeDark,
+                                                        isReorderMode = isReorderMode,
+                                                        wobbleAngle = wobbleAngle,
+                                                        wobbleOffset = wobbleOffset,
+                                                        currentlyDraggedBookId = currentlyDraggedBookId,
+                                                        currentDragOffset = currentDragOffset,
+                                                        onDragStart = {
+                                                            isReorderMode = true
+                                                            viewModel.startReorderMode(displayedRecentBooks)
+                                                            currentlyDraggedBookId = book.id
+                                                            currentDragOffset = Offset.Zero
+                                                            accumulatedDragOffset = Offset.Zero
+                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                        },
+                                                        onDrag = { dragAmount ->
+                                                            currentDragOffset += dragAmount
+                                                            accumulatedDragOffset += dragAmount
+                                                            val thresholdY = with(density) { 68.dp.toPx() }
+                                                            if (accumulatedDragOffset.y > thresholdY) {
+                                                                viewModel.moveBookCustomOrder(book.id, 1, displayedRecentBooks)
+                                                                accumulatedDragOffset = Offset(accumulatedDragOffset.x, accumulatedDragOffset.y - thresholdY)
+                                                                currentDragOffset = Offset(currentDragOffset.x, currentDragOffset.y - thresholdY)
+                                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                            } else if (accumulatedDragOffset.y < -thresholdY) {
+                                                                viewModel.moveBookCustomOrder(book.id, -1, displayedRecentBooks)
+                                                                accumulatedDragOffset = Offset(accumulatedDragOffset.x, accumulatedDragOffset.y + thresholdY)
+                                                                currentDragOffset = Offset(currentDragOffset.x, currentDragOffset.y + thresholdY)
+                                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                            }
+                                                        },
+                                                        onDragEnd = {
+                                                            currentlyDraggedBookId = null
+                                                            currentDragOffset = Offset.Zero
+                                                            accumulatedDragOffset = Offset.Zero
+                                                        },
+                                                        onClick = { onBookSelected(book) },
+                                                        onDelete = { bookToDelete = book },
+                                                        onToggleFavorite = { viewModel.toggleFavorite(book.id) },
+                                                        onAddToCollection = { bookForCollections = book },
+                                                        onSetProgress = { prog -> viewModel.setBookReadingProgress(book.id, prog) },
+                                                        onCoverClick = { inspectingCoverBook = book },
+                                                        onShare = { BookShareUtils.shareBookFile(context, book) },
+                                                        onChangeCover = { bookForCoverChange = book }
+                                                    )
+                                                }
+                                            }
+
+                                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                                Spacer(modifier = Modifier.height(72.dp)) // padding for FAB
+                                            }
+                                        }
+                                    }
+
+                                    if (uiState is LibraryUiState.Loading) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.6f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator()
                                         }
                                     }
                                 }
-                            }
-                        }
-                    }
-
-                    if (displayedRecentBooks.isEmpty() && searchQuery.isNotBlank()) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            Text(
-                                text = strings.noSearchResultsFound(searchQuery),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.padding(vertical = 16.dp)
-                            )
-                        }
-                    }
-
-                    gridItemsIndexed(
-                        items = displayedRecentBooks,
-                        key = { _, book -> book.id }
-                    ) { index, book ->
-                        if (libraryViewMode == "GRID") {
-                            BookGridCard(
-                                book = book,
-                                index = index,
-                                isGlass = isGlass,
-                                isDark = isThemeDark,
-                                isReorderMode = isReorderMode,
-                                wobbleAngle = wobbleAngle,
-                                wobbleOffset = wobbleOffset,
-                                currentlyDraggedBookId = currentlyDraggedBookId,
-                                currentDragOffset = currentDragOffset,
-                                onDragStart = {
-                                    isReorderMode = true
-                                    viewModel.startReorderMode(displayedRecentBooks)
-                                    currentlyDraggedBookId = book.id
-                                    currentDragOffset = Offset.Zero
-                                    accumulatedDragOffset = Offset.Zero
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                },
-                                onDrag = { dragAmount ->
-                                    currentDragOffset += dragAmount
-                                    accumulatedDragOffset += dragAmount
-                                    val thresholdX = with(density) { 75.dp.toPx() }
-                                    val thresholdY = with(density) { 100.dp.toPx() }
-                                    if (accumulatedDragOffset.x > thresholdX) {
-                                        viewModel.moveBookCustomOrder(book.id, 1, displayedRecentBooks)
-                                        accumulatedDragOffset = Offset(accumulatedDragOffset.x - thresholdX, accumulatedDragOffset.y)
-                                        currentDragOffset = Offset(currentDragOffset.x - thresholdX, currentDragOffset.y)
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    } else if (accumulatedDragOffset.x < -thresholdX) {
-                                        viewModel.moveBookCustomOrder(book.id, -1, displayedRecentBooks)
-                                        accumulatedDragOffset = Offset(accumulatedDragOffset.x + thresholdX, accumulatedDragOffset.y)
-                                        currentDragOffset = Offset(currentDragOffset.x + thresholdX, currentDragOffset.y)
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    } else if (accumulatedDragOffset.y > thresholdY) {
-                                        viewModel.moveBookCustomOrder(book.id, 2, displayedRecentBooks)
-                                        accumulatedDragOffset = Offset(accumulatedDragOffset.x, accumulatedDragOffset.y - thresholdY)
-                                        currentDragOffset = Offset(currentDragOffset.x, currentDragOffset.y - thresholdY)
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    } else if (accumulatedDragOffset.y < -thresholdY) {
-                                        viewModel.moveBookCustomOrder(book.id, -2, displayedRecentBooks)
-                                        accumulatedDragOffset = Offset(accumulatedDragOffset.x, accumulatedDragOffset.y + thresholdY)
-                                        currentDragOffset = Offset(currentDragOffset.x, currentDragOffset.y + thresholdY)
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    }
-                                },
-                                onDragEnd = {
-                                    currentlyDraggedBookId = null
-                                    currentDragOffset = Offset.Zero
-                                    accumulatedDragOffset = Offset.Zero
-                                },
-                                onClick = { onBookSelected(book) },
-                                onDelete = { bookToDelete = book },
-                                onToggleFavorite = { viewModel.toggleFavorite(book.id) },
-                                onAddToCollection = { bookForCollections = book },
-                                onSetProgress = { prog -> viewModel.setBookReadingProgress(book.id, prog) },
-                                onCoverClick = { inspectingCoverBook = book },
-                                onShare = { BookShareUtils.shareBookFile(context, book) },
-                                onChangeCover = { bookForCoverChange = book }
-                            )
-                        } else {
-                            BookCard(
-                                book = book,
-                                index = index,
-                                isGlass = isGlass,
-                                isDark = isThemeDark,
-                                isReorderMode = isReorderMode,
-                                wobbleAngle = wobbleAngle,
-                                wobbleOffset = wobbleOffset,
-                                currentlyDraggedBookId = currentlyDraggedBookId,
-                                currentDragOffset = currentDragOffset,
-                                onDragStart = {
-                                    isReorderMode = true
-                                    viewModel.startReorderMode(displayedRecentBooks)
-                                    currentlyDraggedBookId = book.id
-                                    currentDragOffset = Offset.Zero
-                                    accumulatedDragOffset = Offset.Zero
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                },
-                                onDrag = { dragAmount ->
-                                    currentDragOffset += dragAmount
-                                    accumulatedDragOffset += dragAmount
-                                    val thresholdY = with(density) { 68.dp.toPx() }
-                                    if (accumulatedDragOffset.y > thresholdY) {
-                                        viewModel.moveBookCustomOrder(book.id, 1, displayedRecentBooks)
-                                        accumulatedDragOffset = Offset(accumulatedDragOffset.x, accumulatedDragOffset.y - thresholdY)
-                                        currentDragOffset = Offset(currentDragOffset.x, currentDragOffset.y - thresholdY)
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    } else if (accumulatedDragOffset.y < -thresholdY) {
-                                        viewModel.moveBookCustomOrder(book.id, -1, displayedRecentBooks)
-                                        accumulatedDragOffset = Offset(accumulatedDragOffset.x, accumulatedDragOffset.y + thresholdY)
-                                        currentDragOffset = Offset(currentDragOffset.x, currentDragOffset.y + thresholdY)
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    }
-                                },
-                                onDragEnd = {
-                                    currentlyDraggedBookId = null
-                                    currentDragOffset = Offset.Zero
-                                    accumulatedDragOffset = Offset.Zero
-                                },
-                                onClick = { onBookSelected(book) },
-                                onDelete = { bookToDelete = book },
-                                onToggleFavorite = { viewModel.toggleFavorite(book.id) },
-                                onAddToCollection = { bookForCollections = book },
-                                onSetProgress = { prog -> viewModel.setBookReadingProgress(book.id, prog) },
-                                onCoverClick = { inspectingCoverBook = book },
-                                onShare = { BookShareUtils.shareBookFile(context, book) },
-                                onChangeCover = { bookForCoverChange = book }
-                            )
-                        }
-                    }
-
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        Spacer(modifier = Modifier.height(72.dp)) // padding for FAB
                     }
                 }
             }
-
-            if (uiState is LibraryUiState.Loading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.6f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-        }
-        }
     }
 }
 
