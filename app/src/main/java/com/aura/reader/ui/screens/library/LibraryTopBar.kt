@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -124,7 +124,7 @@ AnimatedContent(
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface
+                containerColor = Color.Transparent
             )
         )
     } else {
@@ -162,7 +162,7 @@ AnimatedContent(
             // View Mode Switcher
             IconButton(onClick = { onToggleViewMode() }) {
                 Icon(
-                    imageVector = if (libraryViewMode == "GRID") Icons.Default.ViewList else Icons.Default.GridView,
+                    imageVector = if (libraryViewMode == "GRID") Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
                     contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid
                 )
             }
@@ -187,9 +187,7 @@ AnimatedContent(
         },
         scrollBehavior = scrollBehavior,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = if (isGlass) Color.Transparent else {
-                if (isThemeDark && com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background
-            },
+            containerColor = Color.Transparent,
             scrolledContainerColor = if (isGlass) {
                 if (isThemeDark) Color(0xB3000000) else Color(0xB3FFFFFF)
             } else {

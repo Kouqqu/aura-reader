@@ -1,5 +1,4 @@
 package com.aura.reader.ui.screens.library
-import androidx.compose.ui.graphics.compositeOver
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -87,8 +86,8 @@ fun LibrarySearchScreen(
     val strings = LocalAppStrings.current
     val isMaterialYou = com.aura.reader.ui.components.LocalMaterialYouEnabled.current
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
-    val screenBg = if (isDark && isMaterialYou && !isAmoled) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.08f).compositeOver(Color(0xFF101216))
+    val screenBg = if (isDark && isAmoled) {
+        Color.Black
     } else {
         MaterialTheme.colorScheme.background
     }
@@ -155,7 +154,6 @@ fun LibrarySearchScreen(
                 shadowElevation = if (isAmoled) 0.dp else 4.dp,
                 tintColor = if (isDark) {
                     if (isAmoled) Color(0x22FFFFFF)
-                    else if (isMaterialYou) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f).compositeOver(Color(0xEE14161C))
                     else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.65f)
                 } else {
                     Color(0xCCFFFFFF)
@@ -462,7 +460,6 @@ private fun SearchHistoryChip(
         shadowElevation = if (isAmoled) 0.dp else 2.dp,
         tintColor = if (isDark) {
             if (isAmoled) Color(0x1CFFFFFF)
-            else if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f).compositeOver(Color(0x28FFFFFF))
             else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.50f)
         } else {
             Color(0x95FFFFFF)

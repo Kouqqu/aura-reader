@@ -1,5 +1,4 @@
 package com.aura.reader.ui.components
-import androidx.compose.ui.graphics.compositeOver
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -37,7 +36,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
@@ -271,21 +270,16 @@ fun FloatingNavigationIsland(
             )
         } else Modifier
 
-        val isMatYou = LocalMaterialYouEnabled.current
         val dockBgColor = if (isDark) {
             if (isAmoled) Color(0xF2121316)
-            else if (isMatYou) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f).compositeOver(Color(0xEE14161C))
             else Color(0xEE181A20)
         } else {
-            if (isMatYou) MaterialTheme.colorScheme.primary.copy(alpha = 0.06f).compositeOver(Color(0xF4F5F6FA))
-            else Color(0xF4F5F6FA)
+            Color(0xF4F5F6FA)
         }
         val dockBorderColor = if (isDark) {
-            if (isMatYou) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
-            else Color.White.copy(alpha = 0.06f)
+            Color.White.copy(alpha = 0.06f)
         } else {
-            if (isMatYou) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
-            else Color.Black.copy(alpha = 0.05f)
+            Color.Black.copy(alpha = 0.05f)
         }
 
         Box(
@@ -537,11 +531,9 @@ fun FloatingNavigationIsland(
                     // Deeply transparent, neutral, calm glass without milky glow:
                     val pillBgColor = if (isDark) {
                         if (isAmoled) Color(0x10FFFFFF)
-                        else if (isMatYou) MaterialTheme.colorScheme.primary.copy(alpha = 0.24f)
                         else Color(0x0EFFFFFF)
                     } else {
-                        if (isMatYou) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                        else Color(0x08000000)
+                        Color(0x08000000)
                     }
 
                     val borderAlpha = if (isDark) {
@@ -550,11 +542,9 @@ fun FloatingNavigationIsland(
                         0.04f + 0.16f * expansionProgress
                     }
                     val pillBorderColor = if (isDark) {
-                        if (isMatYou) MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
-                        else Color.White.copy(alpha = borderAlpha)
+                        Color.White.copy(alpha = borderAlpha)
                     } else {
-                        if (isMatYou) MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-                        else Color.Black.copy(alpha = borderAlpha)
+                        Color.Black.copy(alpha = borderAlpha)
                     }
                     val borderWidthDp = (0.5f + 0.4f * expansionProgress).dp
 
@@ -653,7 +643,7 @@ fun FloatingNavigationIsland(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.MenuBook,
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
                             contentDescription = strings.navMyBooks,
                             tint = if (isBooksActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
@@ -773,7 +763,7 @@ private fun TabDockRow(
                     verticalArrangement = Arrangement.Center
                 ) {
                     val icon = when (slotIndex) {
-                        0 -> Icons.Default.MenuBook
+                        0 -> Icons.AutoMirrored.Filled.MenuBook
                         1 -> Icons.Default.Search
                         else -> Icons.Default.Settings
                     }
@@ -951,24 +941,12 @@ fun LiquidGlassFilterChip(
         val bg = if (selected) {
             primaryColor.copy(alpha = if (isDark) 0.28f else 0.18f)
         } else {
-            if (isDark) {
-                if (isMatYou) primaryColor.copy(alpha = 0.09f).compositeOver(Color(0x1AFFFFFF))
-                else Color.White.copy(alpha = 0.06f)
-            } else {
-                if (isMatYou) primaryColor.copy(alpha = 0.08f)
-                else Color.Black.copy(alpha = 0.04f)
-            }
+            if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.04f)
         }
         val borderColor = if (selected) {
             primaryColor.copy(alpha = 0.75f)
         } else {
-            if (isDark) {
-                if (isMatYou) primaryColor.copy(alpha = 0.25f)
-                else Color.White.copy(alpha = 0.08f)
-            } else {
-                if (isMatYou) primaryColor.copy(alpha = 0.20f)
-                else Color.Black.copy(alpha = 0.05f)
-            }
+            if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
         }
 
         Box(

@@ -1,5 +1,4 @@
 package com.aura.reader.ui.screens.library
-import androidx.compose.ui.graphics.compositeOver
 
 import androidx.compose.runtime.CompositionLocalProvider
 import com.aura.reader.ui.components.LocalHazeState
@@ -85,7 +84,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.ViewList
@@ -408,10 +407,8 @@ fun LibraryScreen(
     val hazeState = remember { HazeState() }
 
     CompositionLocalProvider(LocalHazeState provides hazeState) {
-        val mainScreenBg = if (isThemeDark && materialYouEnabled && readerSettings.appThemeMode != ReaderThemeMode.AMOLED) {
-            androidx.compose.ui.graphics.Color(0xFF101216).let { base ->
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.08f).compositeOver(base)
-            }
+        val mainScreenBg = if (isThemeDark && readerSettings.appThemeMode == ReaderThemeMode.AMOLED) {
+            androidx.compose.ui.graphics.Color.Black
         } else {
             MaterialTheme.colorScheme.background
         }
@@ -766,7 +763,7 @@ fun LibraryScreen(
                                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Default.Sort,
+                                                imageVector = Icons.AutoMirrored.Filled.Sort,
                                                 contentDescription = strings.sortTitle,
                                                 modifier = Modifier.size(16.dp),
                                                 tint = MaterialTheme.colorScheme.primary

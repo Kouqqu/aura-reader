@@ -148,7 +148,10 @@ internal fun SettingsThemeSection(
             shape = RoundedCornerShape(24.dp),
             isDark = isThemeDark,
             shadowElevation = 8.dp,
-            tintColor = if (isThemeDark) Color(0x301D212E) else if (isSepia) Color(0x60F4E8D6) else Color(0x85FFFFFF),
+            tintColor = if (isThemeDark) {
+                if (materialYouEnabled) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.50f)
+                else Color(0x301D212E)
+            } else if (isSepia) Color(0x60F4E8D6) else Color(0x85FFFFFF),
             modifier = Modifier.fillMaxWidth(),
             content = themeCardContent
         )

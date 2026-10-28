@@ -570,13 +570,16 @@ fun SettingsBottomSheet(
         LocalIsAmoled provides isAmoled
     ) {
         if (isFullScreen) {
+            val isMatYou = materialYouEnabled
             val screenBg = if (isGlass) {
                 if (isSepia) {
                     Color(0xFFFAF0E6)
                 } else if (isThemeDark) {
-                    if (currentTheme == ReaderThemeMode.AMOLED) Color(0xFF000000) else Color(0xFF0F1117)
+                    if (currentTheme == ReaderThemeMode.AMOLED) Color(0xFF000000)
+                    else if (isMatYou) MaterialTheme.colorScheme.background
+                    else Color(0xFF0F1117)
                 } else {
-                    Color(0xFFF2F3F8)
+                    if (isMatYou) MaterialTheme.colorScheme.background else Color(0xFFF2F3F8)
                 }
             } else {
                 MaterialTheme.colorScheme.background
@@ -598,9 +601,11 @@ fun SettingsBottomSheet(
                     if (isSepia) {
                         Color(0xFFFAF0E6)
                     } else if (isThemeDark) {
-                        if (currentTheme == ReaderThemeMode.AMOLED) Color(0xFF000000) else Color(0xFF141722)
+                        if (currentTheme == ReaderThemeMode.AMOLED) Color(0xFF000000)
+                        else if (materialYouEnabled) MaterialTheme.colorScheme.background
+                        else Color(0xFF141722)
                     } else {
-                        Color(0xFFF2F3F8)
+                        if (materialYouEnabled) MaterialTheme.colorScheme.background else Color(0xFFF2F3F8)
                     }
                 } else MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
@@ -708,8 +713,15 @@ internal fun SettingsIconBox(
 ) {
     val isGlass = LocalIsLiquidGlass.current
     val isDark = LocalIsThemeDark.current
+    val isMatYou = com.aura.reader.ui.components.LocalMaterialYouEnabled.current
     val bg = if (isGlass) {
-        if (isDark) Color(0x35283448) else Color(0x10000000)
+        if (isDark) {
+            if (isMatYou) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
+            else Color(0x35283448)
+        } else {
+            if (isMatYou) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            else Color(0x10000000)
+        }
     } else {
         containerColor
     }
@@ -738,8 +750,15 @@ internal fun SettingsPainterIconBox(
 ) {
     val isGlass = LocalIsLiquidGlass.current
     val isDark = LocalIsThemeDark.current
+    val isMatYou = com.aura.reader.ui.components.LocalMaterialYouEnabled.current
     val bg = if (isGlass) {
-        if (isDark) Color(0x35283448) else Color(0x10000000)
+        if (isDark) {
+            if (isMatYou) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
+            else Color(0x35283448)
+        } else {
+            if (isMatYou) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            else Color(0x10000000)
+        }
     } else {
         containerColor
     }
@@ -827,16 +846,19 @@ internal fun ExpressiveSettingsGroup(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isGlass = LocalIsLiquidGlass.current
+    val isMatYou = com.aura.reader.ui.components.LocalMaterialYouEnabled.current
     if (isGlass) {
         val isDark = LocalIsThemeDark.current
         val isSepia = LocalIsSepia.current
         val isAmoled = LocalIsAmoled.current
         val cardColor = if (isDark) {
-            if (isAmoled) Color(0xFF141419) else Color(0xFF1F2129)
+            if (isAmoled) Color(0xFF141419)
+            else if (isMatYou) MaterialTheme.colorScheme.surfaceContainer
+            else Color(0xFF1F2129)
         } else if (isSepia) {
             Color(0xFFFAF2E7)
         } else {
-            Color(0xFFFFFFFF)
+            if (isMatYou) MaterialTheme.colorScheme.surfaceContainerLow else Color(0xFFFFFFFF)
         }
         LiquidGlassSurface(
             shape = RoundedCornerShape(22.dp),
