@@ -160,19 +160,30 @@ AnimatedContent(
         LargeTopAppBar(
         title = {
             val holidaySeason = LocalHolidaySeason.current
+            val collapsedFraction = scrollBehavior.state.collapsedFraction
+
+            val logoBoxSize = androidx.compose.ui.unit.lerp(46.dp, 28.dp, collapsedFraction)
+            val logoCorner = androidx.compose.ui.unit.lerp(15.dp, 8.dp, collapsedFraction)
+            val logoWidth = androidx.compose.ui.unit.lerp(25.dp, 15.dp, collapsedFraction)
+            val logoHeight = androidx.compose.ui.unit.lerp(30.dp, 18.dp, collapsedFraction)
+            val titleFontSize = androidx.compose.ui.unit.lerp(28.sp, 18.sp, collapsedFraction)
+            val titleSpacing = androidx.compose.ui.unit.lerp(12.dp, 8.dp, collapsedFraction)
+            val greetingAlpha = (1f - collapsedFraction * 2.5f).coerceIn(0f, 1f)
+            val badgeScale = androidx.compose.ui.util.lerp(1f, 0.82f, collapsedFraction)
+
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(titleSpacing)
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(15.dp),
+                        shape = RoundedCornerShape(logoCorner),
                         color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(46.dp)
+                        modifier = Modifier.size(logoBoxSize)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             AuraLogoIcon(
-                                modifier = Modifier.size(width = 25.dp, height = 30.dp),
+                                modifier = Modifier.size(width = logoWidth, height = logoHeight),
                                 bookColor = MaterialTheme.colorScheme.primary,
                                 lineColor = MaterialTheme.colorScheme.primaryContainer
                             )
@@ -183,28 +194,32 @@ AnimatedContent(
                         text = strings.appName,
                         fontFamily = marcellusFamily,
                         style = MaterialTheme.typography.headlineMedium.copy(
-                            fontSize = 28.sp,
-                            letterSpacing = 0.6.sp
+                            fontSize = titleFontSize,
+                            letterSpacing = androidx.compose.ui.unit.lerp(0.6.sp, 0.2.sp, collapsedFraction)
                         )
                     )
 
                     if (holidaySeason != HolidaySeason.NONE) {
                         SeasonalHeaderBadge(
                             holidaySeason = holidaySeason,
-                            onClick = onHolidayBadgeClick
+                            onClick = onHolidayBadgeClick,
+                            scale = badgeScale
                         )
                     }
                 }
 
-                if (holidaySeason != HolidaySeason.NONE) {
+                if (holidaySeason != HolidaySeason.NONE && greetingAlpha > 0.05f) {
                     Text(
                         text = holidaySeason.greetingText,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = holidaySeason.primaryAccent,
+                        color = holidaySeason.primaryAccent.copy(alpha = greetingAlpha),
                         letterSpacing = 0.2.sp,
                         maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.graphicsLayer {
+                            alpha = greetingAlpha
+                        }
                     )
                 }
             }
@@ -245,7 +260,8 @@ AnimatedContent(
 @Composable
 private fun SeasonalHeaderBadge(
     holidaySeason: HolidaySeason,
-    onClick: (Offset) -> Unit
+    onClick: (Offset) -> Unit,
+    scale: Float = 1f
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "holidayBadge")
     val offsetY by infiniteTransition.animateFloat(
@@ -283,7 +299,11 @@ private fun SeasonalHeaderBadge(
                 onClick(center)
             }
             .offset(y = offsetY.dp)
-            .graphicsLayer { rotationZ = rotation }
+            .graphicsLayer {
+                rotationZ = rotation
+                scaleX = scale
+                scaleY = scale
+            }
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),

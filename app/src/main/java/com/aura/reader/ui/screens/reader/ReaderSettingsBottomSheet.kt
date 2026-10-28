@@ -2,6 +2,8 @@ package com.aura.reader.ui.screens.reader
 
 import com.aura.reader.ui.components.jellyOverscroll
 import com.aura.reader.ui.components.sheetScrollIsolation
+import com.aura.reader.ui.components.SyncBottomSheetSystemBars
+import androidx.compose.foundation.layout.statusBarsPadding
 
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -267,14 +269,20 @@ fun ReaderSettingsBottomSheet(
         containerColor = sheetBgColor,
         scrimColor = Color.Black.copy(alpha = if (isGlass) 0.70f else 0.50f),
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        modifier = if (isGlass) {
-            Modifier.border(
-                width = 0.6.dp,
-                color = sheetBorderColor,
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        modifier = Modifier
+            .statusBarsPadding()
+            .padding(top = 24.dp)
+            .then(
+                if (isGlass) {
+                    Modifier.border(
+                        width = 0.6.dp,
+                        color = sheetBorderColor,
+                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                    )
+                } else Modifier
             )
-        } else Modifier
     ) {
+        SyncBottomSheetSystemBars(isThemeDark = isThemeDark)
         val contentScrollState = rememberScrollState()
         Box(
             modifier = Modifier

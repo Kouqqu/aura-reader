@@ -201,21 +201,6 @@ fun BoxScope.ReaderTopBar(
                         }
 
                         val currentBook = book
-                        val sharedTransitionScope = com.aura.reader.ui.navigation.LocalSharedTransitionScope.current
-                        val animatedVisibilityScope = com.aura.reader.ui.navigation.LocalNavAnimatedVisibilityScope.current
-                        val coverSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && currentBook != null) {
-                            with(sharedTransitionScope) {
-                                Modifier.sharedElement(
-                                    sharedContentState = rememberSharedContentState(key = "book_cover_${currentBook.id}"),
-                                    animatedVisibilityScope = animatedVisibilityScope,
-                                    boundsTransform = { _, _ ->
-                                        tween(durationMillis = 350, easing = FastOutSlowInEasing)
-                                    },
-                                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(6.dp))
-                                )
-                            }
-                        } else Modifier
-
                         val topBarCoverBitmap = remember(currentBook?.coverBase64) {
                             currentBook?.coverBase64?.let { base64 ->
                                 try {
@@ -236,7 +221,7 @@ fun BoxScope.ReaderTopBar(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
-                                modifier = coverSharedModifier
+                                modifier = Modifier
                                     .size(width = 28.dp, height = 40.dp)
                                     .clip(RoundedCornerShape(6.dp))
                                     .background(MaterialTheme.colorScheme.primaryContainer),

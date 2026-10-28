@@ -1,6 +1,8 @@
 package com.aura.reader.ui.components
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -201,3 +203,48 @@ fun Modifier.jellyOverscroll(
 fun Modifier.sheetScrollIsolation(
     isAtTop: () -> Boolean = { true }
 ): Modifier = this
+
+/**
+ * Synchronizes the status bar appearance and ensures transparent edge-to-edge
+ * for ModalBottomSheet dialogs and the hosting activity window.
+ */
+@Composable
+fun SyncBottomSheetSystemBars(
+    isThemeDark: Boolean = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+) {
+    val view = LocalView.current
+    androidx.compose.runtime.DisposableEffect(view, isThemeDark) {
+        fun findDialogWindow(v: android.view.View): android.view.Window? {
+            var curr: android.view.ViewParent? = v.parent
+            while (curr != null) {
+                if (curr is androidx.compose.ui.window.DialogWindowProvider) {
+                    return curr.window
+                }
+                curr = curr.parent
+            }
+            return null
+        }
+
+        val dialogWindow = findDialogWindow(view)
+        if (dialogWindow != null) {
+            dialogWindow.statusBarColor = android.graphics.Color.TRANSPARENT
+            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(dialogWindow, false)
+            val insetsController = androidx.core.view.WindowCompat.getInsetsController(dialogWindow, dialogWindow.decorView)
+            insetsController.isAppearanceLightStatusBars = !isThemeDark
+        }
+
+        val activityWindow = (view.context as? android.app.Activity)?.window
+        if (activityWindow != null) {
+            val insetsController = androidx.core.view.WindowCompat.getInsetsController(activityWindow, activityWindow.decorView)
+            insetsController.isAppearanceLightStatusBars = !isThemeDark
+        }
+
+        onDispose {
+            val actWindow = (view.context as? android.app.Activity)?.window
+            if (actWindow != null) {
+                val insetsController = androidx.core.view.WindowCompat.getInsetsController(actWindow, actWindow.decorView)
+                insetsController.isAppearanceLightStatusBars = !isThemeDark
+            }
+        }
+    }
+}

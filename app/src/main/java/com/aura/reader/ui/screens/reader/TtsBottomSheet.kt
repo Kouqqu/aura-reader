@@ -1,5 +1,7 @@
 package com.aura.reader.ui.screens.reader
 
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.aura.reader.ui.components.SyncBottomSheetSystemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.heightIn
@@ -114,8 +116,12 @@ fun TtsBottomSheet(
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier
+            .statusBarsPadding()
+            .padding(top = 24.dp)
     ) {
+        SyncBottomSheetSystemBars()
         Column(
             modifier = Modifier
                 .fillMaxWidth()

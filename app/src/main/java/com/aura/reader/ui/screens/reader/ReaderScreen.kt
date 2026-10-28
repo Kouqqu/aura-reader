@@ -213,10 +213,11 @@ fun ReaderScreen(
     val view = LocalView.current
     val window = remember(view) { (view.context as? Activity)?.window }
 
-    DisposableEffect(showControls, window) {
+    DisposableEffect(showControls, isThemeDark, window) {
         if (window != null) {
             val insetsController = WindowCompat.getInsetsController(window, window.decorView)
             insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            insetsController.isAppearanceLightStatusBars = !isThemeDark
             if (showControls) {
                 insetsController.show(WindowInsetsCompat.Type.statusBars())
             } else {
@@ -298,9 +299,13 @@ fun ReaderScreen(
         }
     }
 
-    BackHandler(enabled = selectedQuoteCopyAction != null) {
-        selectionResetKey++
-        customTextToolbar.hide()
+    BackHandler(enabled = true) {
+        if (selectedQuoteCopyAction != null) {
+            selectionResetKey++
+            customTextToolbar.hide()
+        } else {
+            onNavigateBack()
+        }
     }
 
     fun currentSelectionText(): String? {

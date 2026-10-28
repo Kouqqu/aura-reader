@@ -1,5 +1,7 @@
 package com.aura.reader.ui.screens.reader
 
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.aura.reader.ui.components.SyncBottomSheetSystemBars
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -80,8 +82,12 @@ fun SaveQuoteBottomSheet(
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier
+            .statusBarsPadding()
+            .padding(top = 24.dp)
     ) {
+        SyncBottomSheetSystemBars()
         Column(
             modifier = Modifier
                 .fillMaxWidth()

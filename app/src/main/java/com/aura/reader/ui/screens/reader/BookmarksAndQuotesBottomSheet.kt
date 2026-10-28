@@ -1,5 +1,7 @@
 package com.aura.reader.ui.screens.reader
 
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.aura.reader.ui.components.SyncBottomSheetSystemBars
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -81,8 +83,12 @@ fun BookmarksAndQuotesBottomSheet(
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier
+            .statusBarsPadding()
+            .padding(top = 24.dp)
     ) {
+        SyncBottomSheetSystemBars()
         Column(
             modifier = Modifier
                 .fillMaxWidth()

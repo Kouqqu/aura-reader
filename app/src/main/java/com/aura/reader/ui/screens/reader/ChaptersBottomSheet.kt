@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.aura.reader.ui.components.SyncBottomSheetSystemBars
 import com.aura.reader.ui.components.jellyOverscroll
 import com.aura.reader.ui.components.sheetScrollIsolation
 import com.aura.reader.data.model.Chapter
@@ -45,8 +47,12 @@ fun ChaptersBottomSheet(
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier
+            .statusBarsPadding()
+            .padding(top = 24.dp)
     ) {
+        SyncBottomSheetSystemBars()
         Column(
             modifier = Modifier
                 .fillMaxWidth()
