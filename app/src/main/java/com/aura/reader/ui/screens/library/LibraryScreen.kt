@@ -731,7 +731,7 @@ fun LibraryScreen(
                                             val currentHeroBook = recentBooks.firstOrNull()
                                             val showHeroCard = currentHeroBook != null &&
                                                     searchQuery.isBlank() &&
-                                                    activeCollectionFilter.type == CollectionFilterType.ALL &&
+                                                    (activeCollectionFilter.type == CollectionFilterType.ALL || activeCollectionFilter.type == CollectionFilterType.READING) &&
                                                     librarySortOrder != LibrarySortOption.CUSTOM &&
                                                     !isReorderMode
 

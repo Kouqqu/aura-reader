@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aura.reader.ui.components.jellyOverscroll
 import com.aura.reader.data.model.BlockType
 import com.aura.reader.data.model.Chapter
 import com.aura.reader.data.model.FormattedBlock
@@ -84,7 +85,8 @@ fun ChapterContentView(
     onUpdateProgress: (Int, Int, Int, Int, Boolean) -> Unit,
     ttsState: com.aura.reader.service.TtsState = com.aura.reader.service.TtsState(),
     isTtsHighlightActive: Boolean = false,
-    onSelectionTextChange: (String) -> Unit = {}
+    onSelectionTextChange: (String) -> Unit = {},
+    onBookFinished: () -> Unit = {}
 ) {
     val selectionState = rememberSelectionState()
 
@@ -126,7 +128,11 @@ fun ChapterContentView(
             snapshotFlow { Triple(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset,
                 listState.layoutInfo.totalItemsCount > 0 && !listState.canScrollForward) }
                 .collect { (index, pixel, atEnd) ->
-                    if (blocks.isNotEmpty()) onUpdateProgress(index, blocks.size, 0, pixel, atEnd && pageIndex == chaptersCount - 1)
+                    if (blocks.isNotEmpty()) {
+                        val isLast = atEnd && pageIndex == chaptersCount - 1
+                        onUpdateProgress(index, blocks.size, 0, pixel, isLast)
+                        if (isLast) onBookFinished()
+                    }
                 }
         }
 

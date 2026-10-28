@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Image
@@ -379,12 +380,22 @@ fun BookCard(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
                         )
-                        Text(
-                            text = "${book.progressPercent}%",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (book.progressPercent >= 100) {
+                                Icon(
+                                    imageVector = Icons.Rounded.EmojiEvents,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFB300),
+                                    modifier = Modifier.size(14.dp).padding(end = 3.dp)
+                                )
+                            }
+                            Text(
+                                text = "${book.progressPercent}%",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (book.progressPercent >= 100) Color(0xFFFFB300) else MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -661,13 +672,21 @@ fun BookGridCard(
                                     .background(MaterialTheme.colorScheme.primary, CircleShape)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
+                            if (prog >= 100) {
+                                Icon(
+                                    imageVector = Icons.Rounded.EmojiEvents,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFB300),
+                                    modifier = Modifier.size(13.dp).padding(end = 2.dp)
+                                )
+                            }
                             Text(
                                 text = "$prog%",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold
                                 ),
-                                color = MaterialTheme.colorScheme.primary
+                                color = if (prog >= 100) Color(0xFFFFB300) else MaterialTheme.colorScheme.primary
                             )
                         }
                     }

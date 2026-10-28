@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Delete
@@ -370,12 +371,22 @@ fun CurrentlyReadingHeroCard(
                             trackColor = MaterialTheme.colorScheme.surfaceVariant
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "$progressPercent%",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = primaryAccent
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (progressPercent >= 100) {
+                                Icon(
+                                    imageVector = Icons.Rounded.EmojiEvents,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFB300),
+                                    modifier = Modifier.size(15.dp).padding(end = 3.dp)
+                                )
+                            }
+                            Text(
+                                text = "$progressPercent%",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (progressPercent >= 100) Color(0xFFFFB300) else primaryAccent
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))

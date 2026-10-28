@@ -1,5 +1,9 @@
 package com.aura.reader.ui.screens.reader
 
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.runtime.mutableLongStateOf
+import com.aura.reader.ui.components.PixelFullScreenBurst
+import com.aura.reader.ui.components.triggerThemeHaptic
 import androidx.compose.foundation.BorderStroke
 import com.aura.reader.data.model.ReaderThemeMode
 import androidx.compose.material3.CircularProgressIndicator
@@ -228,6 +232,7 @@ fun ReaderScreen(
     }
 
     var currentPagingPage by remember { mutableIntStateOf(0) }
+    var celebrationTriggerKey by remember { mutableLongStateOf(0L) }
     var totalPagingPages by remember { mutableIntStateOf(1) }
     var requestPagingPage by remember { mutableStateOf<Int?>(null) }
     val coroutineScope = rememberCoroutineScope()
@@ -426,6 +431,8 @@ fun ReaderScreen(
                                     viewModel.updateScrollProgress(blockIdx, totalBlocks, textOffset, pixelOffset, atEnd)
                                 },
                                 onBookFinished = {
+                                    celebrationTriggerKey = System.currentTimeMillis()
+                                    triggerThemeHaptic(context)
                                     if (nextBookInSeries != null) {
                                         showNextInSeriesDialog = true
                                     }
@@ -496,6 +503,13 @@ fun ReaderScreen(
                                     onNextChapter = {
                                         if (pageIndex < chapters.size - 1) {
                                             coroutineScope.launch { pagerState.animateScrollToPage(pageIndex + 1) }
+                                        }
+                                    },
+                                    onBookFinished = {
+                                        celebrationTriggerKey = System.currentTimeMillis()
+                                        triggerThemeHaptic(context)
+                                        if (nextBookInSeries != null) {
+                                            showNextInSeriesDialog = true
                                         }
                                     },
                                     onUpdateProgress = { firstVisible, totalItems, textOffset, pixelOffset, atEnd ->
@@ -577,7 +591,26 @@ fun ReaderScreen(
         )
 
 
-                // Floating TTS Player Bar when active
+                if (celebrationTriggerKey != 0L) {
+                PixelFullScreenBurst(
+                    triggerKey = celebrationTriggerKey,
+                    origin = Offset(
+                        x = context.resources.displayMetrics.widthPixels / 2f,
+                        y = context.resources.displayMetrics.heightPixels / 2.8f
+                    ),
+                    colors = listOf(
+                        Color(0xFFFFD700),
+                        Color(0xFFFF69B4),
+                        Color(0xFF00E5FF),
+                        Color(0xFF76FF03),
+                        Color(0xFFFF9100),
+                        Color(0xFFE040FB)
+                    ),
+                    durationMillis = 2800
+                )
+            }
+
+            // Floating TTS Player Bar when active
                 androidx.compose.animation.AnimatedVisibility(
                     visible = ttsState.isServiceRunning && !showTtsSheet,
                     enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),

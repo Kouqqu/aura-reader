@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aura.reader.ui.components.jellyOverscroll
 import androidx.compose.ui.unit.sp
 import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.ui.components.expressiveClickable

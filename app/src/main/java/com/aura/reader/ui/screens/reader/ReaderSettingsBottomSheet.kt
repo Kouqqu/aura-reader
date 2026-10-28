@@ -1,6 +1,7 @@
 package com.aura.reader.ui.screens.reader
 
 import com.aura.reader.ui.components.jellyOverscroll
+import com.aura.reader.ui.components.sheetScrollIsolation
 
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -109,7 +110,7 @@ fun ReaderSettingsBottomSheet(
     onFontNameChange: (String) -> Unit = {},
     onResetReadingSpeed: (() -> Unit)? = null
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val strings = LocalAppStrings.current
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
@@ -282,6 +283,7 @@ fun ReaderSettingsBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .sheetScrollIsolation()
                     .jellyOverscroll()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp)

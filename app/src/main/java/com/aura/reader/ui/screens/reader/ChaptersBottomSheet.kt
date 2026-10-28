@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aura.reader.ui.components.jellyOverscroll
+import com.aura.reader.ui.components.sheetScrollIsolation
 import com.aura.reader.data.model.Chapter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +36,7 @@ fun ChaptersBottomSheet(
     onChapterSelected: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -59,6 +60,7 @@ fun ChaptersBottomSheet(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .sheetScrollIsolation()
                     .jellyOverscroll()
                     .weight(1f, fill = false),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)

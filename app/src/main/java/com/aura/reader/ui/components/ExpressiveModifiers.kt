@@ -101,9 +101,9 @@ fun Modifier.expressiveClickable(
  */
 fun Modifier.jellyOverscroll(
     enabled: Boolean = true,
-    dampingRatio: Float = Spring.DampingRatioMediumBouncy,
-    stiffness: Float = Spring.StiffnessLow,
-    maxOverscroll: Float = 120f
+    dampingRatio: Float = 0.92f,
+    stiffness: Float = Spring.StiffnessMediumLow,
+    maxOverscroll: Float = 36f
 ): Modifier = composed {
     if (!enabled) return@composed this
 
@@ -116,11 +116,7 @@ fun Modifier.jellyOverscroll(
                 val current = offsetY.value
                 if (current != 0f) {
                     if ((current > 0f && available.y < 0f) || (current < 0f && available.y > 0f)) {
-                        val consumed = if (abs(available.y) >= abs(current)) {
-                            -current
-                        } else {
-                            available.y
-                        }
+                        val consumed = if (abs(available.y) >= abs(current)) -current else available.y
                         coroutineScope.launch {
                             offsetY.snapTo(current + consumed)
                         }
@@ -137,12 +133,11 @@ fun Modifier.jellyOverscroll(
             ): Offset {
                 if (available.y != 0f && source == NestedScrollSource.UserInput) {
                     val current = offsetY.value
-                    val resistance = (1f - (abs(current) / (maxOverscroll * 2.2f)).coerceIn(0f, 0.85f)) * 0.35f
+                    val resistance = (1f - (abs(current) / (maxOverscroll * 1.5f)).coerceIn(0f, 0.9f)) * 0.16f
                     val newOffset = (current + available.y * resistance).coerceIn(-maxOverscroll, maxOverscroll)
                     coroutineScope.launch {
                         offsetY.snapTo(newOffset)
                     }
-                    return Offset(0f, available.y)
                 }
                 return Offset.Zero
             }
@@ -152,9 +147,8 @@ fun Modifier.jellyOverscroll(
                     offsetY.animateTo(
                         targetValue = 0f,
                         animationSpec = spring(dampingRatio = dampingRatio, stiffness = stiffness),
-                        initialVelocity = available.y * 0.25f
+                        initialVelocity = available.y * 0.15f
                     )
-                    return available
                 }
                 return Velocity.Zero
             }
@@ -162,16 +156,15 @@ fun Modifier.jellyOverscroll(
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
                 val current = offsetY.value
                 if (available.y != 0f || current != 0f) {
-                    val bounceImpulse = (available.y * 0.10f).coerceIn(-maxOverscroll, maxOverscroll)
+                    val bounceImpulse = (available.y * 0.035f).coerceIn(-maxOverscroll * 0.6f, maxOverscroll * 0.6f)
                     if (bounceImpulse != 0f && current == 0f) {
                         offsetY.snapTo(bounceImpulse)
                     }
                     offsetY.animateTo(
                         targetValue = 0f,
                         animationSpec = spring(dampingRatio = dampingRatio, stiffness = stiffness),
-                        initialVelocity = available.y * 0.3f
+                        initialVelocity = available.y * 0.18f
                     )
-                    return available
                 }
                 return Velocity.Zero
             }
@@ -183,4 +176,29 @@ fun Modifier.jellyOverscroll(
         .graphicsLayer {
             translationY = offsetY.value
         }
+}
+
+/**
+ * Isolates nested scrolling so that rapid flicking or scrolling inside a BottomSheet
+ * does not accidentally trigger sheet collapse or jitter.
+ */
+fun Modifier.sheetScrollIsolation(): Modifier = composed {
+    val connection = remember {
+        object : NestedScrollConnection {
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                // Absorb leftover delta when list hits boundaries so parent sheet doesn't dismiss accidentally
+                return available
+            }
+
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                // Absorb leftover fling velocity so user fling doesn't dismiss the sheet
+                return available
+            }
+        }
+    }
+    this.nestedScroll(connection)
 }
