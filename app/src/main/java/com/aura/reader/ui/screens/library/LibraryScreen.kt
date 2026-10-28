@@ -146,10 +146,19 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.Book
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import com.aura.reader.data.model.HolidaySeason
+import com.aura.reader.data.model.LocalHolidaySeason
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -229,6 +238,7 @@ fun LibraryScreen(
     val appFont by viewModel.appFont.collectAsState()
     val seasonalEffectsEnabled by viewModel.seasonalEffectsEnabled.collectAsState()
     val holidayOverride by viewModel.holidayOverride.collectAsState()
+    val holidaySeason = LocalHolidaySeason.current
 
     var holidayBurstKey by remember { mutableLongStateOf(0L) }
     var holidayBurstOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -764,6 +774,20 @@ fun LibraryScreen(
                                                 filteredRecentBooks
                                             }
 
+                                            if (holidaySeason != HolidaySeason.NONE && searchQuery.isBlank() && !isReorderMode) {
+                                                item(key = "festive_greeting_banner", span = { GridItemSpan(maxLineSpan) }) {
+                                                    FestiveGreetingBanner(
+                                                        holidaySeason = holidaySeason,
+                                                        onClick = { origin ->
+                                                            holidayBurstKey = System.currentTimeMillis()
+                                                            holidayBurstOrigin = origin
+                                                            triggerThemeHaptic(context)
+                                                        },
+                                                        modifier = Modifier.padding(bottom = 10.dp)
+                                                    )
+                                                }
+                                            }
+
                                             if (showHeroCard && currentHeroBook != null) {
                                                 item(key = "currently_reading_hero", span = { GridItemSpan(maxLineSpan) }) {
                                                     CurrentlyReadingHeroCard(
@@ -1273,6 +1297,87 @@ fun LibraryScreen(
             durationMillis = 2600
         )
     }
+    }
+}
+
+@Composable
+private fun FestiveGreetingBanner(
+    holidaySeason: HolidaySeason,
+    onClick: (Offset) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var bannerCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val isDark = isSystemInDarkTheme()
+
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = holidaySeason.primaryAccent.copy(alpha = if (isDark) 0.16f else 0.10f),
+        border = BorderStroke(1.dp, holidaySeason.primaryAccent.copy(alpha = if (isDark) 0.38f else 0.25f)),
+        modifier = modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { bannerCoordinates = it }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                val center = bannerCoordinates?.boundsInRoot()?.center ?: Offset.Zero
+                onClick(center)
+            }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = holidaySeason.primaryAccent.copy(alpha = 0.22f),
+                    modifier = Modifier.size(42.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = holidaySeason.iconEmoji,
+                            fontSize = 22.sp
+                        )
+                    }
+                }
+                Column {
+                    Text(
+                        text = holidaySeason.badgeText,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = holidaySeason.primaryAccent,
+                        letterSpacing = 0.5.sp
+                    )
+                    Text(
+                        text = holidaySeason.greetingText,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            Surface(
+                shape = CircleShape,
+                color = holidaySeason.primaryAccent.copy(alpha = 0.18f),
+                modifier = Modifier.size(34.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "✨",
+                        fontSize = 15.sp
+                    )
+                }
+            }
+        }
     }
 }
 

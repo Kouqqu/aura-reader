@@ -23,6 +23,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -158,38 +159,52 @@ AnimatedContent(
     } else {
         LargeTopAppBar(
         title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(15.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(46.dp)
+            val holidaySeason = LocalHolidaySeason.current
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        AuraLogoIcon(
-                            modifier = Modifier.size(width = 25.dp, height = 30.dp),
-                            bookColor = MaterialTheme.colorScheme.primary,
-                            lineColor = MaterialTheme.colorScheme.primaryContainer
+                    Surface(
+                        shape = RoundedCornerShape(15.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(46.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            AuraLogoIcon(
+                                modifier = Modifier.size(width = 25.dp, height = 30.dp),
+                                bookColor = MaterialTheme.colorScheme.primary,
+                                lineColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        }
+                    }
+                    val marcellusFamily = remember { androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.aura.reader.R.font.marcellus_regular)) }
+                    Text(
+                        text = strings.appName,
+                        fontFamily = marcellusFamily,
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontSize = 28.sp,
+                            letterSpacing = 0.6.sp
+                        )
+                    )
+
+                    if (holidaySeason != HolidaySeason.NONE) {
+                        SeasonalHeaderBadge(
+                            holidaySeason = holidaySeason,
+                            onClick = onHolidayBadgeClick
                         )
                     }
                 }
-                val marcellusFamily = remember { androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.aura.reader.R.font.marcellus_regular)) }
-                Text(
-                    text = strings.appName,
-                    fontFamily = marcellusFamily,
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontSize = 28.sp,
-                        letterSpacing = 0.6.sp
-                    )
-                )
 
-                val holidaySeason = LocalHolidaySeason.current
                 if (holidaySeason != HolidaySeason.NONE) {
-                    SeasonalHeaderBadge(
-                        holidaySeason = holidaySeason,
-                        onClick = onHolidayBadgeClick
+                    Text(
+                        text = holidaySeason.greetingText,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = holidaySeason.primaryAccent,
+                        letterSpacing = 0.2.sp,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 }
             }

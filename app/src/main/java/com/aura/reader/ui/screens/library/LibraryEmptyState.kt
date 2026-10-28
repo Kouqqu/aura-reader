@@ -26,12 +26,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.Book
 
 @Composable
@@ -65,6 +67,30 @@ fun EmptyLibraryView(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        val holidaySeason = com.aura.reader.data.model.LocalHolidaySeason.current
+        if (holidaySeason != com.aura.reader.data.model.HolidaySeason.NONE) {
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = holidaySeason.primaryAccent.copy(alpha = 0.16f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, holidaySeason.primaryAccent.copy(alpha = 0.35f)),
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                androidx.compose.foundation.layout.Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(text = holidaySeason.iconEmoji, fontSize = 20.sp)
+                    Text(
+                        text = holidaySeason.greetingText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = holidaySeason.primaryAccent
+                    )
+                }
+            }
+        }
 
         Text(
             text = strings.emptyLibraryTitle,
