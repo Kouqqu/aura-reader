@@ -1005,6 +1005,7 @@ class PreferencesManager(private val context: Context) {
                 val item = arr.getString(i)
                 if (item != name) newArr.put(item)
             }
+            prefs[USER_COLLECTIONS_KEY] = newArr.toString()
         }
     }
 

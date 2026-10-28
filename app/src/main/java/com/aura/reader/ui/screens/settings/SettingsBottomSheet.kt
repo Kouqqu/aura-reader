@@ -409,7 +409,7 @@ fun SettingsBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .sheetScrollIsolation(isAtTop = { settingsScrollState.value == 0 })
+                    .jellyOverscroll(allowTopBounce = isFullScreen)
                     .padding(horizontal = 20.dp)
                     .verticalScroll(settingsScrollState)
             ) {

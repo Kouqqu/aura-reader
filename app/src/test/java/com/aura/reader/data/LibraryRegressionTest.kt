@@ -5,6 +5,7 @@ import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.repository.BookRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
@@ -123,6 +124,23 @@ class LibraryRegressionTest {
         assertEquals("UNREAD", reopened.manualShelf)
         assertTrue(reopened.isFavorite)
         assertEquals(listOf("Sci-Fi"), reopened.collections)
+    }
+
+    @Test fun userCollectionsCanBeAddedAndRemoved() = runBlocking {
+        val prefs = PreferencesManager(context)
+        prefs.saveRecentBooksJson("[]")
+        val repo = BookRepository(context, prefs)
+        repo.addUserCollection("Fantasy")
+        repo.addUserCollection("Mystery")
+
+        var collections = repo.userCollections.first()
+        assertTrue(collections.contains("Fantasy"))
+        assertTrue(collections.contains("Mystery"))
+
+        repo.removeUserCollection("Fantasy")
+        collections = repo.userCollections.first()
+        assertFalse(collections.contains("Fantasy"))
+        assertTrue(collections.contains("Mystery"))
     }
 
 }

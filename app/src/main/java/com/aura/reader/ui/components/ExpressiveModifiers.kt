@@ -101,6 +101,8 @@ fun Modifier.expressiveClickable(
  */
 fun Modifier.jellyOverscroll(
     enabled: Boolean = true,
+    allowTopBounce: Boolean = true,
+    allowBottomBounce: Boolean = true,
     dampingRatio: Float = 0.98f,
     stiffness: Float = Spring.StiffnessMediumLow,
     maxOverscroll: Float = 72f
@@ -110,7 +112,7 @@ fun Modifier.jellyOverscroll(
     val coroutineScope = rememberCoroutineScope()
     val offsetY = remember { Animatable(0f) }
 
-    val connection = remember(dampingRatio, stiffness, maxOverscroll) {
+    val connection = remember(allowTopBounce, allowBottomBounce, dampingRatio, stiffness, maxOverscroll) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 val current = offsetY.value
@@ -132,6 +134,9 @@ fun Modifier.jellyOverscroll(
                 source: NestedScrollSource
             ): Offset {
                 if (available.y != 0f && source == NestedScrollSource.UserInput) {
+                    if (available.y > 0f && !allowTopBounce) return Offset.Zero
+                    if (available.y < 0f && !allowBottomBounce) return Offset.Zero
+
                     val current = offsetY.value
                     val resistance = (1f - (abs(current) / (maxOverscroll * 1.3f)).coerceIn(0f, 0.85f)) * 0.28f
                     val newOffset = (current + available.y * resistance).coerceIn(-maxOverscroll, maxOverscroll)
@@ -155,7 +160,8 @@ fun Modifier.jellyOverscroll(
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
                 val current = offsetY.value
-                if (available.y != 0f || current != 0f) {
+                val allowBounce = if (available.y > 0f) allowTopBounce else allowBottomBounce
+                if (allowBounce && (available.y != 0f || current != 0f)) {
                     val bounceImpulse = (available.y * 0.055f).coerceIn(-maxOverscroll * 0.75f, maxOverscroll * 0.75f)
                     if (bounceImpulse != 0f && current == 0f) {
                         offsetY.snapTo(bounceImpulse)
@@ -165,6 +171,16 @@ fun Modifier.jellyOverscroll(
                         animationSpec = spring(dampingRatio = dampingRatio, stiffness = stiffness),
                         initialVelocity = available.y * 0.14f
                     )
+                    return Velocity.Zero
+                } else if (current != 0f) {
+                    offsetY.animateTo(
+                        targetValue = 0f,
+                        animationSpec = spring(dampingRatio = dampingRatio, stiffness = stiffness)
+                    )
+                    return Velocity.Zero
+                }
+                if (!allowTopBounce && available.y > 0f) {
+                    return available
                 }
                 return Velocity.Zero
             }
@@ -179,32 +195,8 @@ fun Modifier.jellyOverscroll(
 }
 
 /**
- * Protects BottomSheet scroll content from accidental fling collapses while ensuring
- * that a user can swipe down from anywhere on the sheet to dismiss it once scrolled to the top.
+ * Backward-compatibility wrapper for bottom sheets.
  */
 fun Modifier.sheetScrollIsolation(
     isAtTop: () -> Boolean = { true }
-): Modifier = composed {
-    val connection = remember(isAtTop) {
-        object : NestedScrollConnection {
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource
-            ): Offset {
-                // If user is actively dragging down at the top, pass to ModalBottomSheet to dismiss smoothly from anywhere
-                if (available.y > 0f && isAtTop()) {
-                    return Offset.Zero
-                }
-                // Absorb leftover delta when hitting bottom or upward scroll so sheet doesn't jitter
-                return available
-            }
-
-            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                // Absorb leftover fling velocity so rapid scroll to the top doesn't accidentally slam the sheet shut
-                return available
-            }
-        }
-    }
-    this.nestedScroll(connection)
-}
+): Modifier = this

@@ -284,7 +284,7 @@ fun ReaderSettingsBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .sheetScrollIsolation(isAtTop = { contentScrollState.value == 0 })
+                    .jellyOverscroll(allowTopBounce = false)
                     .verticalScroll(contentScrollState)
                     .padding(horizontal = 24.dp)
                     .padding(bottom = 32.dp)

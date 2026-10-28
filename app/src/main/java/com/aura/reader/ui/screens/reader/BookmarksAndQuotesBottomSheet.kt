@@ -152,7 +152,8 @@ fun BookmarksAndQuotesBottomSheet(
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(380.dp),
+                                .height(380.dp)
+                                .jellyOverscroll(allowTopBounce = false),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             items(bookBookmarks, key = { it.id }) { bm ->
@@ -260,7 +261,8 @@ fun BookmarksAndQuotesBottomSheet(
                             LazyColumn(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .weight(1f),
+                                    .weight(1f)
+                                    .jellyOverscroll(allowTopBounce = false),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 items(bookQuotes, key = { it.id }) { quote ->

@@ -332,7 +332,9 @@ fun CoverSearchBottomSheet(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                         contentPadding = PaddingValues(bottom = 8.dp),
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .jellyOverscroll(allowTopBounce = false)
                     ) {
                         items(covers, key = { it.highResUrl }) { cover ->
                             val isSelected = selectedCover?.highResUrl == cover.highResUrl

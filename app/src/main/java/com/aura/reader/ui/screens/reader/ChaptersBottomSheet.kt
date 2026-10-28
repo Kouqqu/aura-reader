@@ -63,7 +63,7 @@ fun ChaptersBottomSheet(
                 state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .sheetScrollIsolation(isAtTop = { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 })
+                    .jellyOverscroll(allowTopBounce = false)
                     .weight(1f, fill = false),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {

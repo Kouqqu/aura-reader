@@ -619,7 +619,24 @@ class BookRepository(
 
     val userCollections = preferencesManager.userCollections
     suspend fun addUserCollection(name: String) = preferencesManager.addUserCollection(name)
-    suspend fun removeUserCollection(name: String) = preferencesManager.removeUserCollection(name)
+    suspend fun removeUserCollection(name: String) = withLibraryLock {
+        preferencesManager.removeUserCollection(name)
+        val currentList = _recentBooks.value.toMutableList()
+        var changed = false
+        for (i in currentList.indices) {
+            val book = currentList[i]
+            if (book.collections.contains(name)) {
+                currentList[i] = book.copy(collections = book.collections.filter { it != name })
+                changed = true
+            }
+        }
+        if (changed) {
+            saveRecentBooks(currentList)
+            if (_currentBook.value?.collections?.contains(name) == true) {
+                _currentBook.value = _currentBook.value?.let { it.copy(collections = it.collections.filter { c -> c != name }) }
+            }
+        }
+    }
 
     suspend fun toggleFavorite(bookId: String) = withLibraryLock {
         val currentList = _recentBooks.value.toMutableList()
