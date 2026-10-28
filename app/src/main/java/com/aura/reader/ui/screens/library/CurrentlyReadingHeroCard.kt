@@ -377,35 +377,6 @@ fun CurrentlyReadingHeroCard(
                         modifier = Modifier.padding(top = 2.dp)
                     )
 
-                    if (isFestive) {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = primaryAccent.copy(alpha = if (isDark) 0.18f else 0.12f),
-                            modifier = Modifier.padding(top = 6.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = holidaySeason.iconEmoji,
-                                    fontSize = 11.sp
-                                )
-                                Text(
-                                    text = holidaySeason.greetingText,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = primaryAccent,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-                    }
-
                     Spacer(modifier = Modifier.height(10.dp))
 
                     // Progress bar + percentage

@@ -102,6 +102,7 @@ class PreferencesManager(private val context: Context) {
         val TTS_WORD_HIGHLIGHT_KEY = booleanPreferencesKey("tts_word_highlight_enabled")
         val SEASONAL_EFFECTS_ENABLED_KEY = booleanPreferencesKey("seasonal_effects_enabled")
         val HOLIDAY_OVERRIDE_KEY = stringPreferencesKey("holiday_season_override")
+        val LAST_HOLIDAY_SOUND_SEASON_KEY = stringPreferencesKey("last_holiday_sound_season")
     }
 
         val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -1050,6 +1051,16 @@ class PreferencesManager(private val context: Context) {
     suspend fun setHolidayOverride(override: String) {
         context.dataStore.edit { prefs ->
             prefs[HOLIDAY_OVERRIDE_KEY] = override
+        }
+    }
+
+    val lastHolidaySoundSeason: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[LAST_HOLIDAY_SOUND_SEASON_KEY] ?: ""
+    }
+
+    suspend fun setLastHolidaySoundSeason(seasonId: String) {
+        context.dataStore.edit { prefs ->
+            prefs[LAST_HOLIDAY_SOUND_SEASON_KEY] = seasonId
         }
     }
 

@@ -239,9 +239,27 @@ fun LibraryScreen(
     val seasonalEffectsEnabled by viewModel.seasonalEffectsEnabled.collectAsState()
     val holidayOverride by viewModel.holidayOverride.collectAsState()
     val holidaySeason = LocalHolidaySeason.current
+    val lastHolidaySoundSeason by viewModel.lastHolidaySoundSeason.collectAsState()
 
     var holidayBurstKey by remember { mutableLongStateOf(0L) }
     var holidayBurstOrigin by remember { mutableStateOf(Offset.Zero) }
+
+    androidx.compose.runtime.LaunchedEffect(holidaySeason, seasonalEffectsEnabled, lastHolidaySoundSeason) {
+        if (seasonalEffectsEnabled && holidaySeason != HolidaySeason.NONE) {
+            val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+            val seasonKey = "${holidaySeason.id}_$currentYear"
+            if (lastHolidaySoundSeason != seasonKey) {
+                viewModel.markHolidaySoundPlayed(seasonKey)
+                com.aura.reader.util.HolidaySoundPlayer.playHolidaySound(context, holidaySeason)
+            }
+        }
+    }
+
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose {
+            com.aura.reader.util.HolidaySoundPlayer.stop()
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -465,6 +483,7 @@ fun LibraryScreen(
                         holidayBurstKey = System.currentTimeMillis()
                         holidayBurstOrigin = origin
                         triggerThemeHaptic(context)
+                        com.aura.reader.util.HolidaySoundPlayer.playHolidaySound(context, holidaySeason)
                     }
                 )
             }
@@ -772,20 +791,6 @@ fun LibraryScreen(
                                                 filteredRecentBooks.filter { it.id != currentHeroBook.id }
                                             } else {
                                                 filteredRecentBooks
-                                            }
-
-                                            if (holidaySeason != HolidaySeason.NONE && searchQuery.isBlank() && !isReorderMode) {
-                                                item(key = "festive_greeting_banner", span = { GridItemSpan(maxLineSpan) }) {
-                                                    FestiveGreetingBanner(
-                                                        holidaySeason = holidaySeason,
-                                                        onClick = { origin ->
-                                                            holidayBurstKey = System.currentTimeMillis()
-                                                            holidayBurstOrigin = origin
-                                                            triggerThemeHaptic(context)
-                                                        },
-                                                        modifier = Modifier.padding(bottom = 10.dp)
-                                                    )
-                                                }
                                             }
 
                                             if (showHeroCard && currentHeroBook != null) {
@@ -1297,87 +1302,6 @@ fun LibraryScreen(
             durationMillis = 2600
         )
     }
-    }
-}
-
-@Composable
-private fun FestiveGreetingBanner(
-    holidaySeason: HolidaySeason,
-    onClick: (Offset) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var bannerCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    val isDark = isSystemInDarkTheme()
-
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = holidaySeason.primaryAccent.copy(alpha = if (isDark) 0.16f else 0.10f),
-        border = BorderStroke(1.dp, holidaySeason.primaryAccent.copy(alpha = if (isDark) 0.38f else 0.25f)),
-        modifier = modifier
-            .fillMaxWidth()
-            .onGloballyPositioned { bannerCoordinates = it }
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                val center = bannerCoordinates?.boundsInRoot()?.center ?: Offset.Zero
-                onClick(center)
-            }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = holidaySeason.primaryAccent.copy(alpha = 0.22f),
-                    modifier = Modifier.size(42.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = holidaySeason.iconEmoji,
-                            fontSize = 22.sp
-                        )
-                    }
-                }
-                Column {
-                    Text(
-                        text = holidaySeason.badgeText,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = holidaySeason.primaryAccent,
-                        letterSpacing = 0.5.sp
-                    )
-                    Text(
-                        text = holidaySeason.greetingText,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-
-            Surface(
-                shape = CircleShape,
-                color = holidaySeason.primaryAccent.copy(alpha = 0.18f),
-                modifier = Modifier.size(34.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "✨",
-                        fontSize = 15.sp
-                    )
-                }
-            }
-        }
     }
 }
 

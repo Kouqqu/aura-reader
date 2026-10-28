@@ -226,6 +226,13 @@ class LibraryViewModel(
         viewModelScope.launch { preferencesManager.setHolidayOverride(override) }
     }
 
+    val lastHolidaySoundSeason: StateFlow<String> = preferencesManager.lastHolidaySoundSeason
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    fun markHolidaySoundPlayed(seasonId: String) {
+        viewModelScope.launch { preferencesManager.setLastHolidaySoundSeason(seasonId) }
+    }
+
     fun resetReadingStats() {
         viewModelScope.launch { preferencesManager.resetReadingStats() }
     }

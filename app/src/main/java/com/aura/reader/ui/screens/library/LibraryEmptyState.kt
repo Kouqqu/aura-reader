@@ -68,30 +68,6 @@ fun EmptyLibraryView(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        val holidaySeason = com.aura.reader.data.model.LocalHolidaySeason.current
-        if (holidaySeason != com.aura.reader.data.model.HolidaySeason.NONE) {
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = holidaySeason.primaryAccent.copy(alpha = 0.16f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, holidaySeason.primaryAccent.copy(alpha = 0.35f)),
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                androidx.compose.foundation.layout.Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(text = holidaySeason.iconEmoji, fontSize = 20.sp)
-                    Text(
-                        text = holidaySeason.greetingText,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = holidaySeason.primaryAccent
-                    )
-                }
-            }
-        }
-
         Text(
             text = strings.emptyLibraryTitle,
             style = MaterialTheme.typography.headlineSmall,
