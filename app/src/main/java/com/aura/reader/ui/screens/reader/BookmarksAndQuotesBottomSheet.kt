@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.aura.reader.ui.components.jellyOverscroll
 import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.Bookmark
 import com.aura.reader.data.model.Quote
@@ -151,7 +152,8 @@ fun BookmarksAndQuotesBottomSheet(
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(380.dp),
+                                .height(380.dp)
+                                .jellyOverscroll(),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             items(bookBookmarks, key = { it.id }) { bm ->

@@ -36,6 +36,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -255,7 +257,8 @@ fun ParallaxCoverViewer(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
-                .padding(horizontal = 20.dp, vertical = 28.dp),
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 20.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -454,56 +457,17 @@ fun ParallaxCoverViewer(
             }
         }
 
-        // Bottom controls: Download Cover Pill + Parallax Hint
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+        // Bottom parallax hint with safe navigation padding
+        Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 20.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp)
         ) {
-            val hasCover = !coverBase64.isNullOrBlank() || !coverUrl.isNullOrBlank()
-            if (hasCover) {
-                Surface(
-                    onClick = {
-                        com.aura.reader.util.CoverDownloadUtils.saveCoverToGallery(
-                            context = context,
-                            title = title,
-                            coverBase64 = coverBase64,
-                            coverUrl = coverUrl,
-                            strings = strings
-                        )
-                    },
-                    shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.22f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
-                    modifier = Modifier.padding(bottom = 12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Download,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = strings.downloadCover,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-
-            // Hint at the bottom
             Text(
                 text = strings.parallaxCoverHint,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.6f)
+                color = Color.White.copy(alpha = 0.65f)
             )
         }
     }

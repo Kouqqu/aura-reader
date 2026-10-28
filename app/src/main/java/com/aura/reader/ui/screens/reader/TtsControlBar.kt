@@ -69,13 +69,13 @@ fun TtsControlBar(
                 modifier = Modifier
                     .size(32.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Headphones,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -86,8 +86,8 @@ fun TtsControlBar(
                 Text(
                     text = "${strings.ttsNotificationTitle} (${ttsState.currentParagraphIndex + 1}/${ttsState.totalParagraphs.coerceAtLeast(1)})",
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1
                 )
                 Text(
@@ -114,8 +114,8 @@ fun TtsControlBar(
                 onClick = onPlayPause,
                 modifier = Modifier.size(36.dp),
                 colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 )
             ) {
                 Icon(
@@ -150,7 +150,7 @@ fun TtsControlBar(
                     text = "${ttsState.speed}x",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -169,7 +169,7 @@ fun TtsControlBar(
     }
 
     if (isGlass) {
-        val ttsBg = if (isDark) Color(0xE6141824) else Color(0xF2FFFFFF)
+        val ttsBg = if (isDark) Color(0xEB18191E) else Color(0xF2F5F6F8)
         LiquidGlassSurface(
             shape = RoundedCornerShape(18.dp),
             shadowElevation = 8.dp,
@@ -184,10 +184,10 @@ fun TtsControlBar(
         Card(
             shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.98f),
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
                 contentColor = MaterialTheme.colorScheme.onSurface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             modifier = modifier
                 .fillMaxWidth()
                 .clickable { onClick() },

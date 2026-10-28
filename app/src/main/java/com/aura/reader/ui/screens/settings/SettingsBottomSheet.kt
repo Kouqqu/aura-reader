@@ -111,6 +111,7 @@ import com.aura.reader.data.opds.OpdsService
 import com.aura.reader.ui.components.PixelFullScreenBurst
 import com.aura.reader.ui.components.expressiveBounce
 import com.aura.reader.ui.components.expressiveClickable
+import com.aura.reader.ui.components.jellyOverscroll
 import com.aura.reader.ui.theme.AmoledBackground
 import com.aura.reader.ui.theme.AmoledText
 import com.aura.reader.ui.theme.AppLanguage
@@ -174,7 +175,7 @@ fun SettingsBottomSheet(
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
         }.getOrNull() ?: "1.1.9"
     }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var sheetCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var burstOrigin by remember { mutableStateOf(Offset.Zero) }
     var burstColors by remember { mutableStateOf<List<Color>>(emptyList()) }

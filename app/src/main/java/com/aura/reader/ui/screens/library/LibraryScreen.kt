@@ -12,6 +12,7 @@ import com.aura.reader.ui.components.LocalHazeState
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import com.aura.reader.ui.components.expressiveClickable
+import com.aura.reader.ui.components.jellyOverscroll
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.animation.core.rememberInfiniteTransition

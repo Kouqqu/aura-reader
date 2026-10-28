@@ -282,18 +282,17 @@ fun BoxScope.ReaderTopBar(
                             }
                         }
 
-                        // Audio Narration (TTS)
-                        IconButton(onClick = {
-                            if (!ttsState.isServiceRunning) {
-                                viewModel.startTts(context)
+                        // Audio Narration (TTS) - only shown when narration is active
+                        if (ttsState.isServiceRunning) {
+                            IconButton(onClick = {
+                                onOpenTtsSheet()
+                            }) {
+                                Icon(
+                                    imageVector = if (ttsState.isPlaying) Icons.AutoMirrored.Rounded.VolumeUp else Icons.Rounded.Headphones,
+                                    contentDescription = strings.ttsListenAction,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
-                            onOpenTtsSheet()
-                        }) {
-                            Icon(
-                                imageVector = if (ttsState.isPlaying) Icons.AutoMirrored.Rounded.VolumeUp else Icons.Rounded.Headphones,
-                                contentDescription = strings.ttsListenAction,
-                                tint = if (ttsState.isServiceRunning) MaterialTheme.colorScheme.primary else if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
-                            )
                         }
 
                         // Bookmark Toggle Icon
@@ -350,16 +349,7 @@ fun BoxScope.ReaderTopBar(
                                         isSearchActive = true
                                     }
                                 )
-                                DropdownMenuItem(
-                                    text = { Text(strings.shareBookFile) },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.Share, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        book?.let { BookShareUtils.shareBookFile(context, it) }
-                                    }
-                                )
+
                                 DropdownMenuItem(
                                     text = { Text(strings.bookmarksAndQuotes) },
                                     leadingIcon = {

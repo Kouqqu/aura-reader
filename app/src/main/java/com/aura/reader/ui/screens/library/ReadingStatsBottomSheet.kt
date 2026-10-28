@@ -113,13 +113,7 @@ fun ReadingStatsBottomSheet(
         containerColor = sheetBgColor,
         scrimColor = Color.Black.copy(alpha = 0.65f),
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        modifier = if (isLiquidGlass) {
-            Modifier.border(
-                width = 0.6.dp,
-                color = sheetBorderColor,
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-            )
-        } else Modifier
+        modifier = Modifier
     ) {
         Column(
             modifier = Modifier
@@ -210,7 +204,7 @@ fun ReadingStatsBottomSheet(
                 LiquidGlassSurface(
                     shape = RoundedCornerShape(20.dp),
                     isDark = isDark,
-                    shadowElevation = 4.dp,
+                    shadowElevation = 0.dp,
                     tintColor = null,
                     modifier = Modifier.fillMaxWidth(),
                     content = chartContent
@@ -345,7 +339,7 @@ private fun StreakBanner(
         LiquidGlassSurface(
             shape = RoundedCornerShape(20.dp),
             isDark = isDark,
-            shadowElevation = 4.dp,
+            shadowElevation = 0.dp,
             tintColor = null,
             modifier = Modifier.fillMaxWidth(),
             content = bannerContent
@@ -403,7 +397,7 @@ private fun StatCard(
         LiquidGlassSurface(
             shape = RoundedCornerShape(16.dp),
             isDark = isDark,
-            shadowElevation = 4.dp,
+            shadowElevation = 0.dp,
             tintColor = null,
             modifier = modifier,
             content = cardContent

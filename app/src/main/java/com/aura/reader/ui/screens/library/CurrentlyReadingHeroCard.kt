@@ -200,18 +200,39 @@ fun CurrentlyReadingHeroCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = primaryAccent.copy(alpha = 0.18f)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(
-                                text = strings.currentlyReadingBadge,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = primaryAccent,
-                                letterSpacing = 0.08.sp,
-                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = primaryAccent.copy(alpha = 0.18f)
+                            ) {
+                                Text(
+                                    text = strings.currentlyReadingBadge,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = primaryAccent,
+                                    letterSpacing = 0.08.sp,
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                )
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+                            ) {
+                                Text(
+                                    text = book.format.name.uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 9.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
