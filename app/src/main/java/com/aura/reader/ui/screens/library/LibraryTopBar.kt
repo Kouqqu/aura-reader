@@ -47,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.TopAppBarScrollBehavior
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -146,9 +147,14 @@ AnimatedContent(
                         )
                     }
                 }
+                val marcellusFamily = remember { androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.aura.reader.R.font.marcellus_regular)) }
                 Text(
                     text = strings.appName,
-                    fontWeight = FontWeight.Bold
+                    fontFamily = marcellusFamily,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontSize = 23.sp,
+                        letterSpacing = 0.5.sp
+                    )
                 )
             }
         },

@@ -1,4 +1,5 @@
 package com.aura.reader.ui.screens.library
+import androidx.compose.ui.graphics.compositeOver
 
 import androidx.compose.runtime.CompositionLocalProvider
 import com.aura.reader.ui.components.LocalHazeState
@@ -408,7 +409,9 @@ fun LibraryScreen(
 
     CompositionLocalProvider(LocalHazeState provides hazeState) {
         val mainScreenBg = if (isThemeDark && materialYouEnabled && readerSettings.appThemeMode != ReaderThemeMode.AMOLED) {
-            MaterialTheme.colorScheme.surface
+            androidx.compose.ui.graphics.Color(0xFF101216).let { base ->
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.08f).compositeOver(base)
+            }
         } else {
             MaterialTheme.colorScheme.background
         }

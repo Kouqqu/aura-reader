@@ -1,4 +1,5 @@
 package com.aura.reader.ui.screens.library
+import androidx.compose.ui.graphics.compositeOver
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -125,7 +126,10 @@ fun CurrentlyReadingHeroCard(
     val heroBorder = if (isGlass) {
         BorderStroke(
             0.5.dp,
-            if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
+            if (isDark) {
+                if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                else Color.White.copy(alpha = 0.08f)
+            } else Color.Black.copy(alpha = 0.05f)
         )
     } else null
 
@@ -134,7 +138,9 @@ fun CurrentlyReadingHeroCard(
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
                 if (isDark) {
-                    if (isAmoled) Color(0xF2121316) else if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.90f) else Color(0xEE181A20)
+                    if (isAmoled) Color(0xF2121316)
+                    else if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f).compositeOver(Color(0xF014161C))
+                    else Color(0xEE181A20)
                 } else Color(0xF6F7FA)
             } else MaterialTheme.colorScheme.surfaceContainerHigh
         ),

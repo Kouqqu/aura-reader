@@ -1,4 +1,5 @@
 package com.aura.reader.ui.screens.library
+import androidx.compose.ui.graphics.compositeOver
 
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.ui.unit.sp
@@ -167,7 +168,7 @@ fun BookCard(
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
                 if (isDark) {
-                    if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.45f) else Color(0x281C1E26)
+                    if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f).compositeOver(Color(0xD014161C)) else Color(0x281C1E26)
                 } else Color(0x65FFFFFF)
             } else if (isDraggingThis) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
@@ -178,7 +179,10 @@ fun BookCard(
         border = if (isGlass) {
             BorderStroke(
                 0.5.dp,
-                if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
+                if (isDark) {
+                    if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                    else Color.White.copy(alpha = 0.08f)
+                } else Color.Black.copy(alpha = 0.05f)
             )
         } else null
     ) {
@@ -566,7 +570,7 @@ fun BookGridCard(
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
                 if (isDark) {
-                    if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.45f) else Color(0x281C1E26)
+                    if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f).compositeOver(Color(0xD014161C)) else Color(0x281C1E26)
                 } else Color(0x65FFFFFF)
             } else if (isDraggingThis) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
@@ -577,7 +581,10 @@ fun BookGridCard(
         border = if (isGlass) {
             BorderStroke(
                 0.5.dp,
-                if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
+                if (isDark) {
+                    if (com.aura.reader.ui.components.LocalMaterialYouEnabled.current) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                    else Color.White.copy(alpha = 0.08f)
+                } else Color.Black.copy(alpha = 0.05f)
             )
         } else null
     ) {
