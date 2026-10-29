@@ -40,6 +40,8 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.LocalTextStyle
 import com.aura.reader.ui.theme.LocalAppStrings
+import com.aura.reader.ui.theme.holidayDisplayName
+import com.aura.reader.ui.theme.holidayGreeting
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -222,7 +224,7 @@ AnimatedContent(
 
                 if (!isSmallTitle && holidaySeason != HolidaySeason.NONE) {
                     Text(
-                        text = holidaySeason.greetingText,
+                        text = strings.holidayGreeting(holidaySeason),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = holidaySeason.primaryAccent,
@@ -272,6 +274,7 @@ private fun SeasonalHeaderBadge(
     onClick: (Offset) -> Unit,
     scale: Float = 1f
 ) {
+    val strings = LocalAppStrings.current
     val infiniteTransition = rememberInfiniteTransition(label = "holidayBadge")
     val offsetY by infiniteTransition.animateFloat(
         initialValue = -2.5f,
@@ -326,7 +329,7 @@ private fun SeasonalHeaderBadge(
                 maxLines = 1
             )
             Text(
-                text = holidaySeason.displayName,
+                text = strings.holidayDisplayName(holidaySeason),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = holidaySeason.primaryAccent,

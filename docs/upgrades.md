@@ -3,7 +3,7 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-10-28, release `2.2.0-beta.17` (`versionCode 134`).
+Last updated: 2026-10-29, release `2.2.0-beta.37` (`versionCode 154`).
 `2.2.0-beta.14` changed no build files: it merged the UI-file split (see
 `docs/verification.md`) and bumped the version only. `2.2.0-beta.15` turned off
 Compose's new text context menu so the reader keeps its custom selection
@@ -11,6 +11,11 @@ toolbar (see the table below). `2.2.0-beta.16` also changed no build files: it
 adds the translation language picker and stops selection actions from copying
 to the clipboard. `2.2.0-beta.17` adds `androidx.core:core-splashscreen 1.2.0`
 for the new starting window (see below).
+
+`2.2.0-beta.18` … `2.2.0-beta.37` changed no dependency, plugin or toolchain
+version: every commit in that range only bumps `versionCode`/`versionName`.
+They add two binary assets and one runtime feature that do not affect the build
+stack: see "Bundled assets" below.
 
 ## Current versions
 
@@ -63,6 +68,25 @@ predictive back, etc.).
 - `material3` lost its explicit version; it now comes from the Compose BOM.
 - `androidx.compose.ui:ui-text-google-fonts` and `androidx.palette:palette-ktx`
   remain without catalog entries (minor cleanup, not required).
+
+## Bundled assets
+
+`2.2.0-beta.19` added `app/src/main/res/font/marcellus_regular.ttf` (Marcellus,
+SIL Open Font License 1.1, by Astigmatic / Brian J. Bonislawsky) for the "Aura
+Reader" wordmark. `2.2.0-beta.34` added
+`app/src/main/res/raw/halloween_sound.mp3`, an Uppbeat sound effect; its
+attribution lives in `app/src/main/assets/licenses/uppbeat_halloween_sound.txt`.
+
+User fonts are a runtime feature, not a build dependency:
+`PreferencesManager.importCustomFont` copies a picked TTF/OTF into
+`filesDir/custom_fonts`, the selection is stored in `APP_FONT_KEY` as
+`CUSTOM:<filename>`, and the default is `GOOGLE_SANS`. There is no size limit and
+no validation beyond `Typeface.createFromFile`; a file that fails to open is
+deleted on import.
+
+The other bundled fonts (Google Sans, Inter, JetBrains Mono, Literata, Lora, PT
+Serif) were present before this range and have no notice in `assets/licenses/`
+yet; only Marcellus (new) and the Halloween sound (new) are documented.
 
 ## Source changes the upgrade required
 

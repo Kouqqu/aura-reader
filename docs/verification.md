@@ -185,3 +185,257 @@ Verified with `testDebugUnitTest lintDebug assembleDebug`. On-device checks:
 swiping pages forward and back in paged mode, the selection menu after a page
 turn, and a cold start (splash → library, and onboarding on a clean install).
 
+
+## 2.2.0-beta.18 — custom fonts and a calmer glass switch
+
+**Custom fonts.** The appearance section can now import a `.ttf` or `.otf` file
+through the system picker. `PreferencesManager.importCustomFont` copies it into
+`filesDir/custom_fonts` under its sanitized display name, opens the copy with
+`Typeface.createFromFile` to reject broken files, and `getCustomFonts()` lists
+the folder for the font picker. Deleting the font that is currently selected
+falls back to the default. `APP_FONT_KEY` gained `GOOGLE_SANS` as the default and
+`CUSTOM:<file>` as the custom-font value. The same commit moved the glass switch
+to a blurred, refracting lens (`DockRefraction`) and restored the dark Material
+You tint that beta.17 had lost; warning fixes in `BackupArchive`, `OpdsService`,
+`MobiParser`, `BookTtsService` and the widget provider are included.
+
+Verified by the release workflow for `versionCode 135`.
+
+## 2.2.0-beta.19 — Marcellus branding and iOS-style switches
+
+The "Aura Reader" wordmark in the library header and onboarding now uses the
+bundled Marcellus serif (`res/font/marcellus_regular.ttf`) instead of the
+previous system/sans styling. The liquid-glass switch was reworked toward the
+iOS 26 look: spring physics, capsule geometry and a refracting knob. The same
+release applied the Material You dynamic palette to the library and search
+screens, which until then kept fixed accent tones.
+
+Verified by the release workflow for `versionCode 136`.
+
+## 2.2.0-beta.20 — dark theme and dark dock calibration
+
+Calibrated the dark theme and the Material You palette so that the dynamic
+colors remain readable on dark surfaces, brought back the dark glass navigation
+dock, fixed the top-bar height mismatch on the library screen, and made the
+settings sheet adopt the same adaptive styling as the rest of the app.
+
+Verified by the release workflow for `versionCode 137`.
+
+## 2.2.0-beta.21 — dock refraction without blur
+
+`LiquidGlass` was rewritten around the dock's own optical refraction: the switch
+knob and the dock now bend the content behind them instead of blurring it, and
+the dock page transition moves in the same direction as the swipe. Net change is
+a rewrite of two glass files rather than new features.
+
+Verified by the release workflow for `versionCode 138`.
+
+## 2.2.0-beta.22 — crystal switches, typography, Material Symbols
+
+The switches became fully translucent ("crystal") instead of milky, Google Sans
+was applied to the dock and bottom sheets through `Type.kt`, the branding header
+grew, icons moved to Material Symbols Rounded, and the search screen's cover
+collage learned to distribute covers by their aspect ratio instead of a fixed
+grid.
+
+Verified by the release workflow for `versionCode 139`.
+
+## 2.2.0-beta.23 — rounded icons everywhere and the language row
+
+Every screen moved to the Rounded icon set (38 files, mostly icon imports), the
+switch lens geometry was refined again, and the language row in settings was
+fixed after the Material Expressive rework: it had lost its icon container and
+its selected-state styling.
+
+Verified by the release workflow for `versionCode 140`.
+
+## 2.2.0-beta.24 — media-library action bar
+
+The library header gained a media-library style action bar with sort, filter and
+layout buttons instead of burying those actions in the overflow menu. Switch
+dimensions and the "held" transparency were tuned, and the settings sheet was
+aligned with Material Expressive.
+
+Verified by the release workflow for `versionCode 141`.
+
+## 2.2.0-beta.25 — settings cleanup
+
+Restored the icon containers in settings rows, removed placeholder rows that
+beta.24 had drawn but not wired, and aligned the library sort/layout buttons with
+the Expressive squircle shape used elsewhere. No behaviour change beyond the
+icons and spacing.
+
+Verified by the release workflow for `versionCode 142`.
+
+## 2.2.0-beta.26 — catalog sorting and the back gesture
+
+`OpdsScreen`/`OpdsViewModel`: the catalog back gesture now returns to the
+catalog root instead of leaving the screen, duplicated category chips were
+removed, and the catalog defaults to sorting by reader count. Sorting was
+compacted into four categories with an ascending/descending toggle; the new
+labels went into `AppStrings` for all seven languages.
+
+Verified by the release workflow for `versionCode 143`.
+
+## 2.2.0-beta.27 — sheet jitter and the first jelly overscroll
+
+Fixed the bottom-sheet dismiss jitter that appeared when a drag was released at
+the sheet edge, neutralized the TTS control bar colours, re-tuned the reader top
+bar TTS and overflow buttons, added the book-format badge to the hero card,
+introduced the spring-based "jelly" overscroll in `ExpressiveModifiers`, updated
+the backup copy strings, and refined the parallax cover viewer and the reading
+stats sheet.
+
+Verified by the release workflow for `versionCode 144`.
+
+## 2.2.0-beta.28 — half-height sheets and one-motion overscroll
+
+Bottom sheets returned to their half-height form with explicit scroll isolation
+(`sheetScrollIsolation`), so a flick inside a list no longer drags the sheet
+down. The jelly overscroll was retuned for a single rebound (damping 0.92,
+36 px cap, 0.16 resistance) and applied app-wide. Added the 100 % trophy icon and
+confetti when a book is finished, and fixed the Reading shelf and the recent-book
+hero card logic.
+
+Verified by the release workflow for `versionCode 145`.
+
+## 2.2.0-beta.29 — manual shelves and real chapter titles
+
+`Book` gained `manualShelf` (`UNREAD`/`READING`/`FINISHED`, nullable for old
+data), persisted by `BookRepository` and written by the new
+`updateBookPlacement`. Automatic progress updates no longer move a book out of a
+shelf the reader chose by hand: progress 0 maps to `UNREAD`, 100 to `FINISHED`,
+and everything in between keeps the existing manual value. The bottom reader bar
+shows the real chapter title, the overscroll got its single-rebound calibration
+across dialogs and sheets, and sheets can be dismissed by swiping from anywhere.
+`LibraryRegressionTest` gained the manual-shelf test.
+
+Verified by the release workflow for `versionCode 146`.
+
+## 2.2.0-beta.30 — collection deletion persistence
+
+Deleting a user collection only changed the in-memory list, so it reappeared
+after the next load; the repository now saves the list after deletion and the
+deleted collection is removed from the books that referenced it. The same commit
+propagated the jelly overscroll to the remaining settings sections, dialogs and
+sheets. Regression tests cover adding and removing collections.
+
+Verified by the release workflow for `versionCode 147`.
+
+## 2.2.0-beta.31 — seasonal holiday events
+
+New `HolidaySeason` enum (`NONE`, `HALLOWEEN`, `CHRISTMAS_WESTERN`, `NEW_YEAR`,
+`CHRISTMAS_ORTHODOX`, `OLD_NEW_YEAR`) with `resolve(enabled, override, calendar)`
+and `LocalHolidaySeason`. Automatic dates: Oct 28–Nov 3, Dec 20–26, Dec 27–Jan 5,
+Jan 6–8 and Jan 9–15. A developer-only override (Auto/Halloween/Christmas/New
+Year/Orthodox Christmas/Off) was added to the updates section, together with the
+`seasonalEffectsEnabled` toggle (default on). The header gets an animated badge,
+tapping it fires a pixel burst, and `Theme.kt` applies the seasonal palette on
+every screen except the reader. `HolidaySeasonTest` covers the date boundaries
+and the override.
+
+At this point all season names, greetings and the settings labels were still
+hardcoded Russian; beta.37 moves them into `AppStrings`.
+
+Verified by the release workflow for `versionCode 148`.
+
+## 2.2.0-beta.32 — pumpkin and frost palettes
+
+Removed the duplicate bounce in the jelly overscroll (the settle animation ran
+twice), enriched the Halloween palette (pumpkin orange with witch violet) and the
+winter palette (frost blue with gold), and completed the winter calendar for both
+Christmases, New Year and the Old New Year period. `HolidaySeasonTest` was
+extended for the new ranges.
+
+Verified by the release workflow for `versionCode 149`.
+
+## 2.2.0-beta.33 — festive greetings in the library
+
+The seasonal greeting became prominent instead of a small label: a banner above
+the library list, a subtitle in the header, a line in the "currently reading"
+hero card and in the empty state. The strings were still the Russian ones from
+beta.31.
+
+Verified by the release workflow for `versionCode 150`.
+
+## 2.2.0-beta.34 — holiday sound
+
+Added `res/raw/halloween_sound.mp3` (Uppbeat sound effect) and
+`HolidaySoundPlayer`, which plays it once per season when the library opens and
+on badge tap. The header greeting was simplified: the full banner text was
+reduced to one line and the duplicate badges were removed, so the season is
+shown once in the top bar and once in the hero card.
+
+Verified by the release workflow for `versionCode 151`.
+
+## 2.2.0-beta.35 — reader transitions and safe insets
+
+`NavGraph` now gives the reader a directional slide plus fade on enter, exit and
+pop (280 ms), the library logo collapses with the scroll instead of jumping, and
+the reader bottom sheets respect the navigation-bar insets and use a white status
+bar instead of the previous translucent one. The reader top bar spacing was
+adjusted to match.
+
+Verified by the release workflow for `versionCode 152`.
+
+## 2.2.0-beta.36 — TTS foreground type and predictive back
+
+**TTS crash.** `BookTtsService` started its foreground notification without a
+service type. Android 14+ rejects that for a media-playback service, and the
+crash appeared on Android 16/17. It now calls
+`ServiceCompat.startForeground(..., FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)`,
+matching the manifest declaration.
+
+**Predictive back.** `ReaderScreen`, `OpdsScreen` and `LibraryScreen` registered
+their `BackHandler` unconditionally, which swallowed the system back gesture even
+when there was nothing to close. Each handler is now enabled only while its
+dialog/sheet/search state is open.
+
+**Visual fixes.** Removed the ghost border that remained after a bottom sheet
+closed, stabilized the top-bar title size while the header collapses, fixed the
+holiday badge layout, and switched the primary call-to-action buttons to
+`primary`/`onPrimary`.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` before pushing; the
+release workflow built `versionCode 153`.
+
+## 2.2.0-beta.37 — holiday strings in every language
+
+Maintenance release: the app should look and behave exactly like beta.36.
+
+**Holiday text is no longer Russian-only.** `HolidaySeason` carried
+`displayName`, `badgeText` and `greetingText` as hardcoded Russian strings, so the
+header badge and greeting stayed Russian in all seven languages. The three fields
+are gone from the data model. `holidayDisplayName(season)` and
+`holidayGreeting(season)` in `ui/theme/HolidayStrings.kt` now resolve the label
+and the greeting through `Strings`, and `LibraryTopBar` calls them.
+`badgeText` was unused and was deleted rather than translated.
+
+**All seven string sets define the holiday labels.** `seasonalEffectsToggle`,
+`seasonalEffectsSubtitle`, `holidayModeTitle`, `holidayModeSubtitle`,
+`holidayModeAuto` and `holidayModeOff` were interface defaults returning Russian,
+overridden only in Russian and English, so Ukrainian, Belarusian, Polish, Czech
+and Hebrew silently fell back to Russian. They are now abstract and implemented
+in every class, together with the new `holidayNone`, `holidayChristmas`,
+`holidayWinterHolidays` and the five greeting strings. The developer-only
+override chips in `SettingsSections.kt` keep their hardcoded Russian on purpose:
+they are only visible after the seven-tap developer unlock.
+
+**Sound attribution.** `assets/licenses/uppbeat_halloween_sound.txt` records
+where `res/raw/halloween_sound.mp3` came from
+(`https://uppbeat.io/sfx/category/occasion/halloween`), the Uppbeat credit
+requirement and the fact that the exact track title/author was not recorded when
+the file was saved.
+
+**Documentation and release notes.** This file now covers beta.18–beta.37,
+`docs/upgrades.md` is up to date, and the release-notes block in
+`.github/workflows/build-apk.yml` describes the actual changes instead of the
+beta.17 text.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug`. The new
+`HolidayStringsTest` checks that all seven languages name every season, greet
+every active season (with an empty greeting for `NONE`) and define the six
+holiday settings strings. On-device checks:
+switch the app language to Ukrainian, Polish and Hebrew and confirm the header
+badge and greeting change with it (Halloween is active, or force a season from
+the developer override); the developer chips stay Russian as before.

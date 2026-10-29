@@ -6,10 +6,7 @@ import java.util.Calendar
 
 enum class HolidaySeason(
     val id: String,
-    val displayName: String,
     val iconEmoji: String,
-    val badgeText: String,
-    val greetingText: String,
     val primaryAccent: Color,
     val secondaryAccent: Color,
     val burstColors: List<Color>,
@@ -17,10 +14,7 @@ enum class HolidaySeason(
 ) {
     NONE(
         id = "NONE",
-        displayName = "Обычный",
         iconEmoji = "",
-        badgeText = "",
-        greetingText = "",
         primaryAccent = Color.Unspecified,
         secondaryAccent = Color.Unspecified,
         burstColors = listOf(
@@ -35,10 +29,7 @@ enum class HolidaySeason(
     ),
     HALLOWEEN(
         id = "HALLOWEEN",
-        displayName = "Хэллоуин",
         iconEmoji = "🎃",
-        badgeText = "🎃 Хэллоуин",
-        greetingText = "Жутко интересного чтения!",
         primaryAccent = Color(0xFFFF6D00), // Rich Vivid Pumpkin Orange
         secondaryAccent = Color(0xFF9C27B0), // Witch Violet
         burstColors = listOf(
@@ -54,10 +45,7 @@ enum class HolidaySeason(
     ),
     CHRISTMAS_WESTERN(
         id = "CHRISTMAS_WESTERN",
-        displayName = "Рождество",
         iconEmoji = "🎄",
-        badgeText = "🎄 Рождество",
-        greetingText = "Светлого и уютного Рождества!",
         primaryAccent = Color(0xFFE53935), // Holiday Crimson Red
         secondaryAccent = Color(0xFF2E7D32), // Pine Tree Green
         burstColors = listOf(
@@ -72,10 +60,7 @@ enum class HolidaySeason(
     ),
     NEW_YEAR(
         id = "NEW_YEAR",
-        displayName = "Новый год",
         iconEmoji = "❄️",
-        badgeText = "❄️ Новый год",
-        greetingText = "Счастливого Нового года!",
         primaryAccent = Color(0xFF00B0FF), // Vibrant Frost Ice Blue
         secondaryAccent = Color(0xFFFFD700), // Sparkle Gold
         burstColors = listOf(
@@ -90,10 +75,7 @@ enum class HolidaySeason(
     ),
     CHRISTMAS_ORTHODOX(
         id = "CHRISTMAS_ORTHODOX",
-        displayName = "Рождество",
         iconEmoji = "⭐",
-        badgeText = "⭐ Рождество",
-        greetingText = "Со светлым Рождеством Христовым!",
         primaryAccent = Color(0xFFFFB300), // Star Gold
         secondaryAccent = Color(0xFF4FC3F7), // Heavenly Blue
         burstColors = listOf(
@@ -108,10 +90,7 @@ enum class HolidaySeason(
     ),
     OLD_NEW_YEAR(
         id = "OLD_NEW_YEAR",
-        displayName = "Зимние праздники",
         iconEmoji = "❄️",
-        badgeText = "❄️ Зимние праздники",
-        greetingText = "Уютных зимних дней и чтения!",
         primaryAccent = Color(0xFF29B6F6), // Crystal Blue
         secondaryAccent = Color(0xFFB0BEC5), // Frost Silver
         burstColors = listOf(
