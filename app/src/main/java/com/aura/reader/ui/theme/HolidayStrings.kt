@@ -15,6 +15,8 @@ fun Strings.holidayDisplayName(season: HolidaySeason): String = when (season) {
     HolidaySeason.CHRISTMAS_ORTHODOX -> holidayChristmas
     HolidaySeason.NEW_YEAR -> holidayNewYear
     HolidaySeason.OLD_NEW_YEAR -> holidayWinterHolidays
+    HolidaySeason.VALENTINE -> holidayValentine
+    HolidaySeason.EASTER -> holidayEaster
 }
 
 /** Localized one-line greeting shown under the library title. */
@@ -25,4 +27,6 @@ fun Strings.holidayGreeting(season: HolidaySeason): String = when (season) {
     HolidaySeason.CHRISTMAS_ORTHODOX -> holidayGreetingChristmasOrthodox
     HolidaySeason.NEW_YEAR -> holidayGreetingNewYear
     HolidaySeason.OLD_NEW_YEAR -> holidayGreetingWinter
+    HolidaySeason.VALENTINE -> holidayGreetingValentine
+    HolidaySeason.EASTER -> holidayGreetingEaster
 }

@@ -773,6 +773,18 @@ ExpressiveSettingsGroup {
                     label = { Text("⭐ Рождество (7 янв)") }
                 )
                 LiquidGlassFilterChip(
+                    selected = holidayOverride == "VALENTINE",
+                    isGlass = isGlass,
+                    onClick = { onHolidayOverrideChange("VALENTINE") },
+                    label = { Text("💗 Валентин") }
+                )
+                LiquidGlassFilterChip(
+                    selected = holidayOverride == "EASTER",
+                    isGlass = isGlass,
+                    onClick = { onHolidayOverrideChange("EASTER") },
+                    label = { Text("🐣 Пасха") }
+                )
+                LiquidGlassFilterChip(
                     selected = holidayOverride == "OFF",
                     isGlass = isGlass,
                     onClick = { onHolidayOverrideChange("OFF") },

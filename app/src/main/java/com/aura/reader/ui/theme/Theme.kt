@@ -211,6 +211,8 @@ fun AuraReaderTheme(
                 HolidaySeason.NEW_YEAR -> Color(0xFF002238)
                 HolidaySeason.CHRISTMAS_ORTHODOX -> Color(0xFF2A2000)
                 HolidaySeason.OLD_NEW_YEAR -> Color(0xFF002238)
+                HolidaySeason.VALENTINE -> Color(0xFF3A0A1C)
+                HolidaySeason.EASTER -> Color(0xFF1B2A0F)
                 HolidaySeason.NONE -> finalColorScheme.primaryContainer
             }
         } else {
@@ -220,6 +222,8 @@ fun AuraReaderTheme(
                 HolidaySeason.NEW_YEAR -> Color(0xFFC7E7FF)
                 HolidaySeason.CHRISTMAS_ORTHODOX -> Color(0xFFFFE082)
                 HolidaySeason.OLD_NEW_YEAR -> Color(0xFFC7E7FF)
+                HolidaySeason.VALENTINE -> Color(0xFFFFD9E2)
+                HolidaySeason.EASTER -> Color(0xFFDCEDC8)
                 HolidaySeason.NONE -> finalColorScheme.primaryContainer
             }
         }
@@ -230,6 +234,8 @@ fun AuraReaderTheme(
                 HolidaySeason.NEW_YEAR -> Color(0xFFC7E7FF)
                 HolidaySeason.CHRISTMAS_ORTHODOX -> Color(0xFFFFF8E1)
                 HolidaySeason.OLD_NEW_YEAR -> Color(0xFFC7E7FF)
+                HolidaySeason.VALENTINE -> Color(0xFFFFB1C8)
+                HolidaySeason.EASTER -> Color(0xFFC5E1A5)
                 HolidaySeason.NONE -> finalColorScheme.onPrimaryContainer
             }
         } else {
@@ -239,6 +245,8 @@ fun AuraReaderTheme(
                 HolidaySeason.NEW_YEAR -> Color(0xFF001E30)
                 HolidaySeason.CHRISTMAS_ORTHODOX -> Color(0xFF261900)
                 HolidaySeason.OLD_NEW_YEAR -> Color(0xFF001E30)
+                HolidaySeason.VALENTINE -> Color(0xFF3E001D)
+                HolidaySeason.EASTER -> Color(0xFF1B2A0F)
                 HolidaySeason.NONE -> finalColorScheme.onPrimaryContainer
             }
         }

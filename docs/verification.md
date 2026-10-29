@@ -463,3 +463,37 @@ missing and records the track/author of the sound.
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` and by listing
 `assets/licenses/` inside the built APK, which now contains all three notices.
+
+## 2.2.0-beta.39 — Valentine's Day and Easter
+
+Two new seasons built on the existing machinery (palette, animated badge,
+greeting, bursts, the seasonal-effects toggle and the developer override). The
+reader is still excluded from the seasonal palette and no existing holiday
+changed.
+
+**Valentine's Day.** `VALENTINE` is active from Feb 10 to Feb 15, with a
+rose/pink palette, a 💗 badge, hearts/roses bursts and a greeting in all seven
+languages.
+
+**Easter.** `EASTER` covers the short window around both traditions: two days
+before to one day after Western Easter and Orthodox Easter. Dates are computed,
+not tabulated: the Western date uses the anonymous Gregorian computus
+(Meeus/Jones/Butcher), the Orthodox one uses the Meeus Julian computus converted
+to the Gregorian calendar with the 13-day offset that is valid for 1900–2099.
+When the two dates coincide (2025, 2028) the single window is used; when they are
+weeks apart (2027: March 28 and May 2) both short windows are shown with the same
+spring palette and one neutral greeting per language.
+
+**Strings and UI.** `holidayValentine`, `holidayEaster` and their greetings were
+added to all seven string sets, `HolidayStrings.kt` maps the two enum entries, and
+`Theme.kt` gained light/dark container colours for both seasons. The developer
+override row has two more hardcoded Russian chips ("💗 Валентин", "🐣 Пасха"),
+like the rest of that row.
+
+Verified with the focused `HolidaySeasonTest`/`HolidayStringsTest` runs and the
+full `testDebugUnitTest lintDebug assembleDebug`. Date cases: Feb 9 → `NONE`,
+Feb 10–15 → `VALENTINE`, Feb 16 → `NONE`; 2025 (both Easters on April 20) →
+April 18–21; 2026 (Western April 5, Orthodox April 12) → April 3–6 and 10–13,
+with April 8 → `NONE` between them; 2027 (March 28 and May 2) → March 26–29 and
+April 30–May 3, with April 15 → `NONE`. On-device: force both seasons from the
+developer row and check the badge, greeting, palette and burst.

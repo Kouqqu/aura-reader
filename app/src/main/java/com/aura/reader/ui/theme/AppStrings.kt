@@ -112,6 +112,10 @@ interface Strings {
     val holidayGreetingChristmasOrthodox: String
     val holidayGreetingNewYear: String
     val holidayGreetingWinter: String
+    val holidayValentine: String
+    val holidayGreetingValentine: String
+    val holidayEaster: String
+    val holidayGreetingEaster: String
     val sortTitle: String
     val sortByDefault: String
     val sortByRecent: String
@@ -482,6 +486,10 @@ class RuStrings : Strings {
     override val holidayGreetingChristmasOrthodox = "Со светлым Рождеством Христовым!"
     override val holidayGreetingNewYear = "Счастливого Нового года!"
     override val holidayGreetingWinter = "Уютных зимних дней и чтения!"
+    override val holidayValentine = "День влюблённых"
+    override val holidayGreetingValentine = "Любви и уютного чтения!"
+    override val holidayEaster = "Пасха"
+    override val holidayGreetingEaster = "Светлой Пасхи!"
     override val sortTitle = "Сортировка"
     override val sortByDefault = "По умолчанию"
     override val sortByRecent = "Недавние"
@@ -897,6 +905,10 @@ class EnStrings : Strings {
     override val holidayGreetingChristmasOrthodox = "A blessed and bright Christmas!"
     override val holidayGreetingNewYear = "Happy New Year!"
     override val holidayGreetingWinter = "Cozy winter days and good reading!"
+    override val holidayValentine = "Valentine's Day"
+    override val holidayGreetingValentine = "Love and cozy reading!"
+    override val holidayEaster = "Easter"
+    override val holidayGreetingEaster = "Happy Easter!"
     override val sortTitle = "Sort by"
     override val sortByDefault = "Default"
     override val sortByRecent = "Recent"
@@ -1312,6 +1324,10 @@ class UkStrings : Strings {
     override val holidayGreetingChristmasOrthodox = "Зі світлим Різдвом Христовим!"
     override val holidayGreetingNewYear = "Щасливого Нового року!"
     override val holidayGreetingWinter = "Затишних зимових днів і читання!"
+    override val holidayValentine = "День закоханих"
+    override val holidayGreetingValentine = "Кохання й затишного читання!"
+    override val holidayEaster = "Великдень"
+    override val holidayGreetingEaster = "Світлого Великодня!"
     override val sortTitle = "Сортування"
     override val sortByDefault = "За замовчуванням"
     override val sortByRecent = "Нещодавні"
@@ -1727,6 +1743,10 @@ class BeStrings : Strings {
     override val holidayGreetingChristmasOrthodox = "Са светлым Раством Хрыстовым!"
     override val holidayGreetingNewYear = "Шчаслівага Новага года!"
     override val holidayGreetingWinter = "Утульных зімовых дзён і чытання!"
+    override val holidayValentine = "Дзень закаханых"
+    override val holidayGreetingValentine = "Кахания і ўтульнага чытання!"
+    override val holidayEaster = "Вялікдзень"
+    override val holidayGreetingEaster = "Светлага Вялікдня!"
     override val sortTitle = "Сартаванне"
     override val sortByDefault = "Па змаўчанні"
     override val sortByRecent = "Нядаўнія"
@@ -2142,6 +2162,10 @@ class PlStrings : Strings {
     override val holidayGreetingChristmasOrthodox = "Błogosławionych Świąt Bożego Narodzenia!"
     override val holidayGreetingNewYear = "Szczęśliwego Nowego Roku!"
     override val holidayGreetingWinter = "Przytulnych zimowych dni i dobrej lektury!"
+    override val holidayValentine = "Walentynki"
+    override val holidayGreetingValentine = "Miłości i przyjemnej lektury!"
+    override val holidayEaster = "Wielkanoc"
+    override val holidayGreetingEaster = "Wesołych Świąt Wielkanocnych!"
     override val sortTitle = "Sortowanie"
     override val sortByDefault = "Domyślnie"
     override val sortByRecent = "Niedawne"
@@ -2612,6 +2636,10 @@ class CsStrings : Strings {
     override val holidayGreetingChristmasOrthodox = "Požehnané Vánoce!"
     override val holidayGreetingNewYear = "Šťastný nový rok!"
     override val holidayGreetingWinter = "Útulné zimní dny a dobré čtení!"
+    override val holidayValentine = "Valentýn"
+    override val holidayGreetingValentine = "Láska a příjemné čtení!"
+    override val holidayEaster = "Velikonoce"
+    override val holidayGreetingEaster = "Krásné Velikonoce!"
     override val sortTitle = "Řazení"
     override val sortByDefault = "Výchozí"
     override val sortByRecent = "Podle data přidání"
@@ -2949,6 +2977,10 @@ class HeStrings : Strings {
     override val holidayGreetingChristmasOrthodox = "חג מולד אורתודוקסי מבורך!"
     override val holidayGreetingNewYear = "שנה חדשה שמחה!"
     override val holidayGreetingWinter = "ימי חורף נעימים וקריאה טובה!"
+    override val holidayValentine = "יום האהבה"
+    override val holidayGreetingValentine = "אהבה וקריאה נעימה!"
+    override val holidayEaster = "פסחא"
+    override val holidayGreetingEaster = "חג פסחא שמח!"
     override val sortTitle = "מיון לפי"
     override val sortByDefault = "ברירת מחדל"
     override val sortByRecent = "אחרונים"

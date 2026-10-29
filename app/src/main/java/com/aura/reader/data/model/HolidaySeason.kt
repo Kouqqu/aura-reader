@@ -2,6 +2,7 @@ package com.aura.reader.data.model
 
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import java.time.LocalDate
 import java.util.Calendar
 
 enum class HolidaySeason(
@@ -101,6 +102,36 @@ enum class HolidaySeason(
             Color(0xFFFFD700)  // Star Gold
         ),
         burstSymbols = listOf("❄️", "⛄", "✨", "🌟", "☕", "🤍")
+    ),
+    VALENTINE(
+        id = "VALENTINE",
+        iconEmoji = "💗",
+        primaryAccent = Color(0xFFE91E63), // Valentine Rose
+        secondaryAccent = Color(0xFFFF80AB), // Soft Pink
+        burstColors = listOf(
+            Color(0xFFE91E63), // Rose
+            Color(0xFFFF4081), // Bright Pink
+            Color(0xFFFF80AB), // Soft Pink
+            Color(0xFFF8BBD0), // Blush
+            Color(0xFFFFD54F), // Warm Gold
+            Color(0xFFFFFFFF)  // White
+        ),
+        burstSymbols = listOf("❤️", "💕", "🌹", "💌", "✨", "💗")
+    ),
+    EASTER(
+        id = "EASTER",
+        iconEmoji = "🐣",
+        primaryAccent = Color(0xFF7CB342), // Spring Green
+        secondaryAccent = Color(0xFFFFC107), // Easter Gold
+        burstColors = listOf(
+            Color(0xFF7CB342), // Spring Green
+            Color(0xFFAED581), // Light Green
+            Color(0xFFFFC107), // Easter Gold
+            Color(0xFFFFE082), // Soft Gold
+            Color(0xFFF48FB1), // Pastel Pink
+            Color(0xFFFFFFFF)  // White
+        ),
+        burstSymbols = listOf("🐣", "🥚", "🌷", "🐰", "✨", "🌼")
     );
 
     val isWinterSeason: Boolean
@@ -112,7 +143,8 @@ enum class HolidaySeason(
     companion object {
         /**
          * Resolves the active holiday season based on calendar date or manual override.
-         * override: "AUTO", "HALLOWEEN", "CHRISTMAS_WESTERN", "NEW_YEAR", "CHRISTMAS_ORTHODOX", "OLD_NEW_YEAR", "OFF"
+         * override: "AUTO", "HALLOWEEN", "CHRISTMAS_WESTERN", "NEW_YEAR", "CHRISTMAS_ORTHODOX",
+         * "OLD_NEW_YEAR", "VALENTINE", "EASTER", "OFF"
          *
          * Default calendar dates:
          * - Halloween: Oct 28 - Nov 3
@@ -120,6 +152,8 @@ enum class HolidaySeason(
          * - New Year: Dec 27 - Jan 5
          * - Orthodox Christmas: Jan 6 - Jan 8
          * - Old New Year & Winter Yuletide: Jan 9 - Jan 15
+         * - Valentine's Day: Feb 10 - Feb 15
+         * - Easter: two days before to one day after the Western and the Orthodox Easter
          */
         fun resolve(
             enabled: Boolean = true,
@@ -134,6 +168,8 @@ enum class HolidaySeason(
                 "NEW_YEAR" -> NEW_YEAR
                 "CHRISTMAS_ORTHODOX" -> CHRISTMAS_ORTHODOX
                 "OLD_NEW_YEAR", "WINTER" -> OLD_NEW_YEAR
+                "VALENTINE", "VALENTINES" -> VALENTINE
+                "EASTER" -> EASTER
                 "OFF", "NONE" -> NONE
                 else -> calculateFromCalendar(calendar)
             }
@@ -168,7 +204,65 @@ enum class HolidaySeason(
                 return OLD_NEW_YEAR
             }
 
+            // Valentine's Day: Feb 10 to Feb 15
+            if (month == Calendar.FEBRUARY && day in 10..15) {
+                return VALENTINE
+            }
+
+            // Easter: the Western and the Orthodox dates can differ (or coincide),
+            // so both short windows are accepted with the same palette and greeting.
+            if (isEasterWindow(calendar.toLocalDate())) {
+                return EASTER
+            }
+
             return NONE
+        }
+
+        private fun Calendar.toLocalDate(): LocalDate =
+            LocalDate.of(get(Calendar.YEAR), get(Calendar.MONTH) + 1, get(Calendar.DAY_OF_MONTH))
+
+        private fun isEasterWindow(date: LocalDate): Boolean {
+            val easterDates = listOf(
+                westernEaster(date.year),
+                orthodoxEaster(date.year)
+            )
+            return easterDates.any { easter ->
+                !date.isBefore(easter.minusDays(2)) && !date.isAfter(easter.plusDays(1))
+            }
+        }
+
+        /** Anonymous Gregorian computus (Meeus/Jones/Butcher). */
+        private fun westernEaster(year: Int): LocalDate {
+            val a = year % 19
+            val b = year / 100
+            val c = year % 100
+            val d = b / 4
+            val e = b % 4
+            val f = (b + 8) / 25
+            val g = (b - f + 1) / 3
+            val h = (19 * a + b - d - g + 15) % 30
+            val i = c / 4
+            val k = c % 4
+            val l = (32 + 2 * e + 2 * i - h - k) % 7
+            val m = (a + 11 * h + 22 * l) / 451
+            val month = (h + l - 7 * m + 114) / 31
+            val day = (h + l - 7 * m + 114) % 31 + 1
+            return LocalDate.of(year, month, day)
+        }
+
+        /**
+         * Meeus Julian computus converted to the Gregorian calendar.
+         * The 13-day offset is valid for 1900-2099, which covers the supported app lifetime.
+         */
+        private fun orthodoxEaster(year: Int): LocalDate {
+            val a = year % 4
+            val b = year % 7
+            val c = year % 19
+            val d = (19 * c + 15) % 30
+            val e = (2 * a + 4 * b - d + 34) % 7
+            val month = (d + e + 114) / 31
+            val day = (d + e + 114) % 31 + 1
+            return LocalDate.of(year, month, day).plusDays(13)
         }
     }
 }

@@ -94,6 +94,82 @@ class HolidaySeasonTest {
     }
 
     @Test
+    fun testValentineDateRange() {
+        // Feb 9 -> NONE
+        val feb9 = createCalendar(2027, Calendar.FEBRUARY, 9)
+        assertEquals(HolidaySeason.NONE, HolidaySeason.resolve(calendar = feb9))
+
+        // Feb 10..15 -> VALENTINE
+        val feb10 = createCalendar(2027, Calendar.FEBRUARY, 10)
+        assertEquals(HolidaySeason.VALENTINE, HolidaySeason.resolve(calendar = feb10))
+        val feb14 = createCalendar(2027, Calendar.FEBRUARY, 14)
+        assertEquals(HolidaySeason.VALENTINE, HolidaySeason.resolve(calendar = feb14))
+        val feb15 = createCalendar(2027, Calendar.FEBRUARY, 15)
+        assertEquals(HolidaySeason.VALENTINE, HolidaySeason.resolve(calendar = feb15))
+
+        // Feb 16 -> NONE
+        val feb16 = createCalendar(2027, Calendar.FEBRUARY, 16)
+        assertEquals(HolidaySeason.NONE, HolidaySeason.resolve(calendar = feb16))
+    }
+
+    @Test
+    fun testEasterDateRange() {
+        // 2025: Western and Orthodox Easter both fall on Apr 20 -> window Apr 18..21
+        assertEquals(
+            HolidaySeason.EASTER,
+            HolidaySeason.resolve(calendar = createCalendar(2025, Calendar.APRIL, 18))
+        )
+        assertEquals(
+            HolidaySeason.NONE,
+            HolidaySeason.resolve(calendar = createCalendar(2025, Calendar.APRIL, 17))
+        )
+        assertEquals(
+            HolidaySeason.EASTER,
+            HolidaySeason.resolve(calendar = createCalendar(2025, Calendar.APRIL, 21))
+        )
+        assertEquals(
+            HolidaySeason.NONE,
+            HolidaySeason.resolve(calendar = createCalendar(2025, Calendar.APRIL, 22))
+        )
+
+        // 2026: Western Easter Apr 5 (window Apr 3..6), Orthodox Easter Apr 12 (Apr 10..13)
+        assertEquals(
+            HolidaySeason.EASTER,
+            HolidaySeason.resolve(calendar = createCalendar(2026, Calendar.APRIL, 4))
+        )
+        assertEquals(
+            HolidaySeason.NONE,
+            HolidaySeason.resolve(calendar = createCalendar(2026, Calendar.APRIL, 8))
+        )
+        assertEquals(
+            HolidaySeason.EASTER,
+            HolidaySeason.resolve(calendar = createCalendar(2026, Calendar.APRIL, 11))
+        )
+        assertEquals(
+            HolidaySeason.NONE,
+            HolidaySeason.resolve(calendar = createCalendar(2026, Calendar.APRIL, 14))
+        )
+
+        // 2027: Western Easter Mar 28 (window Mar 26..29), Orthodox Easter May 2 (Apr 30..May 3)
+        assertEquals(
+            HolidaySeason.EASTER,
+            HolidaySeason.resolve(calendar = createCalendar(2027, Calendar.MARCH, 27))
+        )
+        assertEquals(
+            HolidaySeason.NONE,
+            HolidaySeason.resolve(calendar = createCalendar(2027, Calendar.APRIL, 15))
+        )
+        assertEquals(
+            HolidaySeason.EASTER,
+            HolidaySeason.resolve(calendar = createCalendar(2027, Calendar.MAY, 1))
+        )
+        assertEquals(
+            HolidaySeason.NONE,
+            HolidaySeason.resolve(calendar = createCalendar(2027, Calendar.MAY, 4))
+        )
+    }
+
+    @Test
     fun testDisabledSetting() {
         val halloween = createCalendar(2026, Calendar.OCTOBER, 31)
         assertEquals(HolidaySeason.NONE, HolidaySeason.resolve(enabled = false, calendar = halloween))
@@ -125,6 +201,14 @@ class HolidaySeasonTest {
             HolidaySeason.CHRISTMAS_ORTHODOX,
             HolidaySeason.resolve(enabled = true, override = "CHRISTMAS_ORTHODOX", calendar = summerDay)
         )
+        assertEquals(
+            HolidaySeason.VALENTINE,
+            HolidaySeason.resolve(enabled = true, override = "VALENTINE", calendar = summerDay)
+        )
+        assertEquals(
+            HolidaySeason.EASTER,
+            HolidaySeason.resolve(enabled = true, override = "EASTER", calendar = summerDay)
+        )
 
         val halloween = createCalendar(2026, Calendar.OCTOBER, 31)
         assertEquals(
@@ -147,6 +231,12 @@ class HolidaySeasonTest {
 
         assertTrue(HolidaySeason.CHRISTMAS_ORTHODOX.burstColors.isNotEmpty())
         assertTrue(HolidaySeason.CHRISTMAS_ORTHODOX.burstSymbols.contains("⭐"))
+
+        assertTrue(HolidaySeason.VALENTINE.burstColors.isNotEmpty())
+        assertTrue(HolidaySeason.VALENTINE.burstSymbols.contains("❤️"))
+
+        assertTrue(HolidaySeason.EASTER.burstColors.isNotEmpty())
+        assertTrue(HolidaySeason.EASTER.burstSymbols.contains("🥚"))
 
         assertTrue(HolidaySeason.NONE.burstColors.isNotEmpty())
     }
