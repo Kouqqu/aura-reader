@@ -1,0 +1,55 @@
+Bundled fonts
+=============
+
+Aura Reader ships the following font files in app/src/main/res/font/. All of
+them are licensed under the SIL Open Font License, Version 1.1
+(https://openfontlicense.org), as stated in the `name` table embedded in each
+file. The copyright lines below are copied from those name tables.
+
+google_sans_regular.ttf
+  Google Sans
+  Copyright 2025 The Google Sans Project Authors
+  (github.com/googlefonts/googlesans)
+  "Google" and "Google Sans" are trademarks of Google LLC.
+
+inter_regular.ttf
+  Inter
+  Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+  Inter is a trademark of rsms.
+
+jetbrains_mono_regular.ttf
+  JetBrains Mono
+  Copyright 2020 The JetBrains Mono Project Authors
+  (https://github.com/JetBrains/JetBrainsMono)
+  JetBrains Mono is a trademark of JetBrains s.r.o.
+
+literata_regular.ttf
+  Literata
+  Copyright 2017 The Literata Project Authors
+  (https://github.com/googlefonts/literata)
+  Literata is a trademark of Google Inc.
+
+lora_regular.ttf
+  Lora
+  Copyright 2011 The Lora Project Authors
+  (https://github.com/cyrealtype/Lora-Cyrillic),
+  with Reserved Font Name "Lora".
+
+marcellus_regular.ttf
+  Marcellus
+  Copyright (c) 2012 by Brian J. Bonislawsky DBA Astigmatic (AOETI)
+  (astigma@astigmatic.com), with Reserved Font Name "Marcellus"
+
+pt_serif_regular.ttf
+  PT Serif
+  Copyright (c) 2010 ParaType Ltd. (http://www.paratype.com/public),
+  with Reserved Font Names "PT Sans", "PT Serif" and "ParaType".
+
+SIL Open Font License 1.1
+-------------------------
+
+The full text of the license is available at https://openfontlicense.org and
+ships with the official distribution of each font listed above. In short: the
+fonts may be bundled and redistributed with this application as long as the
+copyright notice and the license travel with them, they are not sold on their
+own, and modified versions do not use the Reserved Font Names.

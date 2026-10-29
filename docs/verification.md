@@ -439,3 +439,27 @@ holiday settings strings. On-device checks:
 switch the app language to Ukrainian, Polish and Hebrew and confirm the header
 badge and greeting change with it (Halloween is active, or force a season from
 the developer override); the developer chips stay Russian as before.
+
+## 2.2.0-beta.38 — correct sound credit and font notices
+
+Assets and documentation only; no code change.
+
+**Halloween sound credit.** beta.37 could only point at the Uppbeat category
+page because the track details had not been recorded. The track is "Spooky
+Ghosts" (Halloween intro music) by Gfx Sounds. The notice now names the track,
+the author page (`https://uppbeat.io/contributors/gfx-sounds?type=sfx`) and the
+category page it was downloaded from.
+
+**Font licences.** All seven bundled TTFs declare SIL Open Font License 1.1 in
+their own `name` table (checked by parsing the table directly). Google Sans is
+the 2025 OFL release from `googlefonts/googlesans`, not the older proprietary
+build; Inter, JetBrains Mono, Literata, Lora, Marcellus and PT Serif are OFL as
+well. `assets/licenses/fonts.txt` lists every family with its copyright line,
+trademark note and a pointer to the license text, next to the existing
+`liquid_glass_easy.txt` and `uppbeat_halloween_sound.txt`.
+
+**Documentation.** `docs/upgrades.md` no longer says the font notices are
+missing and records the track/author of the sound.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` and by listing
+`assets/licenses/` inside the built APK, which now contains all three notices.

@@ -4,24 +4,20 @@ Halloween sound effect
 File: app/src/main/res/raw/halloween_sound.mp3
 Used by: com.aura.reader.util.HolidaySoundPlayer (Halloween season only)
 
-Source
-------
-Downloaded from Uppbeat:
-https://uppbeat.io/sfx/category/occasion/halloween
+Track: "Spooky Ghosts" (Halloween intro music)
+Author: Gfx Sounds
+Author page: https://uppbeat.io/contributors/gfx-sounds?type=sfx
+Category page: https://uppbeat.io/sfx/category/occasion/halloween
 
-Uppbeat (https://uppbeat.io) is a royalty-free music and sound-effect library.
-Sound effects downloaded with a free Uppbeat account may be used in personal
-and commercial projects, including apps, but the licence asks for credit to the
-author together with a link back to the track page.
+Licence
+-------
+The sound was downloaded from Uppbeat (https://uppbeat.io), a royalty-free
+music and sound-effect library. Sound effects downloaded with a free Uppbeat
+account may be used in personal and commercial projects, including mobile apps,
+provided the author is credited and the credit links back to Uppbeat.
 
-Attribution
------------
-The exact track title and author name were not recorded when the file was
-saved, so this notice can only point to the category page above instead of the
-individual track. If you are the author of this sound and would like a precise
-credit line here, please open an issue in the project repository:
-https://github.com/Kouqqu/aura-reader/issues
+Credit: "Spooky Ghosts" by Gfx Sounds, via Uppbeat.
 
-Until then this file is the attribution record for the sound. It ships inside
-the APK (assets/licenses) so the notice travels with every copy of the app, as
-required by the GPLv3 licence of Aura Reader and by Uppbeat's attribution term.
+This file is the attribution record for the sound. It ships inside the APK
+(assets/licenses) so the notice travels with every copy of the app, as required
+by the GPLv3 licence of Aura Reader and by Uppbeat's attribution term.
