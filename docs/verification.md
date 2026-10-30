@@ -565,3 +565,22 @@ Implements Connected Button Groups, M3 Menu alignment & trailing selection check
   - Selection indicator checkmark (`Icons.Rounded.Check`) positioned as `trailingIcon` so text labels remain perfectly left-aligned without layout shifts between selected and unselected states.
 
 Verified with `testDebugUnitTest lintDebug assembleDebug`.
+
+## 2.2.0-beta.43 — Half-Screen Settings Sheet Polish, Holiday Emoji Baseline, and OPDS Expressive Loading
+
+Refines bottom sheet interaction to half-screen presentation with zero-latency swipe dismiss, corrects holiday emoji vertical alignment, and enhances OPDS catalog loading with Material 3 Expressive circular progress indicator and slow-connection grace messaging.
+
+**Half-Screen Settings Bottom Sheet.**
+- Restored half-screen default state: `skipPartiallyExpanded = false` in `SettingsBottomSheet.kt`.
+- Resolved swipe-to-dismiss freeze: removed fling velocity interception in `sheetScrollIsolation` so downward flicks immediately close the sheet with fluid 120Hz physics without hanging or stalling.
+- Guaranteed camera / status bar clearance with 24.dp status bar padding.
+
+**Holiday Emoji Vertical Alignment.**
+- Corrected emoji baseline shift in `LibraryTopBar.kt`: applied optical vertical offset `-1.5.dp` to the festive emoji and centered the badge relative to the "Aura Reader" title baseline.
+
+**OPDS Expressive Circular Loading & Slow Connection Grace.**
+- Material 3 Expressive Circular Progress Indicator: 48.dp size, 4.dp stroke width with rounded caps (`strokeCap = StrokeCap.Round`) and subtle background track.
+- Graceful slow-connection handling: extended socket read/call timeout (45s/50s) and introduced an animated notice («Каталог отвечает чуть дольше обычного... Пожалуйста, подождите») when the server takes longer than 3.5 seconds to reply, before gracefully falling back to error view if completely unresponsive.
+- Localized slow-connection message across all 7 supported languages in `AppStrings.kt`.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug`.

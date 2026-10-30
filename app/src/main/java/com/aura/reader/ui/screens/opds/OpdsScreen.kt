@@ -4,6 +4,10 @@ import com.aura.reader.ui.components.ParallaxCoverViewer
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -98,6 +102,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -621,18 +626,49 @@ fun OpdsScreen(
             ) {
                 when (val state = uiState) {
                     is OpdsUiState.Loading -> {
+                        var isSlowLoading by remember { mutableStateOf(false) }
+                        LaunchedEffect(Unit) {
+                            kotlinx.coroutines.delay(3500)
+                            isSlowLoading = true
+                        }
+
                         Column(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 32.dp),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                            Spacer(modifier = Modifier.height(16.dp))
+                            // Material 3 Expressive Circular Progress Indicator
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(48.dp),
+                                strokeWidth = 4.dp,
+                                strokeCap = StrokeCap.Round,
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                            )
+                            Spacer(modifier = Modifier.height(18.dp))
                             Text(
                                 text = strings.loading,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
+                            AnimatedVisibility(
+                                visible = isSlowLoading,
+                                enter = fadeIn(animationSpec = tween(400)) + expandVertically(animationSpec = tween(400)),
+                                exit = fadeOut(animationSpec = tween(200))
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Text(
+                                        text = strings.opdsSlowLoadingMessage,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
                         }
                     }
                     is OpdsUiState.Error -> {

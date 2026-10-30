@@ -217,7 +217,8 @@ AnimatedContent(
                         SeasonalHeaderBadge(
                             holidaySeason = holidaySeason,
                             onClick = onHolidayBadgeClick,
-                            scale = badgeScale
+                            scale = badgeScale,
+                            modifier = Modifier.align(Alignment.CenterVertically).offset(y = (-1).dp)
                         )
                     }
                 }
@@ -272,13 +273,14 @@ AnimatedContent(
 private fun SeasonalHeaderBadge(
     holidaySeason: HolidaySeason,
     onClick: (Offset) -> Unit,
-    scale: Float = 1f
+    scale: Float = 1f,
+    modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
     val infiniteTransition = rememberInfiniteTransition(label = "holidayBadge")
     val offsetY by infiniteTransition.animateFloat(
-        initialValue = -2.5f,
-        targetValue = 2.5f,
+        initialValue = -2f,
+        targetValue = 2f,
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -286,8 +288,8 @@ private fun SeasonalHeaderBadge(
         label = "holidayOffsetY"
     )
     val rotation by infiniteTransition.animateFloat(
-        initialValue = -4f,
-        targetValue = 4f,
+        initialValue = -3.5f,
+        targetValue = 3.5f,
         animationSpec = infiniteRepeatable(
             animation = tween(1600, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -301,7 +303,7 @@ private fun SeasonalHeaderBadge(
         shape = RoundedCornerShape(12.dp),
         color = holidaySeason.primaryAccent.copy(alpha = 0.16f),
         border = BorderStroke(1.dp, holidaySeason.primaryAccent.copy(alpha = 0.35f)),
-        modifier = Modifier
+        modifier = modifier
             .heightIn(max = 28.dp)
             .onGloballyPositioned { badgeCoordinates = it }
             .clickable(
@@ -326,7 +328,8 @@ private fun SeasonalHeaderBadge(
             Text(
                 text = holidaySeason.iconEmoji,
                 fontSize = 14.sp,
-                maxLines = 1
+                maxLines = 1,
+                modifier = Modifier.offset(y = (-1.5).dp)
             )
             Text(
                 text = strings.holidayDisplayName(holidaySeason),

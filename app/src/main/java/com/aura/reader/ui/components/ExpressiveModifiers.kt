@@ -198,39 +198,11 @@ fun Modifier.jellyOverscroll(
 }
 
 /**
- * Isolates nested scrolling for Bottom Sheets.
- * Prevents accidental sheet dragging and flings when the user scrolls inside the sheet content.
- * The sheet is only allowed to drag to dismiss when the content is at the top AND the user
- * intentionally pulls down with direct touch input (not momentum fling).
+ * Backward-compatibility wrapper for bottom sheets.
  */
 fun Modifier.sheetScrollIsolation(
     isAtTop: () -> Boolean = { true }
-): Modifier = composed {
-    val connection = remember(isAtTop) {
-        object : NestedScrollConnection {
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource
-            ): Offset {
-                // If user is at the top of content and dragging downward with deliberate user touch input, pass to sheet to dismiss
-                if (available.y > 0f && source == NestedScrollSource.UserInput && isAtTop()) {
-                    return Offset.Zero
-                }
-                // Absorb leftover delta (e.g. upward scroll beyond bottom, or downward when not at top)
-                // so the bottom sheet does NOT catch or jitter!
-                return available
-            }
-
-            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                // Completely absorb leftover fling velocity so rapid scrolling towards the top
-                // NEVER accidentally flings or slams the sheet shut!
-                return available
-            }
-        }
-    }
-    this.nestedScroll(connection)
-}
+): Modifier = this
 
 /**
  * Synchronizes the status bar appearance and ensures transparent edge-to-edge

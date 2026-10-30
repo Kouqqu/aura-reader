@@ -78,6 +78,7 @@ interface Strings {
     val opdsStatusOffline: String
     val opdsConnectionErrorTitle: String
     val opdsConnectionErrorSubtitle: String
+    val opdsSlowLoadingMessage: String
     val downloadFb2: String
     val downloadEpub: String
     val downloading: String
@@ -567,6 +568,7 @@ class RuStrings : Strings {
     override val opdsStatusOffline = "Каталог недоступен"
     override val opdsConnectionErrorTitle = "Не удалось связаться с сервером"
     override val opdsConnectionErrorSubtitle = "Возможно, с IP-адресов других стран всё заработает."
+    override val opdsSlowLoadingMessage = "Каталог отвечает чуть дольше обычного... Пожалуйста, подождите"
     override val downloadFb2 = "Скачать FB2"
     override val downloadEpub = "Скачать EPUB"
     override val downloading = "Загрузка..."
@@ -986,6 +988,7 @@ class EnStrings : Strings {
     override val opdsStatusOffline = "Catalog is unavailable"
     override val opdsConnectionErrorTitle = "Could not connect to server"
     override val opdsConnectionErrorSubtitle = "It might work when connecting from other countries."
+    override val opdsSlowLoadingMessage = "The catalog is taking a little longer than usual to load... Please wait"
     override val downloadFb2 = "Download FB2"
     override val downloadEpub = "Download EPUB"
     override val downloading = "Downloading..."
@@ -1405,6 +1408,7 @@ class UkStrings : Strings {
     override val opdsStatusOffline = "Каталог недоступний"
     override val opdsConnectionErrorTitle = "Не вдалося з'єднатися з сервером"
     override val opdsConnectionErrorSubtitle = "Можливо, з IP-адрес інших країн усе запрацює."
+    override val opdsSlowLoadingMessage = "Каталог відповідає трохи довше, ніж зазвичай... Будь ласка, зачекайте"
     override val downloadFb2 = "Завантажити FB2"
     override val downloadEpub = "Завантажити EPUB"
     override val downloading = "Завантаження..."
@@ -1824,6 +1828,7 @@ class BeStrings : Strings {
     override val opdsStatusOffline = "Каталог недаступны"
     override val opdsConnectionErrorTitle = "Не ўдалося звязацца з серверам"
     override val opdsConnectionErrorSubtitle = "Магчыма, з IP-адрасоў іншых краін усё запрацуе."
+    override val opdsSlowLoadingMessage = "Каталог адказвае крыху даўжэй, чым звычайна... Калі ласка, пачакайце"
     override val downloadFb2 = "Спампаваць FB2"
     override val downloadEpub = "Спампаваць EPUB"
     override val downloading = "Спампоўванне..."
@@ -2243,6 +2248,7 @@ class PlStrings : Strings {
     override val opdsStatusOffline = "Katalog jest niedostępny"
     override val opdsConnectionErrorTitle = "Nie udało się połączyć z serwerem"
     override val opdsConnectionErrorSubtitle = "Być może połączenie zadziała z adresów IP innych krajów."
+    override val opdsSlowLoadingMessage = "Katalog odpowiada nieco dłużej niż zwykle... Proszę czekać"
     override val downloadFb2 = "Pobierz FB2"
     override val downloadEpub = "Pobierz EPUB"
     override val downloading = "Pobieranie..."
@@ -2603,6 +2609,7 @@ class CsStrings : Strings {
     override val opdsStatusOffline = "Katalog není dostupný"
     override val opdsConnectionErrorTitle = "Chyba připojení"
     override val opdsConnectionErrorSubtitle = "Nepodařilo se připojit ke katalogu. Zkontrolujte připojení k internetu."
+    override val opdsSlowLoadingMessage = "Katalog odpovídá o něco déle než obvykle... Počkejte prosím"
     override val downloadFb2 = "Stáhnout FB2"
     override val downloadEpub = "Stáhnout EPUB"
     override val downloading = "Stahování..."
@@ -3056,6 +3063,7 @@ class HeStrings : Strings {
     override val opdsStatusOffline = "הקטלוג אינו זמין"
     override val opdsConnectionErrorTitle = "שגיאת חיבור"
     override val opdsConnectionErrorSubtitle = "לא ניתן להתחבר לקטלוג. בדוק את החיבור לרשת או השתמש ב-VPN"
+    override val opdsSlowLoadingMessage = "הקטלוג מגיב מעט יותר מהרגיל... אנא המתן"
     override val downloadFb2 = "הורד FB2"
     override val downloadEpub = "הורד EPUB"
     override val downloading = "מוריד..."
