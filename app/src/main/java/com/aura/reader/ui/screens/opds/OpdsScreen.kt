@@ -34,6 +34,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import com.aura.reader.ui.components.WavyProgressIndicator
 import androidx.compose.material.icons.rounded.Close
+import com.aura.reader.ui.components.ExpressiveSplitButton
 
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Sort
@@ -479,38 +480,39 @@ fun OpdsScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 4.dp)
                 ) {
-                    Surface(
-                        onClick = { showSortDropdown = true },
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                        modifier = Modifier.height(38.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                    ExpressiveSplitButton(
+                        leadingContent = {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.Sort,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.onSurface
+                                modifier = Modifier.size(18.dp)
                             )
                             Text(
                                 text = currentSortLabel,
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.SemiBold,
                                 maxLines = 1
                             )
-                            Icon(
-                                imageVector = Icons.Rounded.ArrowDropDown,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                        },
+                        onLeadingClick = {
+                            val newOption = when (sortOption) {
+                                CatalogSortOption.POPULAR_DESC, CatalogSortOption.DEFAULT -> CatalogSortOption.POPULAR_ASC
+                                CatalogSortOption.POPULAR_ASC -> CatalogSortOption.POPULAR_DESC
+                                CatalogSortOption.TITLE_ASC -> CatalogSortOption.TITLE_DESC
+                                CatalogSortOption.TITLE_DESC -> CatalogSortOption.TITLE_ASC
+                                CatalogSortOption.AUTHOR_ASC -> CatalogSortOption.AUTHOR_DESC
+                                CatalogSortOption.AUTHOR_DESC -> CatalogSortOption.AUTHOR_ASC
+                                CatalogSortOption.YEAR_DESC -> CatalogSortOption.YEAR_ASC
+                                CatalogSortOption.YEAR_ASC -> CatalogSortOption.YEAR_DESC
+                            }
+                            viewModel.setSortOption(newOption)
+                        },
+                        onTrailingClick = { showSortDropdown = !showSortDropdown },
+                        isExpanded = showSortDropdown,
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        height = 40.dp
+                    )
 
                     DropdownMenu(
                         expanded = showSortDropdown,

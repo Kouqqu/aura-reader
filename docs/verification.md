@@ -497,3 +497,26 @@ April 18–21; 2026 (Western April 5, Orthodox April 12) → April 3–6 and 10�
 with April 8 → `NONE` between them; 2027 (March 28 and May 2) → March 26–29 and
 April 30–May 3, with April 15 → `NONE`. On-device: force both seasons from the
 developer row and check the badge, greeting, palette and burst.
+
+## 2.2.0-beta.40 — Material 3 Expressive Split Buttons and action bar alignment
+
+Implements the official Material 3 Split Button and Expressive button guidelines
+(https://m3.material.io/components/split-button/overview and
+https://m3.material.io/components/all-buttons).
+
+**Material 3 Expressive Split Button component.** Created `ExpressiveButtons.kt`
+with `ExpressiveSplitButton` and `ExpressiveIconButton`:
+- Two separate interactive segments: leading button (action/label) and trailing button (disclosure chevron).
+- Expressive asymmetrical shapes: leading button has 20.dp outer corners and 4.dp inner corners; trailing button has 4.dp inner corners and 20.dp outer corners.
+- 2.dp gap between segments with independent ripple effects and touch states.
+- Standard 40.dp button height across all variants.
+- Trailing chevron features smooth 180° animated rotation when the dropdown menu opens.
+
+**Applied in Library and OPDS Catalog.**
+- Library action bar: the Sort button is now a split button with the leading action and trailing chevron, paired with an Expressive 40.dp squircle layout toggle button.
+- OPDS Catalog: the Sort bar uses `ExpressiveSplitButton`, allowing quick direction toggles by tapping the leading label segment, while the trailing chevron opens the full category dropdown.
+- Currently Reading Hero Card: "Continue reading" button updated to standard M3 Expressive 40.dp pill shape.
+
+**Localization fix.** Fixed typo in Belarusian Valentine greeting (`Кахання`).
+
+Verified with `testDebugUnitTest lintDebug assembleDebug`.

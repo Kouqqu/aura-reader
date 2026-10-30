@@ -418,28 +418,28 @@ fun CurrentlyReadingHeroCard(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Continue reading button
+                    // Continue reading button (Material 3 Expressive pill button)
                     Button(
                         onClick = { onBookClick(book) },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(20.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = primaryAccent
                         ),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 14.dp,
-                            vertical = 6.dp
+                            horizontal = 18.dp,
+                            vertical = 8.dp
                         ),
-                        modifier = Modifier.height(34.dp)
+                        modifier = Modifier.height(40.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.PlayArrow,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = strings.continueReadingAction,
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                     }

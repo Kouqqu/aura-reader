@@ -1744,7 +1744,7 @@ class BeStrings : Strings {
     override val holidayGreetingNewYear = "Шчаслівага Новага года!"
     override val holidayGreetingWinter = "Утульных зімовых дзён і чытання!"
     override val holidayValentine = "Дзень закаханых"
-    override val holidayGreetingValentine = "Кахания і ўтульнага чытання!"
+    override val holidayGreetingValentine = "Кахання і ўтульнага чытання!"
     override val holidayEaster = "Вялікдзень"
     override val holidayGreetingEaster = "Светлага Вялікдня!"
     override val sortTitle = "Сартаванне"

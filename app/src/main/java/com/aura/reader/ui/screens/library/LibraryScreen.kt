@@ -137,6 +137,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import com.aura.reader.ui.components.ExpressiveIconButton
+import com.aura.reader.ui.components.ExpressiveSplitButton
 import com.aura.reader.ui.components.PixelFullScreenBurst
 import com.aura.reader.ui.components.triggerThemeHaptic
 import androidx.compose.ui.Alignment
@@ -864,32 +866,27 @@ fun LibraryScreen(
                                                                     LibrarySortOption.SERIES -> strings.sortBySeries
                                                                     LibrarySortOption.CUSTOM -> strings.sortCustomOrder
                                                                 }
-                                                                Surface(
-                                                                    onClick = { showSortMenu = true },
-                                                                    shape = RoundedCornerShape(12.dp),
-                                                                    color = buttonBg,
-                                                                    border = buttonBorder,
-                                                                    modifier = Modifier.height(38.dp)
-                                                                ) {
-                                                                    Row(
-                                                                        modifier = Modifier.padding(horizontal = 14.dp),
-                                                                        verticalAlignment = Alignment.CenterVertically,
-                                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                                                    ) {
+                                                                ExpressiveSplitButton(
+                                                                    leadingContent = {
                                                                         Icon(
                                                                             imageVector = Icons.AutoMirrored.Rounded.Sort,
                                                                             contentDescription = strings.sortTitle,
-                                                                            modifier = Modifier.size(18.dp),
-                                                                            tint = MaterialTheme.colorScheme.onSurface
+                                                                            modifier = Modifier.size(18.dp)
                                                                         )
                                                                         Text(
                                                                             text = sortLabel,
                                                                             style = MaterialTheme.typography.labelLarge,
-                                                                            fontWeight = FontWeight.Medium,
-                                                                            color = MaterialTheme.colorScheme.onSurface
+                                                                            fontWeight = FontWeight.SemiBold
                                                                         )
-                                                                    }
-                                                                }
+                                                                    },
+                                                                    onLeadingClick = { showSortMenu = true },
+                                                                    onTrailingClick = { showSortMenu = !showSortMenu },
+                                                                    isExpanded = showSortMenu,
+                                                                    containerColor = buttonBg,
+                                                                    contentColor = MaterialTheme.colorScheme.onSurface,
+                                                                    border = buttonBorder,
+                                                                    height = 40.dp
+                                                                )
 
                                                                 val sortMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
                                                                 DropdownMenu(
@@ -983,22 +980,15 @@ fun LibraryScreen(
                                                         }
 
                                                         // 2. Layout Toggle Button [ ☷ ] / [ ☰ ]
-                                                        Surface(
+                                                        ExpressiveIconButton(
+                                                            icon = if (libraryViewMode == "GRID") Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
                                                             onClick = { viewModel.toggleLibraryViewMode() },
-                                                            shape = RoundedCornerShape(12.dp),
-                                                            color = buttonBg,
+                                                            contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid,
+                                                            containerColor = buttonBg,
+                                                            contentColor = MaterialTheme.colorScheme.onSurface,
                                                             border = buttonBorder,
-                                                            modifier = Modifier.size(38.dp)
-                                                        ) {
-                                                            Box(contentAlignment = Alignment.Center) {
-                                                                Icon(
-                                                                    imageVector = if (libraryViewMode == "GRID") Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
-                                                                    contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid,
-                                                                    tint = MaterialTheme.colorScheme.onSurface,
-                                                                    modifier = Modifier.size(20.dp)
-                                                                )
-                                                            }
-                                                        }
+                                                            size = 40.dp
+                                                        )
                                                     }
                                                 }
                                             }
