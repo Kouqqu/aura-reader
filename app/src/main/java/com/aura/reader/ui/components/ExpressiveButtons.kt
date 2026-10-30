@@ -1,9 +1,17 @@
 package com.aura.reader.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -15,9 +23,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -223,6 +233,174 @@ fun ExpressiveIconButton(
                 tint = contentColor,
                 modifier = Modifier.size(20.dp)
             )
+        }
+    }
+}
+
+/**
+ * Material 3 Expressive Connected Button Group / Segmented Button Item.
+ *
+ * Adheres to Material 3 Expressive Connected Button Group guidelines:
+ * (https://m3.material.io/components/all-buttons and https://m3.material.io/components/segmented-buttons/overview)
+ * - Segments form a continuous connected ribbon with 2.dp calibrated gaps.
+ * - Asymmetrical corner radii: outer ends are large (16.dp), inner touching ends are small (4.dp).
+ * - Standard 36.dp height.
+ * - Dynamic containerColor (secondaryContainer when selected, surfaceContainerLow with outlineVariant border when unselected).
+ * - Animated selection checkmark when selected (if no explicit leading icon is present).
+ * - Strict corner clipping so ripple/press states never bleed out as a rectangle.
+ * - Independent press spring physics.
+ */
+@Composable
+fun ExpressiveConnectedButtonItem(
+    selected: Boolean,
+    onClick: () -> Unit,
+    index: Int,
+    totalCount: Int,
+    label: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
+    isGlass: Boolean = false,
+    isDark: Boolean = isSystemInDarkTheme(),
+    outerRadius: Dp = 16.dp,
+    innerRadius: Dp = 4.dp,
+    height: Dp = 36.dp,
+    enabled: Boolean = true
+) {
+    val shape: Shape = when {
+        totalCount <= 1 -> RoundedCornerShape(outerRadius)
+        index == 0 -> RoundedCornerShape(
+            topStart = outerRadius,
+            bottomStart = outerRadius,
+            topEnd = innerRadius,
+            bottomEnd = innerRadius
+        )
+        index == totalCount - 1 -> RoundedCornerShape(
+            topStart = innerRadius,
+            bottomStart = innerRadius,
+            topEnd = outerRadius,
+            bottomEnd = outerRadius
+        )
+        else -> RoundedCornerShape(innerRadius)
+    }
+
+    val interactionSource = remember { MutableInteractionSource() }
+
+    if (isGlass) {
+        val primaryColor = MaterialTheme.colorScheme.primary
+        val bg = if (selected) {
+            primaryColor.copy(alpha = if (isDark) 0.28f else 0.18f)
+        } else {
+            if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.04f)
+        }
+        val borderColor = if (selected) {
+            primaryColor.copy(alpha = 0.75f)
+        } else {
+            if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
+        }
+        val contentColor = if (selected) primaryColor else MaterialTheme.colorScheme.onSurface
+
+        Box(
+            modifier = modifier
+                .height(height)
+                .clip(shape)
+                .background(bg)
+                .border(width = 0.5.dp, color = borderColor, shape = shape)
+                .clip(shape)
+                .expressiveClickable(scaleDown = 0.95f, onClick = onClick)
+                .padding(horizontal = 14.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (leadingIcon != null) {
+                    leadingIcon()
+                } else {
+                    AnimatedVisibility(
+                        visible = selected,
+                        enter = expandHorizontally() + fadeIn(),
+                        exit = shrinkHorizontally() + fadeOut()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                            tint = contentColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                CompositionLocalProvider(
+                    LocalContentColor provides contentColor,
+                    LocalTextStyle provides MaterialTheme.typography.labelLarge
+                ) {
+                    label()
+                }
+                if (trailingIcon != null) {
+                    trailingIcon()
+                }
+            }
+        }
+    } else {
+        val containerColor = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        }
+        val contentColor = if (selected) {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+        val border = if (!selected) {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        } else null
+
+        Surface(
+            onClick = onClick,
+            shape = shape,
+            color = containerColor,
+            contentColor = contentColor,
+            border = border,
+            enabled = enabled,
+            interactionSource = interactionSource,
+            modifier = modifier
+                .height(height)
+                .clip(shape)
+                .expressiveBounce(interactionSource, enabled = enabled)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (leadingIcon != null) {
+                    leadingIcon()
+                } else {
+                    AnimatedVisibility(
+                        visible = selected,
+                        enter = expandHorizontally() + fadeIn(),
+                        exit = shrinkHorizontally() + fadeOut()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                            tint = contentColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                CompositionLocalProvider(
+                    LocalContentColor provides contentColor,
+                    LocalTextStyle provides MaterialTheme.typography.labelLarge
+                ) {
+                    label()
+                }
+                if (trailingIcon != null) {
+                    trailingIcon()
+                }
+            }
         }
     }
 }

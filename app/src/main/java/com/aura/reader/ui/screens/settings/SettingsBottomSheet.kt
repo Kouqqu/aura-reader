@@ -180,7 +180,7 @@ fun SettingsBottomSheet(
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
         }.getOrNull() ?: "1.1.9"
     }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var sheetCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var burstOrigin by remember { mutableStateOf(Offset.Zero) }
     var burstColors by remember { mutableStateOf<List<Color>>(emptyList()) }
@@ -413,6 +413,7 @@ fun SettingsBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .sheetScrollIsolation(isAtTop = { settingsScrollState.value == 0 })
                     .jellyOverscroll(allowTopBounce = isFullScreen)
                     .padding(horizontal = 20.dp)
                     .verticalScroll(settingsScrollState)

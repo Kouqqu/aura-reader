@@ -2,6 +2,7 @@ package com.aura.reader.ui.screens.library
 
 import com.aura.reader.ui.components.expressiveClickable
 import com.aura.reader.ui.components.LiquidGlassFilterChip
+import com.aura.reader.ui.components.ExpressiveConnectedButtonItem
 import com.aura.reader.ui.components.LiquidGlassCard
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.foundation.horizontalScroll
@@ -29,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -162,6 +164,19 @@ internal fun LibraryCollectionChips(
 ) {
     val strings = LocalAppStrings.current
 
+    val systemFilters = remember(hasSeries, strings) {
+        buildList {
+            add(CollectionFilterType.ALL to strings.colAll)
+            add(CollectionFilterType.READING to strings.colReading)
+            add(CollectionFilterType.FAVORITES to strings.colFavorites)
+            add(CollectionFilterType.UNREAD to strings.colUnread)
+            add(CollectionFilterType.FINISHED to strings.colFinished)
+            if (hasSeries) {
+                add(CollectionFilterType.SERIES to strings.colSeries)
+            }
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -169,80 +184,71 @@ internal fun LibraryCollectionChips(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        LiquidGlassFilterChip(
-            selected = activeFilter.type == CollectionFilterType.ALL,
-            onClick = { onFilterChange(ActiveCollectionFilter(CollectionFilterType.ALL)) },
-            label = { Text(strings.colAll) },
-            isGlass = isGlass,
-            isDark = isThemeDark
-        )
-        LiquidGlassFilterChip(
-            selected = activeFilter.type == CollectionFilterType.READING,
-            onClick = { onFilterChange(ActiveCollectionFilter(CollectionFilterType.READING)) },
-            label = { Text(strings.colReading) },
-            isGlass = isGlass,
-            isDark = isThemeDark
-        )
-        LiquidGlassFilterChip(
-            selected = activeFilter.type == CollectionFilterType.FAVORITES,
-            onClick = { onFilterChange(ActiveCollectionFilter(CollectionFilterType.FAVORITES)) },
-            leadingIcon = {
-                Icon(
-                    Icons.Rounded.Favorite,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.error
+        // 1. Material 3 Expressive Connected Button Group (System Filters)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            systemFilters.forEachIndexed { index, (type, labelText) ->
+                val isSelected = activeFilter.type == type
+                val leadingIcon: (@Composable () -> Unit)? = if (type == CollectionFilterType.FAVORITES) {
+                    {
+                        Icon(
+                            imageVector = Icons.Rounded.Favorite,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                } else null
+
+                ExpressiveConnectedButtonItem(
+                    selected = isSelected,
+                    onClick = { onFilterChange(ActiveCollectionFilter(type)) },
+                    index = index,
+                    totalCount = systemFilters.size,
+                    label = { Text(labelText) },
+                    leadingIcon = leadingIcon,
+                    isGlass = isGlass,
+                    isDark = isThemeDark
                 )
-            },
-            label = { Text(strings.colFavorites) },
-            isGlass = isGlass,
-            isDark = isThemeDark
-        )
-        LiquidGlassFilterChip(
-            selected = activeFilter.type == CollectionFilterType.UNREAD,
-            onClick = { onFilterChange(ActiveCollectionFilter(CollectionFilterType.UNREAD)) },
-            label = { Text(strings.colUnread) },
-            isGlass = isGlass,
-            isDark = isThemeDark
-        )
-        LiquidGlassFilterChip(
-            selected = activeFilter.type == CollectionFilterType.FINISHED,
-            onClick = { onFilterChange(ActiveCollectionFilter(CollectionFilterType.FINISHED)) },
-            label = { Text(strings.colFinished) },
-            isGlass = isGlass,
-            isDark = isThemeDark
-        )
-        if (hasSeries) {
-            LiquidGlassFilterChip(
-                selected = activeFilter.type == CollectionFilterType.SERIES,
-                onClick = { onFilterChange(ActiveCollectionFilter(CollectionFilterType.SERIES)) },
-                label = { Text(strings.colSeries) },
-                isGlass = isGlass,
-                isDark = isThemeDark
-            )
+            }
         }
-        for (colName in userCollections) {
-            val isSelected = activeFilter.type == CollectionFilterType.CUSTOM && activeFilter.customName == colName
-            LiquidGlassFilterChip(
-                selected = isSelected,
-                onClick = { onFilterChange(ActiveCollectionFilter(CollectionFilterType.CUSTOM, colName)) },
-                trailingIcon = {
-                    Icon(
-                        Icons.Rounded.Close,
-                        contentDescription = strings.delete,
-                        modifier = Modifier
-                            .size(14.dp)
-                            .clickable { onDeleteCollection(colName) }
+
+        // 2. Custom User Collections (Connected Button Group if 2+, or standalone squircle if 1)
+        if (userCollections.isNotEmpty()) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                userCollections.forEachIndexed { index, colName ->
+                    val isSelected = activeFilter.type == CollectionFilterType.CUSTOM && activeFilter.customName == colName
+                    ExpressiveConnectedButtonItem(
+                        selected = isSelected,
+                        onClick = { onFilterChange(ActiveCollectionFilter(CollectionFilterType.CUSTOM, colName)) },
+                        index = index,
+                        totalCount = userCollections.size,
+                        label = { Text(colName) },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = strings.delete,
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .clickable { onDeleteCollection(colName) }
+                            )
+                        },
+                        isGlass = isGlass,
+                        isDark = isThemeDark
                     )
-                },
-                label = { Text(colName) },
-                isGlass = isGlass,
-                isDark = isThemeDark
-            )
+                }
+            }
         }
+
+        // 3. New Collection Action Button
         LiquidGlassFilterChip(
             selected = false,
-            onClick = { onNewCollection() },
+            onClick = onNewCollection,
             leadingIcon = { Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(16.dp)) },
             label = { Text(strings.newCollection) },
             isGlass = isGlass,

@@ -542,3 +542,26 @@ Implements connected action pairs, strict touch ripple boundary clipping, and fu
 - Updated `LinearProgressIndicator` across library cards (`CurrentlyReadingHeroCard.kt`, `BookCards.kt`), book details (`BookInfoDialog.kt`), and TTS player (`TtsBottomSheet.kt`) with `strokeCap = StrokeCap.Round` and standard 6.dp height.
 
 Verified with `testDebugUnitTest lintDebug assembleDebug`.
+
+## 2.2.0-beta.42 — Material 3 Expressive Connected Button Group, Menu Polish, and Sheet Scroll Isolation
+
+Implements Connected Button Groups, M3 Menu alignment & trailing selection checkmarks, bottom sheet nested scroll isolation, and settings update check behavior (https://m3.material.io/components/menus/overview, https://m3.material.io/components/all-buttons, https://m3.material.io/components/segmented-buttons/overview).
+
+**Settings Sheet Update Check Fix.**
+- Fixed premature sheet dismissal: removed accidental `showSettingsSheet = false` inside `onCheckUpdates` in `LibraryScreen.kt`. Checking for updates now keeps the settings sheet open while displaying update status toast or dialog.
+
+**Bottom Sheet Scroll Isolation & Touch Smoothness.**
+- Resolved "цепляние" (sheet gesture hijacking): enabled `skipPartiallyExpanded = true` on `SettingsBottomSheet` so the sheet opens directly to full comfortable height, eliminating the awkward half-expanded state where upward scrolling in the middle of the sheet dragged the sheet rather than scrolling the list.
+- Restored `sheetScrollIsolation`: absorbs post-fling kinetic momentum so rapid scrolling to the top never violently slams the sheet shut, while preserving intentional downward drag-to-dismiss when scrolled to the top.
+
+**Material 3 Expressive Connected Button Group.**
+- Created `ExpressiveConnectedButtonItem` in `ExpressiveButtons.kt`.
+- Applied Connected Button Group geometry to the library collection filter bar (`[ Все ] [ Читаю ] [ Избранное ] [ Непрочитанные ] [ Прочитанные ] [ Серии ]`): segments connect with calibrated 2.dp gaps, 16.dp outer rounded corners and 4.dp inner touching corners, `secondaryContainer` selection container with animated checkmark, and strict ripple clipping.
+
+**Material 3 Menu Alignment & Trailing Checkmarks.**
+- Updated the Library sort dropdown menu to M3 specification:
+  - 16.dp container corner radius.
+  - Aligned semantic leading icons for every item (`Schedule`, `Sort`, `Person`, `AutoStories`, `CollectionsBookmark`, `CloudDownload`).
+  - Selection indicator checkmark (`Icons.Rounded.Check`) positioned as `trailingIcon` so text labels remain perfectly left-aligned without layout shifts between selected and unselected states.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug`.
