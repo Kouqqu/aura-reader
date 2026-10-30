@@ -358,6 +358,9 @@ fun SettingsBottomSheet(
                         val isSelected = currentLanguage == lang
                         Surface(
                             onClick = {
+                                if (lang != AppLanguage.UK && lang != AppLanguage.EN && appFont == "ZAKON") {
+                                    onAppFontChange("GOOGLE_SANS")
+                                }
                                 onLanguageChange(lang)
                                 showLanguageDialog = false
                             },

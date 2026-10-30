@@ -584,3 +584,25 @@ Refines bottom sheet interaction to half-screen presentation with zero-latency s
 - Localized slow-connection message across all 7 supported languages in `AppStrings.kt`.
 
 Verified with `testDebugUnitTest lintDebug assembleDebug`.
+
+## 2.2.0-beta.44 — Ukrainian "Zakon" Interface Font with Strict Language Filter
+
+Integrates the official Ukrainian typeface "Zakon" (designed by Oleksii Chekal, Henadii Zarechniuk, Dmytro Rastvortsev, and Andrij Shevchenko for the Yaroslav the Wise National Library of Ukraine & Ministry of Culture) as an interface font option, protected by a strict language-aware filter.
+
+**Font Asset & Typography System.**
+- Bundled `app/src/main/res/font/zakon_regular.ttf` (OpenType with CFF outlines).
+- Registered attribution and license notice in `app/src/main/assets/licenses/fonts.txt`.
+- Exposed in `Theme.kt` via `resolveAppFontFamily(context, appFont, currentLanguage)` with dynamic typography reconfiguration.
+
+**Language-Aware Visibility Filter.**
+- The "Zakon" font chip in settings (`SettingsSections.kt`) only appears when the active application language is Ukrainian (`AppLanguage.UK`) or English (`AppLanguage.EN`).
+- The font's character map supports English (Basic Latin) and Ukrainian Cyrillic (with specific glyphs `І`, `Ї`, `Є`, `Ґ`, and apostrophe), but explicitly lacks Russian (`ы`, `э`, `ъ`, `ё`), Belarusian (`ў`), and Hebrew glyphs.
+- Automatic Graceful Fallback: switching the app language to an unsupported language (Russian, Belarusian, Polish, Czech, Hebrew) while Zakon is selected automatically and safely resets the app font to `Google Sans` in both `LibraryViewModel.setAppLanguage` and `SettingsBottomSheet`, preventing "tofu" boxes or font rendering glitches.
+- Runtime Safety in Theme: `resolveAppFontFamily` directly inspects `currentLanguage` and safely resolves to Google Sans if Zakon is requested on an unsupported language, providing multi-layered protection.
+
+**Localization & Architecture.**
+- Added `appFontZakon` string across all 7 supported languages in `AppStrings.kt`.
+- Added `LocalAppLanguage` composition local in `AppStrings.kt` and provided it in `MainActivity.kt`.
+- Created comprehensive regression unit tests in `ZakonFontLanguageTest.kt`.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug`.

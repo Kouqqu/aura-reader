@@ -337,7 +337,22 @@ ExpressiveSettingsGroup {
                 } else null
             )
 
-            // 3. User Imported Custom Fonts
+            // 3. Zakon (Ukrainian official font - Ukrainian & English only)
+            val isZakonAllowed = currentLanguage == AppLanguage.UK || currentLanguage == AppLanguage.EN
+            if (isZakonAllowed) {
+                val isZakon = appFont == "ZAKON"
+                LiquidGlassFilterChip(
+                    selected = isZakon,
+                    onClick = { onAppFontChange("ZAKON") },
+                    label = { Text(strings.appFontZakon) },
+                    isGlass = isGlass,
+                    leadingIcon = if (isZakon) {
+                        { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else null
+                )
+            }
+
+            // 4. User Imported Custom Fonts
             customFonts.forEach { fontFile ->
                 val fontKey = "CUSTOM:${fontFile.name}"
                 val isSelected = appFont == fontKey

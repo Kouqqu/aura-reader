@@ -119,6 +119,7 @@ fun AuraReaderTheme(
     themeMode: ReaderThemeMode = ReaderThemeMode.DARK,
     materialYou: Boolean = false,
     appFont: String = "GOOGLE_SANS",
+    currentLanguage: AppLanguage = AppLanguage.RU,
     readerMode: Boolean = false,
     holidaySeason: HolidaySeason = HolidaySeason.NONE,
     content: @Composable () -> Unit
@@ -127,8 +128,8 @@ fun AuraReaderTheme(
     val hasDynamic = materialYou && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val systemDark = isSystemInDarkTheme()
 
-    val typography = remember(appFont) {
-        val fontFamily = resolveAppFontFamily(context, appFont)
+    val typography = remember(appFont, currentLanguage) {
+        val fontFamily = resolveAppFontFamily(context, appFont, currentLanguage)
         createAppTypography(fontFamily)
     }
 
@@ -268,9 +269,20 @@ fun AuraReaderTheme(
 }
 
 
-fun resolveAppFontFamily(context: android.content.Context, appFont: String): FontFamily {
+fun resolveAppFontFamily(
+    context: android.content.Context,
+    appFont: String,
+    currentLanguage: AppLanguage = AppLanguage.RU
+): FontFamily {
     return when {
         appFont == "SYSTEM" || appFont == "DEFAULT" -> FontFamily.Default
+        appFont == "ZAKON" -> {
+            if (currentLanguage == AppLanguage.UK || currentLanguage == AppLanguage.EN) {
+                FontFamily(Font(R.font.zakon_regular))
+            } else {
+                FontFamily(Font(R.font.google_sans_regular))
+            }
+        }
         appFont.startsWith("CUSTOM:") -> {
             val fileName = appFont.removePrefix("CUSTOM:")
             val file = java.io.File(context.filesDir, "custom_fonts/$fileName")

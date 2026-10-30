@@ -409,6 +409,7 @@ interface Strings {
     val appFontSubtitle: String
     val appFontDefault: String
     val appFontGoogleSans: String
+    val appFontZakon: String
     val appFontAddCustom: String
     val appFontCustomDelete: String
     val appFontImportSuccess: String
@@ -830,6 +831,7 @@ class RuStrings : Strings {
     override val appFontSubtitle = "Шрифт элементов интерфейса"
     override val appFontDefault = "Системный"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontZakon = "Zakon"
     override val appFontAddCustom = "Добавить свой шрифт"
     override val appFontCustomDelete = "Удалить шрифт"
     override val appFontImportSuccess = "Шрифт успешно добавлен"
@@ -1250,6 +1252,7 @@ class EnStrings : Strings {
     override val appFontSubtitle = "Font used for UI elements"
     override val appFontDefault = "System"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontZakon = "Zakon"
     override val appFontAddCustom = "Add Custom Font"
     override val appFontCustomDelete = "Delete font"
     override val appFontImportSuccess = "Font added successfully"
@@ -1670,6 +1673,7 @@ class UkStrings : Strings {
     override val appFontSubtitle = "Шрифт елементів інтерфейсу"
     override val appFontDefault = "Системний"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontZakon = "Zakon"
     override val appFontAddCustom = "Додати свій шрифт"
     override val appFontCustomDelete = "Видалити шрифт"
     override val appFontImportSuccess = "Шрифт успішно додано"
@@ -2090,6 +2094,7 @@ class BeStrings : Strings {
     override val appFontSubtitle = "Шрыфт элементаў інтэрфейсу"
     override val appFontDefault = "Сістэмны"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontZakon = "Zakon"
     override val appFontAddCustom = "Дадаць свой шрыфт"
     override val appFontCustomDelete = "Выдаліць шрыфт"
     override val appFontImportSuccess = "Шрыфт паспяхова дададзены"
@@ -2509,6 +2514,7 @@ class PlStrings : Strings {
     override val appFontSubtitle = "Czcionka elementów interfejsu"
     override val appFontDefault = "Systemowa"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontZakon = "Zakon"
     override val appFontAddCustom = "Dodaj własną czcionkę"
     override val appFontCustomDelete = "Usuń czcionkę"
     override val appFontImportSuccess = "Czcionka została dodana"
@@ -2907,6 +2913,7 @@ class CsStrings : Strings {
     override val appFontSubtitle = "Písmo prvků rozhraní"
     override val appFontDefault = "Systémové"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontZakon = "Zakon"
     override val appFontAddCustom = "Přidat vlastní písmo"
     override val appFontCustomDelete = "Smazat písmo"
     override val appFontImportSuccess = "Písmo bylo úspěšně přidáno"
@@ -3305,6 +3312,7 @@ class HeStrings : Strings {
     override val appFontSubtitle = "גופן עבור רכיבי הממשק"
     override val appFontDefault = "מערכת"
     override val appFontGoogleSans = "Google Sans"
+    override val appFontZakon = "Zakon"
     override val appFontAddCustom = "הוסף גופן מותאם אישית"
     override val appFontCustomDelete = "מחק גופן"
     override val appFontImportSuccess = "הגופן נוסף בהצלחה"
@@ -3356,3 +3364,4 @@ fun getStrings(language: AppLanguage): Strings = when (language) {
 }
 
 val LocalAppStrings = staticCompositionLocalOf<Strings> { RuStrings() }
+val LocalAppLanguage = staticCompositionLocalOf<AppLanguage> { AppLanguage.RU }

@@ -129,6 +129,7 @@ class MainActivity : ComponentActivity() {
             if (completed != null) {
                 CompositionLocalProvider(
                     LocalAppStrings provides getStrings(appLanguage),
+                    com.aura.reader.ui.theme.LocalAppLanguage provides appLanguage,
                     com.aura.reader.data.model.LocalHolidaySeason provides holidaySeason,
                     com.aura.reader.ui.components.LocalMaterialYouEnabled provides materialYouEnabled
                 ) {
@@ -136,6 +137,7 @@ class MainActivity : ComponentActivity() {
                         themeMode = settings.appThemeMode,
                         materialYou = materialYouEnabled,
                         appFont = appFont,
+                        currentLanguage = appLanguage,
                         holidaySeason = holidaySeason
                     ) {
                         val navController = rememberNavController()

@@ -99,7 +99,12 @@ class LibraryViewModel(
     }
 
     fun setAppLanguage(language: AppLanguage) {
-        viewModelScope.launch { preferencesManager.updateAppLanguage(language) }
+        viewModelScope.launch {
+            if (language != AppLanguage.UK && language != AppLanguage.EN && appFont.value == "ZAKON") {
+                preferencesManager.setAppFont("GOOGLE_SANS")
+            }
+            preferencesManager.updateAppLanguage(language)
+        }
     }
 
     fun setThemeMode(themeMode: ReaderThemeMode) {

@@ -45,6 +45,12 @@ pt_serif_regular.ttf
   Copyright (c) 2010 ParaType Ltd. (http://www.paratype.com/public),
   with Reserved Font Names "PT Sans", "PT Serif" and "ParaType".
 
+zakon_regular.ttf
+  Zakon
+  Copyright 2026 Oleksii Chekal, Henadii Zarechniuk, Dmytro Rastvortsev, Andrij Shevchenko
+  (Commissioned by Yaroslav the Wise National Library of Ukraine & Ministry of Culture, www.mincult.gov.ua)
+  Released under open culture / public license.
+
 SIL Open Font License 1.1
 -------------------------
 
