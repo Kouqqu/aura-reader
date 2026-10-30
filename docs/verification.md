@@ -606,3 +606,20 @@ Integrates the official Ukrainian typeface "Zakon" (designed by Oleksii Chekal, 
 - Created comprehensive regression unit tests in `ZakonFontLanguageTest.kt`.
 
 Verified with `testDebugUnitTest lintDebug assembleDebug`.
+
+## 2.2.0 — Official Stable Release
+
+Official stable release consolidating the entire 2.2.0 cycle (betas 1–44):
+- Live Text-to-Speech spoken word highlighting with auto-scroll and word seek.
+- Material 3 Expressive Connected Button Groups, Split Action Pairs, and M3 Menus.
+- Liquid Glass refined optics, iOS-style translucent switches, and floating blur dock.
+- Custom font import (TTF/OTF) and the official Ukrainian typeface "Zakon" with language filter.
+- Seasonal holiday events (Halloween, New Year, Christmas, Valentine's Day, Easter) with auto-computed dates and user toggles.
+- Library shelf organization, reading goal celebration (confetti + trophy), and hero card polish.
+- In-reader multi-language translation without clipboard interference.
+- New formats: MOBI, AZW3, CBZ.
+- OPDS catalog graceful slow-connection handling and M3 Expressive circular loading.
+- 7 supported languages, including Hebrew (עברית).
+- Bundled font and audio licensing notices in `assets/licenses/`.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug`.

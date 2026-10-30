@@ -3,7 +3,7 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-10-30, release `2.2.0-beta.44` (`versionCode 161`).
+Last updated: 2026-10-30, release `2.2.0` (`versionCode 162`).
 `2.2.0-beta.14` changed no build files: it merged the UI-file split (see
 `docs/verification.md`) and bumped the version only. `2.2.0-beta.15` turned off
 Compose's new text context menu so the reader keeps its custom selection
