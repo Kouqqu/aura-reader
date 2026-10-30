@@ -879,9 +879,16 @@ fun LibraryScreen(
                                                                             fontWeight = FontWeight.SemiBold
                                                                         )
                                                                     },
+                                                                    trailingContent = {
+                                                                        Icon(
+                                                                            imageVector = if (libraryViewMode == "GRID") Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
+                                                                            contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid,
+                                                                            tint = MaterialTheme.colorScheme.onSurface,
+                                                                            modifier = Modifier.size(20.dp)
+                                                                        )
+                                                                    },
                                                                     onLeadingClick = { showSortMenu = true },
-                                                                    onTrailingClick = { showSortMenu = !showSortMenu },
-                                                                    isExpanded = showSortMenu,
+                                                                    onTrailingClick = { viewModel.toggleLibraryViewMode() },
                                                                     containerColor = buttonBg,
                                                                     contentColor = MaterialTheme.colorScheme.onSurface,
                                                                     border = buttonBorder,
@@ -978,17 +985,6 @@ fun LibraryScreen(
                                                                 }
                                                             }
                                                         }
-
-                                                        // 2. Layout Toggle Button [ ☷ ] / [ ☰ ]
-                                                        ExpressiveIconButton(
-                                                            icon = if (libraryViewMode == "GRID") Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
-                                                            onClick = { viewModel.toggleLibraryViewMode() },
-                                                            contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid,
-                                                            containerColor = buttonBg,
-                                                            contentColor = MaterialTheme.colorScheme.onSurface,
-                                                            border = buttonBorder,
-                                                            size = 40.dp
-                                                        )
                                                     }
                                                 }
                                             }

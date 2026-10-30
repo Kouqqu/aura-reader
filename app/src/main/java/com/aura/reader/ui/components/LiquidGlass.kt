@@ -1,5 +1,11 @@
 package com.aura.reader.ui.components
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
@@ -44,6 +50,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -923,7 +930,13 @@ fun FloatingAddGlassButton(
 }
 
 /**
- * Frosted Glass Filter Chip matching iOS Liquid Glass.
+ * Frosted Glass Filter Chip matching iOS Liquid Glass or Material 3 Expressive Filter Chip.
+ *
+ * Follows Material 3 Expressive specifications (https://m3.material.io/components/chips/overview):
+ * - 36.dp height with 16.dp squircle corner radius.
+ * - Dynamic selected state container (secondaryContainer) vs unselected (surfaceContainerLow + outlineVariant).
+ * - Smooth animated checkmark on selection.
+ * - Strict corner clipping so ripple/indication never bleeds out as a rectangle.
  */
 @Composable
 fun LiquidGlassFilterChip(
@@ -938,7 +951,6 @@ fun LiquidGlassFilterChip(
 ) {
     if (isGlass) {
         val primaryColor = MaterialTheme.colorScheme.primary
-        val isMatYou = LocalMaterialYouEnabled.current
         val bg = if (selected) {
             primaryColor.copy(alpha = if (isDark) 0.28f else 0.18f)
         } else {
@@ -949,17 +961,19 @@ fun LiquidGlassFilterChip(
         } else {
             if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
         }
+        val shape = RoundedCornerShape(14.dp)
 
         Box(
             modifier = modifier
-                .height(34.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .height(36.dp)
+                .clip(shape)
                 .background(bg)
                 .border(
                     width = 0.5.dp,
                     color = borderColor,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = shape
                 )
+                .clip(shape)
                 .expressiveClickable(scaleDown = 0.94f, onClick = onClick)
                 .padding(horizontal = 14.dp),
             contentAlignment = Alignment.Center
@@ -971,31 +985,55 @@ fun LiquidGlassFilterChip(
                 if (leadingIcon != null) {
                     leadingIcon()
                 }
-                label()
+                CompositionLocalProvider(
+                    LocalTextStyle provides MaterialTheme.typography.labelLarge
+                ) {
+                    label()
+                }
                 if (trailingIcon != null) {
                     trailingIcon()
                 }
             }
         }
     } else {
-        val containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer
-        val labelColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+        val chipShape = RoundedCornerShape(16.dp)
+        val containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow
+        val labelColor = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+        val border = if (!selected) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)) else null
+
         Surface(
             onClick = onClick,
-            shape = RoundedCornerShape(12.dp),
+            shape = chipShape,
             color = containerColor,
-            modifier = modifier.height(34.dp)
+            border = border,
+            modifier = modifier
+                .height(36.dp)
+                .clip(chipShape)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp),
+                modifier = Modifier.padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 if (leadingIcon != null) {
                     leadingIcon()
+                } else {
+                    AnimatedVisibility(
+                        visible = selected,
+                        enter = expandHorizontally() + fadeIn(),
+                        exit = shrinkHorizontally() + fadeOut()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                            tint = labelColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
-                androidx.compose.runtime.CompositionLocalProvider(
-                    androidx.compose.material3.LocalContentColor provides labelColor
+                CompositionLocalProvider(
+                    LocalContentColor provides labelColor,
+                    LocalTextStyle provides MaterialTheme.typography.labelLarge
                 ) {
                     label()
                 }

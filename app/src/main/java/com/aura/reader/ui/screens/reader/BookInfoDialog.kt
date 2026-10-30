@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -193,7 +194,8 @@ fun BookInfoDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp))
+                                .clip(RoundedCornerShape(3.dp)),
+                            strokeCap = StrokeCap.Round
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))

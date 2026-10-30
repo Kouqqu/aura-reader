@@ -56,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -392,8 +393,9 @@ fun CurrentlyReadingHeroCard(
                             progress = { progressFraction },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(5.dp)
+                                .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp)),
+                            strokeCap = StrokeCap.Round,
                             color = primaryAccent,
                             trackColor = MaterialTheme.colorScheme.surfaceVariant
                         )

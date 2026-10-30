@@ -520,3 +520,25 @@ with `ExpressiveSplitButton` and `ExpressiveIconButton`:
 **Localization fix.** Fixed typo in Belarusian Valentine greeting (`Кахання`).
 
 Verified with `testDebugUnitTest lintDebug assembleDebug`.
+
+## 2.2.0-beta.41 — Material 3 Expressive Action Pair, Filter Chips, and Ripple Clipping
+
+Implements connected action pairs, strict touch ripple boundary clipping, and full Material 3 Expressive filter chip & progress bar guidelines (https://m3.material.io/components/split-button/overview and https://m3.material.io/components/chips/overview).
+
+**Connected Action Pair in Library.**
+- Combined Sort and View Mode into a unified Expressive Split Button pair: `[ ≡ Недавние ] [ ☷ ]`.
+- Removed redundant disclosure arrow next to the sort label (clicking label directly opens the sort menu).
+- Trailing segment of the split button directly toggles the library layout between Grid and List.
+
+**Strict Shape & Ripple Clipping.**
+- Fixed Android rectangular touch feedback (ripple bleed): `.clip(shape)` and `Surface(onClick = ..., shape = ...)` ensure ripple and pressed states never escape beyond rounded button and chip corners.
+
+**Material 3 Expressive Filter Chips.**
+- Updated `LiquidGlassFilterChip` in Material mode to standard M3 Expressive 36.dp height and 16.dp squircle radius (`RoundedCornerShape(16.dp)`).
+- Dynamic styling with `secondaryContainer` / `outlineVariant` color tokens and `labelLarge` typography.
+- Smooth animated checkmark indicator (`Icons.Rounded.Check`) on selection with `expandHorizontally() + fadeIn()`.
+
+**Rounded Progress Indicators.**
+- Updated `LinearProgressIndicator` across library cards (`CurrentlyReadingHeroCard.kt`, `BookCards.kt`), book details (`BookInfoDialog.kt`), and TTS player (`TtsBottomSheet.kt`) with `strokeCap = StrokeCap.Round` and standard 6.dp height.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug`.

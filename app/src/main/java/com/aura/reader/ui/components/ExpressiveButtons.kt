@@ -3,18 +3,16 @@ package com.aura.reader.ui.components
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -22,41 +20,38 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Material 3 Expressive Split Button.
+ * Material 3 Expressive Split Button / Connected Action Pair.
  *
  * Adheres directly to the official Material 3 specification (https://m3.material.io/components/split-button/overview):
- * - Two distinct interactive areas: leading action button + trailing disclosure button.
- * - Expressive asymmetrical corner radii: outer corners are large (20.dp), inner touching corners are small (4.dp).
+ * - Two distinct interactive areas: leading action button + trailing secondary/toggle button.
+ * - Expressive asymmetrical corner radii: outer corners are 20.dp, inner touching corners are 4.dp.
  * - Calibrated 2.dp gap between segments.
  * - Standard 40.dp height.
- * - 40.dp square touch target for trailing chevron with smooth 180-degree rotation animation when expanded.
- * - Independent ripple effects and press animations for both segments.
+ * - Strict corner clipping so ripple/pressed state never bleeds out as a rectangle.
+ * - Independent ripple effects and touch physics (expressiveBounce) for both segments.
  */
 @Composable
 fun ExpressiveSplitButton(
     leadingContent: @Composable RowScope.() -> Unit,
+    trailingContent: @Composable BoxScope.() -> Unit,
     onLeadingClick: () -> Unit,
     onTrailingClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isExpanded: Boolean = false,
-    leadingContentDescription: String? = null,
-    trailingContentDescription: String? = "Дополнительные действия",
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     border: BorderStroke? = null,
@@ -66,12 +61,6 @@ fun ExpressiveSplitButton(
 ) {
     val leadingInteractionSource = remember { MutableInteractionSource() }
     val trailingInteractionSource = remember { MutableInteractionSource() }
-
-    val chevronRotation by animateFloatAsState(
-        targetValue = if (isExpanded) 180f else 0f,
-        animationSpec = tween(durationMillis = 240),
-        label = "splitButtonChevronRotation"
-    )
 
     val leadingShape: Shape = RoundedCornerShape(
         topStart = 20.dp,
@@ -94,21 +83,17 @@ fun ExpressiveSplitButton(
     ) {
         // 1. Leading Button (Action / Selected Option)
         Surface(
+            onClick = onLeadingClick,
             shape = leadingShape,
             color = containerColor,
             contentColor = contentColor,
             border = border,
+            enabled = enabled,
+            interactionSource = leadingInteractionSource,
             modifier = Modifier
                 .height(height)
+                .clip(leadingShape)
                 .expressiveBounce(leadingInteractionSource, enabled = enabled)
-                .clickable(
-                    interactionSource = leadingInteractionSource,
-                    indication = ripple(color = contentColor),
-                    enabled = enabled,
-                    onClickLabel = leadingContentDescription,
-                    role = Role.Button,
-                    onClick = onLeadingClick
-                )
         ) {
             Row(
                 modifier = Modifier
@@ -123,39 +108,77 @@ fun ExpressiveSplitButton(
             }
         }
 
-        // 2. Trailing Button (Chevron / Menu Anchor)
+        // 2. Trailing Button (Toggle / Action / Menu Anchor)
         Surface(
+            onClick = onTrailingClick,
             shape = trailingShape,
             color = containerColor,
             contentColor = contentColor,
             border = border,
+            enabled = enabled,
+            interactionSource = trailingInteractionSource,
             modifier = Modifier
                 .size(height)
+                .clip(trailingShape)
                 .expressiveBounce(trailingInteractionSource, enabled = enabled)
-                .clickable(
-                    interactionSource = trailingInteractionSource,
-                    indication = ripple(color = contentColor),
-                    enabled = enabled,
-                    onClickLabel = trailingContentDescription,
-                    role = Role.Button,
-                    onClick = onTrailingClick
-                )
         ) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.size(height)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.KeyboardArrowDown,
-                    contentDescription = trailingContentDescription,
-                    tint = contentColor,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .graphicsLayer { rotationZ = chevronRotation }
-                )
+                CompositionLocalProvider(LocalContentColor provides contentColor) {
+                    trailingContent()
+                }
             }
         }
     }
+}
+
+/**
+ * Standard M3 Expressive Split Button with Chevron Disclosure.
+ */
+@Composable
+fun ExpressiveSplitButton(
+    leadingContent: @Composable RowScope.() -> Unit,
+    onLeadingClick: () -> Unit,
+    onTrailingClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isExpanded: Boolean = false,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    border: BorderStroke? = null,
+    height: Dp = 40.dp,
+    gap: Dp = 2.dp,
+    enabled: Boolean = true
+) {
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = tween(durationMillis = 240),
+        label = "splitButtonChevronRotation"
+    )
+
+    ExpressiveSplitButton(
+        leadingContent = leadingContent,
+        trailingContent = {
+            Icon(
+                imageVector = Icons.Rounded.KeyboardArrowDown,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer { rotationZ = chevronRotation }
+            )
+        },
+        onLeadingClick = onLeadingClick,
+        onTrailingClick = onTrailingClick,
+        modifier = modifier,
+        containerColor = containerColor,
+        contentColor = contentColor,
+        border = border,
+        height = height,
+        gap = gap,
+        enabled = enabled
+    )
 }
 
 /**
@@ -178,21 +201,17 @@ fun ExpressiveIconButton(
     val interactionSource = remember { MutableInteractionSource() }
 
     Surface(
+        onClick = onClick,
         shape = shape,
         color = containerColor,
         contentColor = contentColor,
         border = border,
+        enabled = enabled,
+        interactionSource = interactionSource,
         modifier = modifier
             .size(size)
+            .clip(shape)
             .expressiveBounce(interactionSource, enabled = enabled)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = ripple(color = contentColor),
-                enabled = enabled,
-                onClickLabel = contentDescription,
-                role = Role.Button,
-                onClick = onClick
-            )
     ) {
         Box(
             contentAlignment = Alignment.Center,
