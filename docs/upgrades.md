@@ -3,7 +3,8 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-11-17, release `2.2.1-beta.1` (`versionCode 164`).
+Last updated: 2026-11-17, release `2.2.1` (`versionCode 165`).
+`2.2.1` changed no dependency, plugin or toolchain versions: it bumps `versionCode`/`versionName` for the official release consolidating all 2.2.1-beta improvements (edge-margin footnote tap priority, persistent bottom progress mode, quote navigation with return pill, automatic unread collection sorting, M3 Expressive token-accurate button redesign, day-time greetings at 24 sp headline scale, and Zakon licence notice; see `docs/verification.md`).
 `2.2.1-beta.1` changed no dependency, plugin or toolchain versions: it bumps `versionCode`/`versionName`, corrects the Zakon licence notice, rebuilds the split/icon/connected buttons from the published M3 Expressive token tables, and adds the day-time greeting under the app name (see `docs/verification.md`).
 `2.2.0-beta.45` also changed no dependency, plugin or toolchain versions: it bumps `versionCode`/`versionName` and adds edge-margin footnote tap priority, persistent reader bottom progress mode, quotation direct navigation with return pill, and automatic unread collection classification (see `docs/verification.md`).
 `2.2.0-beta.14` changed no build files: it merged the UI-file split (see

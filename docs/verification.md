@@ -782,3 +782,15 @@ was downloaded and inspected:
   and Zakon - the corrected notice is actually inside the APK, unlike beta.45.
 - `classes.dex` contains "Доброе утро", "Доброй ночи", "Dzień dobry" and "בוקר טוב",
   plus the `DayPeriod` enum - the greeting survived R8 and ships in all languages.
+
+## 2.2.1 — Official Stable Release (versionCode 165)
+
+Official stable release consolidating all 2.2.1 updates:
+- **Header Greeting Scale.** Day-time greeting line under the app name scaled to 24 sp (`headlineMedium.copy(fontSize = 24.sp)`), standing one level below the 28 sp app name for balanced hierarchy.
+- **Footnote Tap Priority.** Taps on footnotes, links, and annotations near screen edges take full precedence over margin page-turn gestures.
+- **Persistent Bottom Progress.** Reader bottom progress pill mode (percentage, minutes left, page number) is saved across sessions and books.
+- **Direct Quote Navigation & Return Pill.** Clicking quotes in the bookmarks bottom sheet jumps directly to the text block, showing a floating `[ ⤺ Вернуться: <Глава>  ✕ ]` chip to return immediately to the reading position.
+- **Automated "To Read" Collection.** Newly imported books automatically land in the "К прочтению" collection until reading is initiated.
+- **M3 Expressive Token Accuracy.** Split buttons, connected button groups, and action chips strictly match Google Material 3 Expressive token geometry and styling.
+
+Verified with `testDebugUnitTest lintDebug`.

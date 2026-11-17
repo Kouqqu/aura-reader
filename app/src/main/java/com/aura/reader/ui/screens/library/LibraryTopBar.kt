@@ -239,15 +239,17 @@ AnimatedContent(
                     Text(
                         text = greeting,
                         // The greeting is a second headline, not a caption: it reads as
-                        // part of the header next to the name, one step down the scale.
-                        style = MaterialTheme.typography.headlineSmall,
+                        // part of the header next to the name, one step down the scale (24 sp).
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontSize = 24.sp,
+                            letterSpacing = if (isHoliday) 0.2.sp else 0.sp
+                        ),
                         fontWeight = if (isHoliday) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (isHoliday) {
                             holidaySeason.primaryAccent
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         },
-                        letterSpacing = if (isHoliday) 0.2.sp else 0.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
