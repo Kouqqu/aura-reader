@@ -656,7 +656,11 @@ notice, the rebuilt M3 Expressive buttons, and the new day-time greeting under t
 name. No dependency, plugin or toolchain version changed. Version:
 `2.2.1-beta.1` (`versionCode 164`); the beta release body in
 `.github/workflows/build-apk.yml` now leads with 2.2.1 Beta 1 and demotes Beta 45 to
-"earlier".
+"earlier". The accumulated release body was trimmed from ~21k to ~3.3k characters:
+GitHub rejects a single expression (the `body` scalar, which contains
+`${{ ... }}` placeholders) longer than 21,000 characters, so the first push of this
+beta failed at 0 s with "Invalid workflow file / Exceeded max expression length".
+Older beta notes already live in their own releases, so no history was lost.
 
 ### Font notice correction and localization audit
 
