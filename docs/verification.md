@@ -766,3 +766,16 @@ afternoon / evening / night" - while a holiday keeps its own greeting exactly as
   greeting for every period, and the greetings are genuinely translated (RU vs EN vs HE).
   Full run: `testDebugUnitTest lintDebug assembleDebug` -> `BUILD SUCCESSFUL`, 83 tests,
   0 failures.
+
+### Published verification
+
+Release: [v2.2.1-beta.1](https://github.com/Kouqqu/aura-reader/releases/tag/v2.2.1-beta.1)
+(prerelease; stable `v2.2.0` is still `latest`). Tag at `1a2137b`, CI run
+`44144579245` succeeded in ~11 min. The published `AuraReader.apk` (5,491,060 bytes)
+was downloaded and inspected:
+
+- `aapt dump badging`: `versionCode='164'`, `versionName='2.2.1-beta.1'`.
+- `assets/licenses/fonts.txt` is now 2,773 bytes (was 2,177) and mentions both OFL
+  and Zakon - the corrected notice is actually inside the APK, unlike beta.45.
+- `classes.dex` contains "Доброе утро", "Доброй ночи", "Dzień dobry" and "בוקר טוב",
+  plus the `DayPeriod` enum - the greeting survived R8 and ships in all languages.
