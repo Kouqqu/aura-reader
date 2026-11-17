@@ -150,6 +150,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.Book
+import com.aura.reader.data.model.isReadingStarted
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -778,11 +779,7 @@ fun LibraryScreen(
                                                 )
                                             }
 
-                                            val currentHeroBook = recentBooks.firstOrNull { book ->
-                                                if (book.manualShelf == "UNREAD" || book.manualShelf == "FINISHED") false
-                                                else if (book.manualShelf == "READING") true
-                                                else book.progressPercent < 100
-                                            }
+                                            val currentHeroBook = recentBooks.firstOrNull { it.isReadingStarted }
                                             val showHeroCard = currentHeroBook != null &&
                                                     searchQuery.isBlank() &&
                                                     (activeCollectionFilter.type == CollectionFilterType.ALL || activeCollectionFilter.type == CollectionFilterType.READING) &&

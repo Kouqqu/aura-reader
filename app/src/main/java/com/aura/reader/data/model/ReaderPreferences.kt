@@ -54,5 +54,6 @@ data class ReaderSettings(
     val syncThemesWithApp: Boolean = false,
     val appThemeMode: ReaderThemeMode = ReaderThemeMode.SYSTEM_DYNAMIC,
     val appDesignStyle: AppDesignStyle = AppDesignStyle.LIQUID_GLASS,
-    val glassClarity: Float = 0.85f
+    val glassClarity: Float = 0.85f,
+    val bottomProgressMode: Int = 0
 )

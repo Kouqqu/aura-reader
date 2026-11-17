@@ -65,7 +65,8 @@ fun BookmarksAndQuotesBottomSheet(
     onBookmarkClick: (chapterIndex: Int, scrollOffset: Int) -> Unit,
     onDeleteBookmark: (id: String) -> Unit,
     onAddQuote: (text: String) -> Unit,
-    onDeleteQuote: (id: String) -> Unit
+    onDeleteQuote: (id: String) -> Unit,
+    onQuoteClick: (Quote) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -280,7 +281,7 @@ fun BookmarksAndQuotesBottomSheet(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable {
-                                                onBookmarkClick(quote.chapterIndex, 0)
+                                                onQuoteClick(quote)
                                                 onDismiss()
                                             }
                                     ) {

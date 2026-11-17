@@ -178,6 +178,7 @@ fun ReaderScreen(
     // Bookmarks and Quotes
     val bookmarks by viewModel.bookmarks.collectAsState()
     val quotes by viewModel.quotes.collectAsState()
+    val navReturnPoint by viewModel.navReturnPoint.collectAsState()
     val userWpm by viewModel.userAverageWpm.collectAsState()
     val ttsState by com.aura.reader.service.BookTtsService.ttsState.collectAsState()
     val isGlass = settings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
@@ -418,11 +419,12 @@ fun ReaderScreen(
                                         val parts = content.removePrefix("nav:").split(":")
                                         val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
                                         val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
-                                        viewModel.setChapter(ch, blk)
+                                        viewModel.navigateToPositionWithReturn(ch, blk)
                                     } else {
                                         selectedFootnote = ref to content
                                     }
                                 },
+                                onBottomProgressModeChange = { viewModel.updateBottomProgressMode(it) },
                                 onSaveQuote = { quoteToSave = it },
                                 onPageChange = { page, total ->
                                     currentPagingPage = page
@@ -490,7 +492,7 @@ fun ReaderScreen(
                                         val parts = content.removePrefix("nav:").split(":")
                                         val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
                                         val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
-                                        viewModel.setChapter(ch, blk)
+                                        viewModel.navigateToPositionWithReturn(ch, blk)
                                     } else {
                                         selectedFootnote = ref to content
                                     }
@@ -623,6 +625,74 @@ fun ReaderScreen(
                 )
             }
 
+            // Floating Return to Reading Position pill when user navigated to quote/bookmark/footnote
+            androidx.compose.animation.AnimatedVisibility(
+                visible = navReturnPoint != null,
+                enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp)
+                    .padding(
+                        bottom = (if (showControls) 185.dp else 48.dp) +
+                                (if (ttsState.isServiceRunning && !showTtsSheet) 60.dp else 0.dp) +
+                                WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                    )
+            ) {
+                navReturnPoint?.let { returnPoint ->
+                    val returnTitle = returnPoint.chapterTitle.ifBlank { "Глава ${returnPoint.chapterIndex + 1}" }
+                    Surface(
+                        onClick = { viewModel.returnToPreviousPosition() },
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (isGlass) {
+                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f)
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        },
+                        tonalElevation = 6.dp,
+                        shadowElevation = 8.dp,
+                        border = BorderStroke(
+                            1.dp,
+                            if (isGlass) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+                        ),
+                        modifier = Modifier.padding(4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Вернуться: $returnTitle",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = if (isGlass) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.widthIn(max = 220.dp)
+                            )
+                            IconButton(
+                                onClick = { viewModel.clearNavReturnPoint() },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = strings.close,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // Floating TTS Player Bar when active
                 androidx.compose.animation.AnimatedVisibility(
                     visible = ttsState.isServiceRunning && !showTtsSheet,
@@ -708,7 +778,10 @@ fun ReaderScreen(
                     currentBookId = currentBook.id,
                     onDismiss = { showBookmarksQuotesSheet = false },
                     onBookmarkClick = { chIdx, offset ->
-                        viewModel.setChapter(chIdx)
+                        viewModel.navigateToBookmark(chIdx, offset)
+                    },
+                    onQuoteClick = { quote ->
+                        viewModel.navigateToQuote(quote)
                     },
                     onDeleteBookmark = { viewModel.removeBookmark(it) },
                     onAddQuote = { viewModel.addQuote(it, 0xFFFFF59DL) },

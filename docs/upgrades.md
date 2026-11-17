@@ -3,7 +3,8 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-10-30, release `2.2.0` (`versionCode 162`).
+Last updated: 2026-11-17, release `2.2.0-beta.45` (`versionCode 163`).
+`2.2.0-beta.45` changed no dependency, plugin or toolchain versions: it bumps `versionCode`/`versionName` and adds edge-margin footnote tap priority, persistent reader bottom progress mode, quotation direct navigation with return pill, and automatic unread collection classification (see `docs/verification.md`).
 `2.2.0-beta.14` changed no build files: it merged the UI-file split (see
 `docs/verification.md`) and bumped the version only. `2.2.0-beta.15` turned off
 Compose's new text context menu so the reader keeps its custom selection

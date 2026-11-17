@@ -623,3 +623,28 @@ Official stable release consolidating the entire 2.2.0 cycle (betas 1–44):
 - Bundled font and audio licensing notices in `assets/licenses/`.
 
 Verified with `testDebugUnitTest lintDebug assembleDebug`.
+
+## 2.2.0-beta.45 (versionCode 163)
+
+Fixes edge annotation tap priority, remembers bottom progress indicator choice across sessions, adds quote-to-text direct navigation with return pill, and resolves unread library collection classification.
+
+**1. Footnotes & Annotations Edge-Margin Tap Priority.**
+- Replaced overlay margin tap boxes in `ChapterPagingView.kt` with pointer input tap gesture detection inside spread content.
+- Taps on footnotes, annotations, and book links near screen edges now take immediate precedence and open the footnote or annotation dialog without unintentionally turning the page.
+- Tapping outside link bounds on page edges continues to turn pages forwards and backwards smoothly.
+
+**2. Persistent Bottom Reading Progress Indicator Mode.**
+- Added `bottomProgressMode` (0: percentage, 1: reading time remaining, 2: page of pages) to `ReaderSettings` and `PreferencesManager` DataStore keys.
+- Tapping the bottom indicator pill persists the chosen metric across books, sessions, and application restarts.
+
+**3. Direct Quote Navigation & Return to Reading Position.**
+- Added `blockIndex` to `Quote` model and serialization.
+- Clicking any quote in the Bookmarks & Quotes bottom sheet now jumps directly to the quote's exact chapter and text block.
+- Implemented a floating return pill (`[ ⤺ Вернуться: <Глава>  ✕ ]`) in `ReaderScreen.kt` when navigating via quotes, bookmarks, or footnote internal links, allowing instant return back to the active reading spot.
+
+**4. Automatic Unread Collection ("К прочтению") Classification.**
+- Fixed regression in `LibraryViewModel.kt` where `recentBooks.value.any { it.id == book.id }` erroneously marked every library book as already started.
+- Introduced unified `isReadingStarted`, `isUnread`, and `isFinished` extensions on `Book` model for consistent filtering across collections and hero card display.
+- Newly imported books with 0% progress now automatically populate the "К прочтению" collection until reading begins.
+
+Verified with `testDebugUnitTest lintDebug`.

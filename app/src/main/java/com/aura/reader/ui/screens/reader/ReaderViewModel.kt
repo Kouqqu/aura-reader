@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aura.reader.data.model.Book
+import com.aura.reader.data.model.Bookmark
+import com.aura.reader.data.model.Quote
 import com.aura.reader.data.model.ReaderFontFamily
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.ReaderThemeMode
@@ -451,16 +453,103 @@ class ReaderViewModel(
         }
     }
 
-    fun addQuote(text: String, color: Long = 0xFFFFF59DL) {
+    private val _navReturnPoint = MutableStateFlow<NavReturnPoint?>(null)
+    val navReturnPoint: StateFlow<NavReturnPoint?> = _navReturnPoint.asStateFlow()
+
+    fun navigateToPositionWithReturn(targetChapter: Int, targetBlock: Int, title: String = "") {
+        val curCh = _currentChapterIndex.value
+        val curBlk = _savedScrollOffset.value
+        val curTitle = currentBook.value?.chapters?.getOrNull(curCh)?.title ?: "Глава ${curCh + 1}"
+        if (curCh != targetChapter || kotlin.math.abs(curBlk - targetBlock) > 1) {
+            _navReturnPoint.value = NavReturnPoint(
+                chapterIndex = curCh,
+                blockIndex = curBlk,
+                chapterTitle = curTitle
+            )
+        }
+        jumpToPosition(targetChapter, targetBlock)
+    }
+
+    fun jumpToPosition(chapterIndex: Int, blockIndex: Int) {
         val book = currentBook.value ?: return
+        if (chapterIndex in book.chapters.indices) {
+            val safeBlock = blockIndex.coerceAtLeast(0)
+            if (chapterIndex != _currentChapterIndex.value) {
+                setChapter(chapterIndex, safeBlock)
+            } else {
+                _savedScrollOffset.value = safeBlock
+                saveCurrentProgress()
+            }
+            _targetScrollOffset.value = safeBlock
+        }
+    }
+
+    fun navigateToBookmark(chapterIndex: Int, scrollOffset: Int) {
+        val book = currentBook.value
+        val title = book?.chapters?.getOrNull(chapterIndex)?.title ?: "Глава ${chapterIndex + 1}"
+        navigateToPositionWithReturn(
+            targetChapter = chapterIndex,
+            targetBlock = scrollOffset,
+            title = title
+        )
+    }
+
+    fun navigateToQuote(quote: Quote) {
+        val book = currentBook.value ?: return
+        val targetBlock = if (quote.blockIndex >= 0) {
+            quote.blockIndex
+        } else {
+            val chapter = book.chapters.getOrNull(quote.chapterIndex)
+            val trimmed = quote.text.trim()
+            val found = chapter?.blocks?.indexOfFirst {
+                it.text.contains(trimmed) || (trimmed.length > 20 && it.text.contains(trimmed.take(30)))
+            } ?: -1
+            if (found >= 0) found else 0
+        }
+        val chapterTitle = book.chapters.getOrNull(quote.chapterIndex)?.title ?: "Глава ${quote.chapterIndex + 1}"
+        navigateToPositionWithReturn(
+            targetChapter = quote.chapterIndex,
+            targetBlock = targetBlock,
+            title = chapterTitle
+        )
+    }
+
+    fun returnToPreviousPosition() {
+        val point = _navReturnPoint.value ?: return
+        _navReturnPoint.value = null
+        jumpToPosition(point.chapterIndex, point.blockIndex)
+    }
+
+    fun clearNavReturnPoint() {
+        _navReturnPoint.value = null
+    }
+
+    fun updateBottomProgressMode(mode: Int) {
+        viewModelScope.launch {
+            preferencesManager.updateBottomProgressMode(mode)
+        }
+    }
+
+    fun addQuote(text: String, color: Long = 0xFFFFF59DL, blockIndex: Int? = null) {
+        val book = currentBook.value ?: return
+        val currentChIdx = _currentChapterIndex.value
+        val resolvedBlockIdx = blockIndex ?: run {
+            val chapter = book.chapters.getOrNull(currentChIdx)
+            val trimmed = text.trim()
+            val found = chapter?.blocks?.indexOfFirst {
+                it.text.contains(trimmed) || (trimmed.length > 20 && it.text.contains(trimmed.take(30)))
+            } ?: -1
+            if (found >= 0) found else _savedScrollOffset.value
+        }
         viewModelScope.launch {
             bookRepository.addQuote(
                 com.aura.reader.data.model.Quote(
                     bookId = book.id,
                     bookTitle = book.title,
-                    chapterIndex = _currentChapterIndex.value,
+                    chapterIndex = currentChIdx,
                     text = text.trim(),
-                    color = color
+                    color = color,
+                    blockIndex = resolvedBlockIdx
                 )
             )
         }
@@ -590,3 +679,10 @@ class ReaderViewModel(
         }
     }
 }
+
+data class NavReturnPoint(
+    val chapterIndex: Int,
+    val blockIndex: Int,
+    val chapterTitle: String = ""
+)
+

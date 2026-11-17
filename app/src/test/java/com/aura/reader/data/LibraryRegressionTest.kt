@@ -3,6 +3,9 @@ package com.aura.reader.data
 import android.net.Uri
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.repository.BookRepository
+import com.aura.reader.data.model.isUnread
+import com.aura.reader.data.model.isReadingStarted
+import com.aura.reader.data.model.isFinished
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
@@ -143,4 +146,51 @@ class LibraryRegressionTest {
         assertTrue(collections.contains("Mystery"))
     }
 
+    @Test fun unreadAndReadingCollectionsFilterCorrectly() = runBlocking {
+        val prefs = PreferencesManager(context)
+        prefs.saveRecentBooksJson("[]")
+        val repo = BookRepository(context, prefs)
+        val freshBook = repo.openBookFromUri(source("fresh", "fresh.txt", "Fresh unread content")).getOrThrow()
+
+        // Fresh book has 0 progress and has not been started
+        assertTrue(freshBook.isUnread)
+        assertFalse(freshBook.isReadingStarted)
+        assertFalse(freshBook.isFinished)
+
+        // Once reading progress is started
+        repo.updateReadingProgress(0, 5, 20)
+        val startedBook = repo.recentBooks.value.single()
+        assertFalse(startedBook.isUnread)
+        assertTrue(startedBook.isReadingStarted)
+        assertFalse(startedBook.isFinished)
+
+        // When reading is completed
+        repo.setBookReadingProgress(startedBook.id, 100)
+        val finishedBook = repo.recentBooks.value.single()
+        assertFalse(finishedBook.isUnread)
+        assertFalse(finishedBook.isReadingStarted)
+        assertTrue(finishedBook.isFinished)
+    }
+
+    @Test fun quoteBlockIndexAndBottomProgressModeAreSaved() = runBlocking {
+        val prefs = PreferencesManager(context)
+        val quote = com.aura.reader.data.model.Quote(
+            id = "q1",
+            bookId = "b1",
+            bookTitle = "Book One",
+            chapterIndex = 2,
+            text = "Interesting thought",
+            blockIndex = 14
+        )
+        prefs.addQuote(quote)
+        val quotes = prefs.quotes.first()
+        assertEquals(1, quotes.size)
+        assertEquals(14, quotes.single().blockIndex)
+
+        // Bottom progress mode persistence
+        prefs.updateBottomProgressMode(2)
+        val settings = prefs.readerSettings.first()
+        assertEquals(2, settings.bottomProgressMode)
+    }
 }
+

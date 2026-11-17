@@ -89,6 +89,35 @@ data class Quote(
     val chapterIndex: Int,
     val text: String,
     val timestamp: Long = System.currentTimeMillis(),
-    val color: Long = 0xFFFFF59D
+    val color: Long = 0xFFFFF59D,
+    val blockIndex: Int = -1
 )
+
+val Book.isReadingStarted: Boolean
+    get() = when (manualShelf) {
+        "READING" -> true
+        "UNREAD", "FINISHED" -> false
+        else -> (progressPercent in 1..99) ||
+                (progressPercent < 100 && (
+                    currentChapterIndex > 0 ||
+                    currentScrollOffset > 0 ||
+                    currentBlockTextOffset > 0 ||
+                    currentScrollPixelOffset > 0
+                ))
+    }
+
+val Book.isUnread: Boolean
+    get() = when (manualShelf) {
+        "UNREAD" -> true
+        "READING", "FINISHED" -> false
+        else -> progressPercent == 0 && !isReadingStarted
+    }
+
+val Book.isFinished: Boolean
+    get() = when (manualShelf) {
+        "FINISHED" -> true
+        "READING", "UNREAD" -> false
+        else -> progressPercent >= 100
+    }
+
 

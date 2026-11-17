@@ -26,6 +26,9 @@ import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 
+import com.aura.reader.data.model.isReadingStarted
+import com.aura.reader.data.model.isUnread
+import com.aura.reader.data.model.isFinished
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.HolidaySeason
@@ -545,49 +548,11 @@ class LibraryViewModel(
 
         val collectionFiltered = when (filter.type) {
             CollectionFilterType.ALL -> searchFiltered
-            CollectionFilterType.READING -> searchFiltered.filter { book ->
-                when (book.manualShelf) {
-                    "READING" -> true
-                    "UNREAD", "FINISHED" -> false
-                    else -> {
-                        val isStarted = (book.progressPercent in 1..99) ||
-                                (book.progressPercent < 100 && (
-                                    book.currentChapterIndex > 0 ||
-                                    book.currentScrollOffset > 0 ||
-                                    book.currentBlockTextOffset > 0 ||
-                                    book.currentScrollPixelOffset > 0 ||
-                                    recentBooks.value.any { it.id == book.id }
-                                ))
-                        isStarted
-                    }
-                }
-            }
+            CollectionFilterType.READING -> searchFiltered.filter { it.isReadingStarted }
             CollectionFilterType.FAVORITES -> searchFiltered.filter { it.isFavorite }
             CollectionFilterType.SERIES -> searchFiltered.filter { !it.series.isNullOrBlank() }
-            CollectionFilterType.UNREAD -> searchFiltered.filter { book ->
-                when (book.manualShelf) {
-                    "UNREAD" -> true
-                    "READING", "FINISHED" -> false
-                    else -> {
-                        val isStarted = (book.progressPercent in 1..99) ||
-                                (book.progressPercent < 100 && (
-                                    book.currentChapterIndex > 0 ||
-                                    book.currentScrollOffset > 0 ||
-                                    book.currentBlockTextOffset > 0 ||
-                                    book.currentScrollPixelOffset > 0 ||
-                                    recentBooks.value.any { it.id == book.id }
-                                ))
-                        book.progressPercent == 0 && !isStarted
-                    }
-                }
-            }
-            CollectionFilterType.FINISHED -> searchFiltered.filter { book ->
-                when (book.manualShelf) {
-                    "FINISHED" -> true
-                    "READING", "UNREAD" -> false
-                    else -> book.progressPercent >= 100
-                }
-            }
+            CollectionFilterType.UNREAD -> searchFiltered.filter { it.isUnread }
+            CollectionFilterType.FINISHED -> searchFiltered.filter { it.isFinished }
             CollectionFilterType.CUSTOM -> {
                 val custom = filter.customName ?: ""
                 searchFiltered.filter { it.collections.contains(custom) }

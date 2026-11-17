@@ -14,6 +14,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.text.selection.rememberSelectionState
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.TransformOrigin
@@ -119,7 +120,8 @@ fun ChapterPagingView(
     onBookFinished: () -> Unit = {},
     ttsState: com.aura.reader.service.TtsState = com.aura.reader.service.TtsState(),
     isTtsHighlightActive: Boolean = false,
-    onSelectionTextChange: (String) -> Unit = {}
+    onSelectionTextChange: (String) -> Unit = {},
+    onBottomProgressModeChange: (Int) -> Unit = {}
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenHeightDp = maxHeight.value
@@ -360,6 +362,16 @@ fun ChapterPagingView(
             }
         } else Modifier
 
+        val flipPage: (Int) -> Unit = { target ->
+            coroutineScope.launch {
+                if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+                    pagerState.scrollToPage(target)
+                } else {
+                    pagerState.animateScrollToPage(target)
+                }
+            }
+        }
+
         HorizontalPager(
             state = pagerState,
             userScrollEnabled = settings.pageAnimation != PageTurnAnimation.INSTANT,
@@ -425,10 +437,22 @@ fun ChapterPagingView(
                     .fillMaxSize()
                     .then(animModifier)
                     .background(MaterialTheme.colorScheme.background)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onToggleControls() }
+                    .pointerInput(pagerState.currentPage, totalPagerSpreads) {
+                        detectTapGestures { offset ->
+                            val edgeThreshold = 72.dp.toPx()
+                            if (offset.x < edgeThreshold) {
+                                if (pagerState.currentPage > 0) {
+                                    flipPage(pagerState.currentPage - 1)
+                                }
+                            } else if (offset.x > size.width - edgeThreshold) {
+                                if (pagerState.currentPage < totalPagerSpreads - 1) {
+                                    flipPage(pagerState.currentPage + 1)
+                                }
+                            } else {
+                                onToggleControls()
+                            }
+                        }
+                    }
             ) {
                 if (hasPrev && spreadIdx == 0) {
                     ChapterTransitionSpread(
@@ -584,47 +608,6 @@ fun ChapterPagingView(
             }
         }
 
-        // Thin margin tap zones for fast page flipping (outer padding area only)
-        val flipPage: (Int) -> Unit = { target ->
-            coroutineScope.launch {
-                if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
-                    pagerState.scrollToPage(target)
-                } else {
-                    pagerState.animateScrollToPage(target)
-                }
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(64.dp)
-                .align(Alignment.CenterStart)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    if (pagerState.currentPage > 0) {
-                        flipPage(pagerState.currentPage - 1)
-                    }
-                }
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(64.dp)
-                .align(Alignment.CenterEnd)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    if (pagerState.currentPage < totalPagerSpreads - 1) {
-                        flipPage(pagerState.currentPage + 1)
-                    }
-                }
-        )
-
         // Kindle-style Bottom Reading Progress Indicator (cycles: % -> time remaining -> page count)
         val contentSpreadForProgress = (pagerState.currentPage - prevPageOffset).coerceIn(0, (contentSpreadsCount - 1).coerceAtLeast(0))
         val intraChapterProgress = if (contentSpreadsCount > 1) {
@@ -659,7 +642,7 @@ fun ChapterPagingView(
             onPageTurn(wordsCount)
         }
 
-        var bottomProgressMode by remember { mutableIntStateOf(0) } // 0: %, 1: time left, 2: page of pages
+        val bottomProgressMode = settings.bottomProgressMode
 
         val bottomText = when (bottomProgressMode) {
             0 -> "$overallPercent%"
@@ -677,7 +660,8 @@ fun ChapterPagingView(
 
         Surface(
             onClick = {
-                bottomProgressMode = (bottomProgressMode + 1) % 3
+                val nextMode = (bottomProgressMode + 1) % 3
+                onBottomProgressModeChange(nextMode)
                 if (settings.hapticFeedbackEnabled) {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 }

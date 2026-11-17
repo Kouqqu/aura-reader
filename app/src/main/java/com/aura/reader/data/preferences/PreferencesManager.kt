@@ -103,6 +103,7 @@ class PreferencesManager(private val context: Context) {
         val SEASONAL_EFFECTS_ENABLED_KEY = booleanPreferencesKey("seasonal_effects_enabled")
         val HOLIDAY_OVERRIDE_KEY = stringPreferencesKey("holiday_season_override")
         val LAST_HOLIDAY_SOUND_SEASON_KEY = stringPreferencesKey("last_holiday_sound_season")
+        val BOTTOM_PROGRESS_MODE_KEY = intPreferencesKey("reader_bottom_progress_mode")
     }
 
         val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -369,6 +370,8 @@ class PreferencesManager(private val context: Context) {
             ReaderThemeMode.SYSTEM_DYNAMIC
         }
 
+        val bottomProgressMode = prefs[BOTTOM_PROGRESS_MODE_KEY] ?: 0
+
         ReaderSettings(
             fontSizeSp = fontSize,
             lineHeightMultiplier = lineHeight,
@@ -388,8 +391,15 @@ class PreferencesManager(private val context: Context) {
             syncThemesWithApp = syncThemesWithApp,
             appThemeMode = appThemeMode,
             appDesignStyle = appDesignStyle,
-            glassClarity = prefs[GLASS_CLARITY_KEY] ?: 0.85f
+            glassClarity = prefs[GLASS_CLARITY_KEY] ?: 0.85f,
+            bottomProgressMode = bottomProgressMode
         )
+    }
+
+    suspend fun updateBottomProgressMode(mode: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[BOTTOM_PROGRESS_MODE_KEY] = mode
+        }
     }
 
     suspend fun updateFontSize(fontSizeSp: Float) {
@@ -730,7 +740,8 @@ class PreferencesManager(private val context: Context) {
                         chapterIndex = o.getInt("chapterIndex"),
                         text = o.getString("text"),
                         timestamp = o.optLong("timestamp", System.currentTimeMillis()),
-                        color = o.optLong("color", 0xFFFFF59DL)
+                        color = o.optLong("color", 0xFFFFF59DL),
+                        blockIndex = o.optInt("blockIndex", -1)
                     )
                 )
             }
@@ -752,6 +763,7 @@ class PreferencesManager(private val context: Context) {
                 put("text", quote.text)
                 put("timestamp", quote.timestamp)
                 put("color", quote.color)
+                put("blockIndex", quote.blockIndex)
             }
             arr.put(o)
             prefs[QUOTES_KEY] = arr.toString()
