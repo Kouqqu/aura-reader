@@ -137,7 +137,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import com.aura.reader.ui.components.ExpressiveIconButton
+import com.aura.reader.ui.components.ExpressiveButtonSize
 import com.aura.reader.ui.components.ExpressiveSplitButton
 import com.aura.reader.ui.components.PixelFullScreenBurst
 import com.aura.reader.ui.components.triggerThemeHaptic
@@ -868,12 +868,11 @@ fun LibraryScreen(
                                                                         Icon(
                                                                             imageVector = Icons.AutoMirrored.Rounded.Sort,
                                                                             contentDescription = strings.sortTitle,
-                                                                            modifier = Modifier.size(18.dp)
+                                                                            modifier = Modifier.size(20.dp)
                                                                         )
                                                                         Text(
                                                                             text = sortLabel,
-                                                                            style = MaterialTheme.typography.labelLarge,
-                                                                            fontWeight = FontWeight.SemiBold
+                                                                            style = MaterialTheme.typography.labelLarge
                                                                         )
                                                                     },
                                                                     trailingContent = {
@@ -881,7 +880,7 @@ fun LibraryScreen(
                                                                             imageVector = if (libraryViewMode == "GRID") Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
                                                                             contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid,
                                                                             tint = MaterialTheme.colorScheme.onSurface,
-                                                                            modifier = Modifier.size(20.dp)
+                                                                            modifier = Modifier.size(22.dp)
                                                                         )
                                                                     },
                                                                     onLeadingClick = { showSortMenu = true },
@@ -889,7 +888,7 @@ fun LibraryScreen(
                                                                     containerColor = buttonBg,
                                                                     contentColor = MaterialTheme.colorScheme.onSurface,
                                                                     border = buttonBorder,
-                                                                    height = 40.dp
+                                                                    size = ExpressiveButtonSize.Small
                                                                 )
 
                                                                 val sortMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)

@@ -117,6 +117,10 @@ interface Strings {
     val holidayGreetingValentine: String
     val holidayEaster: String
     val holidayGreetingEaster: String
+    val greetingMorning: String
+    val greetingAfternoon: String
+    val greetingEvening: String
+    val greetingNight: String
     val sortTitle: String
     val sortByDefault: String
     val sortByRecent: String
@@ -492,6 +496,10 @@ class RuStrings : Strings {
     override val holidayGreetingValentine = "Любви и уютного чтения!"
     override val holidayEaster = "Пасха"
     override val holidayGreetingEaster = "Светлой Пасхи!"
+    override val greetingMorning = "Доброе утро"
+    override val greetingAfternoon = "Добрый день"
+    override val greetingEvening = "Добрый вечер"
+    override val greetingNight = "Доброй ночи"
     override val sortTitle = "Сортировка"
     override val sortByDefault = "По умолчанию"
     override val sortByRecent = "Недавние"
@@ -913,6 +921,10 @@ class EnStrings : Strings {
     override val holidayGreetingValentine = "Love and cozy reading!"
     override val holidayEaster = "Easter"
     override val holidayGreetingEaster = "Happy Easter!"
+    override val greetingMorning = "Good morning"
+    override val greetingAfternoon = "Good afternoon"
+    override val greetingEvening = "Good evening"
+    override val greetingNight = "Good night"
     override val sortTitle = "Sort by"
     override val sortByDefault = "Default"
     override val sortByRecent = "Recent"
@@ -1334,6 +1346,10 @@ class UkStrings : Strings {
     override val holidayGreetingValentine = "Кохання й затишного читання!"
     override val holidayEaster = "Великдень"
     override val holidayGreetingEaster = "Світлого Великодня!"
+    override val greetingMorning = "Доброго ранку"
+    override val greetingAfternoon = "Добрий день"
+    override val greetingEvening = "Добрий вечір"
+    override val greetingNight = "Доброї ночі"
     override val sortTitle = "Сортування"
     override val sortByDefault = "За замовчуванням"
     override val sortByRecent = "Нещодавні"
@@ -1755,6 +1771,10 @@ class BeStrings : Strings {
     override val holidayGreetingValentine = "Кахання і ўтульнага чытання!"
     override val holidayEaster = "Вялікдзень"
     override val holidayGreetingEaster = "Светлага Вялікдня!"
+    override val greetingMorning = "Добрай раніцы"
+    override val greetingAfternoon = "Добры дзень"
+    override val greetingEvening = "Добры вечар"
+    override val greetingNight = "Добрай ночы"
     override val sortTitle = "Сартаванне"
     override val sortByDefault = "Па змаўчанні"
     override val sortByRecent = "Нядаўнія"
@@ -2176,6 +2196,10 @@ class PlStrings : Strings {
     override val holidayGreetingValentine = "Miłości i przyjemnej lektury!"
     override val holidayEaster = "Wielkanoc"
     override val holidayGreetingEaster = "Wesołych Świąt Wielkanocnych!"
+    override val greetingMorning = "Dzień dobry"
+    override val greetingAfternoon = "Dobrego popołudnia"
+    override val greetingEvening = "Dobry wieczór"
+    override val greetingNight = "Dobrej nocy"
     override val sortTitle = "Sortowanie"
     override val sortByDefault = "Domyślnie"
     override val sortByRecent = "Niedawne"
@@ -2653,6 +2677,10 @@ class CsStrings : Strings {
     override val holidayGreetingValentine = "Láska a příjemné čtení!"
     override val holidayEaster = "Velikonoce"
     override val holidayGreetingEaster = "Krásné Velikonoce!"
+    override val greetingMorning = "Dobré ráno"
+    override val greetingAfternoon = "Dobré odpoledne"
+    override val greetingEvening = "Dobrý večer"
+    override val greetingNight = "Dobrou noc"
     override val sortTitle = "Řazení"
     override val sortByDefault = "Výchozí"
     override val sortByRecent = "Podle data přidání"
@@ -2995,6 +3023,10 @@ class HeStrings : Strings {
     override val holidayGreetingValentine = "אהבה וקריאה נעימה!"
     override val holidayEaster = "פסחא"
     override val holidayGreetingEaster = "חג פסחא שמח!"
+    override val greetingMorning = "בוקר טוב"
+    override val greetingAfternoon = "צהריים טובים"
+    override val greetingEvening = "ערב טוב"
+    override val greetingNight = "לילה טוב"
     override val sortTitle = "מיון לפי"
     override val sortByDefault = "ברירת מחדל"
     override val sortByRecent = "אחרונים"

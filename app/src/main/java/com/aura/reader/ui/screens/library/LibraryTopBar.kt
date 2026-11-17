@@ -40,8 +40,11 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.LocalTextStyle
 import com.aura.reader.ui.theme.LocalAppStrings
+import com.aura.reader.ui.theme.dayPeriodForHour
+import com.aura.reader.ui.theme.greetingFor
 import com.aura.reader.ui.theme.holidayDisplayName
 import com.aura.reader.ui.theme.holidayGreeting
+import com.aura.reader.ui.theme.rememberCurrentHour
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -223,13 +226,26 @@ AnimatedContent(
                     }
                 }
 
-                if (!isSmallTitle && holidaySeason != HolidaySeason.NONE) {
+                if (!isSmallTitle) {
+                    // A holiday keeps its own greeting, exactly as before; on an ordinary
+                    // day the line under the name greets by the time of day instead of
+                    // sitting empty.
+                    val isHoliday = holidaySeason != HolidaySeason.NONE
+                    val greeting = if (isHoliday) {
+                        strings.holidayGreeting(holidaySeason)
+                    } else {
+                        strings.greetingFor(dayPeriodForHour(rememberCurrentHour()))
+                    }
                     Text(
-                        text = strings.holidayGreeting(holidaySeason),
+                        text = greeting,
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = holidaySeason.primaryAccent,
-                        letterSpacing = 0.2.sp,
+                        fontWeight = if (isHoliday) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (isHoliday) {
+                            holidaySeason.primaryAccent
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        letterSpacing = if (isHoliday) 0.2.sp else 0.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

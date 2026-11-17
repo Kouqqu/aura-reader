@@ -38,6 +38,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import com.aura.reader.ui.components.WavyProgressIndicator
 import androidx.compose.material.icons.rounded.Close
+import com.aura.reader.ui.components.ExpressiveButtonSize
 import com.aura.reader.ui.components.ExpressiveSplitButton
 
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -490,12 +491,11 @@ fun OpdsScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.Sort,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                             Text(
                                 text = currentSortLabel,
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
                                 maxLines = 1
                             )
                         },
@@ -516,7 +516,7 @@ fun OpdsScreen(
                         isExpanded = showSortDropdown,
                         containerColor = MaterialTheme.colorScheme.surfaceContainer,
                         contentColor = MaterialTheme.colorScheme.onSurface,
-                        height = 40.dp
+                        size = ExpressiveButtonSize.Small
                     )
 
                     DropdownMenu(

@@ -648,3 +648,117 @@ Fixes edge annotation tap priority, remembers bottom progress indicator choice a
 - Newly imported books with 0% progress now automatically populate the "К прочтению" collection until reading begins.
 
 Verified with `testDebugUnitTest lintDebug`.
+
+## 2.2.1-beta.1 (versionCode 164)
+
+First beta after the 2.2.0 stable. Three things ride in it: the corrected licence
+notice, the rebuilt M3 Expressive buttons, and the new day-time greeting under the app
+name. No dependency, plugin or toolchain version changed. Version:
+`2.2.1-beta.1` (`versionCode 164`); the beta release body in
+`.github/workflows/build-apk.yml` now leads with 2.2.1 Beta 1 and demotes Beta 45 to
+"earlier".
+
+### Font notice correction and localization audit
+
+No code changed in this step; it fixes a licence notice that beta.44 got wrong
+and records the localization debt left by the 2.2.0 cycle.
+
+**Zakon licence notice.** `assets/licenses/fonts.txt` still opened with "all
+fonts are SIL OFL 1.1" and `docs/upgrades.md` still said "all seven bundled
+fonts", but beta.44 had added an eighth font. Parsing `zakon_regular.ttf`
+directly shows that its `name` table carries no OFL notice: it names the
+Yaroslav the Wise National Library of Ukraine as the licence holder
+(`www.mincult.gov.ua`) and lists Oleksii Chekal, Henadii Zarechniuk, Dmytro
+Rastvortsev and Andrij Shevchenko as authors. The notice now separates the seven
+OFL fonts from Zakon, states only what the font itself declares, and says that
+the exact terms were not part of the download and were not verified. The same
+distinction is repeated in `docs/upgrades.md`.
+
+**Localization audit.** `docs/i18n-audit.md` lists every user-visible Russian
+string that is still hardcoded outside `Strings` (bookmarks and quotes sheet,
+chapters and footnote sheets, the beta.45 return pill, update-channel dialog,
+cover search, book shelf dialog, update notification, share failures), the
+chapter-title fallbacks produced by the parsers, and the Belarusian entries that
+still contain Russian text. Nothing on that list was changed here.
+
+Verified by rebuilding the APK and confirming the updated `fonts.txt` is inside
+`assets/licenses/`.
+
+### M3 Expressive buttons rebuilt from the published token tables
+
+The beta.40-42 split button, icon button and connected button group were hand-written
+guesses that only loosely resembled Material 3 Expressive. They were rebuilt against the
+design tokens published on m3.material.io (design system `20543ce18892f7d9`, November 2026
+build) rather than against screenshots.
+
+**Where the numbers come from.** The specs pages are a JavaScript app, so the token tables
+were read from the `TOKEN_TABLE*.json` payloads the pages fetch from
+`m3.material.io/_dsm/data/dsdb-m3/...` and the aliases were resolved through
+`md.sys.measurement.*` / `md.sys.shape.*`. The relevant sets are
+`md.comp.button.*`, `md.comp.icon-button.*`, `md.comp.split-button.*` and
+`md.comp.button-group.connected.*`; only XS-XL exist (32/40/56/96/136 dp), so the old
+36 dp group height had no size in the spec at all.
+
+**Split button** (`md.comp.split-button.small`): 40 dp tall; 2 dp seam; leading button
+padded 16 dp start / 12 dp end (was 14/14); leading icon 20 dp (was 18); trailing button
+48 x 40 dp with a 22 dp menu icon (was 40 x 40 with 20 dp); menu icon nudged -1 dp off
+centre while unselected and centred once expanded; inner corners 4 dp at rest, 12 dp on
+hover/focus/press (was a fixed 4 dp), and the trailing inner corners become fully round
+while the menu is open - the `selected.inner-corner.corner-size = 50%` token. Both corner
+morphs use the spec's fast spatial spring (damping 0.9 / stiffness 1400).
+
+**Icon button** (`md.comp.icon-button.small`): 40 dp container, 24 dp icon (was 20), 8 dp
+padding, square corners 12 dp morphing to 8 dp while pressed (was a fixed 14 dp squircle
+that is neither the square nor the round variant). A `round` flag exposes the circular
+variant.
+
+**Connected button group** (`md.comp.button-group.connected.small`): 40 dp tall (was 36),
+fully round outer ends (was 16 dp), inner corners 8 dp at rest and 4 dp while pressed
+(was a fixed 4 dp), adding up to the pill-shaped selected segment that the 50% selected
+token describes. The animated checkmark was removed: it is not part of the Expressive
+anatomy and it widened the selected segment, which is the *standard* group behaviour -
+connected groups are only allowed to change the shape of the selected button, never to
+push their neighbours.
+
+**Call sites.** The library sort/view control and the OPDS sort control now pass
+`size = ExpressiveButtonSize.Small` instead of a raw height, use the 20 dp leading icon and
+22 dp trailing icon, and drop the extra `SemiBold` weight because `labelLarge` already
+defines the label weight.
+
+**Still deliberately not spec-compliant** (left alone because they are the app's own design
+language, not oversights): the library and OPDS split buttons keep their own container
+colours instead of a strict filled/tonal/outlined token set, the connected group keeps its
+"outlined at rest / tonal when selected" colour pairing, and both still scale slightly on
+press (M3 Expressive only morphs the corners and draws a state layer). The library split
+button's trailing segment is a view-mode toggle rather than a menu icon, which is also why
+it is arguably a two-item button group rather than a split button.
+
+**Test.** New `ExpressiveButtonTokensTest` pins every small-size token (heights, paddings,
+corner radii, icon sizes, the 48 dp trailing target) plus the invariant that an icon button
+is `icon + 2 * padding` at every size. Full run: `testDebugUnitTest lintDebug
+assembleDebug` -> `BUILD SUCCESSFUL`, 78 tests, 0 failures.
+
+### Day-time greeting under the app name
+
+The library header used to leave the line under "Aura Reader" empty on an ordinary day;
+it only filled on a holiday. It now greets the reader by the clock - "Good morning /
+afternoon / evening / night" - while a holiday keeps its own greeting exactly as before
+(holiday wins, so no existing season behaviour changed).
+
+- **Tokens.** Four new `Strings` members (`greetingMorning`, `greetingAfternoon`,
+  `greetingEvening`, `greetingNight`), implemented in all seven languages:
+  RU "Доброе утро / Добрый день / Добрый вечер / Доброй ночи", EN, UK, BE, PL, CS and HE.
+- **Boundaries.** `dayPeriodForHour()` in `ui/theme/Greetings.kt`: morning 5-11,
+  afternoon 12-16, evening 17-22, night 23-4. A plain function, so the boundaries are
+  pinned by tests instead of depending on the clock at composition time. Invalid hours
+  throw.
+- **Live update.** `rememberCurrentHour()` re-reads the wall clock once a minute, so a
+  library left open past midnight changes its greeting without a restart. The ticker only
+  runs while the greeting line is visible (i.e. while the large title is expanded).
+- **Style.** Ordinary greeting: `labelMedium`, `onSurfaceVariant`, no letter-spacing.
+  Holiday greeting: unchanged (season accent, `SemiBold`, 0.2 sp).
+- **Test.** New `GreetingTest` (5 tests): every hour 0-23 maps to a period, the 4/5, 11/12,
+  16/17 and 22/23 boundaries, out-of-range rejection, every language has a non-blank
+  greeting for every period, and the greetings are genuinely translated (RU vs EN vs HE).
+  Full run: `testDebugUnitTest lintDebug assembleDebug` -> `BUILD SUCCESSFUL`, 83 tests,
+  0 failures.

@@ -1,8 +1,9 @@
 Bundled fonts
 =============
 
-Aura Reader ships the following font files in app/src/main/res/font/. All of
-them are licensed under the SIL Open Font License, Version 1.1
+Aura Reader ships eight font files in app/src/main/res/font/.
+
+Seven of them are licensed under the SIL Open Font License, Version 1.1
 (https://openfontlicense.org), as stated in the `name` table embedded in each
 file. The copyright lines below are copied from those name tables.
 
@@ -45,17 +46,29 @@ pt_serif_regular.ttf
   Copyright (c) 2010 ParaType Ltd. (http://www.paratype.com/public),
   with Reserved Font Names "PT Sans", "PT Serif" and "ParaType".
 
+Zakon (licensed separately, not OFL)
+------------------------------------
 zakon_regular.ttf
   Zakon
-  Copyright 2026 Oleksii Chekal, Henadii Zarechniuk, Dmytro Rastvortsev, Andrij Shevchenko
-  (Commissioned by Yaroslav the Wise National Library of Ukraine & Ministry of Culture, www.mincult.gov.ua)
-  Released under open culture / public license.
+  Copyright (c) 2026 Oleksii Chekal, Henadii Zarechniuk, Dmytro Rastvortsev,
+  Andrij Shevchenko
+  Licence holder named in the font: Yaroslav the Wise National Library of
+  Ukraine (www.mincult.gov.ua)
+
+  The font's own name table does not carry an SIL Open Font License notice: it
+  names the library above as the licence holder and points to the Ministry of
+  Culture of Ukraine (www.mincult.gov.ua). The exact redistribution terms were
+  not included with the font download and have not been verified independently,
+  so this file does not claim OFL for Zakon. The typeface is bundled only as an
+  optional interface font for the Ukrainian and English UI.
 
 SIL Open Font License 1.1
 -------------------------
-
 The full text of the license is available at https://openfontlicense.org and
 ships with the official distribution of each font listed above. In short: the
 fonts may be bundled and redistributed with this application as long as the
 copyright notice and the license travel with them, they are not sold on their
 own, and modified versions do not use the Reserved Font Names.
+
+This section applies to the seven OFL fonts listed before the Zakon entry. It
+does not describe zakon_regular.ttf.

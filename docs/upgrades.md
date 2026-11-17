@@ -3,8 +3,9 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-11-17, release `2.2.0-beta.45` (`versionCode 163`).
-`2.2.0-beta.45` changed no dependency, plugin or toolchain versions: it bumps `versionCode`/`versionName` and adds edge-margin footnote tap priority, persistent reader bottom progress mode, quotation direct navigation with return pill, and automatic unread collection classification (see `docs/verification.md`).
+Last updated: 2026-11-17, release `2.2.1-beta.1` (`versionCode 164`).
+`2.2.1-beta.1` changed no dependency, plugin or toolchain versions: it bumps `versionCode`/`versionName`, corrects the Zakon licence notice, rebuilds the split/icon/connected buttons from the published M3 Expressive token tables, and adds the day-time greeting under the app name (see `docs/verification.md`).
+`2.2.0-beta.45` also changed no dependency, plugin or toolchain versions: it bumps `versionCode`/`versionName` and adds edge-margin footnote tap priority, persistent reader bottom progress mode, quotation direct navigation with return pill, and automatic unread collection classification (see `docs/verification.md`).
 `2.2.0-beta.14` changed no build files: it merged the UI-file split (see
 `docs/verification.md`) and bumped the version only. `2.2.0-beta.15` turned off
 Compose's new text context menu so the reader keeps its custom selection
@@ -77,7 +78,9 @@ SIL Open Font License 1.1, by Astigmatic / Brian J. Bonislawsky) for the "Aura
 Reader" wordmark. `2.2.0-beta.34` added
 `app/src/main/res/raw/halloween_sound.mp3`, the Uppbeat track "Spooky Ghosts"
 (Halloween intro music) by Gfx Sounds; its attribution lives in
-`app/src/main/assets/licenses/uppbeat_halloween_sound.txt`.
+`app/src/main/assets/licenses/uppbeat_halloween_sound.txt`. `2.2.0-beta.44`
+added `app/src/main/res/font/zakon_regular.ttf` (Zakon, an optional Ukrainian
+interface font); it is **not** OFL, see the licence note below.
 
 User fonts are a runtime feature, not a build dependency:
 `PreferencesManager.importCustomFont` copies a picked TTF/OTF into
@@ -86,12 +89,19 @@ User fonts are a runtime feature, not a build dependency:
 no validation beyond `Typeface.createFromFile`; a file that fails to open is
 deleted on import.
 
-All seven bundled fonts are SIL Open Font License 1.1, as stated in each file's
-`name` table, and are listed with their copyright lines and trademarks in
+Seven of the eight bundled fonts (Google Sans, Inter, JetBrains Mono, Literata,
+Lora, Marcellus and PT Serif) are SIL Open Font License 1.1, as stated in each
+file's `name` table, and are listed with their copyright lines and trademarks in
 `app/src/main/assets/licenses/fonts.txt`. That includes Google Sans: the bundled
 copy declares itself "Copyright 2025 The Google Sans Project Authors
 (github.com/googlefonts/googlesans)" and OFL 1.1, not the older proprietary
 build.
+
+The eighth font, Zakon (`2.2.0-beta.44`), is **not** OFL and is documented
+separately in the same file. Its `name` table names the Yaroslav the Wise
+National Library of Ukraine as the licence holder and points to
+`www.mincult.gov.ua`; the download did not include the terms and they have not
+been verified, so the notice only records what the font itself declares.
 
 ## Source changes the upgrade required
 

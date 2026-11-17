@@ -196,7 +196,7 @@ internal fun LibraryCollectionChips(
                         Icon(
                             imageVector = Icons.Rounded.Favorite,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
