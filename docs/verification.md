@@ -759,8 +759,11 @@ afternoon / evening / night" - while a holiday keeps its own greeting exactly as
 - **Live update.** `rememberCurrentHour()` re-reads the wall clock once a minute, so a
   library left open past midnight changes its greeting without a restart. The ticker only
   runs while the greeting line is visible (i.e. while the large title is expanded).
-- **Style.** Ordinary greeting: `labelMedium`, `onSurfaceVariant`, no letter-spacing.
-  Holiday greeting: unchanged (season accent, `SemiBold`, 0.2 sp).
+- **Style.** Ordinary greeting: `headlineSmall` (24 sp), one step below the 28 sp app name
+  and reading as a second header line rather than a caption; `onSurfaceVariant`, no
+  letter-spacing, 4 dp below the name row. Holiday greeting keeps its season accent,
+  `SemiBold` and 0.2 sp, now at the same size. The greeting still hides with the large
+  title when the bar collapses.
 - **Test.** New `GreetingTest` (5 tests): every hour 0-23 maps to a period, the 4/5, 11/12,
   16/17 and 22/23 boundaries, out-of-range rejection, every language has a non-blank
   greeting for every period, and the greetings are genuinely translated (RU vs EN vs HE).

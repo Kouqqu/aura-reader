@@ -178,7 +178,7 @@ AnimatedContent(
             val titleSpacing = if (isSmallTitle) 8.dp else 12.dp
             val badgeScale = if (isSmallTitle) 0.85f else 1f
 
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(titleSpacing)
@@ -238,7 +238,9 @@ AnimatedContent(
                     }
                     Text(
                         text = greeting,
-                        style = MaterialTheme.typography.labelMedium,
+                        // The greeting is a second headline, not a caption: it reads as
+                        // part of the header next to the name, one step down the scale.
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = if (isHoliday) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (isHoliday) {
                             holidaySeason.primaryAccent
