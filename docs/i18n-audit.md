@@ -1,6 +1,7 @@
 # UI localization audit
 
-Date: 2026-11-17. State: `2.2.1-beta.1` (the first beta after the 2.2.0 stable).
+Date: 2026-11-18. State: `2.3.0-beta.1` (the first beta of the 2.3 cycle, on top of
+the stable 2.2.1).
 Nothing in this file has been fixed yet; it is the inventory of what still breaks
 the "7 languages" promise, so a future session does not have to repeat the search.
 

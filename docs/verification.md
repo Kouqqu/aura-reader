@@ -783,11 +783,11 @@ was downloaded and inspected:
 - `classes.dex` contains "Доброе утро", "Доброй ночи", "Dzień dobry" and "בוקר טוב",
   plus the `DayPeriod` enum - the greeting survived R8 and ships in all languages.
 
-## Unreleased - 2.3 appearance work
+## 2.3.0-beta.1 (versionCode 166)
 
-Four visual changes for the 2.3 cycle. No dependency, plugin or toolchain version changed,
-and nothing is published yet: the tree sits on the stable `2.2.1` (`versionCode 165`) that
-was released separately, and the changes below are unreleased.
+First beta of the 2.3 cycle: four appearance changes. No dependency, plugin or toolchain
+version changed. The tree sits on the stable `2.2.1` (`versionCode 165`) that was released
+separately with Gemini.
 
 ### Holiday style picker in Appearance
 
