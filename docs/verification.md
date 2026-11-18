@@ -851,6 +851,24 @@ cannot silently break a plaque.
 0 failures. Not run on a device: no emulator or phone was connected, so the glow, the
 plaque grid and the wave still need one visual pass.
 
+### Published verification
+
+Release: [v2.3.0-beta.1](https://github.com/Kouqqu/aura-reader/releases/tag/v2.3.0-beta.1)
+(prerelease; `v2.2.1` is still `latest`). Tag at `9d300a8`, CI run `44355462271` succeeded
+in ~7 min. The published `AuraReader.apk` (5,491,060 bytes, SHA-256
+`8920b6eda338ad915e37ea053b485ad59c8ccee2343f79a0ffb108babd7ac897`) was downloaded and
+inspected:
+
+- `aapt dump badging`: `versionCode='166'`, `versionName='2.3.0-beta.1'`.
+- `classes.dex` contains "Праздничный стиль", "Стандарт", "9–15 января" and the English
+  and Hebrew style titles, plus the `WavyProgressIndicator` class and the "logoGlowPulse"
+  animation label - the picker, the wave and the glow all survived R8.
+- "Сезонный режим (тест)" is gone from the dex: the developer-only holiday chips really
+  were removed, not just hidden.
+
+The asset size happens to equal the previous beta's 5,491,060 bytes; the digests differ,
+and the inspection above confirms the new content.
+
 ## 2.2.1 — Official Stable Release (versionCode 165)
 
 Official stable release consolidating all 2.2.1 updates:
