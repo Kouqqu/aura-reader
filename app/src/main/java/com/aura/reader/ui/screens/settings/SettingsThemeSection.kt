@@ -56,6 +56,8 @@ internal fun SettingsThemeSection(
     onToggleMaterialYou: (Boolean) -> Unit,
     seasonalEffectsEnabled: Boolean = true,
     onToggleSeasonalEffects: (Boolean) -> Unit = {},
+    holidayOverride: String = "AUTO",
+    onHolidayOverrideChange: (String) -> Unit = {},
     onOpenReaderThemeSettings: () -> Unit,
     onThemePicked: (ReaderThemeMode, Offset, List<Color>) -> Unit
 ) {
@@ -172,6 +174,12 @@ internal fun SettingsThemeSection(
     Spacer(modifier = Modifier.height(14.dp))
 
     // Appearance Settings Group Card
+    val setSeasonalEffects: (Boolean) -> Unit = { enabled ->
+        onToggleSeasonalEffects(enabled)
+        // Turning the atmosphere back on after "Standard" should not leave it dead:
+        // fall back to the calendar unless a specific season is already chosen.
+        if (enabled && holidayOverride == "OFF") onHolidayOverrideChange("AUTO")
+    }
     ExpressiveSettingsGroup {
         ExpressiveSettingsRow(
             title = strings.syncThemesTitle,
@@ -235,17 +243,17 @@ internal fun SettingsThemeSection(
             title = strings.seasonalEffectsToggle,
             subtitle = strings.seasonalEffectsSubtitle,
             icon = { SettingsIconBox(Icons.Rounded.Celebration) },
-            onClick = { onToggleSeasonalEffects(!seasonalEffectsEnabled) },
+            onClick = { setSeasonalEffects(!seasonalEffectsEnabled) },
             trailing = {
                 if (isGlass) {
                     LiquidGlassSwitch(
                         checked = seasonalEffectsEnabled,
-                        onCheckedChange = onToggleSeasonalEffects
+                        onCheckedChange = setSeasonalEffects
                     )
                 } else {
                     Switch(
                         checked = seasonalEffectsEnabled,
-                        onCheckedChange = onToggleSeasonalEffects,
+                        onCheckedChange = setSeasonalEffects,
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = MaterialTheme.colorScheme.primary,
                             checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -255,6 +263,26 @@ internal fun SettingsThemeSection(
             }
         )
     }
+
+    Spacer(modifier = Modifier.height(18.dp))
+
+    SettingsHolidayStyleSection(
+        holidayOverride = holidayOverride,
+        seasonalEffectsEnabled = seasonalEffectsEnabled,
+        isGlass = isGlass,
+        isThemeDark = isThemeDark,
+        onHolidayStylePicked = { style ->
+            // Picking a concrete season should always show the result immediately,
+            // so the master switch follows the choice. "Standard" clears both.
+            if (style == "OFF") {
+                onHolidayOverrideChange("OFF")
+                if (seasonalEffectsEnabled) onToggleSeasonalEffects(false)
+            } else {
+                onHolidayOverrideChange(style)
+                if (!seasonalEffectsEnabled) onToggleSeasonalEffects(true)
+            }
+        }
+    )
 
     Spacer(modifier = Modifier.height(20.dp))
 }

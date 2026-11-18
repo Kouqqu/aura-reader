@@ -478,6 +478,8 @@ fun SettingsBottomSheet(
                 onToggleMaterialYou = onToggleMaterialYou,
                 seasonalEffectsEnabled = seasonalEffectsEnabled,
                 onToggleSeasonalEffects = onToggleSeasonalEffects,
+                holidayOverride = holidayOverride,
+                onHolidayOverrideChange = onHolidayOverrideChange,
                 onOpenReaderThemeSettings = onOpenReaderThemeSettings,
                 onThemePicked = { mode, origin, colors ->
                     burstOrigin = origin
@@ -520,8 +522,6 @@ fun SettingsBottomSheet(
                 developerModeEnabled = developerModeEnabled,
                 updateChannel = updateChannel,
                 onUpdateChannelChange = onUpdateChannelChange,
-                holidayOverride = holidayOverride,
-                onHolidayOverrideChange = onHolidayOverrideChange,
                 onCheckUpdates = onCheckUpdates,
                 onVersionTap = {
                     if (developerModeEnabled) {

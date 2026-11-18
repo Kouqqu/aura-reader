@@ -7,7 +7,7 @@ the "7 languages" promise, so a future session does not have to repeat the searc
 The app stores every user-visible label in `Strings`
 (`app/src/main/java/com/aura/reader/ui/theme/AppStrings.kt`), and all seven
 implementations (`Ru`, `En`, `Uk`, `Be`, `Pl`, `Cs`, `He`) currently define all
-376 members. The gaps below are places that never went through `Strings`.
+389 members. The gaps below are places that never went through `Strings`.
 
 ## 1. Hardcoded Russian inside Compose screens
 

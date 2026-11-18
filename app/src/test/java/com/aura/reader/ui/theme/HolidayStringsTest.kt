@@ -59,6 +59,30 @@ class HolidayStringsTest {
     }
 
     @Test
+    fun everyLanguageDefinesTheHolidayStylePickerStrings() {
+        for ((language, strings) in allLanguages()) {
+            val values = listOf(
+                strings.holidayStyleTitle,
+                strings.holidayStyleSubtitle,
+                strings.holidayStyleAuto,
+                strings.holidayStyleAutoHint,
+                strings.holidayStyleStandard,
+                strings.holidayStyleStandardHint,
+                strings.holidayStyleHalloweenHint,
+                strings.holidayStyleChristmasWesternHint,
+                strings.holidayStyleNewYearHint,
+                strings.holidayStyleChristmasOrthodoxHint,
+                strings.holidayStyleWinterHint,
+                strings.holidayStyleValentineHint,
+                strings.holidayStyleEasterHint
+            )
+            values.forEach {
+                assertTrue("${language.code} has a blank holiday style string", it.isNotBlank())
+            }
+        }
+    }
+
+    @Test
     fun seasonNamesActuallyDifferBetweenLanguages() {
         val ru = getStrings(AppLanguage.RU)
         val en = getStrings(AppLanguage.EN)

@@ -75,7 +75,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
@@ -178,6 +180,22 @@ AnimatedContent(
             val titleSpacing = if (isSmallTitle) 8.dp else 12.dp
             val badgeScale = if (isSmallTitle) 0.85f else 1f
 
+            val glowColor = if (holidaySeason != HolidaySeason.NONE) {
+                holidaySeason.primaryAccent
+            } else {
+                MaterialTheme.colorScheme.primary
+            }
+            val glowTransition = rememberInfiniteTransition(label = "logoGlow")
+            val glowPulse by glowTransition.animateFloat(
+                initialValue = 0.45f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(3400, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "logoGlowPulse"
+            )
+
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -186,7 +204,26 @@ AnimatedContent(
                     Surface(
                         shape = RoundedCornerShape(logoCorner),
                         color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(logoBoxSize)
+                        modifier = Modifier
+                            .size(logoBoxSize)
+                            .drawBehind {
+                                if (!isSmallTitle) {
+                                    // A soft, slowly breathing halo behind the mark: the
+                                    // Rockstar-logo treatment rather than a hard shadow.
+                                    val haloRadius = size.minDimension * 1.22f
+                                    drawCircle(
+                                        brush = Brush.radialGradient(
+                                            0.35f to glowColor.copy(alpha = 0.40f * glowPulse),
+                                            0.68f to glowColor.copy(alpha = 0.14f * glowPulse),
+                                            1f to Color.Transparent,
+                                            center = center,
+                                            radius = haloRadius
+                                        ),
+                                        radius = haloRadius,
+                                        center = center
+                                    )
+                                }
+                            }
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             AuraLogoIcon(
@@ -227,9 +264,6 @@ AnimatedContent(
                 }
 
                 if (!isSmallTitle) {
-                    // A holiday keeps its own greeting, exactly as before; on an ordinary
-                    // day the line under the name greets by the time of day instead of
-                    // sitting empty.
                     val isHoliday = holidaySeason != HolidaySeason.NONE
                     val greeting = if (isHoliday) {
                         strings.holidayGreeting(holidaySeason)
@@ -240,6 +274,9 @@ AnimatedContent(
                         text = greeting,
                         // The greeting is a second headline, not a caption: it reads as
                         // part of the header next to the name, one step down the scale (24 sp).
+                        // It starts under the app name, not under the logo, so the two
+                        // lines share one left edge.
+                        modifier = Modifier.padding(start = logoBoxSize + titleSpacing),
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontSize = 24.sp,
                             letterSpacing = if (isHoliday) 0.2.sp else 0.sp

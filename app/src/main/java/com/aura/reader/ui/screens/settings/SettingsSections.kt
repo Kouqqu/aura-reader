@@ -18,8 +18,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -599,8 +597,6 @@ internal fun SettingsUpdatesSection(
     developerModeEnabled: Boolean,
     updateChannel: String,
     onUpdateChannelChange: (String) -> Unit,
-    holidayOverride: String = "AUTO",
-    onHolidayOverrideChange: (String) -> Unit = {},
     onCheckUpdates: () -> Unit,
     onVersionTap: () -> Unit
 ) {
@@ -734,76 +730,6 @@ ExpressiveSettingsGroup {
                         Toast.makeText(context, "${strings.updateChannelBeta}...", Toast.LENGTH_SHORT).show()
                     },
                     label = { Text(strings.updateChannelBeta) }
-                )
-            }
-            Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = strings.holidayModeTitle,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = strings.holidayModeSubtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "AUTO",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("AUTO") },
-                    label = { Text(strings.holidayModeAuto) }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "HALLOWEEN",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("HALLOWEEN") },
-                    label = { Text("🎃 Хэллоуин") }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "CHRISTMAS_WESTERN",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("CHRISTMAS_WESTERN") },
-                    label = { Text("🎄 Рождество (25 дек)") }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "NEW_YEAR",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("NEW_YEAR") },
-                    label = { Text("❄️ Новый год") }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "CHRISTMAS_ORTHODOX",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("CHRISTMAS_ORTHODOX") },
-                    label = { Text("⭐ Рождество (7 янв)") }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "VALENTINE",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("VALENTINE") },
-                    label = { Text("💗 Валентин") }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "EASTER",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("EASTER") },
-                    label = { Text("🐣 Пасха") }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "OFF",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("OFF") },
-                    label = { Text(strings.holidayModeOff) }
                 )
             }
         }

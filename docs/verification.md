@@ -783,6 +783,74 @@ was downloaded and inspected:
 - `classes.dex` contains "Доброе утро", "Доброй ночи", "Dzień dobry" and "בוקר טוב",
   plus the `DayPeriod` enum - the greeting survived R8 and ships in all languages.
 
+## Unreleased - 2.3 appearance work
+
+Four visual changes for the 2.3 cycle. No dependency, plugin or toolchain version changed,
+and nothing is published yet: the tree sits on the stable `2.2.1` (`versionCode 165`) that
+was released separately, and the changes below are unreleased.
+
+### Holiday style picker in Appearance
+
+Holidays used to be reachable only through the developer mode chips in the Updates section,
+with hard-coded Russian labels. They are now a normal user-facing choice inside
+Appearance, next to the theme pills.
+
+- **New file** `ui/screens/settings/HolidayStyleSection.kt`: nine plaques in the same
+  rounded-16 dp / 2 dp selected-border language as `ExpressiveThemePill` (press bounce,
+  haptic tick, neutral glass or surface-container fill when unselected). Each plaque has a
+  30 dp emoji or icon tile, a name and a date hint.
+- **Rows.** `Auto` (by calendar) and `Standard` (no decoration) on the first row; then
+  Halloween, Christmas (25 Dec), New Year, Christmas (7 Jan), Winter holidays
+  (9-15 Jan), Valentine and Easter. Easter spans the last row.
+- **Behaviour.** Picking a season also switches the master "Holiday atmosphere" toggle on,
+  so the result is visible immediately. `Standard` writes the `OFF` override and switches
+  the toggle off; toggling it back on with `OFF` still selected falls back to `AUTO`
+  instead of leaving the atmosphere dead. Auto and every season keep the existing
+  `HolidaySeason.resolve(enabled, override)` logic untouched.
+- **Plumbing.** `holidayOverride` / `onHolidayOverrideChange` moved from
+  `SettingsUpdatesSection` to `SettingsThemeSection` (via `SettingsBottomSheet`); the
+  hard-coded developer chip row and its `horizontalScroll` imports were deleted.
+- **Strings.** Thirteen new `Strings` members (`holidayStyleTitle`, `holidayStyleSubtitle`,
+  `holidayStyleAuto`, `holidayStyleAutoHint`, `holidayStyleStandard`,
+  `holidayStyleStandardHint`, and one date hint per season) in all seven languages. The
+  total is now 389 members.
+
+### Greeting aligned under the app name
+
+The 24 sp greeting sat at the very left of the title column, i.e. optically under the logo
+square, which made the header look shifted. It now starts at `logoBoxSize + titleSpacing`
+(58 dp expanded), so the greeting and "Aura Reader" share one left edge. Nothing else about
+the greeting changed.
+
+### Rockstar-style logo glow
+
+The 46 dp logo square now sits on a soft radial halo: `primary` on ordinary days, the
+season accent on holidays. It is drawn with `drawBehind` at 1.22x the logo size, so it never
+affects layout, and breathes between 45% and 100% alpha over 3.4 s with `FastOutSlowIn`.
+It is suppressed in the collapsed bar, where the 28 dp logo has no room for a halo.
+
+### Material 3 wavy download progress (OPDS)
+
+`ui/components/WavyProgressIndicator.kt` was redrawn to the current Material shape instead
+of a custom active-only sine:
+
+- both the active segment and the track undulate with the same phase;
+- a 4 dp flat gap separates them at the progress head;
+- a 2 dp stop indicator closes the line, 4 dp before the edge;
+- stroke 4 dp (was 3.5), wavelength 32 dp (was 22), amplitude 2.4 dp (was 2.8), 1.6 s loop
+  (was 1.1 s), and a 10 dp damping envelope at both ends of every segment.
+
+Both OPDS call sites (book row and book details) use it unchanged.
+
+**Tests.** `HolidayStringsTest` now checks that all thirteen new style strings are non-blank
+in all seven languages. `HolidaySeasonTest` pins the Winter (`OLD_NEW_YEAR`) override and
+round-trips every picker id through `HolidaySeason.resolve`, so a renamed enum constant
+cannot silently break a plaque.
+
+**Build.** `testDebugUnitTest lintDebug assembleDebug` -> `BUILD SUCCESSFUL`, 84 tests,
+0 failures. Not run on a device: no emulator or phone was connected, so the glow, the
+plaque grid and the wave still need one visual pass.
+
 ## 2.2.1 — Official Stable Release (versionCode 165)
 
 Official stable release consolidating all 2.2.1 updates:
