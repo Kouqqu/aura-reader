@@ -117,14 +117,15 @@ import com.aura.reader.ui.components.sheetScrollIsolation
 import com.aura.reader.ui.theme.AmoledBackground
 import com.aura.reader.ui.theme.AmoledText
 import com.aura.reader.ui.theme.AppLanguage
+import androidx.compose.foundation.layout.navigationBarsPadding
 import com.aura.reader.ui.theme.LocalAppStrings
 import com.aura.reader.ui.theme.SepiaBackground
 import com.aura.reader.ui.theme.SepiaText
 
-private val LocalIsLiquidGlass = compositionLocalOf { false }
-private val LocalIsThemeDark = compositionLocalOf { true }
-private val LocalIsSepia = compositionLocalOf { false }
-private val LocalIsAmoled = compositionLocalOf { false }
+internal val LocalIsLiquidGlass = compositionLocalOf { false }
+internal val LocalIsThemeDark = compositionLocalOf { true }
+internal val LocalIsSepia = compositionLocalOf { false }
+internal val LocalIsAmoled = compositionLocalOf { false }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 
@@ -559,6 +560,9 @@ fun SettingsBottomSheet(
                 onDismiss = onDismiss,
                 onOpenOnboarding = onOpenOnboarding
             )
+
+            Spacer(modifier = Modifier.height(110.dp))
+            Spacer(modifier = Modifier.navigationBarsPadding())
         }
 
             if (burstTriggerKey > 0L && burstColors.isNotEmpty()) {

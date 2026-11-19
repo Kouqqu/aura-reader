@@ -230,8 +230,8 @@ AnimatedContent(
             val innerTint = lerp(shimmerTint, glowColorC, 0.35f * shimmer)
             // The slot is deliberately larger than the mark, so the halo fades out
             // inside its own draw bounds instead of being cut at the top of the bar.
-            val haloSlot = logoBoxSize * 1.42f
-            val haloRadius = logoBoxSize * 0.70f
+            val haloSlot = logoBoxSize * 3.2f
+            val haloRadius = logoBoxSize * 1.6f
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(
@@ -251,8 +251,10 @@ AnimatedContent(
                                         val radiusPx = haloRadius.toPx()
                                         drawCircle(
                                             brush = Brush.radialGradient(
-                                                0f to shimmerTint.copy(alpha = 0.34f * glowPulse),
-                                                0.55f to innerTint.copy(alpha = 0.16f * glowPulse),
+                                                0f to shimmerTint.copy(alpha = 0.85f * glowPulse),
+                                                0.32f to shimmerTint.copy(alpha = 0.65f * glowPulse),
+                                                0.60f to innerTint.copy(alpha = 0.35f * glowPulse),
+                                                0.85f to glowColorC.copy(alpha = 0.12f * glowPulse),
                                                 1f to Color.Transparent,
                                                 center = center,
                                                 radius = radiusPx

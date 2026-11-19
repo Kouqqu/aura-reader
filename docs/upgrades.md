@@ -3,7 +3,8 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-11-19, release `2.3.0-beta.2` (`versionCode 167`).
+Last updated: 2026-11-19, release `2.3.0-beta.3` (`versionCode 168`).
+`2.3.0-beta.3` changed no dependencies: it fixes the settings layout collision in `SettingsFoldContent` by laying out folded items in a `Column` with 14.dp vertical spacing, introduces tactile Chumpy-style folding cards with 90° chevron rotation indicators, adds bottom padding (110.dp + `navigationBarsPadding`) to prevent the bottom navigation dock from obscuring settings, enhances the Rockstar logo glow to radius 1.6x / slot 3.2x with rich radial alpha stops, and brings the M3 1.5.0 centered `BookCardMenu` to grid mode via a 3-dots button on book covers.
 `2.3.0-beta.2` is the first 2.3 build with a new Material 3: the Compose BOM stays
 at `2026.09.00` (Compose 1.12.1) and `androidx.compose.material3:material3` is
 pinned to `1.5.0` explicitly, because the newer BOM `2026.11.01` would pull

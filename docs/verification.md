@@ -783,6 +783,24 @@ was downloaded and inspected:
 - `classes.dex` contains "Доброе утро", "Доброй ночи", "Dzień dobry" and "בוקר טוב",
   plus the `DayPeriod` enum - the greeting survived R8 and ships in all languages.
 
+## 2.3.0-beta.3 (versionCode 168)
+
+Third 2.3 beta: fixes the settings sheet child stacking bug, adopts authentic Chumpy-style folding cards with rotating chevron badges, adds bottom inset padding against the navigation dock, restores and doubles the Rockstar aura logo glow, and brings centered M3 1.5.0 BookCardMenu to both grid and list book items.
+
+### SettingsFold layout collision fix & Chumpy cards
+In `2.3.0-beta.2`, `SettingsFoldContent` wrapped multiple composables inside a standalone `AnimatedVisibility` which defaulted to a `Box` layout, causing theme cards, holiday styles, and settings groups to pile up at coordinate (0, 0).
+- `SettingsFoldContent` now wraps its content in a `Column` with 14.dp vertical spacing, ensuring clear linear layout.
+- `SettingsFoldHeader` is redesigned into a tactile, rounded tonal surface card with an animated 90° rotating chevron in a circular badge.
+- Added 110.dp spacer plus `navigationBarsPadding` to the bottom of `SettingsBottomSheet`, so the floating dock never obscures bottom items like "Учитывать время чтения".
+
+### Rockstar logo aura glow restored
+The logo halo slot is increased to `logoBoxSize * 3.2f` and radius to `logoBoxSize * 1.6f`, with a rich radial gradient (alpha 0.85f -> 0.65f -> 0.35f -> 0.12f -> transparent). The glow extends 25–30 dp beyond the logo surface, breathing visibly in all themes and holiday modes.
+
+### Centered BookCardMenu in grid & list modes
+- In grid view (`BookGridCard`), a circular 3-dots `IconButton` is added to the top-right overlay of book covers.
+- `BookCardMenu` is moved to the card root level in both `BookListItem` and `BookGridCard`, anchoring to the full card width so that `anchorBounds.center.x - menuSize.width / 2` places the dropdown menu centered under the card with M3 1.5.0 scale-and-fade animation.
+- Grid menu now includes "mark as finished" and "reset progress" for parity with list mode.
+
 ## 2.3.0-beta.2 (versionCode 167)
 
 Second 2.3 beta: the update plaque finally installs the update, Material 3 gets its
