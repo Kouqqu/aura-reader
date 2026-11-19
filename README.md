@@ -27,7 +27,7 @@
 - **Search & Highlights**: Full-text search across a book or your entire library, plus multi-paragraph text selection for saving quotes and colored highlights.
 - **Reading Stats & Milestones**: Track daily streaks, reading speed, total hours, and weekly activity charts, with celebratory animations when you finish a book.
 - **Seasonal Atmosphere**: Optional holiday themes, palettes, and greetings for Halloween, New Year, Christmas, Valentine's Day, and Easter that can be toggled off anytime.
-- **Backups, Updates & Privacy**: Export and restore your entire library and reading progress in one file, and install app updates directly from settings. Zero ads; optional anonymous usage telemetry via TelemetryDeck can be disabled in settings — see [PRIVACY.md](PRIVACY.md).
+- **Backups, Updates & Privacy**: Export and restore your entire library and reading progress in one file, and install app updates directly from settings. Zero ads; optional anonymous telemetry can be disabled in settings — see [PRIVACY.md](PRIVACY.md).
 - **7 Languages**: Fully localized into English, Russian, Ukrainian, Belarusian, Polish, Czech, and Hebrew.
 
 ### Installation
@@ -57,7 +57,7 @@ This project is open-source and licensed under the [GNU General Public License v
 - **Поиск и цитаты**: Полнотекстовый поиск по книге и всей библиотеке, а также удобное выделение фрагментов для сохранения цитат и цветных заметок.
 - **Статистика чтения**: Подсчёт ежедневных стриков, скорости чтения, общего времени и наглядные графики активности за неделю, плюс небольшое поздравление при завершении книги.
 - **Праздничная атмосфера**: Ненавязчивое сезонное оформление к Хэллоуину, Новому году, Рождеству, Дню святого Валентина и Пасхе, которое при желании легко отключается в настройках.
-- **Бэкапы, обновления и приватность**: Резервное копирование всей библиотеки и прогресса в один файл и установка обновлений прямо внутри приложения. Никакой рекламы; опциональная анонимная аналитика через TelemetryDeck отключается одним переключателем в настройках — подробности в [PRIVACY.md](PRIVACY.md).
+- **Бэкапы, обновления и приватность**: Резервное копирование всей библиотеки и прогресса в один файл и установка обновлений прямо внутри приложения. Никакой рекламы; опциональная анонимная аналитика отключается одним переключателем в настройках — подробности в [PRIVACY.md](PRIVACY.md).
 - **7 языков интерфейса**: Русский, английский, украинский, белорусский, польский, чешский и иврит.
 
 ### Установка
