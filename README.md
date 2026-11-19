@@ -10,9 +10,9 @@
 
 ---
 
-## English
+<h2><img src="assets/flag_uk.svg" width="24" height="16" alt="English"> English</h2>
 
-**Aura Reader** is a fast, lightweight, and modern e-book reader for Android built with Jetpack Compose. Created for comfortable daily reading without ads, bloatware, or intrusive tracking.
+**Aura Reader** is a fast, lightweight, and modern e-book reader for Android. Created for comfortable daily reading without ads, bloatware, or intrusive tracking.
 
 ### Features
 
@@ -40,9 +40,9 @@ This project is open-source and licensed under the [GNU General Public License v
 
 ---
 
-## Русский
+<h2><img src="assets/flag_ru.svg" width="24" height="16" alt="Русский"> Русский</h2>
 
-**Aura Reader** — быстрая, лёгкая и современная читалка для Android на Jetpack Compose. Создана для комфортного ежедневного чтения без рекламы, лишнего шума и назойливой слежки.
+**Aura Reader** — быстрая, лёгкая и современная читалка для Android. Создана для комфортного ежедневного чтения без рекламы, лишнего шума и назойливой слежки.
 
 ### Возможности
 
