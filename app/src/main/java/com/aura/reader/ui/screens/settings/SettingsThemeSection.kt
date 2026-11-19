@@ -27,6 +27,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -69,13 +73,15 @@ internal fun SettingsThemeSection(
     val sepiaColors = listOf(Color(0xFFFAF0E6), Color(0xFFD7CCC8), Color(0xFFBCAAA4), Color(0xFFFFE0B2), Color(0xFFEFEBE9), Color(0xFFFFFFFF))
     val amoledColors = listOf(Color(0xFFFFFFFF), Color(0xFFF5F5F5), Color(0xFFEEEEEE), Color(0xFFE0E0E0), Color(0xFFBDBDBD), Color(0xFFFFFFFF))
 
-    Text(
-        text = strings.themeSectionTitle,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+    var expanded by rememberSaveable { mutableStateOf(true) }
+    SettingsFoldHeader(
+        title = strings.themeSectionTitle,
+        isGlass = isGlass,
+        expanded = expanded,
+        onToggle = { expanded = !expanded }
     )
+
+    SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
 
     // Segmented Theme Switcher Card
     val themeCardContent: @Composable () -> Unit = {
@@ -285,4 +291,5 @@ internal fun SettingsThemeSection(
     )
 
     Spacer(modifier = Modifier.height(20.dp))
+    }
 }

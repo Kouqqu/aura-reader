@@ -65,6 +65,9 @@ class MainActivity : ComponentActivity() {
 
         preferencesManager = PreferencesManager(applicationContext)
         bookRepository = BookRepository(applicationContext, preferencesManager)
+        // A previous in-app update has been installed by now, so the cached APK
+        // it was built from is no longer needed and must not keep taking space.
+        com.aura.reader.data.updater.AppUpdateManager.cleanupDownloadedApks(applicationContext)
         libraryViewModel = LibraryViewModel(bookRepository, preferencesManager)
         readerViewModel = ReaderViewModel(bookRepository, preferencesManager, applicationContext)
         opdsViewModel = com.aura.reader.ui.screens.opds.OpdsViewModel(bookRepository, preferencesManager)

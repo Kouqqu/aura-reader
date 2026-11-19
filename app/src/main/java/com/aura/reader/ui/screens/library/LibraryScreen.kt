@@ -217,6 +217,8 @@ fun LibraryScreen(
     var showReadingStatsSheet by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsState()
     val updateInfo by viewModel.updateInfo.collectAsState()
+    val updateCheckState by viewModel.updateCheckState.collectAsState()
+    val updateInstallState by viewModel.updateInstallState.collectAsState()
     val foundFiles by viewModel.foundDeviceFiles.collectAsState()
     val readerSettings by viewModel.readerSettings.collectAsState()
     val isGlass = readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
@@ -747,7 +749,16 @@ fun LibraryScreen(
                                                         update = curUpdate,
                                                         isGlass = isGlass,
                                                         isThemeDark = isThemeDark,
-                                                        onOpenUpdatePage = { url -> viewModel.openUpdatePage(context, url) }
+                                                        installState = updateInstallState,
+                                                        onDownloadAndInstall = {
+                                                            viewModel.downloadAndInstallUpdate(context)
+                                                        },
+                                                        onInstallDownloaded = {
+                                                            viewModel.installDownloadedUpdate(context)
+                                                        },
+                                                        onOpenUpdatePage = { url ->
+                                                            viewModel.openUpdatePage(context, url)
+                                                        }
                                                     )
                                                 }
                                             }
@@ -1220,11 +1231,14 @@ fun LibraryScreen(
 
     LibraryDialogs(
         updateInfo = updateInfo,
+        updateInstallState = updateInstallState,
         showNewCollectionDialog = showNewCollectionDialog,
         collectionToDelete = collectionToDelete,
         bookForCollections = bookForCollections,
         userCollections = userCollections,
         onDismissUpdate = { viewModel.dismissUpdateDialog() },
+        onDownloadAndInstall = { viewModel.downloadAndInstallUpdate(context) },
+        onInstallDownloaded = { viewModel.installDownloadedUpdate(context) },
         onOpenUpdatePage = { url -> viewModel.openUpdatePage(context, url) },
         onSkipVersion = { version -> viewModel.skipUpdateVersion(version) },
         onDismissNewCollection = { showNewCollectionDialog = false },
@@ -1263,6 +1277,7 @@ fun LibraryScreen(
             onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
             developerModeEnabled = developerModeEnabled,
             updateChannel = updateChannel,
+            updateCheckState = updateCheckState,
             onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
             onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
             onCheckUpdates = {

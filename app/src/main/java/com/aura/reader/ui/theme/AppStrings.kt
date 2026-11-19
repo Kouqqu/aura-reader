@@ -217,10 +217,18 @@ interface Strings {
     val checkUpdatesNow: String
     val checkingUpdates: String
     val upToDate: String
+    val updateCheckFailed: String
     fun currentVersion(version: String): String
     fun updateAvailableTitle(version: String): String
     val updateBannerSubtitle: String
     val downloadingUpdate: String
+    val updateAction: String
+    val downloadAndInstall: String
+    val installUpdate: String
+    val downloadFromGithub: String
+    val updateReadyToInstall: String
+    val updateDownloadFailed: String
+    val installPermissionNeeded: String
     val aboutSectionTitle: String
     val githubRepository: String
 
@@ -668,10 +676,18 @@ class RuStrings : Strings {
     override val checkUpdatesNow = "Проверить обновления"
     override val checkingUpdates = "Проверка обновлений..."
     override val upToDate = "У вас установлена последняя версия"
+    override val updateCheckFailed = "Не удалось проверить обновления. Проверьте подключение."
     override fun currentVersion(version: String) = "Версия $version"
     override fun updateAvailableTitle(version: String) = "Доступно обновление $version"
     override val updateBannerSubtitle = "Нажмите, чтобы скачать на GitHub"
     override val downloadingUpdate = "Загрузка обновления"
+    override val updateAction = "Обновить"
+    override val downloadAndInstall = "Скачать и установить"
+    override val installUpdate = "Установить"
+    override val downloadFromGithub = "Скачать с GitHub"
+    override val updateReadyToInstall = "Обновление скачано — осталось установить"
+    override val updateDownloadFailed = "Не удалось скачать обновление. Попробуйте ещё раз или скачайте с GitHub."
+    override val installPermissionNeeded = "Разрешите Aura Reader устанавливать приложения в настройках Android, затем нажмите «Установить»."
     override val aboutSectionTitle = "О приложении"
     override val githubRepository = "Репозиторий на GitHub"
 
@@ -1106,10 +1122,18 @@ class EnStrings : Strings {
     override val checkUpdatesNow = "Check for updates"
     override val checkingUpdates = "Checking for updates..."
     override val upToDate = "You have the latest version"
+    override val updateCheckFailed = "Couldn't check for updates. Check your connection."
     override fun currentVersion(version: String) = "Version $version"
     override fun updateAvailableTitle(version: String) = "Update available $version"
     override val updateBannerSubtitle = "Tap to download on GitHub"
     override val downloadingUpdate = "Downloading update"
+    override val updateAction = "Update"
+    override val downloadAndInstall = "Download and install"
+    override val installUpdate = "Install"
+    override val downloadFromGithub = "Download from GitHub"
+    override val updateReadyToInstall = "Downloaded — ready to install"
+    override val updateDownloadFailed = "Couldn't download the update. Try again or download it from GitHub."
+    override val installPermissionNeeded = "Allow Aura Reader to install apps in Android settings, then tap Install."
     override val aboutSectionTitle = "About"
     override val githubRepository = "GitHub Repository"
 
@@ -1544,10 +1568,18 @@ class UkStrings : Strings {
     override val checkUpdatesNow = "Перевірити оновлення"
     override val checkingUpdates = "Перевірка оновлень..."
     override val upToDate = "У вас встановлено найновішу версію"
+    override val updateCheckFailed = "Не вдалося перевірити оновлення. Перевірте підключення."
     override fun currentVersion(version: String) = "Версія $version"
     override fun updateAvailableTitle(version: String) = "Доступне оновлення $version"
     override val updateBannerSubtitle = "Натисніть, щоб завантажити на GitHub"
     override val downloadingUpdate = "Завантаження оновлення"
+    override val updateAction = "Оновити"
+    override val downloadAndInstall = "Завантажити й установити"
+    override val installUpdate = "Установити"
+    override val downloadFromGithub = "Завантажити з GitHub"
+    override val updateReadyToInstall = "Оновлення завантажено — залишилося встановити"
+    override val updateDownloadFailed = "Не вдалося завантажити оновлення. Спробуйте ще раз або завантажте з GitHub."
+    override val installPermissionNeeded = "Дозвольте Aura Reader встановлювати програми в налаштуваннях Android, потім натисніть «Установити»."
     override val aboutSectionTitle = "Про додаток"
     override val githubRepository = "Репозиторій на GitHub"
 
@@ -1982,10 +2014,18 @@ class BeStrings : Strings {
     override val checkUpdatesNow = "Праверыць абнаўленні"
     override val checkingUpdates = "Праверка абнаўленняў..."
     override val upToDate = "У вас усталявана апошняя версія"
+    override val updateCheckFailed = "Не ўдалося праверыць абнаўленні. Праверце падключэнне."
     override fun currentVersion(version: String) = "Версія $version"
     override fun updateAvailableTitle(version: String) = "Даступна абнаўленне $version"
     override val updateBannerSubtitle = "Націсніце, каб спампаваць на GitHub"
     override val downloadingUpdate = "Спампоўванне абнаўлення"
+    override val updateAction = "Абнавіць"
+    override val downloadAndInstall = "Спампаваць і ўсталяваць"
+    override val installUpdate = "Усталяваць"
+    override val downloadFromGithub = "Спампаваць з GitHub"
+    override val updateReadyToInstall = "Абнаўленне спампавана — засталося ўсталяваць"
+    override val updateDownloadFailed = "Не ўдалося спампаваць абнаўленне. Паспрабуйце яшчэ раз або спампуйце з GitHub."
+    override val installPermissionNeeded = "Дазвольце Aura Reader усталёўваць праграмы ў наладах Android, потым націсніце «Усталяваць»."
     override val aboutSectionTitle = "Пра праграму"
     override val githubRepository = "Рэпазіторый на GitHub"
 
@@ -2420,10 +2460,18 @@ class PlStrings : Strings {
     override val checkUpdatesNow = "Sprawdź aktualizacje"
     override val checkingUpdates = "Sprawdzanie aktualizacji..."
     override val upToDate = "Masz najnowszą wersję"
+    override val updateCheckFailed = "Nie udało się sprawdzić aktualizacji. Sprawdź połączenie."
     override fun currentVersion(version: String) = "Wersja $version"
     override fun updateAvailableTitle(version: String) = "Dostępna aktualizacja $version"
     override val updateBannerSubtitle = "Dotknij, aby pobrać na GitHubie"
     override val downloadingUpdate = "Pobieranie aktualizacji"
+    override val updateAction = "Aktualizuj"
+    override val downloadAndInstall = "Pobierz i zainstaluj"
+    override val installUpdate = "Zainstaluj"
+    override val downloadFromGithub = "Pobierz z GitHuba"
+    override val updateReadyToInstall = "Aktualizacja pobrana — gotowa do instalacji"
+    override val updateDownloadFailed = "Nie udało się pobrać aktualizacji. Spróbuj ponownie lub pobierz ją z GitHuba."
+    override val installPermissionNeeded = "Zezwól Aura Reader na instalowanie aplikacji w ustawieniach Androida, a następnie dotknij Zainstaluj."
     override val aboutSectionTitle = "O aplikacji"
     override val githubRepository = "Repozytorium GitHub"
 
@@ -2852,10 +2900,18 @@ class CsStrings : Strings {
     override val checkUpdatesNow = "Zkontrolovat aktualizace"
     override val checkingUpdates = "Kontrola aktualizací..."
     override val upToDate = "Máte nejnovější verzi"
+    override val updateCheckFailed = "Aktualizace se nepodařilo zkontrolovat. Zkontrolujte připojení."
     override fun currentVersion(version: String) = "Verze $version"
     override fun updateAvailableTitle(version: String) = "K dispozici je nová verze $version"
     override val updateBannerSubtitle = "Klepnutím přejdete ke stažení na GitHub"
     override val downloadingUpdate = "Stahování aktualizace..."
+    override val updateAction = "Aktualizovat"
+    override val downloadAndInstall = "Stáhnout a nainstalovat"
+    override val installUpdate = "Nainstalovat"
+    override val downloadFromGithub = "Stáhnout z GitHubu"
+    override val updateReadyToInstall = "Aktualizace stažena — připravena k instalaci"
+    override val updateDownloadFailed = "Aktualizaci se nepodařilo stáhnout. Zkuste to znovu nebo ji stáhněte z GitHubu."
+    override val installPermissionNeeded = "Povolte aplikaci Aura Reader instalovat aplikace v nastavení Androidu a poté klepněte na Nainstalovat."
     override val aboutSectionTitle = "O aplikaci"
     override val githubRepository = "GitHub repozitář"
     override val chapter = "Kapitola"
@@ -3268,10 +3324,18 @@ class HeStrings : Strings {
     override val checkUpdatesNow = "בדוק עדכונים"
     override val checkingUpdates = "בודק עדכונים..."
     override val upToDate = "ברשותך הגרסה העדכנית ביותר"
+    override val updateCheckFailed = "לא ניתן היה לבדוק עדכונים. בדוק את החיבור."
     override fun currentVersion(version: String) = "גרסה $version"
     override fun updateAvailableTitle(version: String) = "עדכון $version זמין"
     override val updateBannerSubtitle = "לחץ להורדה מ-GitHub"
     override val downloadingUpdate = "מוריד עדכון..."
+    override val updateAction = "עדכן"
+    override val downloadAndInstall = "הורד והתקן"
+    override val installUpdate = "התקן"
+    override val downloadFromGithub = "הורד מ-GitHub"
+    override val updateReadyToInstall = "העדכון הורד — מוכן להתקנה"
+    override val updateDownloadFailed = "לא ניתן היה להוריד את העדכון. נסה שוב או הורד אותו מ-GitHub."
+    override val installPermissionNeeded = "אפשר ל-Aura Reader להתקין אפליקציות בהגדרות Android, ואז הקש התקן."
     override val aboutSectionTitle = "אודות"
     override val githubRepository = "מאגר GitHub"
     override val chapter = "פרק"

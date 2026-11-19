@@ -4,9 +4,13 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
+import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.File
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -14,8 +18,19 @@ data class UpdateInfo(
     val isAvailable: Boolean,
     val latestVersion: String,
     val changelog: String,
-    val releaseUrl: String
+    val releaseUrl: String,
+    val apkUrl: String? = null,
+    val apkSizeBytes: Long? = null
 )
+
+/** How the system installer answered the request to open the downloaded APK. */
+enum class ApkInstallResult {
+    /** The package installer was opened; the app will be replaced when the user accepts. */
+    STARTED,
+    /** Android requires the user to allow installing unknown apps from Aura Reader first. */
+    PERMISSION_REQUIRED,
+    FAILED
+}
 
 object AppUpdateManager {
 
@@ -25,6 +40,10 @@ object AppUpdateManager {
         "https://github.com/Kouqqu/aura-reader/releases/latest"
     private const val GITHUB_API_LATEST_RELEASE =
         "https://api.github.com/repos/Kouqqu/aura-reader/releases/latest"
+    private const val GITHUB_DOWNLOAD_BASE =
+        "https://github.com/Kouqqu/aura-reader/releases/download"
+    private const val APK_ASSET_NAME = "AuraReader.apk"
+    private const val UPDATE_CACHE_DIR = "updates"
 
     fun openReleasePage(context: Context, url: String? = null) {
         try {
@@ -44,6 +63,8 @@ object AppUpdateManager {
                 var tagName = ""
                 var body = ""
                 var releasePageUrl = ""
+                var apkUrl: String? = null
+                var apkSizeBytes: Long? = null
 
                 if (isBetaChannel) {
                     try {
@@ -59,6 +80,8 @@ object AppUpdateManager {
                             var bestTag = ""
                             var bestBody = ""
                             var bestUrl = ""
+                            var bestApkUrl: String? = null
+                            var bestApkSize: Long? = null
 
                             for (rIdx in 0 until releasesArray.length()) {
                                 val rel = releasesArray.getJSONObject(rIdx)
@@ -72,6 +95,9 @@ object AppUpdateManager {
                                     bestTag = tag
                                     bestBody = rel.optString("body", "").trim()
                                     bestUrl = tagUrl
+                                    val asset = findApkAsset(rel)
+                                    bestApkUrl = asset?.first
+                                    bestApkSize = asset?.second
                                 }
                             }
 
@@ -79,6 +105,8 @@ object AppUpdateManager {
                                 tagName = bestTag
                                 body = bestBody
                                 releasePageUrl = bestUrl
+                                apkUrl = bestApkUrl
+                                apkSizeBytes = bestApkSize
                             }
                         }
                     } catch (e: Exception) {}
@@ -93,7 +121,9 @@ object AppUpdateManager {
                                 isAvailable = isNewer,
                                 latestVersion = tagName,
                                 changelog = body.ifBlank { "Сборка $tagName Aura Reader с новыми улучшениями." },
-                                releaseUrl = releasePageUrl
+                                releaseUrl = releasePageUrl,
+                                apkUrl = apkUrl ?: fallbackApkUrl(tagName),
+                                apkSizeBytes = apkSizeBytes
                             )
                         )
                     }
@@ -136,6 +166,9 @@ object AppUpdateManager {
                         if (htmlUrl.isNotBlank()) {
                             releasePageUrl = htmlUrl
                         }
+                        val asset = findApkAsset(json)
+                        apkUrl = asset?.first
+                        apkSizeBytes = asset?.second
                     }
                 } catch (e: Exception) {}
 
@@ -156,7 +189,9 @@ object AppUpdateManager {
                         isAvailable = isNewer,
                         latestVersion = tagName,
                         changelog = body.ifBlank { "Вышла новая версия $tagName с улучшениями и новыми функциями." },
-                        releaseUrl = releasePageUrl
+                        releaseUrl = releasePageUrl,
+                        apkUrl = apkUrl ?: fallbackApkUrl(tagName),
+                        apkSizeBytes = apkSizeBytes
                     )
                 )
             } catch (e: Exception) {
@@ -200,6 +235,166 @@ object AppUpdateManager {
 
             notificationManager.notify(1001, builder.build())
         } catch (e: Exception) {}
+    }
+
+    /** The first `.apk` asset of a release, with its size when GitHub reports one. */
+    private fun findApkAsset(release: JSONObject): Pair<String, Long?>? {
+        val assets = release.optJSONArray("assets") ?: return null
+        for (index in 0 until assets.length()) {
+            val asset = assets.optJSONObject(index) ?: continue
+            val name = asset.optString("name", "")
+            val url = asset.optString("browser_download_url", "")
+            if (name.endsWith(".apk", ignoreCase = true) && url.isNotBlank()) {
+                return url to asset.optLong("size", 0L).takeIf { it > 0L }
+            }
+        }
+        return null
+    }
+
+    /** GitHub's predictable asset URL, for when the API was rate-limited. */
+    fun fallbackApkUrl(tag: String): String =
+        "$GITHUB_DOWNLOAD_BASE/${tag.trim()}/$APK_ASSET_NAME"
+
+    /**
+     * Downloads the release APK into the app's cache.
+     *
+     * The file lives in `cacheDir/updates` so Android may reclaim it if the
+     * install never happens. Every previous download is deleted first, and the
+     * next app start wipes the folder again (see [cleanupDownloadedApks]) so a
+     * finished update does not leave an APK behind.
+     */
+    suspend fun downloadApk(
+        context: Context,
+        info: UpdateInfo,
+        onProgress: (Float?) -> Unit
+    ): Result<File> = withContext(Dispatchers.IO) {
+        var target: File? = null
+        try {
+            val urlString = info.apkUrl ?: fallbackApkUrl(info.latestVersion)
+            val directory = File(context.cacheDir, UPDATE_CACHE_DIR).apply { mkdirs() }
+            directory.listFiles()?.forEach { it.delete() }
+            val safeVersion = info.latestVersion
+                .removePrefix("v")
+                .replace(Regex("[^A-Za-z0-9._-]"), "_")
+            val apkFile = File(directory, "aura-$safeVersion.apk")
+            target = apkFile
+
+            onProgress(null)
+            val connection = (URL(urlString).openConnection() as HttpURLConnection).apply {
+                instanceFollowRedirects = true
+                requestMethod = "GET"
+                setRequestProperty("User-Agent", "AuraReader-App")
+                setRequestProperty(
+                    "Accept",
+                    "application/vnd.android.package-archive, application/octet-stream, */*"
+                )
+                connectTimeout = 15_000
+                readTimeout = 30_000
+            }
+
+            val responseCode = connection.responseCode
+            if (responseCode !in 200..299) {
+                throw IOException("HTTP $responseCode")
+            }
+
+            val totalBytes = connection.contentLengthLong
+            connection.inputStream.use { input ->
+                apkFile.outputStream().use { output ->
+                    val buffer = ByteArray(64 * 1024)
+                    var downloaded = 0L
+                    var lastPercent = -1
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        output.write(buffer, 0, read)
+                        downloaded += read
+                        if (totalBytes > 0L) {
+                            val percent = ((downloaded * 100L) / totalBytes).toInt()
+                            if (percent != lastPercent) {
+                                lastPercent = percent
+                                onProgress(
+                                    (downloaded.toFloat() / totalBytes.toFloat())
+                                        .coerceIn(0f, 1f)
+                                )
+                            }
+                        }
+                    }
+                    output.flush()
+                }
+            }
+
+            if (apkFile.length() <= 0L) throw IOException("Received an empty file")
+            if (totalBytes > 0L && apkFile.length() != totalBytes) {
+                throw IOException("Download stopped at ${apkFile.length()} of $totalBytes bytes")
+            }
+            // An APK is a ZIP container; reject an HTML error page saved as .apk.
+            val signature = ByteArray(2)
+            apkFile.inputStream().use { it.read(signature) }
+            if (signature[0] != 'P'.code.toByte() || signature[1] != 'K'.code.toByte()) {
+                throw IOException("The downloaded file is not an APK")
+            }
+
+            onProgress(1f)
+            Result.success(apkFile)
+        } catch (error: Exception) {
+            try {
+                target?.delete()
+            } catch (_: Exception) {
+            }
+            Result.failure(error)
+        }
+    }
+
+    /**
+     * Hands the downloaded APK to Android's package installer. When the user has
+     * not allowed this app to install packages yet, their settings page opens
+     * instead and the caller can simply offer the button again.
+     */
+    fun installApk(context: Context, file: File): ApkInstallResult {
+        return try {
+            if (!context.packageManager.canRequestPackageInstalls()) {
+                val settingsIntent = Intent(
+                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:${context.packageName}")
+                ).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(settingsIntent)
+                return ApkInstallResult.PERMISSION_REQUIRED
+            }
+
+            val apkUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(apkUri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(installIntent)
+            ApkInstallResult.STARTED
+        } catch (error: Exception) {
+            ApkInstallResult.FAILED
+        }
+    }
+
+    /**
+     * Deletes APKs left in the update cache. Called on every app start: once the
+     * installer has replaced the app, the old download is dead weight.
+     */
+    fun cleanupDownloadedApks(context: Context) {
+        try {
+            val directory = File(context.cacheDir, UPDATE_CACHE_DIR)
+            directory.listFiles()?.forEach { file ->
+                try {
+                    file.delete()
+                } catch (_: Exception) {
+                }
+            }
+        } catch (_: Exception) {
+        }
     }
 
     fun isVersionNewer(latest: String, current: String): Boolean {

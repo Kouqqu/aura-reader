@@ -5,7 +5,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.ui.zIndex
-import com.aura.reader.ui.components.liquidGlassMenuAppearance
+import com.aura.reader.ui.components.BookCardMenu
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Download
@@ -258,14 +258,12 @@ fun BookCard(
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
-                            val bookMenuAppearance = liquidGlassMenuAppearance(isGlass, isDark)
-                            DropdownMenu(
+                            BookCardMenu(
                                 expanded = showMenu,
                                 onDismissRequest = { showMenu = false },
-                                shape = RoundedCornerShape(20.dp),
-                                containerColor = bookMenuAppearance.containerColor,
-                                border = bookMenuAppearance.border,
-                                shadowElevation = bookMenuAppearance.shadowElevation
+                                isGlass = isGlass,
+                                isDark = isDark,
+                                shape = RoundedCornerShape(20.dp)
                             ) {
                                 DropdownMenuItem(
                                     text = { Text(strings.shareBookFile) },
@@ -733,14 +731,12 @@ fun BookGridCard(
                 )
             }
 
-            val gridMenuAppearance = liquidGlassMenuAppearance(isGlass, isDark)
-            DropdownMenu(
+            BookCardMenu(
                 expanded = showMenu,
                 onDismissRequest = { showMenu = false },
-                shape = RoundedCornerShape(18.dp),
-                containerColor = gridMenuAppearance.containerColor,
-                border = gridMenuAppearance.border,
-                shadowElevation = gridMenuAppearance.shadowElevation
+                isGlass = isGlass,
+                isDark = isDark,
+                shape = RoundedCornerShape(18.dp)
             ) {
                 DropdownMenuItem(
                     text = { Text(if (book.isFavorite) strings.colFavorites else strings.addToCollection) },

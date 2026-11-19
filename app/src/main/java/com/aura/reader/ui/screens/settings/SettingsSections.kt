@@ -5,6 +5,11 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
@@ -34,9 +39,11 @@ import androidx.compose.material.icons.rounded.Analytics
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Dns
+import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Speed
@@ -44,6 +51,7 @@ import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,6 +65,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -67,6 +76,7 @@ import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.components.LiquidGlassSwitch
 import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.data.opds.OpdsService
+import com.aura.reader.ui.screens.library.UpdateCheckState
 import com.aura.reader.ui.theme.AppLanguage
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -191,16 +201,17 @@ internal fun SettingsLanguageSection(
     onOpenLanguagePicker: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    var expanded by rememberSaveable { mutableStateOf(true) }
 
 // 2. Language & Fonts Section
-Text(
-    text = strings.languageSectionTitle,
-    style = MaterialTheme.typography.titleSmall,
-    fontWeight = FontWeight.Bold,
-    color = MaterialTheme.colorScheme.primary,
-    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+SettingsFoldHeader(
+    title = strings.languageSectionTitle,
+    isGlass = isGlass,
+    expanded = expanded,
+    onToggle = { expanded = !expanded }
 )
 
+SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
 ExpressiveSettingsGroup {
     ExpressiveSettingsRow(
         title = strings.languageSectionTitle,
@@ -417,6 +428,7 @@ ExpressiveSettingsGroup {
         }
     }
 }
+}
 
 }
 
@@ -432,16 +444,17 @@ internal fun SettingsAdditionalFeaturesSection(
     onResetReadingSpeed: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    var expanded by rememberSaveable { mutableStateOf(true) }
 
 // 3. Additional Features Section
-Text(
-    text = strings.additionalFeaturesSectionTitle,
-    style = MaterialTheme.typography.titleSmall,
-    fontWeight = FontWeight.Bold,
-    color = MaterialTheme.colorScheme.primary,
-    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+SettingsFoldHeader(
+    title = strings.additionalFeaturesSectionTitle,
+    isGlass = isGlass,
+    expanded = expanded,
+    onToggle = { expanded = !expanded }
 )
 
+SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
 ExpressiveSettingsGroup {
     ExpressiveSettingsRow(
         title = strings.readingStatsToggle,
@@ -583,6 +596,7 @@ ExpressiveSettingsGroup {
         }
     }
 }
+}
 
 }
 
@@ -596,22 +610,24 @@ internal fun SettingsUpdatesSection(
     currentAppVersion: String,
     developerModeEnabled: Boolean,
     updateChannel: String,
+    updateCheckState: UpdateCheckState = UpdateCheckState.Idle,
     onUpdateChannelChange: (String) -> Unit,
     onCheckUpdates: () -> Unit,
     onVersionTap: () -> Unit
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
+    var expanded by rememberSaveable { mutableStateOf(true) }
 
 // 4. Updates & Analytics Section
-Text(
-    text = strings.updatesSectionTitle,
-    style = MaterialTheme.typography.titleSmall,
-    fontWeight = FontWeight.Bold,
-    color = MaterialTheme.colorScheme.primary,
-    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+SettingsFoldHeader(
+    title = strings.updatesSectionTitle,
+    isGlass = isGlass,
+    expanded = expanded,
+    onToggle = { expanded = !expanded }
 )
 
+SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
 ExpressiveSettingsGroup {
     ExpressiveSettingsRow(
         title = strings.updateNotificationsToggle,
@@ -662,6 +678,7 @@ ExpressiveSettingsGroup {
     )
     ExpressiveDivider()
     Column(modifier = Modifier.padding(16.dp)) {
+        val isChecking = updateCheckState is UpdateCheckState.Checking
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -683,15 +700,89 @@ ExpressiveSettingsGroup {
             }
             OutlinedButton(
                 onClick = onCheckUpdates,
-                shape = RoundedCornerShape(12.dp)
+                enabled = !isChecking,
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.SystemUpdate,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
+                if (isChecking) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(14.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Rounded.SystemUpdate,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(strings.checkUpdatesNow)
+                Text(
+                    if (isChecking) strings.checkingUpdates else strings.checkUpdatesNow,
+                    maxLines = 1
+                )
+            }
+        }
+
+        // The result lives right under the button: a quiet check mark for "up to
+        // date", a spinner while the request is in flight, and a calm explanation
+        // when the network is unavailable. No more red error snackbar for a check
+        // that simply found nothing new.
+        AnimatedVisibility(
+            visible = updateCheckState !is UpdateCheckState.Idle,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                when (val state = updateCheckState) {
+                    is UpdateCheckState.Checking -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.checkingUpdates,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    is UpdateCheckState.UpToDate -> {
+                        Icon(
+                            imageVector = Icons.Rounded.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.upToDate,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    is UpdateCheckState.Failed -> {
+                        Icon(
+                            imageVector = Icons.Rounded.ErrorOutline,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.updateCheckFailed,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    else -> Unit
+                }
             }
         }
         if (developerModeEnabled) {
@@ -734,6 +825,7 @@ ExpressiveSettingsGroup {
             }
         }
     }
+}
 }
 
 }

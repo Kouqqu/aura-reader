@@ -17,6 +17,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -29,21 +33,23 @@ import com.aura.reader.ui.theme.LocalAppStrings
 
 @Composable
 internal fun SettingsBackupSection(
+    isGlass: Boolean = false,
     onExportBackup: () -> Unit,
     onSendToGoogleDrive: () -> Unit,
     onRestoreBackup: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    var expanded by rememberSaveable { mutableStateOf(true) }
 
     // 5. Backup & Sync Section
-    Text(
-        text = strings.backupSectionTitle,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+    SettingsFoldHeader(
+        title = strings.backupSectionTitle,
+        isGlass = isGlass,
+        expanded = expanded,
+        onToggle = { expanded = !expanded }
     )
 
+    SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
     ExpressiveSettingsGroup {
         ExpressiveSettingsRow(
             title = strings.createBackupTitle,
@@ -75,28 +81,31 @@ internal fun SettingsBackupSection(
             }
         )
     }
+    }
 
     Spacer(modifier = Modifier.height(20.dp))
 }
 
 @Composable
 internal fun SettingsAboutSection(
+    isGlass: Boolean = false,
     isFullScreen: Boolean,
     onDismiss: () -> Unit,
     onOpenOnboarding: () -> Unit
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
+    var expanded by rememberSaveable { mutableStateOf(true) }
 
     // 6. About, GitHub & Donate Section
-    Text(
-        text = strings.aboutSectionTitle,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+    SettingsFoldHeader(
+        title = strings.aboutSectionTitle,
+        isGlass = isGlass,
+        expanded = expanded,
+        onToggle = { expanded = !expanded }
     )
 
+    SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
     ExpressiveSettingsGroup {
         ExpressiveSettingsRow(
             title = strings.donate,
@@ -173,6 +182,7 @@ internal fun SettingsAboutSection(
                 Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         )
+    }
     }
 
     Spacer(modifier = Modifier.height(24.dp))

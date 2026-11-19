@@ -109,6 +109,7 @@ import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.opds.OpdsService
 import com.aura.reader.ui.components.PixelFullScreenBurst
+import com.aura.reader.ui.screens.library.UpdateCheckState
 import com.aura.reader.ui.components.expressiveBounce
 import com.aura.reader.ui.components.expressiveClickable
 import com.aura.reader.ui.components.jellyOverscroll
@@ -157,6 +158,7 @@ fun SettingsBottomSheet(
     onRestoreBackup: () -> Unit = {},
     developerModeEnabled: Boolean = false,
     updateChannel: String = "RELEASE",
+    updateCheckState: UpdateCheckState = UpdateCheckState.Idle,
     onToggleDeveloperMode: (Boolean) -> Unit = {},
     onUpdateChannelChange: (String) -> Unit = {},
     readerTheme: ReaderThemeMode = ReaderThemeMode.SYSTEM_DYNAMIC,
@@ -521,6 +523,7 @@ fun SettingsBottomSheet(
                 currentAppVersion = currentAppVersion,
                 developerModeEnabled = developerModeEnabled,
                 updateChannel = updateChannel,
+                updateCheckState = updateCheckState,
                 onUpdateChannelChange = onUpdateChannelChange,
                 onCheckUpdates = onCheckUpdates,
                 onVersionTap = {
@@ -542,6 +545,7 @@ fun SettingsBottomSheet(
             Spacer(modifier = Modifier.height(20.dp))
 
             SettingsBackupSection(
+                isGlass = isGlass,
                 onExportBackup = onExportBackup,
                 onSendToGoogleDrive = onSendToGoogleDrive,
                 onRestoreBackup = onRestoreBackup
@@ -550,6 +554,7 @@ fun SettingsBottomSheet(
             Spacer(modifier = Modifier.height(20.dp))
 
             SettingsAboutSection(
+                isGlass = isGlass,
                 isFullScreen = isFullScreen,
                 onDismiss = onDismiss,
                 onOpenOnboarding = onOpenOnboarding

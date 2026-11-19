@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.aura.reader.data.analytics.AnalyticsManager
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.repository.BookRepository
+import com.aura.reader.data.updater.ApkInstallResult
 import com.aura.reader.data.updater.AppUpdateManager
 import com.aura.reader.data.updater.UpdateInfo
 import kotlinx.coroutines.Dispatchers
@@ -68,6 +69,23 @@ sealed interface LibraryUiState {
     data class Success(val book: Book) : LibraryUiState
     data class Error(val message: String) : LibraryUiState
     data class Message(val message: String) : LibraryUiState
+}
+
+/** What the manual "check for updates" button is showing at this moment. */
+sealed interface UpdateCheckState {
+    data object Idle : UpdateCheckState
+    data object Checking : UpdateCheckState
+    data object UpToDate : UpdateCheckState
+    data class Failed(val detail: String?) : UpdateCheckState
+}
+
+/** The in-app download and install flow for a release APK. */
+sealed interface UpdateInstallState {
+    data object Idle : UpdateInstallState
+    data class Downloading(val progress: Float?) : UpdateInstallState
+    data object Ready : UpdateInstallState
+    data object PermissionRequired : UpdateInstallState
+    data class Failed(val detail: String?) : UpdateInstallState
 }
 
 class LibraryViewModel(
@@ -598,6 +616,16 @@ class LibraryViewModel(
     private val _downloadProgress = MutableStateFlow<Float?>(null)
     val downloadProgress: StateFlow<Float?> = _downloadProgress.asStateFlow()
 
+    private val _updateCheckState = MutableStateFlow<UpdateCheckState>(UpdateCheckState.Idle)
+    val updateCheckState: StateFlow<UpdateCheckState> = _updateCheckState.asStateFlow()
+
+    private val _updateInstallState =
+        MutableStateFlow<UpdateInstallState>(UpdateInstallState.Idle)
+    val updateInstallState: StateFlow<UpdateInstallState> = _updateInstallState.asStateFlow()
+
+    private var downloadedApk: File? = null
+    private var updateDownloadJob: kotlinx.coroutines.Job? = null
+
     private val _foundDeviceFiles = MutableStateFlow<List<File>>(emptyList())
     val foundDeviceFiles: StateFlow<List<File>> = _foundDeviceFiles.asStateFlow()
 
@@ -624,6 +652,7 @@ class LibraryViewModel(
             if (!manual && updateDismissedThisSession) {
                 return@launch
             }
+            _updateCheckState.value = if (manual) UpdateCheckState.Checking else UpdateCheckState.Idle
             val currentVersion = "v${com.aura.reader.BuildConfig.VERSION_NAME}"
             val isBeta = preferencesManager.updateChannel.first() == "BETA"
             val result = AppUpdateManager.checkForUpdates(currentVersion, isBetaChannel = isBeta)
@@ -634,27 +663,78 @@ class LibraryViewModel(
                         return@onSuccess
                     }
                     _updateInfo.value = info
+                    if (manual) _updateCheckState.value = UpdateCheckState.Idle
                     if (preferencesManager.updateNotificationsEnabled.first() && !manual) {
                         context?.let { AppUpdateManager.showUpdateNotification(it, info.latestVersion) }
                     }
                 } else if (manual) {
-                    _uiState.value = LibraryUiState.Error("У вас установлена последняя версия!")
+                    // The button shows this inline, so it is a calm result rather
+                    // than a red error snackbar.
+                    _updateCheckState.value = UpdateCheckState.UpToDate
                 }
             }.onFailure { e ->
                 if (manual) {
-                    _uiState.value = LibraryUiState.Error("Не удалось проверить обновления: ${e.localizedMessage}")
+                    _updateCheckState.value = UpdateCheckState.Failed(e.localizedMessage)
                 }
             }
         }
     }
 
+    /**
+     * Downloads the release APK and opens the system installer in one tap.
+     * If Android still needs permission for installs from Aura Reader, the
+     * relevant settings screen opens and the same action can be repeated.
+     */
+    fun downloadAndInstallUpdate(context: Context) {
+        val info = _updateInfo.value ?: return
+        if (_updateInstallState.value is UpdateInstallState.Downloading) return
+        _updateInstallState.value = UpdateInstallState.Downloading(null)
+        updateDownloadJob = viewModelScope.launch {
+            val appContext = context.applicationContext
+            AppUpdateManager.downloadApk(appContext, info) { progress ->
+                _updateInstallState.value = UpdateInstallState.Downloading(progress)
+            }.onSuccess { file ->
+                downloadedApk = file
+                _updateInstallState.value = UpdateInstallState.Ready
+                installDownloadedUpdate(appContext)
+            }.onFailure { error ->
+                _updateInstallState.value = UpdateInstallState.Failed(error.localizedMessage)
+            }
+            updateDownloadJob = null
+        }
+    }
+
+    /** Re-opens the installer for an APK that has already been downloaded. */
+    fun installDownloadedUpdate(context: Context) {
+        val file = downloadedApk ?: return
+        when (AppUpdateManager.installApk(context.applicationContext, file)) {
+            ApkInstallResult.STARTED -> _updateInstallState.value = UpdateInstallState.Ready
+            ApkInstallResult.PERMISSION_REQUIRED -> {
+                _updateInstallState.value = UpdateInstallState.PermissionRequired
+            }
+            ApkInstallResult.FAILED -> {
+                _updateInstallState.value = UpdateInstallState.Failed(null)
+            }
+        }
+    }
+
+    fun resetUpdateInstallState() {
+        _updateInstallState.value = UpdateInstallState.Idle
+    }
+
     fun dismissUpdateDialog() {
         updateDismissedThisSession = true
+        updateDownloadJob?.cancel()
+        updateDownloadJob = null
+        _updateInstallState.value = UpdateInstallState.Idle
         _updateInfo.value = null
     }
 
     fun skipUpdateVersion(version: String) {
         updateDismissedThisSession = true
+        updateDownloadJob?.cancel()
+        updateDownloadJob = null
+        _updateInstallState.value = UpdateInstallState.Idle
         _updateInfo.value = null
         viewModelScope.launch {
             preferencesManager.setSkippedUpdateVersion(version)

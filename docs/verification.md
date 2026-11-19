@@ -783,6 +783,115 @@ was downloaded and inspected:
 - `classes.dex` contains "Доброе утро", "Доброй ночи", "Dzień dobry" and "בוקר טוב",
   plus the `DayPeriod` enum - the greeting survived R8 and ships in all languages.
 
+## 2.3.0-beta.2 (versionCode 167)
+
+Second 2.3 beta: the update plaque finally installs the update, Material 3 gets its
+expressive menus, the logo glow shimmers, and the Liquid Glass settings sheet folds.
+No dependency is upgraded blindly - see "Material 3 1.5.0 without a new compileSdk"
+below for the one version that moved and why it moved alone.
+
+### Update downloads and installs in place
+
+Until now the update dialog could only open the GitHub release page, so every beta
+was a manual download in a browser. The plaque and the dialog now carry a real
+primary action that fetches the APK, hands it to Android's installer and leaves no
+file behind.
+
+- **`UpdateInfo`** gained `apkUrl` and `apkSizeBytes`. The GitHub API response is
+  parsed for the `AuraReader.apk` asset instead of only the release page; if the
+  asset is missing (or an old release predates it) the download falls back to
+  `https://github.com/Kouqqu/aura-reader/releases/download/<tag>/AuraReader.apk`.
+  The release notes are still shown, unchanged.
+- **`AppUpdateManager.downloadApk`** writes into `cacheDir/updates`, wiping the
+  folder first, with a 64 KB buffer, a 15 s connect / 30 s read timeout and progress
+  reported as whole percents. It rejects a non-2xx response, an empty file, a file
+  shorter than `Content-Length`, and - the useful one - a body whose first two bytes
+  are not `PK`, so an HTML error page saved as `.apk` cannot be offered to the
+  installer. A failed download deletes its own partial file.
+- **`installApk`** returns one of `STARTED`, `PERMISSION_REQUIRED`, `FAILED`. When
+  "install unknown apps" is not granted it opens the per-app settings page via
+  `ACTION_MANAGE_UNKNOWN_APP_SOURCES` and reports `PERMISSION_REQUIRED`, so the
+  button turns into "Install" and works on the second tap once the user is back -
+  no extra explanation dialog. The APK is shared through the existing `FileProvider`
+  with a read grant and the package-archive MIME type.
+- **Cleanup.** `cleanupDownloadedApks` runs from `MainActivity.onCreate` and deletes
+  everything in `cacheDir/updates`. Because installing an update restarts the app,
+  the APK is gone immediately after the update; if the install is cancelled, the
+  cache and the next start still clean it up. The manifest adds
+  `REQUEST_INSTALL_PACKAGES`.
+- **State.** `LibraryViewModel` owns two machines: `UpdateCheckState`
+  (`Idle`/`Checking`/`UpToDate`/`Failed`) and `UpdateInstallState`
+  (`Idle`/`Downloading(progress?)`/`Ready`/`PermissionRequired`/`Failed(detail)`).
+  The download runs in a tracked job that is cancelled when the dialog is dismissed,
+  so a dismissed dialog cannot install later behind the user's back. Manual checks no
+  longer raise a red snackbar; a failure is shown in place.
+- **UI.** Both the update dialog and the update plaque draw a `WavyProgressIndicator`
+  while bytes arrive (indeterminate when the server sends no length), swap the
+  primary button between "Download and install", "Install" and "Try again", and keep
+  a compact GitHub button beside it as the escape hatch. Permission, download and
+  install failures each get their own sentence instead of a generic error.
+- **Strings.** Eight new `Strings` members in all seven languages:
+  `updateAction`, `downloadAndInstall`, `installUpdate`, `downloadFromGithub`,
+  `updateReadyToInstall`, `updateDownloadFailed`, `installPermissionNeeded`,
+  `updateCheckFailed`.
+
+### Material 3 1.5.0 without a new compileSdk
+
+`androidx.compose.material3:material3` is now `1.5.0`, the first stable M3
+Expressive release, pinned explicitly in `libs.versions.toml` because the
+`2026.09.00` BOM still carries `1.4.0`. The BOM itself stays at `2026.09.00`
+(Compose 1.12.1): BOM `2026.11.01` would carry material3 1.5.0 *and* Compose
+1.13.0, whose AAR metadata demands `compileSdk 37.1`, and only `android-37.0` is
+installed locally. Material 3 1.5.0 itself declares `minCompileSdk=37`, so the pin
+keeps the whole stack on the platform that exists. Recorded in `docs/upgrades.md`.
+
+### Settings sections fold in Liquid Glass
+
+- New `ui/screens/settings/SettingsFold.kt`: `SettingsFoldHeader` turns the section
+  caption into a tappable pill with a rotating chevron, and `SettingsFoldContent`
+  wraps the body in `AnimatedVisibility` with the M3 `motionScheme` spatial/effects
+  specs. Outside Liquid Glass the header is the same plain bold caption it always
+  was and the body is always visible, so the Material design did not change.
+- Applied to Theme, Language, Additional Features, Updates, Backup and About. Design
+  Style stays unfolded because it is the first decision on the sheet.
+- Sections start expanded; nothing is hidden by default, and the fold state survives
+  configuration changes via `rememberSaveable`.
+- `SettingsBackupSection` and `SettingsAboutSection` now take an `isGlass` flag from
+  `SettingsBottomSheet`.
+
+### Book card menu grows out of the card
+
+The list and grid "three dots" menus used stock `DropdownMenu`, which anchors to a
+corner. New `ui/components/BookCardMenu.kt` uses material3's `DropdownMenuPopup`
+with a `MenuAnchorPosition.Custom` provider: the menu's top-centre sits under the
+card's centre, flips above when there is no room below, and is clamped back into
+the window when the card is half-scrolled. It scales from 0.82 and fades in with
+`MaterialTheme.motionScheme`, and keeps the Liquid Glass / Material container
+appearance from `liquidGlassMenuAppearance`. Both `BookCards.kt` call sites use it.
+
+### Logo glow: shimmer instead of a single-colour breath
+
+The 46 dp logo square was already haloed in beta.1, but the halo was clipped at the
+top of the bar and only pulsed one colour. Now the halo is drawn in its own
+`requiredSize(logoBoxSize * 1.42f)` slot behind the mark, so it fades to transparent
+inside its own bounds instead of being cut by the bar; the radius is `0.70x` the
+logo. Its colour drifts between primary/tertiary/secondary (or the two holiday
+accents) on a 9 s linear phase while a separate 3.4 s breath changes the alpha, so
+the two loops do not stay in step. The collapsed bar still has no halo.
+
+### Update check state in Settings
+
+Checking no longer opens a toast-and-nothing flow: the check button shows a spinner
+and disables itself, and an inline row animates between "Checking", "You have the
+latest version" and the new failure sentence. `updateCheckFailed` was added to all
+seven `Strings` implementations.
+
+**Build.** `testDebugUnitTest lintDebug assembleDebug` -> `BUILD SUCCESSFUL`, 84
+tests, 0 failures. Not run on a device: no emulator or phone was connected, so the
+shimmer, the folding headers and the card-anchored menu still need one visual pass,
+and the in-app install path has not been exercised on a real phone (it needs the
+"install unknown apps" grant).
+
 ## 2.3.0-beta.1 (versionCode 166)
 
 First beta of the 2.3 cycle: four appearance changes. No dependency, plugin or toolchain

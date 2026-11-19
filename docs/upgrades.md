@@ -3,7 +3,14 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-11-18, release `2.3.0-beta.1` (`versionCode 166`).
+Last updated: 2026-11-19, release `2.3.0-beta.2` (`versionCode 167`).
+`2.3.0-beta.2` is the first 2.3 build with a new Material 3: the Compose BOM stays
+at `2026.09.00` (Compose 1.12.1) and `androidx.compose.material3:material3` is
+pinned to `1.5.0` explicitly, because the newer BOM `2026.11.01` would pull
+Compose 1.13.0 and demand compileSdk 37.1, which is not installed. Material 3
+1.5.0 itself only needs compileSdk 37.0. With it come the expressive menus
+(`DropdownMenuPopup`), custom menu anchors, `MaterialTheme.motionScheme` and the
+fold/chevron APIs used by the settings sheet.
 `2.3.0-beta.1` changed no dependency, plugin or toolchain versions: it bumps
 `versionCode`/`versionName` and ships the holiday style picker, the greeting alignment,
 the logo glow and the modern wavy OPDS progress (see `docs/verification.md`).
@@ -34,7 +41,8 @@ stack: see "Bundled assets" below.
 | targetSdk | 36 | Play requirement since August 2026 |
 | minSdk | 26 | unchanged |
 | JDK | CI: 21 · local: 21 or 25 | both verified with `testDebugUnitTest lintDebug assembleDebug` |
-| Compose BOM | 2026.09.00 | Material3 is BOM-managed, no explicit version |
+| Compose BOM | 2026.09.00 | Compose 1.12.1 foundation/ui/animation |
+| Compose Material 3 | 1.5.0 | pinned explicitly; the BOM only carries 1.4.0 |
 | Navigation Compose | 2.10.2 | |
 | Lifecycle | 2.11.0 | |
 | Core KTX | 1.19.1 | |
@@ -71,7 +79,12 @@ predictive back, etc.).
 - `kotlinOptions { jvmTarget = "17" }` was deleted. It is an error in Kotlin
   2.4, and with built-in Kotlin the JVM target follows `compileOptions`
   (`JavaVersion.VERSION_17`).
-- `material3` lost its explicit version; it now comes from the Compose BOM.
+- `material3` is pinned to `1.5.0` while the rest of Compose stays on the
+  `2026.09.00` BOM. Using BOM `2026.11.01` instead would provide material3 1.5.0
+  but also upgrade foundation/ui/animation to 1.13.0, whose AAR metadata requires
+  `compileSdk 37.1` (a platform minor version that is a separate SDK install).
+  Material 3 1.5.0 itself declares `minCompileSdk=37`, so the pin keeps the whole
+  stack buildable against the installed `android-37.0` platform.
 - `androidx.compose.ui:ui-text-google-fonts` and `androidx.palette:palette-ktx`
   remain without catalog entries (minor cleanup, not required).
 
@@ -114,6 +127,7 @@ been verified, so the notice only records what the font itself declares.
 | Haze 1.7 | `Modifier.hazeChild(shape = ...)` was removed ("Remove shape clipping", haze #287) | clip explicitly: `Modifier.clip(shape).hazeChild(...)` in `LiquidGlass.kt` (3 call sites) |
 | Compose 1.12 (BOM 2026.09) | `Modifier.sharedElement(state = ...)` renamed | `sharedContentState = ...` in `LibraryScreen.kt`, `ReaderScreen.kt` |
 | Compose 1.12 (BOM 2026.09) | text selection moved to the new context-menu path, which ignores `LocalTextToolbar`, so the reader's custom selection menu (quote, dictionary, translation, TTS) never appeared | `ComposeFoundationFlags.isNewContextMenuEnabled = false` in `MainActivity.onCreate`, before the first composition; the classic `TextToolbar` path is used again |
+| Material 3 1.5.0 | `ExposedDropdownMenu` is now a top-level extension on `ExposedDropdownMenuBoxScope` instead of a member, so the previous call no longer resolved | explicit `import androidx.compose.material3.ExposedDropdownMenu` in `ReaderSettingsBottomSheet.kt` |
 
 Both are visual: see the manual checklist below.
 

@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -75,10 +76,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -87,6 +90,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.aura.reader.data.model.HolidaySeason
 import com.aura.reader.data.model.LocalHolidaySeason
+import kotlin.math.sin
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -180,14 +184,39 @@ AnimatedContent(
             val titleSpacing = if (isSmallTitle) 8.dp else 12.dp
             val badgeScale = if (isSmallTitle) 0.85f else 1f
 
-            val glowColor = if (holidaySeason != HolidaySeason.NONE) {
+            // Three close shades that trade places as the halo shimmers. Holidays
+            // bring their own pair of accents; normal days borrow the theme's
+            // primary/tertiary/secondary so the glow never looks flat.
+            val glowColorA = if (holidaySeason != HolidaySeason.NONE) {
                 holidaySeason.primaryAccent
             } else {
                 MaterialTheme.colorScheme.primary
             }
+            val glowColorB = if (holidaySeason != HolidaySeason.NONE) {
+                holidaySeason.secondaryAccent
+            } else {
+                MaterialTheme.colorScheme.tertiary
+            }
+            val glowColorC = if (holidaySeason != HolidaySeason.NONE) {
+                holidaySeason.primaryAccent
+            } else {
+                MaterialTheme.colorScheme.secondary
+            }
+
             val glowTransition = rememberInfiniteTransition(label = "logoGlow")
+            // A slow nine-second colour drift plus a separate breathing pulse, so
+            // the glow moves even when one loop lines up with the other.
+            val glowPhase by glowTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(9000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart
+                ),
+                label = "logoGlowPhase"
+            )
             val glowPulse by glowTransition.animateFloat(
-                initialValue = 0.45f,
+                initialValue = 0.55f,
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(
                     animation = tween(3400, easing = FastOutSlowInEasing),
@@ -196,41 +225,56 @@ AnimatedContent(
                 label = "logoGlowPulse"
             )
 
+            val shimmer = (sin(glowPhase * 2f * Math.PI.toFloat()) + 1f) / 2f
+            val shimmerTint = lerp(glowColorA, glowColorB, shimmer)
+            val innerTint = lerp(shimmerTint, glowColorC, 0.35f * shimmer)
+            // The slot is deliberately larger than the mark, so the halo fades out
+            // inside its own draw bounds instead of being cut at the top of the bar.
+            val haloSlot = logoBoxSize * 1.42f
+            val haloRadius = logoBoxSize * 0.70f
+
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(titleSpacing)
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(logoCorner),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier
-                            .size(logoBoxSize)
-                            .drawBehind {
-                                if (!isSmallTitle) {
-                                    // A soft, slowly breathing halo behind the mark: the
-                                    // Rockstar-logo treatment rather than a hard shadow.
-                                    val haloRadius = size.minDimension * 1.22f
-                                    drawCircle(
-                                        brush = Brush.radialGradient(
-                                            0.35f to glowColor.copy(alpha = 0.40f * glowPulse),
-                                            0.68f to glowColor.copy(alpha = 0.14f * glowPulse),
-                                            1f to Color.Transparent,
-                                            center = center,
-                                            radius = haloRadius
-                                        ),
-                                        radius = haloRadius,
-                                        center = center
-                                    )
-                                }
-                            }
+                    Box(
+                        modifier = Modifier.size(logoBoxSize),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            AuraLogoIcon(
-                                modifier = Modifier.size(width = logoWidth, height = logoHeight),
-                                bookColor = MaterialTheme.colorScheme.primary,
-                                lineColor = MaterialTheme.colorScheme.primaryContainer
-                            )
+                        // Drawn first, so the mark sits on top of its own glow.
+                        Box(
+                            modifier = Modifier
+                                .requiredSize(haloSlot)
+                                .drawBehind {
+                                    if (!isSmallTitle) {
+                                        val radiusPx = haloRadius.toPx()
+                                        drawCircle(
+                                            brush = Brush.radialGradient(
+                                                0f to shimmerTint.copy(alpha = 0.34f * glowPulse),
+                                                0.55f to innerTint.copy(alpha = 0.16f * glowPulse),
+                                                1f to Color.Transparent,
+                                                center = center,
+                                                radius = radiusPx
+                                            ),
+                                            radius = radiusPx,
+                                            center = center
+                                        )
+                                    }
+                                }
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(logoCorner),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(logoBoxSize)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                AuraLogoIcon(
+                                    modifier = Modifier.size(width = logoWidth, height = logoHeight),
+                                    bookColor = MaterialTheme.colorScheme.primary,
+                                    lineColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            }
                         }
                     }
                     val marcellusFamily = remember { androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.aura.reader.R.font.marcellus_regular)) }

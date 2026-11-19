@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -19,8 +20,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,18 +42,24 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.painterResource
+import com.aura.reader.R
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.updater.UpdateInfo
+import com.aura.reader.ui.components.WavyProgressIndicator
 import com.aura.reader.ui.theme.LocalAppStrings
 
 @Composable
 fun LibraryDialogs(
     updateInfo: UpdateInfo?,
+    updateInstallState: UpdateInstallState = UpdateInstallState.Idle,
     showNewCollectionDialog: Boolean,
     collectionToDelete: String?,
     bookForCollections: Book?,
     userCollections: List<String>,
     onDismissUpdate: () -> Unit,
+    onDownloadAndInstall: () -> Unit = {},
+    onInstallDownloaded: () -> Unit = {},
     onOpenUpdatePage: (String) -> Unit,
     onSkipVersion: (String) -> Unit,
     onDismissNewCollection: () -> Unit,
@@ -66,8 +75,15 @@ fun LibraryDialogs(
 
     // In-App Update Dialog
     updateInfo?.let { info ->
+        val isDownloading = updateInstallState is UpdateInstallState.Downloading
+        val progress = (updateInstallState as? UpdateInstallState.Downloading)?.progress
+        val isReady = updateInstallState is UpdateInstallState.Ready ||
+            updateInstallState is UpdateInstallState.PermissionRequired
+        val needsPermission = updateInstallState is UpdateInstallState.PermissionRequired
+        val failure = updateInstallState as? UpdateInstallState.Failed
+
         AlertDialog(
-            onDismissRequest = { onDismissUpdate() },
+            onDismissRequest = { if (!isDownloading) onDismissUpdate() },
             title = {
                 Text(
                     text = strings.updateAvailableTitle(info.latestVersion),
@@ -75,10 +91,10 @@ fun LibraryDialogs(
                 )
             },
             text = {
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 280.dp)
+                        .heightIn(max = 380.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
                     Text(
@@ -86,14 +102,95 @@ fun LibraryDialogs(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+
+                    if (isDownloading) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        WavyProgressIndicator(
+                            progress = progress ?: 0f,
+                            modifier = Modifier.fillMaxWidth(),
+                            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = if (progress != null) {
+                                "${strings.downloadingUpdate} ${(progress * 100).toInt()}%"
+                            } else {
+                                strings.downloadingUpdate
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    if (needsPermission) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = strings.installPermissionNeeded,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
+                    if (failure != null) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = strings.updateDownloadFailed,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedButton(
+                        onClick = { onOpenUpdatePage(info.releaseUrl) },
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_github),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(strings.downloadFromGithub)
+                    }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    onDismissUpdate()
-                    onOpenUpdatePage(info.releaseUrl)
-                }) {
-                    Text(strings.download)
+                when {
+                    isDownloading -> {
+                        Button(
+                            onClick = {},
+                            enabled = false,
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                if (progress != null) "${(progress * 100).toInt()}%"
+                                else strings.downloading
+                            )
+                        }
+                    }
+                    isReady -> {
+                        Button(
+                            onClick = onInstallDownloaded,
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text(strings.installUpdate)
+                        }
+                    }
+                    else -> {
+                        Button(
+                            onClick = onDownloadAndInstall,
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text(strings.downloadAndInstall)
+                        }
+                    }
                 }
             },
             dismissButton = {
