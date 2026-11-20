@@ -1080,6 +1080,30 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
 
+## 2.3.0-beta.12 — Aura-Original Book Profile Design, Solid Opaque Surface & High-Contrast Typography (versionCode 177)
+
+- **Eliminated Sheet Translucency & Double Exposure Ghosting:**
+  - Diagnosed translucent background and faint underlying book items leaking through the sheet (`containerColor` had alpha `0xEC`, and all child cards had `0.5f` alpha).
+  - Switched `ModalBottomSheet` container and all inner cards to 100% solid, fully opaque colors:
+    - Dark mode: deep solid slate-indigo container (`#161722`) with elevated solid card background (`#212330`) and crisp boundary borders (`#2E3245`).
+    - Light mode: crisp solid off-white container (`#F7F6FA`) with pure white card surface (`#FFFFFF`).
+  - Completely removed transparent background bleed-through; library items underneath never leak through.
+- **High-Contrast, Expressive Typography & Colors:**
+  - Resolved dark text on dark container: explicit `titleColor` (`#FFFFFF` in dark mode, `#1C1B1F` in light mode), readable `subtitleColor` (`#B4B0C2`), and high-contrast `bodyColor` (`#E2DFEC`).
+  - Passed `contentColor = sheetContentColor` directly to `ModalBottomSheet`, preventing fallback to dark/unspecified content color in Compose.
+- **Removed Third-Party Tags Copy & Rebuilt in Aura Signature Style:**
+  - Removed all unwanted third-party tags elements («теги», «фанфик» placeholder, «+ + Тег»).
+  - Kept a dedicated, clean **«Жанры»** section with Aura-styled chips, instant deletion in edit mode, and dialog picker with popular genre presets (Фантастика, Детектив, Роман, Фэнтези, Научпоп, Триллер, Классика, История, Ужасы) and custom genre input.
+  - Reorganized the profile into 4 distinct, cohesive Aura sections:
+    1. **Book Header:** Zoomable cover thumbnail, bold high-contrast title, author, series/cycle badge, and format pill.
+    2. **Reading Progress Card:** Reading percentage, reading status, and «Отметить прочитанной» / «Сбросить» action button.
+    3. **Genres Card:** Interactive genre pills with clean «+ Добавить» action.
+    4. **Book Description Card:** Synopsis with inline edit button.
+    5. **File Details Card:** Formatted file size, format, date added, first opened, and last read dates.
+  - Dedicated focused edit mode with clear input fields for Title, Author, Cycle (Series title and volume number), Genres, and Synopsis with «[Сохранить]».
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
+
 ## 2.3.0-beta.9 — Aura Glow Logo Anchor Fix, Open Source Licenses Viewer & Private Folder (versionCode 174)
 
 - **Fixed Top Bar Logo Aura Position & Drift.**
@@ -1143,6 +1167,30 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 
   - Removed redundant favorite/heart chip from the inline expandable drawer (since the heart button is already located in the card header).
   - Kept a single clean «В коллекцию» folder action.
   - Tightened chip padding (7.dp horizontal, 3.5.dp vertical), chip height (~28-30.dp), icon size (13.5.dp), font size (11.sp), and spacing (4.dp), significantly reducing vertical footprint and eliminating dead space.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.12 — Aura-Original Book Profile Design, Solid Opaque Surface & High-Contrast Typography (versionCode 177)
+
+- **Eliminated Sheet Translucency & Double Exposure Ghosting:**
+  - Diagnosed translucent background and faint underlying book items leaking through the sheet (`containerColor` had alpha `0xEC`, and all child cards had `0.5f` alpha).
+  - Switched `ModalBottomSheet` container and all inner cards to 100% solid, fully opaque colors:
+    - Dark mode: deep solid slate-indigo container (`#161722`) with elevated solid card background (`#212330`) and crisp boundary borders (`#2E3245`).
+    - Light mode: crisp solid off-white container (`#F7F6FA`) with pure white card surface (`#FFFFFF`).
+  - Completely removed transparent background bleed-through; library items underneath never leak through.
+- **High-Contrast, Expressive Typography & Colors:**
+  - Resolved dark text on dark container: explicit `titleColor` (`#FFFFFF` in dark mode, `#1C1B1F` in light mode), readable `subtitleColor` (`#B4B0C2`), and high-contrast `bodyColor` (`#E2DFEC`).
+  - Passed `contentColor = sheetContentColor` directly to `ModalBottomSheet`, preventing fallback to dark/unspecified content color in Compose.
+- **Removed Third-Party Tags Copy & Rebuilt in Aura Signature Style:**
+  - Removed all unwanted third-party tags elements («теги», «фанфик» placeholder, «+ + Тег»).
+  - Kept a dedicated, clean **«Жанры»** section with Aura-styled chips, instant deletion in edit mode, and dialog picker with popular genre presets (Фантастика, Детектив, Роман, Фэнтези, Научпоп, Триллер, Классика, История, Ужасы) and custom genre input.
+  - Reorganized the profile into 4 distinct, cohesive Aura sections:
+    1. **Book Header:** Zoomable cover thumbnail, bold high-contrast title, author, series/cycle badge, and format pill.
+    2. **Reading Progress Card:** Reading percentage, reading status, and «Отметить прочитанной» / «Сбросить» action button.
+    3. **Genres Card:** Interactive genre pills with clean «+ Добавить» action.
+    4. **Book Description Card:** Synopsis with inline edit button.
+    5. **File Details Card:** Formatted file size, format, date added, first opened, and last read dates.
+  - Dedicated focused edit mode with clear input fields for Title, Author, Cycle (Series title and volume number), Genres, and Synopsis with «[Сохранить]».
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
 

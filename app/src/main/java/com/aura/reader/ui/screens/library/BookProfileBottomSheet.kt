@@ -1,9 +1,7 @@
 package com.aura.reader.ui.screens.library
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,11 +26,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.CalendarToday
+import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.Fullscreen
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Storage
+import androidx.compose.material.icons.rounded.ZoomIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -87,7 +91,9 @@ private val POPULAR_GENRES = listOf(
     "Психология",
     "История",
     "Киберпанк",
-    "Антиутопия"
+    "Антиутопия",
+    "Биография",
+    "Поэзия"
 )
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -118,15 +124,22 @@ fun BookProfileBottomSheet(
 
     val dateFormat = remember { SimpleDateFormat("d MMMM yyyy", Locale.getDefault()) }
 
+    // Solid, opaque color palette engineered specifically for Aura Reader
+    // Completely eliminates transparency bleed-through of underlying library text
+    val sheetBg = if (isDark) Color(0xFF161722) else Color(0xFFF7F6FA)
+    val sheetContentColor = if (isDark) Color(0xFFF3F2F8) else Color(0xFF1C1B1F)
+    val cardBg = if (isDark) Color(0xFF212330) else Color(0xFFFFFFFF)
+    val cardBorder = if (isDark) Color(0xFF2E3245) else Color(0xFFE5E2EC)
+    val titleColor = if (isDark) Color.White else Color(0xFF1C1B1F)
+    val subtitleColor = if (isDark) Color(0xFFB4B0C2) else Color(0xFF555260)
+    val bodyColor = if (isDark) Color(0xFFE2DFEC) else Color(0xFF2C2B30)
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = if (isGlass) {
-            if (isDark) Color(0xEC181926) else Color(0xF4FFFFFF)
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerLow
-        }
+        containerColor = sheetBg,
+        contentColor = sheetContentColor
     ) {
         Column(
             modifier = Modifier
@@ -138,40 +151,40 @@ fun BookProfileBottomSheet(
         ) {
             if (!isEditMode) {
                 // ==========================================
-                // VIEW MODE (Shelest-inspired design)
+                // AURA READER BOOK PROFILE: VIEW MODE
                 // ==========================================
 
-                // Top row: Cover (left) + Title / Author (right)
+                // Header: Cover + Book Meta
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Clickable Cover Thumbnail -> Opens Full-screen Cover Viewer
+                    // Cover thumbnail: tap opens full-screen cover viewer
                     Box(
                         modifier = Modifier
-                            .size(width = 86.dp, height = 124.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .size(width = 92.dp, height = 132.dp)
+                            .clip(RoundedCornerShape(14.dp))
                             .clickable { onInspectCover() }
                     ) {
                         BookCoverView(
                             coverBase64 = book.coverBase64,
                             title = book.title,
-                            bookId = null, // IMPORTANT: null avoids duplicate sharedElement key collision
+                            bookId = null, // null prevents sharedElement duplicate key collision crash
                             modifier = Modifier.fillMaxSize()
                         )
                         Surface(
                             shape = CircleShape,
-                            color = Color.Black.copy(alpha = 0.55f),
+                            color = Color.Black.copy(alpha = 0.65f),
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .padding(4.dp)
+                                .padding(5.dp)
                                 .size(24.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = Icons.Rounded.Fullscreen,
+                                    imageVector = Icons.Rounded.ZoomIn,
                                     contentDescription = strings.changeCover,
-                                    modifier = Modifier.size(15.dp),
+                                    modifier = Modifier.size(16.dp),
                                     tint = Color.White
                                 )
                             }
@@ -190,8 +203,9 @@ fun BookProfileBottomSheet(
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 20.sp,
-                                lineHeight = 25.sp
+                                lineHeight = 26.sp
                             ),
+                            color = titleColor,
                             maxLines = 3,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -200,22 +214,26 @@ fun BookProfileBottomSheet(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = author,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 14.5.sp
+                                ),
+                                color = subtitleColor,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
+                        // Series & Format Pills
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Surface(
                                 shape = CircleShape,
-                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
+                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f)
                             ) {
                                 Text(
                                     text = book.format.name.uppercase(),
@@ -225,26 +243,26 @@ fun BookProfileBottomSheet(
                                         letterSpacing = 0.5.sp
                                     ),
                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                 )
                             }
 
                             if (series.isNotBlank()) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
+                                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.8f)
                                 ) {
-                                    val seriesLabel = if (seriesNumber.isNotBlank()) "$series #$seriesNumber" else series
+                                    val seriesLabel = if (seriesNumber.isNotBlank()) "$series · #$seriesNumber" else series
                                     Text(
                                         text = seriesLabel,
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontSize = 10.sp,
-                                            fontWeight = FontWeight.Medium
+                                            fontWeight = FontWeight.SemiBold
                                         ),
                                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                     )
                                 }
                             }
@@ -252,9 +270,9 @@ fun BookProfileBottomSheet(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Primary Action Button: "Читать дальше" + Edit Pencil
+                // Action Bar: "Читать" / "Продолжить чтение" + Edit button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -268,11 +286,12 @@ fun BookProfileBottomSheet(
                             .weight(1f)
                             .height(48.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.AutoStories,
+                            imageVector = Icons.Rounded.MenuBook,
                             contentDescription = null,
                             modifier = Modifier.size(19.dp)
                         )
@@ -285,8 +304,8 @@ fun BookProfileBottomSheet(
 
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                        color = cardBg,
+                        border = BorderStroke(1.dp, cardBorder),
                         onClick = { isEditMode = true },
                         modifier = Modifier.size(48.dp)
                     ) {
@@ -303,19 +322,17 @@ fun BookProfileBottomSheet(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Card 1: Reading Progress Section
+                // Card 1: Прогресс чтения
                 Card(
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
-                    ),
-                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    border = BorderStroke(1.dp, cardBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp)
+                            .padding(16.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -326,7 +343,8 @@ fun BookProfileBottomSheet(
                                 Text(
                                     text = "${book.progressPercent}% прочитано",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    color = titleColor
                                 )
                                 val statusText = if (book.progressPercent >= 100) {
                                     strings.markAsFinished
@@ -338,7 +356,7 @@ fun BookProfileBottomSheet(
                                 Text(
                                     text = statusText,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = subtitleColor
                                 )
                             }
 
@@ -361,7 +379,7 @@ fun BookProfileBottomSheet(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         LinearProgressIndicator(
                             progress = { (book.progressPercent / 100f).coerceIn(0f, 1f) },
@@ -376,31 +394,38 @@ fun BookProfileBottomSheet(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Card 2: Жанры и теги
+                // Card 2: Жанры
                 Card(
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
-                    ),
-                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    border = BorderStroke(1.dp, cardBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp)
+                            .padding(16.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = strings.genresAndTagsTitle,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Category,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = strings.genresSectionTitle,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = titleColor
+                                )
+                            }
                             TextButton(
                                 onClick = { isEditMode = true },
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
@@ -416,47 +441,54 @@ fun BookProfileBottomSheet(
                             FlowRow(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 4.dp),
+                                    .padding(top = 8.dp),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 genres.forEach { genre ->
                                     Surface(
                                         shape = RoundedCornerShape(10.dp),
-                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                                        color = if (isDark) Color(0xFF2C2F40) else Color(0xFFEAE6F2),
+                                        border = BorderStroke(0.5.dp, cardBorder)
                                     ) {
                                         Text(
                                             text = genre,
                                             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                                            color = MaterialTheme.colorScheme.primary,
+                                            color = bodyColor,
                                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                                         )
                                     }
                                 }
                             }
                         } else {
-                            Text(
-                                text = strings.genresAndTagsHint,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            OutlinedButton(
-                                onClick = { showAddGenreDialog = true },
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Add,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = strings.addTagAction,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium)
+                                    text = strings.noGenresAdded,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = subtitleColor
                                 )
+                                OutlinedButton(
+                                    onClick = { showAddGenreDialog = true },
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Add,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = strings.addGenre,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium)
+                                    )
+                                }
                             }
                         }
                     }
@@ -464,31 +496,38 @@ fun BookProfileBottomSheet(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Card 3: Аннотация
+                // Card 3: Описание книги
                 Card(
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
-                    ),
-                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    border = BorderStroke(1.dp, cardBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp)
+                            .padding(16.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = strings.annotationTitle,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Description,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = strings.bookDescriptionSectionTitle,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = titleColor
+                                )
+                            }
                             TextButton(
                                 onClick = { isEditMode = true },
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
@@ -500,53 +539,110 @@ fun BookProfileBottomSheet(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         if (description.isNotBlank()) {
                             Text(
                                 text = description,
-                                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
-                                color = MaterialTheme.colorScheme.onSurface
+                                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
+                                color = bodyColor
                             )
                         } else {
                             Text(
-                                text = strings.annotationEmptyHint,
+                                text = strings.bookDescriptionEmptyHint,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontStyle = FontStyle.Italic,
-                                color = MaterialTheme.colorScheme.outline
+                                color = subtitleColor
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Technical Metadata Footer (format, size, dates)
+                // Card 4: Сведения о файле
                 val addedDateStr = remember(book.addedTimestamp) { dateFormat.format(Date(book.addedTimestamp)) }
                 val openedDateStr = remember(book.firstOpenedTimestamp) {
                     book.firstOpenedTimestamp?.let { dateFormat.format(Date(it)) } ?: strings.neverOpened
                 }
-                val footerInfo = "${book.format.name.uppercase()} · ${formatFileSize(book.fileSizeBytes)} · ${strings.dateAddedLabel.lowercase()} $addedDateStr · ${strings.firstOpenedLabel.lowercase()} $openedDateStr"
+                val lastReadDateStr = remember(book.lastReadTimestamp) {
+                    if (book.lastReadTimestamp > 0) dateFormat.format(Date(book.lastReadTimestamp)) else strings.neverOpened
+                }
 
-                Text(
-                    text = footerInfo,
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 6.dp)
-                )
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    border = BorderStroke(1.dp, cardBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = strings.metadataSectionTitle,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = titleColor
+                            )
+                        }
+
+                        DetailInfoRow(
+                            icon = Icons.Rounded.Storage,
+                            label = "Формат и размер",
+                            value = "${book.format.name.uppercase()} · ${formatFileSize(book.fileSizeBytes)}",
+                            labelColor = subtitleColor,
+                            valueColor = titleColor
+                        )
+
+                        DetailInfoRow(
+                            icon = Icons.Rounded.CalendarToday,
+                            label = strings.dateAddedLabel,
+                            value = addedDateStr,
+                            labelColor = subtitleColor,
+                            valueColor = titleColor
+                        )
+
+                        DetailInfoRow(
+                            icon = Icons.Rounded.AutoStories,
+                            label = strings.firstOpenedLabel,
+                            value = openedDateStr,
+                            labelColor = subtitleColor,
+                            valueColor = titleColor
+                        )
+
+                        if (book.progressPercent > 0) {
+                            DetailInfoRow(
+                                icon = Icons.Rounded.Refresh,
+                                label = strings.lastReadLabel,
+                                value = lastReadDateStr,
+                                labelColor = subtitleColor,
+                                valueColor = titleColor
+                            )
+                        }
+                    }
+                }
 
             } else {
                 // ==========================================
-                // EDIT MODE (Shelest-inspired edit form)
+                // AURA READER BOOK PROFILE: EDIT MODE
                 // ==========================================
 
-                // Header: ← Изменить | Сохранить
+                // Header: ← Редактирование книги | Сохранить
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 14.dp),
+                        .padding(bottom = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -554,14 +650,15 @@ fun BookProfileBottomSheet(
                         IconButton(onClick = { isEditMode = false }) {
                             Icon(
                                 imageVector = Icons.Rounded.ArrowBack,
-                                contentDescription = strings.cancel
+                                contentDescription = strings.cancel,
+                                tint = titleColor
                             )
                         }
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = strings.editAction,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            text = strings.editBookTitle,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = titleColor
                         )
                     }
 
@@ -586,18 +683,16 @@ fun BookProfileBottomSheet(
                     }
                 }
 
-                // Card 1: Книга (Название, Автор)
+                // Card 1: Название и Автор
                 Card(
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
-                    ),
-                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    border = BorderStroke(1.dp, cardBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = strings.bookTitleLabel,
+                            text = "Книга",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -625,16 +720,14 @@ fun BookProfileBottomSheet(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Card 2: Цикл (Серия, Номер книги)
+                // Card 2: Цикл / Серия
                 Card(
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
-                    ),
-                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    border = BorderStroke(1.dp, cardBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = strings.seriesSectionTitle,
                             style = MaterialTheme.typography.titleSmall,
@@ -645,7 +738,7 @@ fun BookProfileBottomSheet(
                         Text(
                             text = strings.cycleSectionSubtitle,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = subtitleColor
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(
@@ -678,13 +771,11 @@ fun BookProfileBottomSheet(
                 // Card 3: Жанры
                 Card(
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
-                    ),
-                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    border = BorderStroke(1.dp, cardBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -734,7 +825,7 @@ fun BookProfileBottomSheet(
                                             )
                                         },
                                         colors = InputChipDefaults.inputChipColors(
-                                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
                                             selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                                         )
                                     )
@@ -744,7 +835,7 @@ fun BookProfileBottomSheet(
                             Text(
                                 text = strings.noGenresAdded,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = subtitleColor,
                                 modifier = Modifier.padding(top = 6.dp)
                             )
                         }
@@ -753,16 +844,14 @@ fun BookProfileBottomSheet(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Card 4: Аннотация (О чем книга)
+                // Card 4: Описание книги
                 Card(
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
-                    ),
-                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    border = BorderStroke(1.dp, cardBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = strings.bookDescriptionSectionTitle,
                             style = MaterialTheme.typography.titleSmall,
@@ -859,6 +948,39 @@ fun BookProfileBottomSheet(
                 }
             },
             shape = RoundedCornerShape(20.dp)
+        )
+    }
+}
+
+@Composable
+private fun DetailInfoRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String,
+    labelColor: Color,
+    valueColor: Color
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = labelColor
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = labelColor,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+            color = valueColor
         )
     }
 }
