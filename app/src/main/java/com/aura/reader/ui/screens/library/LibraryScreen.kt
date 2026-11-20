@@ -244,6 +244,7 @@ fun LibraryScreen(
         ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
         ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
     }
+    val appSettings by viewModel.appSettings.collectAsState()
     val appLanguage by viewModel.appLanguage.collectAsState()
     val updateNotificationsEnabled by viewModel.updateNotificationsEnabled.collectAsState()
     val anonymousAnalyticsEnabled by viewModel.anonymousAnalyticsEnabled.collectAsState()
@@ -1653,50 +1654,21 @@ fun LibraryScreen(
                     }
                     2 -> {
                         SettingsInterfacePage(
-                            currentTheme = readerSettings.appThemeMode,
-                            currentLanguage = appLanguage,
-                            materialYouEnabled = materialYouEnabled,
-                            colorPreset = colorPreset,
-                            seasonalEffectsEnabled = seasonalEffectsEnabled,
-                            holidayOverride = holidayOverride,
+                            appSettings = appSettings,
+                            onUpdateSettings = { viewModel.updateAppSettings(it) },
                             syncThemesWithApp = readerSettings.syncThemesWithApp,
-                            appDesignStyle = readerSettings.appDesignStyle,
-                            glassClarity = readerSettings.glassClarity,
-                            appFont = appFont,
-                            onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
-                            onThemeChange = { viewModel.setAppThemeMode(it) },
                             onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
-                            onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
-                            onColorPresetChange = { viewModel.setColorPreset(it) },
-                            onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
-                            onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
                             onOpenReaderThemeSettings = {
                                 showReaderThemeSheet = true
-                            },
-                            onLanguageChange = { viewModel.setAppLanguage(it) },
-                            onAppFontChange = { viewModel.setAppFont(it) }
+                            }
                         )
                     }
                     3 -> {
                         SettingsGeneralPage(
-                            readingStatsEnabled = readingStatsEnabled,
-                            onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
-                            customOpdsEnabled = customOpdsEnabled,
-                            customOpdsUrl = catalogBaseUrl,
-                            onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
-                            onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
+                            appSettings = appSettings,
+                            onUpdateSettings = { viewModel.updateAppSettings(it) },
                             onResetReadingSpeed = { viewModel.resetReadingSpeed() },
-                            autoFetchMetadataEnabled = autoFetchMetadataEnabled,
-                            onToggleAutoFetchMetadata = { viewModel.setAutoFetchMetadataEnabled(it) },
-                            updateNotificationsEnabled = updateNotificationsEnabled,
-                            onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
-                            anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
-                            onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
-                            developerModeEnabled = developerModeEnabled,
-                            updateChannel = updateChannel,
                             updateCheckState = updateCheckState,
-                            onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
-                            onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
                             onCheckUpdates = {
                                 viewModel.checkForUpdates(manual = true, context = context)
                             },
@@ -1708,8 +1680,7 @@ fun LibraryScreen(
                             },
                             onRestoreBackup = {
                                 restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
-                            },
-                            appDesignStyle = readerSettings.appDesignStyle
+                            }
                         )
                     }
                     4 -> {
@@ -1747,37 +1718,17 @@ fun LibraryScreen(
 
     if (!isGlass && showSettingsSheet) {
         SettingsBottomSheet(
-            currentTheme = readerSettings.appThemeMode,
-            currentLanguage = appLanguage,
-            updateNotificationsEnabled = updateNotificationsEnabled,
-            anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
-            readingStatsEnabled = readingStatsEnabled,
-            materialYouEnabled = materialYouEnabled,
-            colorPreset = colorPreset,
-            seasonalEffectsEnabled = seasonalEffectsEnabled,
-            onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
-            holidayOverride = holidayOverride,
-            onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
+            appSettings = appSettings,
+            onUpdateSettings = { viewModel.updateAppSettings(it) },
+            readerSettings = readerSettings,
+            onUpdateReaderSettings = { transform ->
+                val next = transform(readerSettings)
+                if (next.syncThemesWithApp != readerSettings.syncThemesWithApp) {
+                    viewModel.setSyncThemesWithApp(next.syncThemesWithApp)
+                }
+            },
             onDismiss = { showSettingsSheet = false },
-            onOpenOnboarding = onOpenOnboarding,
-            onThemeChange = { viewModel.setAppThemeMode(it) },
-            onLanguageChange = { viewModel.setAppLanguage(it) },
-            onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
-            onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
-            onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
-            onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
-            onColorPresetChange = { viewModel.setColorPreset(it) },
-            autoFetchMetadataEnabled = autoFetchMetadataEnabled,
-            onToggleAutoFetchMetadata = { viewModel.setAutoFetchMetadataEnabled(it) },
-            customOpdsEnabled = customOpdsEnabled,
-            customOpdsUrl = catalogBaseUrl,
-            onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
-            onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
-            developerModeEnabled = developerModeEnabled,
-            updateChannel = updateChannel,
             updateCheckState = updateCheckState,
-            onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
-            onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
             onCheckUpdates = {
                 viewModel.checkForUpdates(manual = true, context = context)
             },
@@ -1793,21 +1744,12 @@ fun LibraryScreen(
                 showSettingsSheet = false
                 restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
             },
-            readerTheme = readerSettings.themeMode,
-            syncThemesWithApp = readerSettings.syncThemesWithApp,
-            onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
-            onReaderThemeChange = { viewModel.setThemeMode(it) },
             onOpenReaderThemeSettings = {
                 showSettingsSheet = false
                 showReaderThemeSheet = true
             },
-            appDesignStyle = readerSettings.appDesignStyle,
-            onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
-            glassClarity = readerSettings.glassClarity,
-            onGlassClarityChange = { viewModel.setGlassClarity(it) },
-            appFont = appFont,
-            onAppFontChange = { viewModel.setAppFont(it) },
-            onResetReadingSpeed = { viewModel.resetReadingSpeed() }
+            onResetReadingSpeed = { viewModel.resetReadingSpeed() },
+            onOpenOnboarding = onOpenOnboarding
         )
     }
 

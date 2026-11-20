@@ -32,11 +32,13 @@ import com.aura.reader.data.model.isUnread
 import com.aura.reader.data.model.isFinished
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.AppDesignStyle
+import com.aura.reader.data.model.AppSettings
+import com.aura.reader.data.model.BookAction
+import com.aura.reader.data.model.BookTarget
 import com.aura.reader.data.model.HolidaySeason
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.preferences.PreferencesManager
-import com.aura.reader.data.service.CoverSearchService
-import com.aura.reader.data.service.BookMetadataSearchService
+import com.aura.reader.data.service.BookEnricher
 import com.aura.reader.ui.theme.AppLanguage
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -101,6 +103,13 @@ class LibraryViewModel(
 
     val appLanguage: StateFlow<AppLanguage> = preferencesManager.appLanguage
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppLanguage.RU)
+
+    val appSettings: StateFlow<AppSettings> = preferencesManager.appSettings
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppSettings())
+
+    fun updateAppSettings(transform: (AppSettings) -> AppSettings) {
+        viewModelScope.launch { preferencesManager.updateAppSettings(transform) }
+    }
 
     val updateNotificationsEnabled: StateFlow<Boolean> = preferencesManager.updateNotificationsEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
@@ -502,7 +511,7 @@ class LibraryViewModel(
     }
 
     fun setBookReadingProgress(bookId: String, progress: Int) {
-        viewModelScope.launch { bookRepository.setBookReadingProgress(bookId, progress) }
+        dispatchBookAction(BookAction.SetProgress(progress), BookTarget.Single(bookId))
     }
 
     fun updateBookCover(bookId: String, newCoverBase64: String?) {
@@ -518,13 +527,13 @@ class LibraryViewModel(
             for (book in books) {
                 if (!book.coverBase64.isNullOrBlank()) continue
                 try {
-                    val cleanTitle = CoverSearchService.cleanBookTitle(book.title)
-                    val cleanAuthor = CoverSearchService.cleanAuthorName(book.author)
+                    val cleanTitle = BookEnricher.cleanTitle(book.title)
+                    val cleanAuthor = BookEnricher.cleanAuthor(book.author)
                     val query = if (cleanAuthor.isNotBlank()) "$cleanTitle $cleanAuthor" else cleanTitle
-                    val results = CoverSearchService.searchCovers(query, fallbackTitle = cleanTitle)
+                    val results = BookEnricher.searchCovers(query, fallbackTitle = cleanTitle)
                     val bestCover = results.firstOrNull()
                     if (bestCover != null) {
-                        val base64 = CoverSearchService.downloadCoverAsBase64(bestCover.highResUrl)
+                        val base64 = BookEnricher.downloadCoverAsBase64(bestCover.highResUrl)
                         if (!base64.isNullOrBlank()) {
                             bookRepository.updateBookCover(book.id, base64)
                             downloadedCount++
@@ -713,23 +722,69 @@ class LibraryViewModel(
         sortedBooks
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun moveToTrash(bookId: String) {
+    /**
+     * Unified entry point for single-book and multi-select batch mutations.
+     */
+    fun dispatchBookAction(action: BookAction, target: BookTarget) {
+        val ids = target.bookIds
+        if (ids.isEmpty()) return
         viewModelScope.launch {
-            bookRepository.moveToTrash(bookId)
+            when (action) {
+                is BookAction.MoveToTrash -> {
+                    if (ids.size == 1) {
+                        bookRepository.moveToTrash(ids.first())
+                    } else {
+                        bookRepository.batchMoveToTrash(ids)
+                    }
+                }
+                is BookAction.RestoreFromTrash -> {
+                    if (ids.size == 1) {
+                        bookRepository.restoreFromTrash(ids.first())
+                    } else {
+                        bookRepository.batchRestoreFromTrash(ids)
+                    }
+                }
+                is BookAction.DeletePermanently -> {
+                    if (ids.size == 1) {
+                        bookRepository.deletePermanently(ids.first())
+                    } else {
+                        bookRepository.batchDeletePermanently(ids)
+                    }
+                }
+                is BookAction.SetProgress -> {
+                    if (ids.size == 1) {
+                        bookRepository.setBookReadingProgress(ids.first(), action.progressPercent)
+                    } else {
+                        bookRepository.batchSetReadingProgress(ids, action.progressPercent)
+                    }
+                }
+                is BookAction.AddToCollection -> {
+                    if (ids.size == 1) {
+                        val book = bookRepository.recentBooks.value.find { it.id == ids.first() }
+                        val currentCols = book?.collections ?: emptyList()
+                        if (!currentCols.contains(action.collectionName)) {
+                            bookRepository.updateBookCollections(ids.first(), currentCols + action.collectionName)
+                        }
+                    } else {
+                        bookRepository.batchAddToCollection(ids, action.collectionName)
+                    }
+                }
+                is BookAction.TogglePrivate -> {
+                    if (action.makePrivate) {
+                        preferencesManager.addBooksToPrivateFolder(ids)
+                    } else {
+                        preferencesManager.removeBooksFromPrivateFolder(ids)
+                    }
+                }
+            }
         }
     }
 
-    fun restoreFromTrash(bookId: String) {
-        viewModelScope.launch {
-            bookRepository.restoreFromTrash(bookId)
-        }
-    }
+    fun moveToTrash(bookId: String) = dispatchBookAction(BookAction.MoveToTrash, BookTarget.Single(bookId))
 
-    fun deletePermanently(bookId: String) {
-        viewModelScope.launch {
-            bookRepository.deletePermanently(bookId)
-        }
-    }
+    fun restoreFromTrash(bookId: String) = dispatchBookAction(BookAction.RestoreFromTrash, BookTarget.Single(bookId))
+
+    fun deletePermanently(bookId: String) = dispatchBookAction(BookAction.DeletePermanently, BookTarget.Single(bookId))
 
     fun clearTrash() {
         viewModelScope.launch {
@@ -765,47 +820,25 @@ class LibraryViewModel(
         }
     }
 
-    // --- Batch Operations (Multi-Select) ---
+    // --- Batch Operations (Multi-Select) delegating to BookActionDispatcher ---
 
-    fun batchMoveToTrash(bookIds: Set<String>) {
-        viewModelScope.launch {
-            bookRepository.batchMoveToTrash(bookIds)
-        }
-    }
+    fun batchMoveToTrash(bookIds: Set<String>) =
+        dispatchBookAction(BookAction.MoveToTrash, BookTarget.Multiple(bookIds))
 
-    fun batchRestoreFromTrash(bookIds: Set<String>) {
-        viewModelScope.launch {
-            bookRepository.batchRestoreFromTrash(bookIds)
-        }
-    }
+    fun batchRestoreFromTrash(bookIds: Set<String>) =
+        dispatchBookAction(BookAction.RestoreFromTrash, BookTarget.Multiple(bookIds))
 
-    fun batchDeletePermanently(bookIds: Set<String>) {
-        viewModelScope.launch {
-            bookRepository.batchDeletePermanently(bookIds)
-        }
-    }
+    fun batchDeletePermanently(bookIds: Set<String>) =
+        dispatchBookAction(BookAction.DeletePermanently, BookTarget.Multiple(bookIds))
 
-    fun batchSetReadingProgress(bookIds: Set<String>, progress: Int) {
-        viewModelScope.launch {
-            bookRepository.batchSetReadingProgress(bookIds, progress)
-        }
-    }
+    fun batchSetReadingProgress(bookIds: Set<String>, progress: Int) =
+        dispatchBookAction(BookAction.SetProgress(progress), BookTarget.Multiple(bookIds))
 
-    fun batchAddToCollection(bookIds: Set<String>, collectionName: String) {
-        viewModelScope.launch {
-            bookRepository.batchAddToCollection(bookIds, collectionName)
-        }
-    }
+    fun batchAddToCollection(bookIds: Set<String>, collectionName: String) =
+        dispatchBookAction(BookAction.AddToCollection(collectionName), BookTarget.Multiple(bookIds))
 
-    fun batchTogglePrivate(bookIds: Set<String>, makePrivate: Boolean) {
-        viewModelScope.launch {
-            if (makePrivate) {
-                preferencesManager.addBooksToPrivateFolder(bookIds)
-            } else {
-                preferencesManager.removeBooksFromPrivateFolder(bookIds)
-            }
-        }
-    }
+    fun batchTogglePrivate(bookIds: Set<String>, makePrivate: Boolean) =
+        dispatchBookAction(BookAction.TogglePrivate(makePrivate), BookTarget.Multiple(bookIds))
 
     private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Idle)
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
@@ -981,7 +1014,7 @@ class LibraryViewModel(
         if (!autoFetchMetadataEnabled.value) return
         if (!book.description.isNullOrBlank() && book.genres.isNotEmpty()) return
         viewModelScope.launch(Dispatchers.IO) {
-            val meta = BookMetadataSearchService.fetchMetadata(book.title, book.author) ?: return@launch
+            val meta = BookEnricher.fetchMetadata(book.title, book.author) ?: return@launch
             val newDesc = if (book.description.isNullOrBlank()) meta.description else book.description
             val newGenres = if (book.genres.isEmpty()) meta.genres else book.genres
             val newSeries = if (book.series.isNullOrBlank()) meta.series else book.series

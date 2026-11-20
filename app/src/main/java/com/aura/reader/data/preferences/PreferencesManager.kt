@@ -13,6 +13,8 @@ import com.aura.reader.data.model.Quote
 import com.aura.reader.data.model.ReaderFontFamily
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.ReaderSettings
+import com.aura.reader.data.model.AppSettings
+import com.aura.reader.ui.theme.AppLanguage
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.model.TwoColumnMode
 import kotlinx.coroutines.flow.Flow
@@ -410,6 +412,71 @@ class PreferencesManager(private val context: Context) {
             glassClarity = prefs[GLASS_CLARITY_KEY] ?: 0.85f,
             bottomProgressMode = bottomProgressMode
         )
+    }
+
+    val appSettings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
+        val appThemeModeStr = prefs[APP_THEME_MODE_KEY] ?: ReaderThemeMode.SYSTEM_DYNAMIC.name
+        val appThemeMode = try {
+            ReaderThemeMode.valueOf(appThemeModeStr)
+        } catch (e: Exception) {
+            ReaderThemeMode.SYSTEM_DYNAMIC
+        }
+
+        val langCode = prefs[APP_LANGUAGE_KEY] ?: AppLanguage.RU.code
+        val lang = AppLanguage.entries.find { it.code == langCode } ?: AppLanguage.RU
+
+        val appDesignStyleStr = prefs[APP_DESIGN_STYLE_KEY] ?: AppDesignStyle.LIQUID_GLASS.name
+        val appDesignStyle = try {
+            AppDesignStyle.valueOf(appDesignStyleStr)
+        } catch (e: Exception) {
+            AppDesignStyle.LIQUID_GLASS
+        }
+
+        AppSettings(
+            themeMode = appThemeMode,
+            language = lang,
+            appDesignStyle = appDesignStyle,
+            glassClarity = prefs[GLASS_CLARITY_KEY] ?: 0.85f,
+            appFont = prefs[APP_FONT_KEY] ?: "GOOGLE_SANS",
+            updateNotificationsEnabled = prefs[UPDATE_NOTIFICATIONS_KEY] ?: true,
+            anonymousAnalyticsEnabled = prefs[ANONYMOUS_ANALYTICS_KEY] ?: true,
+            readingStatsEnabled = prefs[READING_STATS_ENABLED_KEY] ?: true,
+            materialYouEnabled = prefs[MATERIAL_YOU_ENABLED_KEY] ?: false,
+            colorPreset = prefs[COLOR_PRESET_KEY] ?: "PURPLE",
+            seasonalEffectsEnabled = prefs[SEASONAL_EFFECTS_ENABLED_KEY] ?: true,
+            holidayOverride = prefs[HOLIDAY_OVERRIDE_KEY] ?: "AUTO",
+            customOpdsEnabled = prefs[CUSTOM_OPDS_ENABLED_KEY] ?: false,
+            customOpdsUrl = prefs[OPDS_BASE_URL_KEY] ?: "",
+            developerModeEnabled = prefs[DEVELOPER_MODE_KEY] ?: false,
+            updateChannel = prefs[UPDATE_CHANNEL_KEY] ?: "RELEASE",
+            autoFetchMetadataEnabled = prefs[AUTO_FETCH_METADATA_KEY] ?: true,
+            libraryViewMode = prefs[LIBRARY_VIEW_MODE_KEY] ?: "LIST"
+        )
+    }
+
+    suspend fun updateAppSettings(transform: (AppSettings) -> AppSettings) {
+        val current = appSettings.first()
+        val updated = transform(current)
+        context.dataStore.edit { prefs ->
+            prefs[APP_THEME_MODE_KEY] = updated.themeMode.name
+            prefs[APP_LANGUAGE_KEY] = updated.language.code
+            prefs[APP_DESIGN_STYLE_KEY] = updated.appDesignStyle.name
+            prefs[GLASS_CLARITY_KEY] = updated.glassClarity
+            prefs[APP_FONT_KEY] = updated.appFont
+            prefs[UPDATE_NOTIFICATIONS_KEY] = updated.updateNotificationsEnabled
+            prefs[ANONYMOUS_ANALYTICS_KEY] = updated.anonymousAnalyticsEnabled
+            prefs[READING_STATS_ENABLED_KEY] = updated.readingStatsEnabled
+            prefs[MATERIAL_YOU_ENABLED_KEY] = updated.materialYouEnabled
+            prefs[COLOR_PRESET_KEY] = updated.colorPreset
+            prefs[SEASONAL_EFFECTS_ENABLED_KEY] = updated.seasonalEffectsEnabled
+            prefs[HOLIDAY_OVERRIDE_KEY] = updated.holidayOverride
+            prefs[CUSTOM_OPDS_ENABLED_KEY] = updated.customOpdsEnabled
+            prefs[OPDS_BASE_URL_KEY] = updated.customOpdsUrl
+            prefs[DEVELOPER_MODE_KEY] = updated.developerModeEnabled
+            prefs[UPDATE_CHANNEL_KEY] = updated.updateChannel
+            prefs[AUTO_FETCH_METADATA_KEY] = updated.autoFetchMetadataEnabled
+            prefs[LIBRARY_VIEW_MODE_KEY] = updated.libraryViewMode
+        }
     }
 
     suspend fun updateBottomProgressMode(mode: Int) {

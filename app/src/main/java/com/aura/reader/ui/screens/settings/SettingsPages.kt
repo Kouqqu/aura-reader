@@ -53,6 +53,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aura.reader.data.model.AppDesignStyle
+import com.aura.reader.data.model.AppSettings
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.ui.components.PixelFullScreenBurst
 import com.aura.reader.ui.components.jellyOverscroll
@@ -103,38 +104,23 @@ internal fun SettingsPageHeader(
  */
 @Composable
 fun SettingsInterfacePage(
-    currentTheme: ReaderThemeMode,
-    currentLanguage: AppLanguage,
-    materialYouEnabled: Boolean,
-    colorPreset: String = "PURPLE",
-    seasonalEffectsEnabled: Boolean,
-    holidayOverride: String,
+    appSettings: AppSettings,
+    onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
     syncThemesWithApp: Boolean,
-    appDesignStyle: AppDesignStyle,
-    glassClarity: Float,
-    appFont: String,
-    onAppDesignStyleChange: (AppDesignStyle) -> Unit,
-    onThemeChange: (ReaderThemeMode) -> Unit,
     onSyncThemesChange: (Boolean) -> Unit,
-    onToggleMaterialYou: (Boolean) -> Unit,
-    onColorPresetChange: (String) -> Unit = {},
-    onToggleSeasonalEffects: (Boolean) -> Unit,
-    onHolidayOverrideChange: (String) -> Unit,
     onOpenReaderThemeSettings: () -> Unit,
-    onLanguageChange: (AppLanguage) -> Unit,
-    onAppFontChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
-    val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isGlass = appSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
     val sysDark = isSystemInDarkTheme()
-    val isThemeDark = when (currentTheme) {
+    val isThemeDark = when (appSettings.themeMode) {
         ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
         ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
         ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
     }
-    val isSepia = currentTheme == ReaderThemeMode.SEPIA
-    val isAmoled = currentTheme == ReaderThemeMode.AMOLED
+    val isSepia = appSettings.themeMode == ReaderThemeMode.SEPIA
+    val isAmoled = appSettings.themeMode == ReaderThemeMode.AMOLED
 
     var showLanguageDialog by remember { mutableStateOf(false) }
     var sheetCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
@@ -169,15 +155,15 @@ fun SettingsInterfacePage(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 SettingsDesignStyleSection(
-                    appDesignStyle = appDesignStyle,
+                    appDesignStyle = appSettings.appDesignStyle,
                     isThemeDark = isThemeDark,
-                    onAppDesignStyleChange = onAppDesignStyleChange
+                    onAppDesignStyleChange = { style -> onUpdateSettings { it.copy(appDesignStyle = style) } }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 SettingsThemeSection(
-                    currentTheme = currentTheme,
+                    currentTheme = appSettings.themeMode,
                     sysDark = sysDark,
                     isGlass = isGlass,
                     isThemeDark = isThemeDark,
@@ -185,30 +171,30 @@ fun SettingsInterfacePage(
                     sheetCoordinates = sheetCoordinates,
                     syncThemesWithApp = syncThemesWithApp,
                     onSyncThemesChange = onSyncThemesChange,
-                    materialYouEnabled = materialYouEnabled,
-                    onToggleMaterialYou = onToggleMaterialYou,
-                    colorPreset = colorPreset,
-                    onColorPresetChange = onColorPresetChange,
-                    seasonalEffectsEnabled = seasonalEffectsEnabled,
-                    onToggleSeasonalEffects = onToggleSeasonalEffects,
-                    holidayOverride = holidayOverride,
-                    onHolidayOverrideChange = onHolidayOverrideChange,
+                    materialYouEnabled = appSettings.materialYouEnabled,
+                    onToggleMaterialYou = { v -> onUpdateSettings { it.copy(materialYouEnabled = v) } },
+                    colorPreset = appSettings.colorPreset,
+                    onColorPresetChange = { p -> onUpdateSettings { it.copy(colorPreset = p) } },
+                    seasonalEffectsEnabled = appSettings.seasonalEffectsEnabled,
+                    onToggleSeasonalEffects = { v -> onUpdateSettings { it.copy(seasonalEffectsEnabled = v) } },
+                    holidayOverride = appSettings.holidayOverride,
+                    onHolidayOverrideChange = { h -> onUpdateSettings { it.copy(holidayOverride = h) } },
                     onOpenReaderThemeSettings = onOpenReaderThemeSettings,
                     onThemePicked = { mode, origin, colors ->
                         burstOrigin = origin
                         burstColors = colors
                         burstTriggerKey = System.currentTimeMillis()
-                        onThemeChange(mode)
+                        onUpdateSettings { it.copy(themeMode = mode) }
                     }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 SettingsLanguageSection(
-                    currentLanguage = currentLanguage,
-                    appFont = appFont,
+                    currentLanguage = appSettings.language,
+                    appFont = appSettings.appFont,
                     isGlass = isGlass,
-                    onAppFontChange = onAppFontChange,
+                    onAppFontChange = { f -> onUpdateSettings { it.copy(appFont = f) } },
                     onOpenLanguagePicker = { showLanguageDialog = true }
                 )
 
@@ -248,13 +234,15 @@ fun SettingsInterfacePage(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         AppLanguage.entries.forEach { lang ->
-                            val isSelected = currentLanguage == lang
+                            val isSelected = appSettings.language == lang
                             Surface(
                                 onClick = {
-                                    if (lang != AppLanguage.UK && lang != AppLanguage.EN && appFont == "ZAKON") {
-                                        onAppFontChange("GOOGLE_SANS")
+                                    val nextFont = if (lang != AppLanguage.UK && lang != AppLanguage.EN && appSettings.appFont == "ZAKON") {
+                                        "GOOGLE_SANS"
+                                    } else {
+                                        appSettings.appFont
                                     }
-                                    onLanguageChange(lang)
+                                    onUpdateSettings { it.copy(language = lang, appFont = nextFont) }
                                     showLanguageDialog = false
                                 },
                                 shape = RoundedCornerShape(14.dp),
@@ -295,34 +283,19 @@ fun SettingsInterfacePage(
  */
 @Composable
 fun SettingsGeneralPage(
-    readingStatsEnabled: Boolean,
-    onToggleReadingStats: (Boolean) -> Unit,
-    customOpdsEnabled: Boolean,
-    customOpdsUrl: String,
-    onToggleCustomOpds: (Boolean) -> Unit,
-    onCustomOpdsUrlChange: (String) -> Unit,
+    appSettings: AppSettings,
+    onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
     onResetReadingSpeed: () -> Unit,
-    autoFetchMetadataEnabled: Boolean = true,
-    onToggleAutoFetchMetadata: (Boolean) -> Unit = {},
-    updateNotificationsEnabled: Boolean,
-    onToggleUpdateNotifications: (Boolean) -> Unit,
-    anonymousAnalyticsEnabled: Boolean,
-    onToggleAnonymousAnalytics: (Boolean) -> Unit,
-    developerModeEnabled: Boolean,
-    updateChannel: String,
     updateCheckState: UpdateCheckState,
-    onToggleDeveloperMode: (Boolean) -> Unit,
-    onUpdateChannelChange: (String) -> Unit,
     onCheckUpdates: () -> Unit,
     onExportBackup: () -> Unit,
     onSendToGoogleDrive: () -> Unit,
     onRestoreBackup: () -> Unit,
-    appDesignStyle: AppDesignStyle,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val strings = LocalAppStrings.current
-    val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isGlass = appSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
     val currentAppVersion: String = remember(context) {
         runCatching {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
@@ -357,33 +330,23 @@ fun SettingsGeneralPage(
 
             SettingsAdditionalFeaturesSection(
                 isGlass = isGlass,
-                readingStatsEnabled = readingStatsEnabled,
-                onToggleReadingStats = onToggleReadingStats,
-                customOpdsEnabled = customOpdsEnabled,
-                customOpdsUrl = customOpdsUrl,
-                onToggleCustomOpds = onToggleCustomOpds,
-                onCustomOpdsUrlChange = onCustomOpdsUrlChange,
-                onResetReadingSpeed = { showResetSpeedConfirmDialog = true },
-                autoFetchMetadataEnabled = autoFetchMetadataEnabled,
-                onToggleAutoFetchMetadata = onToggleAutoFetchMetadata
+                appSettings = appSettings,
+                onUpdateSettings = onUpdateSettings,
+                onResetReadingSpeed = { showResetSpeedConfirmDialog = true }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             SettingsUpdatesSection(
                 isGlass = isGlass,
-                updateNotificationsEnabled = updateNotificationsEnabled,
-                onToggleUpdateNotifications = onToggleUpdateNotifications,
-                anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
-                onToggleAnonymousAnalytics = onToggleAnonymousAnalytics,
+                appSettings = appSettings,
+                onUpdateSettings = onUpdateSettings,
                 currentAppVersion = currentAppVersion,
-                developerModeEnabled = developerModeEnabled,
-                updateChannel = updateChannel,
                 updateCheckState = updateCheckState,
-                onUpdateChannelChange = onUpdateChannelChange,
+                onUpdateChannelChange = { ch -> onUpdateSettings { it.copy(updateChannel = ch) } },
                 onCheckUpdates = onCheckUpdates,
                 onVersionTap = {
-                    if (developerModeEnabled) {
+                    if (appSettings.developerModeEnabled) {
                         showChannelDialog = true
                     } else {
                         versionTapCount++
@@ -436,7 +399,7 @@ fun SettingsGeneralPage(
         }
 
         if (showChannelDialog) {
-            var selectedChannel by remember { mutableStateOf(updateChannel) }
+            var selectedChannel by remember { mutableStateOf(appSettings.updateChannel) }
             AlertDialog(
                 onDismissRequest = { showChannelDialog = false },
                 title = { Text(strings.updateChannelTitle, fontWeight = FontWeight.Bold) },
@@ -482,7 +445,7 @@ fun SettingsGeneralPage(
                 confirmButton = {
                     Button(
                         onClick = {
-                            onUpdateChannelChange(selectedChannel)
+                            onUpdateSettings { it.copy(updateChannel = selectedChannel) }
                             showChannelDialog = false
                             onCheckUpdates()
                             val channelName = if (selectedChannel == "BETA") strings.updateChannelBeta else strings.updateChannelRelease
@@ -528,7 +491,7 @@ fun SettingsGeneralPage(
                     Button(
                         onClick = {
                             if (devPasswordInput.trim().equals("aura", ignoreCase = true)) {
-                                onToggleDeveloperMode(true)
+                                onUpdateSettings { it.copy(developerModeEnabled = true) }
                                 showDevPasswordDialog = false
                                 devPasswordInput = ""
                                 showChannelDialog = true

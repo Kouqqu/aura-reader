@@ -1260,4 +1260,26 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 f
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed, 0 errors, exit code 0).
 
+## 2.3.0-beta.15 (versionCode 180) — Deep Module Architecture Refactoring (AppSettings, BookIngestionPipeline, BookEnricher, BookActionDispatcher)
+
+- **Candidate 1: Deep AppSettings Architecture (`AppSettings.kt`, `PreferencesManager.kt`, `SettingsPages.kt`):**
+  - Unified 30+ disparate preference keys, flows, and callback parameters into a cohesive `AppSettings` data class.
+  - Eliminated the 30+ parameter prop-drilling pipe across `PreferencesManager` -> `LibraryViewModel` -> `LibraryScreen` -> `SettingsGeneralPage` / `SettingsInterfacePage` / `SettingsBottomSheet` -> `SettingsSections`.
+  - Settings screens now accept clean, reactive `appSettings: AppSettings` and an atomic `onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit` mutator.
+- **Candidate 2: Deep Ingestion Pipeline (`BookIngestionPipeline.kt`, `BookRepository.kt`):**
+  - Extracted 230+ lines of low-level parsing logic from `BookRepository` into `BookIngestionPipeline`.
+  - Encapsulated stream sniffing, MIME magic-byte detection (EPUB, FB2, TXT, CBZ, MOBI, PDF), container archive examination, parser dispatching, image caching, and atomic temp-file staging.
+  - Reduced `BookRepository` from 940 to 710 lines, focusing it purely on catalog metadata persistence, shelf structures, and concurrency locks.
+- **Candidate 3: Deep BookEnricher Facade (`BookEnricher.kt`, `CoverSearchService.kt`):**
+  - Created `com.aura.reader.data.service.BookEnricher` unifying multi-source metadata retrieval (LitRes, FantLab, OpenLibrary, Flibusta), cover searches, Base64 conversion, title/author sanitization, and background auto-enrichment.
+  - Wired `BookProfileBottomSheet`, `CoverSearchBottomSheet`, and `LibraryViewModel` directly to `BookEnricher`.
+  - Added publisher and extension stripping (`.mobi`, `.cbz`, `[Эксмо]`, `[АСТ]`, `[Альпина]`) prior to online queries.
+- **Candidate 4: Deep BookActionDispatcher (`BookAction.kt`, `LibraryViewModel.kt`):**
+  - Defined `BookAction` and `BookTarget` domain models unifying single-book and multi-select batch mutations.
+  - Consolidated operations (move to trash, restore, delete permanently, set reading progress, add to collection, toggle private folder) into `LibraryViewModel.dispatchBookAction`.
+  - Retained clean backward-compatible delegation methods.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 97 unit tests passed, 0 errors, exit code 0).
+
+
 

@@ -42,7 +42,7 @@ import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
-import com.aura.reader.data.service.BookMetadataSearchService
+import com.aura.reader.data.service.BookEnricher
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -545,7 +545,7 @@ fun BookProfileBottomSheet(
                             isFetchingOnlineMetadata = true
                             fetchStatusMessage = null
                             coroutineScope.launch {
-                                val meta = BookMetadataSearchService.fetchMetadata(book.title, book.author)
+                                val meta = BookEnricher.fetchMetadata(book.title, book.author)
                                 isFetchingOnlineMetadata = false
                                 if (meta != null) {
                                     val newDesc = meta.description ?: ""
@@ -750,7 +750,7 @@ fun BookProfileBottomSheet(
                             isFetchingOnlineMetadata = true
                             fetchStatusMessage = null
                             coroutineScope.launch {
-                                val meta = BookMetadataSearchService.fetchMetadata(title, author)
+                                val meta = BookEnricher.fetchMetadata(title, author)
                                 isFetchingOnlineMetadata = false
                                 if (meta != null) {
                                     if (!meta.description.isNullOrBlank()) description = meta.description

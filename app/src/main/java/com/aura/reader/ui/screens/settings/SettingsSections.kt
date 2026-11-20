@@ -74,6 +74,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aura.reader.data.model.AppDesignStyle
+import com.aura.reader.data.model.AppSettings
 import com.aura.reader.ui.components.LiquidGlassSwitch
 import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.data.opds.OpdsService
@@ -436,15 +437,9 @@ ExpressiveSettingsGroup {
 @Composable
 internal fun SettingsAdditionalFeaturesSection(
     isGlass: Boolean,
-    readingStatsEnabled: Boolean,
-    onToggleReadingStats: (Boolean) -> Unit,
-    customOpdsEnabled: Boolean,
-    customOpdsUrl: String,
-    onToggleCustomOpds: (Boolean) -> Unit,
-    onCustomOpdsUrlChange: (String) -> Unit,
-    onResetReadingSpeed: () -> Unit,
-    autoFetchMetadataEnabled: Boolean = true,
-    onToggleAutoFetchMetadata: (Boolean) -> Unit = {}
+    appSettings: AppSettings,
+    onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
+    onResetReadingSpeed: () -> Unit
 ) {
     val strings = LocalAppStrings.current
     var expanded by rememberSaveable { mutableStateOf(true) }
@@ -463,17 +458,17 @@ ExpressiveSettingsGroup {
         title = strings.readingStatsToggle,
         subtitle = strings.readingStatsSubtitle,
         icon = { SettingsIconBox(Icons.Rounded.BarChart) },
-        onClick = { onToggleReadingStats(!readingStatsEnabled) },
+        onClick = { onUpdateSettings { it.copy(readingStatsEnabled = !it.readingStatsEnabled) } },
         trailing = {
             if (isGlass) {
                 LiquidGlassSwitch(
-                    checked = readingStatsEnabled,
-                    onCheckedChange = onToggleReadingStats
+                    checked = appSettings.readingStatsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(readingStatsEnabled = v) } }
                 )
             } else {
                 Switch(
-                    checked = readingStatsEnabled,
-                    onCheckedChange = onToggleReadingStats,
+                    checked = appSettings.readingStatsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(readingStatsEnabled = v) } },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -487,17 +482,17 @@ ExpressiveSettingsGroup {
         title = strings.autoFetchMetadataTitle,
         subtitle = strings.autoFetchMetadataDesc,
         icon = { SettingsIconBox(Icons.Rounded.CloudDownload) },
-        onClick = { onToggleAutoFetchMetadata(!autoFetchMetadataEnabled) },
+        onClick = { onUpdateSettings { it.copy(autoFetchMetadataEnabled = !it.autoFetchMetadataEnabled) } },
         trailing = {
             if (isGlass) {
                 LiquidGlassSwitch(
-                    checked = autoFetchMetadataEnabled,
-                    onCheckedChange = onToggleAutoFetchMetadata
+                    checked = appSettings.autoFetchMetadataEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(autoFetchMetadataEnabled = v) } }
                 )
             } else {
                 Switch(
-                    checked = autoFetchMetadataEnabled,
-                    onCheckedChange = onToggleAutoFetchMetadata,
+                    checked = appSettings.autoFetchMetadataEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(autoFetchMetadataEnabled = v) } },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -579,13 +574,13 @@ ExpressiveSettingsGroup {
             }
             if (isGlass) {
                 LiquidGlassSwitch(
-                    checked = customOpdsEnabled,
-                    onCheckedChange = onToggleCustomOpds
+                    checked = appSettings.customOpdsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(customOpdsEnabled = v) } }
                 )
             } else {
                 Switch(
-                    checked = customOpdsEnabled,
-                    onCheckedChange = onToggleCustomOpds,
+                    checked = appSettings.customOpdsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(customOpdsEnabled = v) } },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -593,16 +588,16 @@ ExpressiveSettingsGroup {
                 )
             }
         }
-        if (customOpdsEnabled) {
+        if (appSettings.customOpdsEnabled) {
             Spacer(modifier = Modifier.height(14.dp))
-            var urlText by remember(customOpdsUrl) {
-                mutableStateOf(if (customOpdsUrl == OpdsService.DEFAULT_BASE_URL || customOpdsUrl.contains("flibusta", ignoreCase = true)) "" else customOpdsUrl)
+            var urlText by remember(appSettings.customOpdsUrl) {
+                mutableStateOf(if (appSettings.customOpdsUrl == OpdsService.DEFAULT_BASE_URL || appSettings.customOpdsUrl.contains("flibusta", ignoreCase = true)) "" else appSettings.customOpdsUrl)
             }
             OutlinedTextField(
                 value = urlText,
                 onValueChange = {
                     urlText = it
-                    onCustomOpdsUrlChange(it)
+                    onUpdateSettings { s -> s.copy(customOpdsUrl = it) }
                 },
                 placeholder = { Text("https://example.com/opds") },
                 label = { Text(strings.customOpdsUrl) },
@@ -613,7 +608,7 @@ ExpressiveSettingsGroup {
                     if (urlText.isNotBlank()) {
                         IconButton(onClick = {
                             urlText = ""
-                            onCustomOpdsUrlChange("")
+                            onUpdateSettings { s -> s.copy(customOpdsUrl = "") }
                         }) {
                             Icon(Icons.Rounded.Clear, contentDescription = strings.clear)
                         }
@@ -630,15 +625,11 @@ ExpressiveSettingsGroup {
 @Composable
 internal fun SettingsUpdatesSection(
     isGlass: Boolean,
-    updateNotificationsEnabled: Boolean,
-    onToggleUpdateNotifications: (Boolean) -> Unit,
-    anonymousAnalyticsEnabled: Boolean,
-    onToggleAnonymousAnalytics: (Boolean) -> Unit,
+    appSettings: AppSettings,
+    onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
     currentAppVersion: String,
-    developerModeEnabled: Boolean,
-    updateChannel: String,
     updateCheckState: UpdateCheckState = UpdateCheckState.Idle,
-    onUpdateChannelChange: (String) -> Unit,
+    onUpdateChannelChange: (String) -> Unit = {},
     onCheckUpdates: () -> Unit,
     onVersionTap: () -> Unit
 ) {
@@ -660,17 +651,17 @@ ExpressiveSettingsGroup {
         title = strings.updateNotificationsToggle,
         subtitle = strings.updateNotificationsSubtitle,
         icon = { SettingsIconBox(Icons.Rounded.Notifications) },
-        onClick = { onToggleUpdateNotifications(!updateNotificationsEnabled) },
+        onClick = { onUpdateSettings { it.copy(updateNotificationsEnabled = !it.updateNotificationsEnabled) } },
         trailing = {
             if (isGlass) {
                 LiquidGlassSwitch(
-                    checked = updateNotificationsEnabled,
-                    onCheckedChange = onToggleUpdateNotifications
+                    checked = appSettings.updateNotificationsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(updateNotificationsEnabled = v) } }
                 )
             } else {
                 Switch(
-                    checked = updateNotificationsEnabled,
-                    onCheckedChange = onToggleUpdateNotifications,
+                    checked = appSettings.updateNotificationsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(updateNotificationsEnabled = v) } },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -684,17 +675,17 @@ ExpressiveSettingsGroup {
         title = strings.anonymousAnalyticsToggle,
         subtitle = strings.anonymousAnalyticsSubtitle,
         icon = { SettingsIconBox(Icons.Rounded.Analytics) },
-        onClick = { onToggleAnonymousAnalytics(!anonymousAnalyticsEnabled) },
+        onClick = { onUpdateSettings { it.copy(anonymousAnalyticsEnabled = !it.anonymousAnalyticsEnabled) } },
         trailing = {
             if (isGlass) {
                 LiquidGlassSwitch(
-                    checked = anonymousAnalyticsEnabled,
-                    onCheckedChange = onToggleAnonymousAnalytics
+                    checked = appSettings.anonymousAnalyticsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(anonymousAnalyticsEnabled = v) } }
                 )
             } else {
                 Switch(
-                    checked = anonymousAnalyticsEnabled,
-                    onCheckedChange = onToggleAnonymousAnalytics,
+                    checked = appSettings.anonymousAnalyticsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(anonymousAnalyticsEnabled = v) } },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -812,7 +803,7 @@ ExpressiveSettingsGroup {
                 }
             }
         }
-        if (developerModeEnabled) {
+        if (appSettings.developerModeEnabled) {
             Spacer(modifier = Modifier.height(14.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
             Spacer(modifier = Modifier.height(14.dp))
@@ -830,20 +821,22 @@ ExpressiveSettingsGroup {
             Spacer(modifier = Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 LiquidGlassFilterChip(
-                    selected = updateChannel == "RELEASE",
+                    selected = appSettings.updateChannel == "RELEASE",
                     isGlass = isGlass,
                     onClick = {
                         onUpdateChannelChange("RELEASE")
+                        onUpdateSettings { it.copy(updateChannel = "RELEASE") }
                         onCheckUpdates()
                         Toast.makeText(context, "${strings.updateChannelRelease}...", Toast.LENGTH_SHORT).show()
                     },
                     label = { Text(strings.updateChannelRelease) }
                 )
                 LiquidGlassFilterChip(
-                    selected = updateChannel == "BETA",
+                    selected = appSettings.updateChannel == "BETA",
                     isGlass = isGlass,
                     onClick = {
                         onUpdateChannelChange("BETA")
+                        onUpdateSettings { it.copy(updateChannel = "BETA") }
                         onCheckUpdates()
                         Toast.makeText(context, "${strings.updateChannelBeta}...", Toast.LENGTH_SHORT).show()
                     },
