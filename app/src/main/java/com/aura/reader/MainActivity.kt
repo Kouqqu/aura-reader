@@ -112,6 +112,9 @@ class MainActivity : ComponentActivity() {
             val materialYouEnabled by preferencesManager.materialYouEnabled.collectAsState(
                 initial = false
             )
+            val colorPreset by preferencesManager.colorPreset.collectAsState(
+                initial = "PURPLE"
+            )
             val appFont by preferencesManager.appFont.collectAsState(
                 initial = "GOOGLE_SANS"
             )
@@ -134,11 +137,13 @@ class MainActivity : ComponentActivity() {
                     LocalAppStrings provides getStrings(appLanguage),
                     com.aura.reader.ui.theme.LocalAppLanguage provides appLanguage,
                     com.aura.reader.data.model.LocalHolidaySeason provides holidaySeason,
-                    com.aura.reader.ui.components.LocalMaterialYouEnabled provides materialYouEnabled
+                    com.aura.reader.ui.components.LocalMaterialYouEnabled provides materialYouEnabled,
+                    com.aura.reader.ui.theme.LocalColorPreset provides colorPreset
                 ) {
                     AuraReaderTheme(
                         themeMode = settings.appThemeMode,
                         materialYou = materialYouEnabled,
+                        colorPreset = colorPreset,
                         appFont = appFont,
                         currentLanguage = appLanguage,
                         holidaySeason = holidaySeason

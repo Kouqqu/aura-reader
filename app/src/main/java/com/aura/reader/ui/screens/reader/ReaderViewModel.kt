@@ -35,6 +35,9 @@ class ReaderViewModel(
     val materialYouEnabled: StateFlow<Boolean> = preferencesManager.materialYouEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val colorPreset: StateFlow<String> = preferencesManager.colorPreset
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "PURPLE")
+
     val appLanguage: StateFlow<com.aura.reader.ui.theme.AppLanguage> = preferencesManager.appLanguage
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.aura.reader.ui.theme.AppLanguage.RU)
 
@@ -264,6 +267,12 @@ class ReaderViewModel(
     fun setMaterialYouEnabled(enabled: Boolean) {
         viewModelScope.launch {
             preferencesManager.setMaterialYouEnabled(enabled)
+        }
+    }
+
+    fun setColorPreset(preset: String) {
+        viewModelScope.launch {
+            preferencesManager.setColorPreset(preset)
         }
     }
 

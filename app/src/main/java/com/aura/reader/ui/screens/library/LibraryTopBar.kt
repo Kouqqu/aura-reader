@@ -171,118 +171,121 @@ AnimatedContent(
             )
         )
     } else {
-        LargeTopAppBar(
-        title = {
-            val holidaySeason = LocalHolidaySeason.current
-            val isSmallTitle = LocalTextStyle.current.fontSize <= MaterialTheme.typography.titleLarge.fontSize
+        val holidaySeason = LocalHolidaySeason.current
+        var topBarCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+        var logoCenterInTopBar by remember { mutableStateOf<Offset?>(null) }
 
-            val logoBoxSize = if (isSmallTitle) 28.dp else 46.dp
-            val logoCorner = if (isSmallTitle) 8.dp else 15.dp
-            val logoWidth = if (isSmallTitle) 15.dp else 25.dp
-            val logoHeight = if (isSmallTitle) 18.dp else 30.dp
-            val titleFontSize = if (isSmallTitle) 18.sp else 28.sp
-            val titleSpacing = if (isSmallTitle) 8.dp else 12.dp
-            val badgeScale = if (isSmallTitle) 0.85f else 1f
+        val glowColorA = if (holidaySeason != HolidaySeason.NONE) {
+            holidaySeason.primaryAccent
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
+        val glowColorB = if (holidaySeason != HolidaySeason.NONE) {
+            holidaySeason.secondaryAccent
+        } else {
+            MaterialTheme.colorScheme.tertiary
+        }
+        val glowColorC = if (holidaySeason != HolidaySeason.NONE) {
+            holidaySeason.primaryAccent
+        } else {
+            MaterialTheme.colorScheme.secondary
+        }
 
-            // Three close shades that trade places as the halo shimmers. Holidays
-            // bring their own pair of accents; normal days borrow the theme's
-            // primary/tertiary/secondary so the glow never looks flat.
-            val glowColorA = if (holidaySeason != HolidaySeason.NONE) {
-                holidaySeason.primaryAccent
-            } else {
-                MaterialTheme.colorScheme.primary
-            }
-            val glowColorB = if (holidaySeason != HolidaySeason.NONE) {
-                holidaySeason.secondaryAccent
-            } else {
-                MaterialTheme.colorScheme.tertiary
-            }
-            val glowColorC = if (holidaySeason != HolidaySeason.NONE) {
-                holidaySeason.primaryAccent
-            } else {
-                MaterialTheme.colorScheme.secondary
-            }
+        val glowTransition = rememberInfiniteTransition(label = "logoGlow")
+        val glowPhase by glowTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(9000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "logoGlowPhase"
+        )
+        val glowPulse by glowTransition.animateFloat(
+            initialValue = 0.55f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(3400, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "logoGlowPulse"
+        )
 
-            val glowTransition = rememberInfiniteTransition(label = "logoGlow")
-            // A slow nine-second colour drift plus a separate breathing pulse, so
-            // the glow moves even when one loop lines up with the other.
-            val glowPhase by glowTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(9000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart
-                ),
-                label = "logoGlowPhase"
-            )
-            val glowPulse by glowTransition.animateFloat(
-                initialValue = 0.55f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(3400, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "logoGlowPulse"
-            )
+        val shimmer = (sin(glowPhase * 2f * Math.PI.toFloat()) + 1f) / 2f
+        val shimmerTint = lerp(glowColorA, glowColorB, shimmer)
+        val innerTint = lerp(shimmerTint, glowColorC, 0.35f * shimmer)
+        val haloRadius = 78.dp
 
-            val shimmer = (sin(glowPhase * 2f * Math.PI.toFloat()) + 1f) / 2f
-            val shimmerTint = lerp(glowColorA, glowColorB, shimmer)
-            val innerTint = lerp(shimmerTint, glowColorC, 0.35f * shimmer)
-            // The slot and radius fit comfortably within the top bar padding, fading
-            // cleanly to transparent so the halo never clips against layout boundaries.
-            val haloSlot = logoBoxSize * 2.2f
-            val haloRadius = logoBoxSize * 1.05f
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(titleSpacing)
-                ) {
-                    Box(
-                        modifier = Modifier.size(logoBoxSize),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Drawn first, so the mark sits on top of its own glow.
-                        Box(
-                            modifier = Modifier
-                                .requiredSize(haloSlot)
-                                .drawBehind {
-                                    if (!isSmallTitle) {
-                                        val radiusPx = haloRadius.toPx()
-                                        drawCircle(
-                                            brush = Brush.radialGradient(
-                                                0f to shimmerTint.copy(alpha = 0.75f * glowPulse),
-                                                0.35f to shimmerTint.copy(alpha = 0.50f * glowPulse),
-                                                0.65f to innerTint.copy(alpha = 0.22f * glowPulse),
-                                                0.85f to glowColorC.copy(alpha = 0.05f * glowPulse),
-                                                1f to Color.Transparent,
-                                                center = center,
-                                                radius = radiusPx
-                                            ),
-                                            radius = radiusPx,
-                                            center = center
-                                        )
-                                    }
-                                }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { coords ->
+                    topBarCoords = coords
+                }
+                .drawBehind {
+                    val center = logoCenterInTopBar
+                    val collapsedFraction = scrollBehavior.state.collapsedFraction
+                    val scrollAlpha = (1f - collapsedFraction / 0.35f).coerceIn(0f, 1f)
+                    if (center != null && scrollAlpha > 0.01f) {
+                        val radiusPx = haloRadius.toPx()
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                0f to shimmerTint.copy(alpha = 0.75f * glowPulse * scrollAlpha),
+                                0.35f to shimmerTint.copy(alpha = 0.50f * glowPulse * scrollAlpha),
+                                0.65f to innerTint.copy(alpha = 0.22f * glowPulse * scrollAlpha),
+                                0.85f to glowColorC.copy(alpha = 0.05f * glowPulse * scrollAlpha),
+                                1f to Color.Transparent,
+                                center = center,
+                                radius = radiusPx
+                            ),
+                            radius = radiusPx,
+                            center = center
                         )
-                        Surface(
-                            shape = RoundedCornerShape(logoCorner),
-                            color = Color(0xFF1E1B4B),
-                            modifier = Modifier.size(logoBoxSize)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                AuraLogoIcon(
-                                    modifier = Modifier.size(if (isSmallTitle) 20.dp else 34.dp),
-                                    bookColor = MaterialTheme.colorScheme.primary,
-                                    lineColor = MaterialTheme.colorScheme.primaryContainer
-                                )
-                            }
-                        }
                     }
-                    val marcellusFamily = remember { androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.aura.reader.R.font.marcellus_regular)) }
-                    Text(
-                        text = strings.appName,
-                        fontFamily = marcellusFamily,
+                }
+        ) {
+            LargeTopAppBar(
+                title = {
+                    val isSmallTitle = LocalTextStyle.current.fontSize <= MaterialTheme.typography.titleLarge.fontSize
+
+                    val logoBoxSize = if (isSmallTitle) 28.dp else 46.dp
+                    val logoCorner = if (isSmallTitle) 8.dp else 15.dp
+                    val logoWidth = if (isSmallTitle) 15.dp else 25.dp
+                    val logoHeight = if (isSmallTitle) 18.dp else 30.dp
+                    val titleFontSize = if (isSmallTitle) 18.sp else 28.sp
+                    val titleSpacing = if (isSmallTitle) 8.dp else 12.dp
+                    val badgeScale = if (isSmallTitle) 0.85f else 1f
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(titleSpacing)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(logoCorner),
+                                color = Color(0xFF1E1B4B),
+                                modifier = Modifier
+                                    .size(logoBoxSize)
+                                    .onGloballyPositioned { logoCoords ->
+                                        val top = topBarCoords
+                                        if (top != null && top.isAttached && logoCoords.isAttached) {
+                                            val centerInLogo = Offset(logoCoords.size.width / 2f, logoCoords.size.height / 2f)
+                                            logoCenterInTopBar = top.localPositionOf(logoCoords, centerInLogo)
+                                        }
+                                    }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    AuraLogoIcon(
+                                        modifier = Modifier.size(if (isSmallTitle) 20.dp else 34.dp),
+                                        bookColor = MaterialTheme.colorScheme.primary,
+                                        lineColor = MaterialTheme.colorScheme.primaryContainer
+                                    )
+                                }
+                            }
+                            val marcellusFamily = remember { androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.aura.reader.R.font.marcellus_regular)) }
+                            Text(
+                                text = strings.appName,
+                                fontFamily = marcellusFamily,
                         style = if (isSmallTitle) {
                             MaterialTheme.typography.titleLarge.copy(
                                 fontSize = titleFontSize,
@@ -368,6 +371,7 @@ AnimatedContent(
             }
         )
     )
+        }
     }
 }
 }

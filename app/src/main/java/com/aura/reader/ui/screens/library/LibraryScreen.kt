@@ -248,6 +248,7 @@ fun LibraryScreen(
     val anonymousAnalyticsEnabled by viewModel.anonymousAnalyticsEnabled.collectAsState()
     val readingStatsEnabled by viewModel.readingStatsEnabled.collectAsState()
     val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
+    val colorPreset by viewModel.colorPreset.collectAsState()
     val userCollections by viewModel.userCollections.collectAsState()
     val activeCollectionFilter by viewModel.activeCollectionFilter.collectAsState()
     val libraryViewMode by viewModel.libraryViewMode.collectAsState()
@@ -1179,6 +1180,7 @@ fun LibraryScreen(
                             currentTheme = readerSettings.appThemeMode,
                             currentLanguage = appLanguage,
                             materialYouEnabled = materialYouEnabled,
+                            colorPreset = colorPreset,
                             seasonalEffectsEnabled = seasonalEffectsEnabled,
                             holidayOverride = holidayOverride,
                             syncThemesWithApp = readerSettings.syncThemesWithApp,
@@ -1189,6 +1191,7 @@ fun LibraryScreen(
                             onThemeChange = { viewModel.setAppThemeMode(it) },
                             onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
                             onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
+                            onColorPresetChange = { viewModel.setColorPreset(it) },
                             onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
                             onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
                             onOpenReaderThemeSettings = {
@@ -1272,6 +1275,7 @@ fun LibraryScreen(
             anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
             readingStatsEnabled = readingStatsEnabled,
             materialYouEnabled = materialYouEnabled,
+            colorPreset = colorPreset,
             seasonalEffectsEnabled = seasonalEffectsEnabled,
             onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
             holidayOverride = holidayOverride,
@@ -1284,6 +1288,7 @@ fun LibraryScreen(
             onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
             onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
             onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
+            onColorPresetChange = { viewModel.setColorPreset(it) },
             customOpdsEnabled = customOpdsEnabled,
             customOpdsUrl = catalogBaseUrl,
             onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },

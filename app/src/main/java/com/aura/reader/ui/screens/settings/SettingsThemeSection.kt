@@ -1,18 +1,27 @@
 package com.aura.reader.ui.screens.settings
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Celebration
 import androidx.compose.material.icons.rounded.BrightnessAuto
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Contrast
 import androidx.compose.material.icons.rounded.DarkMode
@@ -23,22 +32,30 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aura.reader.data.model.AndroidColorPreset
 import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.ui.components.LiquidGlassSwitch
+import com.aura.reader.ui.components.expressiveBounce
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.ui.theme.AmoledBackground
 import com.aura.reader.ui.theme.AmoledText
@@ -58,6 +75,8 @@ internal fun SettingsThemeSection(
     onSyncThemesChange: (Boolean) -> Unit,
     materialYouEnabled: Boolean,
     onToggleMaterialYou: (Boolean) -> Unit,
+    colorPreset: String = "PURPLE",
+    onColorPresetChange: (String) -> Unit = {},
     seasonalEffectsEnabled: Boolean = true,
     onToggleSeasonalEffects: (Boolean) -> Unit = {},
     holidayOverride: String = "AUTO",
@@ -245,6 +264,17 @@ internal fun SettingsThemeSection(
             }
         )
         ExpressiveDivider()
+        AndroidColorPresetsSection(
+            selectedPreset = colorPreset,
+            materialYouEnabled = materialYouEnabled,
+            isGlass = isGlass,
+            isThemeDark = isThemeDark,
+            onPresetSelected = { presetId ->
+                onColorPresetChange(presetId)
+                if (materialYouEnabled) onToggleMaterialYou(false)
+            }
+        )
+        ExpressiveDivider()
         ExpressiveSettingsRow(
             title = strings.seasonalEffectsToggle,
             subtitle = strings.seasonalEffectsSubtitle,
@@ -278,11 +308,11 @@ internal fun SettingsThemeSection(
         isGlass = isGlass,
         isThemeDark = isThemeDark,
         onHolidayStylePicked = { style ->
-            // Picking a concrete season should always show the result immediately,
-            // so the master switch follows the choice. "Standard" clears both.
             if (style == "OFF") {
                 onHolidayOverrideChange("OFF")
                 if (seasonalEffectsEnabled) onToggleSeasonalEffects(false)
+            } else if (style == "AUTO") {
+                onHolidayOverrideChange("AUTO")
             } else {
                 onHolidayOverrideChange(style)
                 if (!seasonalEffectsEnabled) onToggleSeasonalEffects(true)
@@ -291,5 +321,103 @@ internal fun SettingsThemeSection(
     )
 
     Spacer(modifier = Modifier.height(20.dp))
+    }
+}
+
+@Composable
+private fun AndroidColorPresetsSection(
+    selectedPreset: String,
+    materialYouEnabled: Boolean,
+    isGlass: Boolean,
+    isThemeDark: Boolean,
+    onPresetSelected: (String) -> Unit
+) {
+    val strings = LocalAppStrings.current
+    val haptic = LocalHapticFeedback.current
+    val presets = AndroidColorPreset.entries
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = strings.androidColorPresetsTitle,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (materialYouEnabled) {
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = strings.materialYouToggle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            presets.forEach { preset ->
+                val isSelected = !materialYouEnabled && selectedPreset.equals(preset.id, ignoreCase = true)
+                val interactionSource = remember { MutableInteractionSource() }
+
+                val ringColor = if (isSelected) {
+                    preset.swatchColor
+                } else if (isGlass) {
+                    if (isThemeDark) Color.White.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.16f)
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.40f)
+                }
+
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .expressiveBounce(interactionSource)
+                        .clip(CircleShape)
+                        .clickable(interactionSource = interactionSource, indication = null) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onPresetSelected(preset.id)
+                        }
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.Transparent,
+                        border = BorderStroke(if (isSelected) 3.dp else 1.dp, ringColor),
+                        modifier = Modifier.size(42.dp)
+                    ) {}
+
+                    Surface(
+                        shape = CircleShape,
+                        color = preset.swatchColor,
+                        modifier = Modifier.size(if (isSelected) 30.dp else 34.dp)
+                    ) {
+                        if (isSelected) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

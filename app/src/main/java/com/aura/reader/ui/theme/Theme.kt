@@ -114,10 +114,13 @@ private fun ColorScheme.withAmoledReaderSurfaces(): ColorScheme = copy(
     surfaceContainerHighest = Color(0xFF202020)
 )
 
+val LocalColorPreset = androidx.compose.runtime.compositionLocalOf { "PURPLE" }
+
 @Composable
 fun AuraReaderTheme(
     themeMode: ReaderThemeMode = ReaderThemeMode.DARK,
     materialYou: Boolean = false,
+    colorPreset: String = "PURPLE",
     appFont: String = "GOOGLE_SANS",
     currentLanguage: AppLanguage = AppLanguage.RU,
     readerMode: Boolean = false,
@@ -133,19 +136,44 @@ fun AuraReaderTheme(
         createAppTypography(fontFamily)
     }
 
+    val preset = com.aura.reader.data.model.AndroidColorPreset.fromId(colorPreset)
+    val baseLight = LightColorScheme.copy(
+        primary = preset.lightPrimary,
+        primaryContainer = preset.lightPrimaryContainer,
+        onPrimaryContainer = preset.lightOnPrimaryContainer,
+        secondary = preset.lightSecondary
+    )
+    val baseDark = DarkColorScheme.copy(
+        primary = preset.darkPrimary,
+        primaryContainer = preset.darkPrimaryContainer,
+        onPrimaryContainer = preset.darkOnPrimaryContainer,
+        secondary = preset.darkSecondary
+    )
+    val baseAmoled = AmoledColorScheme.copy(
+        primary = preset.darkPrimary,
+        primaryContainer = preset.darkPrimaryContainer,
+        onPrimaryContainer = preset.darkOnPrimaryContainer,
+        secondary = preset.darkSecondary
+    )
+    val baseSepia = SepiaColorScheme.copy(
+        primary = preset.lightPrimary,
+        primaryContainer = preset.lightPrimaryContainer,
+        onPrimaryContainer = preset.lightOnPrimaryContainer
+    )
+
     val colorScheme = when (themeMode) {
         ReaderThemeMode.LIGHT -> {
             if (hasDynamic) {
                 dynamicLightColorScheme(context)
             } else {
-                LightColorScheme
+                baseLight
             }
         }
         ReaderThemeMode.DARK -> {
             if (hasDynamic) {
                 dynamicDarkColorScheme(context)
             } else {
-                DarkColorScheme
+                baseDark
             }
         }
         ReaderThemeMode.AMOLED -> {
@@ -158,7 +186,7 @@ fun AuraReaderTheme(
                     surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF181818)
                 )
             } else {
-                AmoledColorScheme
+                baseAmoled
             }
         }
         ReaderThemeMode.SEPIA -> {
@@ -172,14 +200,14 @@ fun AuraReaderTheme(
                     secondary = dyn.secondary
                 )
             } else {
-                SepiaColorScheme
+                baseSepia
             }
         }
         ReaderThemeMode.SYSTEM_DYNAMIC -> {
             if (systemDark) {
-                if (hasDynamic) dynamicDarkColorScheme(context) else DarkColorScheme
+                if (hasDynamic) dynamicDarkColorScheme(context) else baseDark
             } else {
-                if (hasDynamic) dynamicLightColorScheme(context) else LightColorScheme
+                if (hasDynamic) dynamicLightColorScheme(context) else baseLight
             }
         }
     }

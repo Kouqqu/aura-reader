@@ -1062,3 +1062,21 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 
 - **Immediate «Перейти на GitHub» Access.** Relocated the GitHub update button to the top of `LibraryDialogs` update content right below the title, with updated localized string «Перейти на GitHub».
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.8 — Unclipped Top Bar Logo Aura, Compact Holiday Style Dropdown & Android Color Presets (versionCode 173)
+
+- **Unclipped Top Bar Logo Aura Glow.** Fixed the root cause of the straight horizontal cut-off line above the logo:
+  - In `LargeTopAppBar` (Material 3 `TwoRowsTopAppBar`), the expanded title container applies an internal `clipToBounds()`, which hard-clipped any halo glow extending above the 64dp pinned boundary.
+  - Moved the halo glow rendering to `LibraryTopBar`'s root container `Box` with `Modifier.drawBehind`, tracking the logo's global coordinates.
+  - The aura now radiates freely across the status bar, app name, and header with zero boundary clipping.
+- **Compact Folding Holiday Style Picker.**
+  - Converted "Праздничный стиль" into an expandable folding card (`SettingsHolidayStyleSection`) featuring a rotating chevron and real-time state subtitle.
+  - Removed duplicate "Авто: по календарю" and "Стандарт: без оформления" cards, as the "Праздничная атмосфера" toggle already governs atmosphere activation.
+  - Redesigned into a 2-column compact chip grid with emoji, concise date hints, and checkmark indicators. Tapping an active holiday deselects it and smoothly returns to the automatic calendar schedule.
+- **Android Color Presets (Circular Swatches).**
+  - Added standard Material 3 color presets in Interface settings: Purple (Lavender), Blue (Ocean), Teal, Green (Forest), Orange (Amber), Rose, Indigo, and Neutral (Monochrome).
+  - Rendered as interactive 42.dp circular swatches with expressive bounce, outer accent rings, and checkmark indicators.
+  - Tapping a preset selects that color theme across the app and smoothly switches from wallpaper colors to the selected preset palette.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
+

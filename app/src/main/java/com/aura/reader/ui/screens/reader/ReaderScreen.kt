@@ -167,6 +167,7 @@ fun ReaderScreen(
     val savedTextOffset by viewModel.savedTextOffset.collectAsState()
     val savedPixelOffset by viewModel.savedPixelOffset.collectAsState()
     val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
+    val colorPreset by viewModel.colorPreset.collectAsState()
     val appLanguage by viewModel.appLanguage.collectAsState()
 
     // Search state
@@ -339,6 +340,7 @@ fun ReaderScreen(
     AuraReaderTheme(
         themeMode = settings.themeMode,
         materialYou = materialYouEnabled,
+        colorPreset = colorPreset,
         readerMode = true
     ) {
       @Suppress("DEPRECATION")

@@ -111,6 +111,9 @@ class LibraryViewModel(
     val materialYouEnabled: StateFlow<Boolean> = preferencesManager.materialYouEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val colorPreset: StateFlow<String> = preferencesManager.colorPreset
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "PURPLE")
+
     val libraryViewMode: StateFlow<String> = preferencesManager.libraryViewMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "LIST")
 
@@ -190,6 +193,10 @@ class LibraryViewModel(
 
     fun setMaterialYouEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setMaterialYouEnabled(enabled) }
+    }
+
+    fun setColorPreset(preset: String) {
+        viewModelScope.launch { preferencesManager.setColorPreset(preset) }
     }
 
     fun setUpdateNotificationsEnabled(enabled: Boolean) {

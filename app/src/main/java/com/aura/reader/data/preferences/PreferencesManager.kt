@@ -72,6 +72,7 @@ class PreferencesManager(private val context: Context) {
         val UPDATE_NOTIFICATIONS_KEY = booleanPreferencesKey("update_notifications_enabled")
         val READING_STATS_ENABLED_KEY = booleanPreferencesKey("reading_stats_enabled")
         val MATERIAL_YOU_ENABLED_KEY = booleanPreferencesKey("material_you_enabled")
+        val COLOR_PRESET_KEY = stringPreferencesKey("color_preset")
         val OPDS_HISTORY_KEY = stringPreferencesKey("opds_search_history")
         val LIBRARY_SEARCH_HISTORY_KEY = stringPreferencesKey("library_search_history")
         val OPDS_BASE_URL_KEY = stringPreferencesKey("opds_base_url")
@@ -259,6 +260,16 @@ class PreferencesManager(private val context: Context) {
     suspend fun setMaterialYouEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[MATERIAL_YOU_ENABLED_KEY] = enabled
+        }
+    }
+
+    val colorPreset: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[COLOR_PRESET_KEY] ?: "PURPLE"
+    }
+
+    suspend fun setColorPreset(preset: String) {
+        context.dataStore.edit { prefs ->
+            prefs[COLOR_PRESET_KEY] = preset
         }
     }
 
@@ -831,6 +842,7 @@ class PreferencesManager(private val context: Context) {
                 if (settings.has("pagingMode")) prefs[PAGING_MODE_KEY] = settings.getBoolean("pagingMode")
                 if (settings.has("statsEnabled")) prefs[READING_STATS_ENABLED_KEY] = settings.getBoolean("statsEnabled")
                 if (settings.has("materialYou")) prefs[MATERIAL_YOU_ENABLED_KEY] = settings.getBoolean("materialYou")
+                if (settings.has("colorPreset")) prefs[COLOR_PRESET_KEY] = settings.getString("colorPreset")
                 if (settings.has("updateNotifications")) prefs[UPDATE_NOTIFICATIONS_KEY] = settings.getBoolean("updateNotifications")
                 if (settings.has("catalogUrl")) prefs[OPDS_BASE_URL_KEY] = settings.getString("catalogUrl")
                 if (settings.has("appLanguage")) prefs[APP_LANGUAGE_KEY] = settings.getString("appLanguage")
