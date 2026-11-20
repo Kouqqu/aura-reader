@@ -5,14 +5,18 @@ plugins {
 
 android {
     namespace = "com.aura.reader"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         applicationId = "com.aura.reader"
         minSdk = 26
         targetSdk = 36
-        versionCode = 183
-        versionName = "2.3.0-beta.18"
+        versionCode = 184
+        versionName = "2.3.0-beta.19"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -97,7 +101,9 @@ dependencies {
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.haze)
-    implementation(libs.haze.materials)
+    implementation(libs.haze.blur)
+    implementation(libs.haze.glass)
+    implementation(libs.haze.glass.material3)
     implementation("androidx.compose.ui:ui-text-google-fonts")
 
     implementation(libs.androidx.navigation.compose)

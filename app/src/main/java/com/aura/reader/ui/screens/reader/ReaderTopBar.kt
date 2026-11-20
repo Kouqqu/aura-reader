@@ -367,7 +367,7 @@ fun BoxScope.ReaderTopBar(
                 val topBarBg = if (isSepiaTheme) {
                     Color(0x388D6E63)
                 } else {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                    null
                 }
                 LiquidGlassSurface(
                     shape = RoundedCornerShape(24.dp),

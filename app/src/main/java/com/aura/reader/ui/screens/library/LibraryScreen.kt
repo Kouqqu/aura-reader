@@ -10,7 +10,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.runtime.CompositionLocalProvider
 import com.aura.reader.ui.components.LocalHazeState
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeSource
 import com.aura.reader.ui.components.expressiveClickable
 import com.aura.reader.ui.components.jellyOverscroll
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -629,7 +629,7 @@ fun LibraryScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .haze(hazeState)
+                .hazeSource(hazeState)
         ) {
             if (showAddBooksSheet) {
                 AddBooksBottomSheet(

@@ -100,10 +100,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.theme.LocalAppStrings
+import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
-import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.glass.GlassStyle
+import dev.chrisbanes.haze.glass.hazeGlass
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -167,7 +167,6 @@ fun liquidGlassMenuAppearance(
  * Authentic Apple iOS-inspired Liquid Glass Surface.
  * Balanced translucent frosted glass with delicate specular rim highlights and optional Haze blur.
  */
-@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun LiquidGlassSurface(
     modifier: Modifier = Modifier,
@@ -180,23 +179,35 @@ fun LiquidGlassSurface(
     hazeState: HazeState? = null,
     content: @Composable () -> Unit
 ) {
-    val hazeStyle = if (isDark) {
-        HazeMaterials.regular(containerColor = tintColor ?: Color(0x28141416))
-    } else {
-        HazeMaterials.thin(containerColor = tintColor ?: Color(0x35FFFFFF))
-    }
+    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
 
     val hazeModifier = if (hazeState != null) {
-        Modifier.clip(shape).hazeEffect(
-            state = hazeState,
-            style = hazeStyle
+        val glassStyle = if (isDark) {
+            val baseContainer = tintColor ?: if (isAmoled) Color(0x20000000) else Color(0x28141416)
+            GlassStyle.regular.then {
+                backgroundColor(baseContainer)
+                if (tintColor != null) {
+                    tint(tintColor)
+                }
+            }
+        } else {
+            val baseContainer = tintColor ?: Color(0x35FFFFFF)
+            GlassStyle.regular.then {
+                backgroundColor(baseContainer)
+                if (tintColor != null) {
+                    tint(tintColor)
+                }
+            }
+        }
+        Modifier.clip(shape).hazeGlass(
+            input = HazeInput.Sources(hazeState),
+            style = glassStyle
         )
     } else Modifier
 
-    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val baseFill = if (hazeState != null) {
         // Frosted glass mode: do NOT paint an opaque cover over the blur!
-        // HazeStyle already paints containerColor directly in the blur pass.
+        // HazeGlass already renders the glass backdrop, diffusion, and specular light.
         Color.Transparent
     } else {
         tintColor ?: if (isDark) {
@@ -285,15 +296,19 @@ fun FloatingNavigationIsland(
 
         val dockShape = RoundedCornerShape(30.dp)
         val hazeState = LocalHazeState.current
-        val hazeStyle = if (isDark) {
-            HazeMaterials.regular(containerColor = Color(0x28141416))
-        } else {
-            HazeMaterials.thin(containerColor = Color(0x35FFFFFF))
-        }
         val hazeModifier = if (hazeState != null) {
-            Modifier.clip(dockShape).hazeEffect(
-                state = hazeState,
-                style = hazeStyle
+            val navGlassStyle = if (isDark) {
+                GlassStyle.regular.then {
+                    backgroundColor(if (isAmoled) Color(0x20000000) else Color(0x28141416))
+                }
+            } else {
+                GlassStyle.regular.then {
+                    backgroundColor(Color(0x35FFFFFF))
+                }
+            }
+            Modifier.clip(dockShape).hazeGlass(
+                input = HazeInput.Sources(hazeState),
+                style = navGlassStyle
             )
         } else Modifier
 
@@ -841,15 +856,19 @@ fun FloatingAddGlassButton(
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val shape = CircleShape
     val hazeState = LocalHazeState.current
-    val hazeStyle = if (isDark) {
-        HazeMaterials.regular(containerColor = Color(0x28141416))
-    } else {
-        HazeMaterials.thin(containerColor = Color(0x35FFFFFF))
-    }
     val hazeModifier = if (hazeState != null) {
-        Modifier.clip(shape).hazeEffect(
-            state = hazeState,
-            style = hazeStyle
+        val addGlassStyle = if (isDark) {
+            GlassStyle.regular.then {
+                backgroundColor(if (isAmoled) Color(0x20000000) else Color(0x28141416))
+            }
+        } else {
+            GlassStyle.regular.then {
+                backgroundColor(Color(0x35FFFFFF))
+            }
+        }
+        Modifier.clip(shape).hazeGlass(
+            input = HazeInput.Sources(hazeState),
+            style = addGlassStyle
         )
     } else Modifier
 

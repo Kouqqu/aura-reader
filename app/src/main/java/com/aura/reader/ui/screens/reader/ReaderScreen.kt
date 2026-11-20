@@ -1,7 +1,7 @@
 package com.aura.reader.ui.screens.reader
 
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeSource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.runtime.mutableLongStateOf
 import com.aura.reader.ui.components.PixelFullScreenBurst
@@ -397,7 +397,7 @@ fun ReaderScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (isGlass) Modifier.haze(readerHazeState) else Modifier)
+                    .then(if (isGlass) Modifier.hazeSource(readerHazeState) else Modifier)
                     .navigationBarsPadding()
             ) {
                 if (chapters.isNotEmpty()) {
