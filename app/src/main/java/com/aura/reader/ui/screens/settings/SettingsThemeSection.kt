@@ -81,8 +81,6 @@ internal fun SettingsThemeSection(
     onToggleSeasonalEffects: (Boolean) -> Unit = {},
     holidayOverride: String = "AUTO",
     onHolidayOverrideChange: (String) -> Unit = {},
-    gta6LogoEnabled: Boolean = false,
-    onToggleGta6Logo: (Boolean) -> Unit = {},
     onOpenReaderThemeSettings: () -> Unit,
     onThemePicked: (ReaderThemeMode, Offset, List<Color>) -> Unit
 ) {
@@ -292,30 +290,6 @@ internal fun SettingsThemeSection(
                     Switch(
                         checked = seasonalEffectsEnabled,
                         onCheckedChange = setSeasonalEffects,
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.primary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    )
-                }
-            }
-        )
-        ExpressiveDivider()
-        ExpressiveSettingsRow(
-            title = strings.gta6EventTitle,
-            subtitle = strings.gta6EventSubtitle,
-            icon = { SettingsIconBox(Icons.Rounded.AutoAwesome) },
-            onClick = { onToggleGta6Logo(!gta6LogoEnabled) },
-            trailing = {
-                if (isGlass) {
-                    LiquidGlassSwitch(
-                        checked = gta6LogoEnabled,
-                        onCheckedChange = onToggleGta6Logo
-                    )
-                } else {
-                    Switch(
-                        checked = gta6LogoEnabled,
-                        onCheckedChange = onToggleGta6Logo,
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = MaterialTheme.colorScheme.primary,
                             checkedTrackColor = MaterialTheme.colorScheme.primaryContainer

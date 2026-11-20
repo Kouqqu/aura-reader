@@ -225,9 +225,7 @@ fun BookCard(
                 modifier = Modifier
                     .size(width = 64.dp, height = 90.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .clickable {
-                        if (hasCover) onCoverClick() else onChangeCover()
-                    }
+                    .clickable { onOpenProfile() }
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -601,7 +599,7 @@ fun BookGridCard(
                     bookId = book.id,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clickable { if (hasCover) onCoverClick() else onChangeCover() }
+                        .clickable { onOpenProfile() }
                 )
 
                 Surface(
@@ -812,7 +810,7 @@ private fun BookListInlineActionTray(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         HorizontalDivider(
             color = if (isGlass) {
@@ -821,13 +819,13 @@ private fun BookListInlineActionTray(
                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             },
             thickness = 0.8.dp,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = 5.dp)
         )
 
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             BookActionChip(
                 icon = Icons.Rounded.Info,
@@ -837,13 +835,6 @@ private fun BookListInlineActionTray(
             )
 
             if (!isTrash) {
-                BookActionChip(
-                    icon = if (book.isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                    label = if (book.isFavorite) strings.colFavorites else strings.addToCollection,
-                    onClick = onToggleFavorite,
-                    tint = if (book.isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
                 BookActionChip(
                     icon = Icons.Rounded.FolderOpen,
                     label = strings.addToCollection,
@@ -937,7 +928,7 @@ private fun BookGridInlineActionTray(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp)
+            .padding(top = 6.dp)
     ) {
         HorizontalDivider(
             color = if (isGlass) {
@@ -946,7 +937,7 @@ private fun BookGridInlineActionTray(
                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             },
             thickness = 0.8.dp,
-            modifier = Modifier.padding(bottom = 6.dp)
+            modifier = Modifier.padding(bottom = 4.dp)
         )
 
         GridMenuRow(
@@ -957,12 +948,6 @@ private fun BookGridInlineActionTray(
         )
 
         if (!isTrash) {
-            GridMenuRow(
-                icon = if (book.isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                text = if (book.isFavorite) strings.colFavorites else strings.addToCollection,
-                onClick = onToggleFavorite,
-                tint = if (book.isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-            )
             GridMenuRow(
                 icon = Icons.Rounded.FolderOpen,
                 text = strings.addToCollection,
@@ -1032,24 +1017,27 @@ private fun BookActionChip(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(8.dp),
         color = containerColor,
         modifier = modifier
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.5.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = tint,
-                modifier = Modifier.size(15.dp)
+                modifier = Modifier.size(13.5.dp)
             )
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                ),
                 color = tint,
                 maxLines = 1
             )
@@ -1074,19 +1062,19 @@ private fun GridMenuRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 6.dp, vertical = 6.dp),
+                .padding(horizontal = 6.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = tint,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(15.dp)
             )
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelMedium.copy(fontSize = 11.5.sp),
+                style = MaterialTheme.typography.labelMedium.copy(fontSize = 11.sp),
                 color = tint,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

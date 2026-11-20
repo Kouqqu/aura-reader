@@ -262,7 +262,6 @@ fun LibraryScreen(
     val holidaySeason = LocalHolidaySeason.current
     val lastHolidaySoundSeason by viewModel.lastHolidaySoundSeason.collectAsState()
     val trashCount by viewModel.trashCount.collectAsState()
-    val gta6LogoEnabled by viewModel.gta6LogoEnabled.collectAsState()
     var selectedBookForProfile by remember { mutableStateOf<Book?>(null) }
     var showClearTrashConfirmDialog by remember { mutableStateOf(false) }
     var bookToDeletePermanently by remember { mutableStateOf<Book?>(null) }
@@ -539,7 +538,6 @@ fun LibraryScreen(
                     searchQuery = searchQuery,
                     libraryViewMode = libraryViewMode,
                     scrollBehavior = scrollBehavior,
-                    isGta6Vice = gta6LogoEnabled,
                     onSearchExpandedChange = { isSearchExpanded = it },
                     onSearchQueryChange = { viewModel.setSearchQuery(it) },
                     onToggleViewMode = { viewModel.toggleLibraryViewMode() },
@@ -1439,8 +1437,6 @@ fun LibraryScreen(
                             onColorPresetChange = { viewModel.setColorPreset(it) },
                             onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
                             onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
-                            gta6LogoEnabled = gta6LogoEnabled,
-                            onToggleGta6Logo = { viewModel.setGta6LogoEnabled(it) },
                             onOpenReaderThemeSettings = {
                                 showReaderThemeSheet = true
                             },
@@ -1527,8 +1523,6 @@ fun LibraryScreen(
             onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
             holidayOverride = holidayOverride,
             onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
-            gta6LogoEnabled = gta6LogoEnabled,
-            onToggleGta6Logo = { viewModel.setGta6LogoEnabled(it) },
             onDismiss = { showSettingsSheet = false },
             onOpenOnboarding = onOpenOnboarding,
             onThemeChange = { viewModel.setAppThemeMode(it) },
@@ -1797,10 +1791,24 @@ fun LibraryScreen(
                     snackbarHostState.showSnackbar(strings.metadataSaved)
                 }
             },
+            onOpenBook = {
+                val target = book
+                selectedBookForProfile = null
+                onBookSelected(target)
+            },
+            onInspectCover = {
+                val target = book
+                selectedBookForProfile = null
+                inspectingCoverBook = target
+            },
             onChangeCover = {
                 val target = book
                 selectedBookForProfile = null
                 bookForCoverChange = target
+            },
+            onToggleRead = {
+                val newProgress = if (book.progressPercent >= 100) 0 else 100
+                viewModel.setBookReadingProgress(book.id, newProgress)
             },
             isGlass = isGlass,
             isDark = isThemeDark

@@ -124,13 +124,6 @@ class LibraryViewModel(
         viewModelScope.launch { preferencesManager.setLibraryViewMode(next) }
     }
 
-    val gta6LogoEnabled: StateFlow<Boolean> = preferencesManager.gta6LogoEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    fun setGta6LogoEnabled(enabled: Boolean) {
-        viewModelScope.launch { preferencesManager.setGta6LogoEnabled(enabled) }
-    }
-
     fun setAppLanguage(language: AppLanguage) {
         viewModelScope.launch {
             if (language != AppLanguage.UK && language != AppLanguage.EN && appFont.value == "ZAKON") {

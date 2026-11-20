@@ -108,27 +108,9 @@ class PreferencesManager(private val context: Context) {
         val PRIVATE_FOLDER_PASSWORD_HASH_KEY = stringPreferencesKey("private_folder_password_hash")
         val PRIVATE_BOOK_IDS_KEY = stringPreferencesKey("private_book_ids_json")
         val BOTTOM_PROGRESS_MODE_KEY = intPreferencesKey("reader_bottom_progress_mode")
-        val GTA6_LOGO_OVERRIDE_KEY = booleanPreferencesKey("gta6_logo_override")
     }
 
-    val gta6LogoEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        if (prefs.contains(GTA6_LOGO_OVERRIDE_KEY)) {
-            prefs[GTA6_LOGO_OVERRIDE_KEY] ?: false
-        } else {
-            val cal = Calendar.getInstance()
-            val year = cal.get(Calendar.YEAR)
-            val month = cal.get(Calendar.MONTH)
-            year < 2026 || (year == 2026 && month <= Calendar.NOVEMBER)
-        }
-    }
-
-    suspend fun setGta6LogoEnabled(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[GTA6_LOGO_OVERRIDE_KEY] = enabled
-        }
-    }
-
-        val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
+    val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[HAS_COMPLETED_ONBOARDING_KEY] ?: false
     }
 

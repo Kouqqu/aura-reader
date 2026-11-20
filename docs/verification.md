@@ -1121,3 +1121,28 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 
   - Editable synopsis / book description with multi-line text input.
   - Technical file details: format, file size in KB/MB, date added to library, first opened date (or «Ещё не открывалась»), and last read date.
 
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.11 — GTA VI Vice City Launcher Icon (Untinted), Book Profile Overhaul (Shelest UX), Crash Fix & Compact Action Drawer (versionCode 176)
+
+- **GTA VI Vice City Launcher Icon (No Material You Dynamic Tinting):**
+  - Clarified scope: Reverted all in-app GTA VI UI overrides (no toggles in settings, no top bar logo alterations, no DataStore overrides).
+  - Applied the GTA VI Vice City sunset theme (`#1E1035` -> `#6B1D5C` -> `#F43F5E`) with palm silhouettes and white/pink 'Å' emblem exclusively to the launcher icon.
+  - Removed `<monochrome>` from `mipmap-anydpi-v26/ic_launcher.xml` and `ic_launcher_round.xml`, strictly preventing Android 13+ Material You from coloring/tinting the icon into wallpaper palette. Full-color sunset palette active through end of November 2026.
+  - Rendered crisp adaptive icon background and foreground along with all raster mipmap densities (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) using 4x supersampling.
+- **Fixed Crash on «О книге»:**
+  - Diagnosed crash caused by passing `bookId = book.id` into `BookCoverView` inside `BookProfileBottomSheet`, which created a duplicate `sharedElement` key collision with the library list item already attached in `LocalSharedTransitionScope`.
+  - Resolved by passing `bookId = null` in the sheet cover view, completely eliminating the key collision.
+- **Book Cover Interaction & Shelest-Style Profile Overhaul:**
+  - Tapping the book cover thumbnail directly in the library grid/list now opens the Book Profile sheet (`selectedBookForProfile = book`).
+  - Inside the Book Profile sheet, clicking the cover thumbnail triggers the existing full-screen `ParallaxCoverViewer`.
+  - Implemented Shelest-inspired two-mode architecture (`isEditMode` toggle):
+    - **View Mode:** Left cover thumbnail with full-screen zoom badge, book title (large bold), author, format and series badges, full-width «Читать дальше» / «Продолжить чтение» primary button, edit pencil button, reading progress card with percentage and «Отметить прочитанной» / «Сбросить» action, «Жанры и теги» card with «Изменить» and tag chips, «Аннотация» card with description preview, and technical footer (format, size, added date, first opened date).
+    - **Edit Mode:** Header `← Изменить` with `[Сохранить]` pill button; grouped cards for «Книга» (title, author text fields), «Цикл» (series name and book #), «Жанры» (chips with delete close icons and «Добавить» dialog with popular presets and custom input), and «Аннотация» (multi-line description field).
+- **Compact Inline Book Action Drawer:**
+  - Removed redundant favorite/heart chip from the inline expandable drawer (since the heart button is already located in the card header).
+  - Kept a single clean «В коллекцию» folder action.
+  - Tightened chip padding (7.dp horizontal, 3.5.dp vertical), chip height (~28-30.dp), icon size (13.5.dp), font size (11.sp), and spacing (4.dp), significantly reducing vertical footprint and eliminating dead space.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
+

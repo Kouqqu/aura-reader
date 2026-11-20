@@ -141,8 +141,6 @@ fun SettingsBottomSheet(
     onToggleSeasonalEffects: (Boolean) -> Unit = {},
     holidayOverride: String = "AUTO",
     onHolidayOverrideChange: (String) -> Unit = {},
-    gta6LogoEnabled: Boolean = false,
-    onToggleGta6Logo: (Boolean) -> Unit = {},
     anonymousAnalyticsEnabled: Boolean = true,
     isFullScreen: Boolean = false,
     onDismiss: () -> Unit,
@@ -489,8 +487,6 @@ fun SettingsBottomSheet(
                 onToggleSeasonalEffects = onToggleSeasonalEffects,
                 holidayOverride = holidayOverride,
                 onHolidayOverrideChange = onHolidayOverrideChange,
-                gta6LogoEnabled = gta6LogoEnabled,
-                onToggleGta6Logo = onToggleGta6Logo,
                 onOpenReaderThemeSettings = onOpenReaderThemeSettings,
                 onThemePicked = { mode, origin, colors ->
                     burstOrigin = origin
