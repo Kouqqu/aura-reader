@@ -105,7 +105,9 @@ fun BookCard(
     onSetProgress: (Int) -> Unit = {},
     onCoverClick: () -> Unit = {},
     onShare: () -> Unit = {},
-    onChangeCover: () -> Unit = {}
+    onChangeCover: () -> Unit = {},
+    isPrivate: Boolean = false,
+    onTogglePrivate: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val strings = LocalAppStrings.current
@@ -379,6 +381,20 @@ fun BookCard(
                     onAddToCollection()
                 }
             )
+            DropdownMenuItem(
+                text = { Text(if (isPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = if (isPrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                onClick = {
+                    showMenu = false
+                    onTogglePrivate()
+                }
+            )
             if (book.progressPercent < 100) {
                 DropdownMenuItem(
                     text = { Text(strings.markAsFinished) },
@@ -513,6 +529,8 @@ fun BookGridCard(
     onCoverClick: () -> Unit = {},
     onShare: () -> Unit = {},
     onChangeCover: () -> Unit = {},
+    isPrivate: Boolean = false,
+    onTogglePrivate: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -787,6 +805,20 @@ fun BookGridCard(
                     onClick = {
                         showMenu = false
                         onAddToCollection()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(if (isPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (isPrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    onClick = {
+                        showMenu = false
+                        onTogglePrivate()
                     }
                 )
                 DropdownMenuItem(

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Policy
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -95,17 +97,8 @@ internal fun SettingsAboutSection(
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
-    var expanded by rememberSaveable { mutableStateOf(true) }
+    var showLicensesDialog by remember { mutableStateOf(false) }
 
-    // 6. About, GitHub & Donate Section
-    SettingsFoldHeader(
-        title = strings.aboutSectionTitle,
-        isGlass = isGlass,
-        expanded = expanded,
-        onToggle = { expanded = !expanded }
-    )
-
-    SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
     ExpressiveSettingsGroup {
         ExpressiveSettingsRow(
             title = strings.donate,
@@ -165,6 +158,24 @@ internal fun SettingsAboutSection(
         )
         ExpressiveDivider()
         ExpressiveSettingsRow(
+            title = strings.licensesTitle,
+            subtitle = strings.licensesSubtitle,
+            icon = {
+                SettingsIconBox(
+                    icon = Icons.Rounded.Policy,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
+                )
+            },
+            onClick = {
+                showLicensesDialog = true
+            },
+            trailing = {
+                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        )
+        ExpressiveDivider()
+        ExpressiveSettingsRow(
             title = strings.quickGuideTitle,
             subtitle = strings.quickGuideSubtitle,
             icon = {
@@ -183,6 +194,9 @@ internal fun SettingsAboutSection(
             }
         )
     }
+
+    if (showLicensesDialog) {
+        LicensesDialog(onDismiss = { showLicensesDialog = false })
     }
 
     Spacer(modifier = Modifier.height(24.dp))

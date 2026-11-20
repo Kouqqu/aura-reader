@@ -1080,3 +1080,22 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
 
+## 2.3.0-beta.9 — Aura Glow Logo Anchor Fix, Open Source Licenses Viewer & Private Folder (versionCode 174)
+
+- **Fixed Top Bar Logo Aura Position & Drift.**
+  - Identified root cause of sporadic glow displacement: `LargeTopAppBar` evaluates the `title` composable twice in separate layouts (pinned small title at y ~ 20-40dp and expanded title at y ~ 70-110dp). Storing coordinates from the small title was overwriting the position and pulling the aura 60+ dp upward.
+  - Resolved by gating layout coordinate capture with `if (!isSmallTitle)` and calculating the center dynamically in `drawBehind` using `top.localPositionOf(logo, ...)`. The aura remains strictly anchored to the logo mark during all scroll states.
+- **Open Source Licenses Viewer (`LicensesDialog`).**
+  - Added a dedicated, clean licenses viewer showcasing all 3rd-party software, OFL fonts (Google Sans, Literata, Merriweather, Roboto, Inter, Playfair Display, Fira Code), Zakon typeface, Liquid Glass, Haze, jsoup, and AndroidX/Jetpack Compose libraries.
+  - Accessible via a new «Лицензии стороннего ПО» row in the «О приложении» settings section.
+- **Removed Redundant Folding Chevron in "About" Settings.**
+  - Cleaned up the «О приложении» settings page: removed the superfluous `SettingsFoldHeader` folding arrow since it contains a single consolidated group.
+- **Private Folder («Личная папка»).**
+  - Added secure Private Folder storage with SHA-256 password hashing.
+  - Setup dialog on first visit, password prompt on subsequent visits, and in-folder password change option.
+  - Ability to add books from the main library into the private folder, and remove them back to the general library from context menus.
+  - Books inside the private folder are completely isolated and hidden from public library views, search results, and hero banners.
+  - Added dedicated `🔒 Личная папка` chip in the collections row, action buttons in book dropdown menus, and in-folder banner with lock controls.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
+

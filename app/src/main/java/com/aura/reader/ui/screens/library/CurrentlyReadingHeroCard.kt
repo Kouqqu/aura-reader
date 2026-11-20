@@ -79,6 +79,8 @@ fun CurrentlyReadingHeroCard(
     onCoverClick: (Book) -> Unit = {},
     onShare: () -> Unit = {},
     onChangeCover: () -> Unit = {},
+    isPrivate: Boolean = false,
+    onTogglePrivate: () -> Unit = {},
     isGlass: Boolean = false,
     isDark: Boolean = isSystemInDarkTheme(),
     clarity: Float = 0.85f,
@@ -323,6 +325,20 @@ fun CurrentlyReadingHeroCard(
                                         onClick = {
                                             showMenu = false
                                             onAddToCollection()
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(if (isPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate) },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = if (isPrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            onTogglePrivate()
                                         }
                                     )
                                     if (book.progressPercent < 100) {

@@ -22,6 +22,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Timer
 import com.aura.reader.ui.theme.LocalAppStrings
@@ -239,7 +241,8 @@ internal fun LibraryCollectionChips(
     isThemeDark: Boolean,
     onFilterChange: (ActiveCollectionFilter) -> Unit,
     onDeleteCollection: (String) -> Unit,
-    onNewCollection: () -> Unit
+    onNewCollection: () -> Unit,
+    onPrivateFolderClick: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
 
@@ -330,6 +333,24 @@ internal fun LibraryCollectionChips(
             onClick = onNewCollection,
             leadingIcon = { Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(16.dp)) },
             label = { Text(strings.newCollection) },
+            isGlass = isGlass,
+            isDark = isThemeDark
+        )
+
+        // 4. Private Folder Chip
+        val isPrivateSelected = activeFilter.type == CollectionFilterType.PRIVATE_FOLDER
+        LiquidGlassFilterChip(
+            selected = isPrivateSelected,
+            onClick = onPrivateFolderClick,
+            leadingIcon = {
+                Icon(
+                    imageVector = if (isPrivateSelected) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = if (isPrivateSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            label = { Text(strings.privateFolderTitle) },
             isGlass = isGlass,
             isDark = isThemeDark
         )

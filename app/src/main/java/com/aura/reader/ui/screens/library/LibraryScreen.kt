@@ -333,6 +333,29 @@ fun LibraryScreen(
     var bookForCollections by remember { mutableStateOf<Book?>(null) }
     var collectionToDelete by remember { mutableStateOf<String?>(null) }
 
+    val privateBookIds by viewModel.privateBookIds.collectAsState()
+    val hasPrivatePassword by viewModel.hasPrivatePassword.collectAsState()
+    val isPrivateUnlocked by viewModel.isPrivateFolderUnlocked.collectAsState()
+    var showSetupPrivatePasswordDialog by remember { mutableStateOf(false) }
+    var pendingPrivateBookId by remember { mutableStateOf<String?>(null) }
+    var showUnlockPrivatePasswordDialog by remember { mutableStateOf(false) }
+    var showChangePrivatePasswordDialog by remember { mutableStateOf(false) }
+    var showAddBooksToPrivateDialog by remember { mutableStateOf(false) }
+    var privateFolderError by remember { mutableStateOf<String?>(null) }
+
+    val handleTogglePrivate: (Book) -> Unit = { book ->
+        if (book.id in privateBookIds) {
+            viewModel.removeBookFromPrivateFolder(book.id)
+        } else {
+            if (!hasPrivatePassword) {
+                pendingPrivateBookId = book.id
+                showSetupPrivatePasswordDialog = true
+            } else {
+                viewModel.addBooksToPrivateFolder(setOf(book.id))
+            }
+        }
+    }
+
     // Backup & Restore Launchers
     val exportBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/zip")
@@ -699,17 +722,46 @@ fun LibraryScreen(
                                             item(span = { GridItemSpan(maxLineSpan) }) {
                                                 LibraryCollectionChips(
                                                     activeFilter = activeCollectionFilter,
-                                                    hasSeries = remember(recentBooks) { recentBooks.any { !it.series.isNullOrBlank() } },
+                                                    hasSeries = remember(recentBooks, privateBookIds) { recentBooks.any { !it.series.isNullOrBlank() && it.id !in privateBookIds } },
                                                     userCollections = userCollections,
                                                     isGlass = isGlass,
                                                     isThemeDark = isThemeDark,
                                                     onFilterChange = { viewModel.setCollectionFilter(it) },
                                                     onDeleteCollection = { collectionToDelete = it },
-                                                    onNewCollection = { showNewCollectionDialog = true }
+                                                    onNewCollection = { showNewCollectionDialog = true },
+                                                    onPrivateFolderClick = {
+                                                        if (activeCollectionFilter.type == CollectionFilterType.PRIVATE_FOLDER) {
+                                                            viewModel.lockPrivateFolder()
+                                                        } else if (!hasPrivatePassword) {
+                                                            showSetupPrivatePasswordDialog = true
+                                                        } else if (isPrivateUnlocked) {
+                                                            viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.PRIVATE_FOLDER))
+                                                        } else {
+                                                            privateFolderError = null
+                                                            showUnlockPrivatePasswordDialog = true
+                                                        }
+                                                    }
                                                 )
                                             }
 
-                                            val currentHeroBook = recentBooks.firstOrNull { it.isReadingStarted }
+                                            if (activeCollectionFilter.type == CollectionFilterType.PRIVATE_FOLDER) {
+                                                item(key = "private_folder_banner", span = { GridItemSpan(maxLineSpan) }) {
+                                                    PrivateFolderBanner(
+                                                        bookCount = filteredRecentBooks.size,
+                                                        isGlass = isGlass,
+                                                        isDark = isThemeDark,
+                                                        onAddBooks = { showAddBooksToPrivateDialog = true },
+                                                        onChangePassword = {
+                                                            privateFolderError = null
+                                                            showChangePrivatePasswordDialog = true
+                                                        },
+                                                        onLock = { viewModel.lockPrivateFolder() },
+                                                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            val currentHeroBook = recentBooks.firstOrNull { it.isReadingStarted && it.id !in privateBookIds }
                                             val showHeroCard = currentHeroBook != null &&
                                                     searchQuery.isBlank() &&
                                                     (activeCollectionFilter.type == CollectionFilterType.ALL || activeCollectionFilter.type == CollectionFilterType.READING) &&
@@ -734,6 +786,8 @@ fun LibraryScreen(
                                                         onCoverClick = { inspectingCoverBook = currentHeroBook },
                                                         onShare = { BookShareUtils.shareBookFile(context, currentHeroBook) },
                                                         onChangeCover = { bookForCoverChange = currentHeroBook },
+                                                        isPrivate = currentHeroBook.id in privateBookIds,
+                                                        onTogglePrivate = { handleTogglePrivate(currentHeroBook) },
                                                         isGlass = readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS,
                                                         isDark = isThemeDark,
                                                         clarity = readerSettings.glassClarity,
@@ -1007,6 +1061,54 @@ fun LibraryScreen(
                                                         modifier = Modifier.padding(vertical = 16.dp)
                                                     )
                                                 }
+                                            } else if (displayedRecentBooks.isEmpty() && activeCollectionFilter.type == CollectionFilterType.PRIVATE_FOLDER) {
+                                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                                    Surface(
+                                                        shape = RoundedCornerShape(16.dp),
+                                                        color = if (isGlass) {
+                                                            if (isThemeDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)
+                                                        } else {
+                                                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f)
+                                                        },
+                                                        border = BorderStroke(
+                                                            0.5.dp,
+                                                            if (isGlass) {
+                                                                if (isThemeDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f)
+                                                            } else {
+                                                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                                                            }
+                                                        ),
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = 16.dp)
+                                                    ) {
+                                                        Column(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(24.dp),
+                                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Rounded.LockOpen,
+                                                                contentDescription = null,
+                                                                tint = MaterialTheme.colorScheme.primary,
+                                                                modifier = Modifier.size(40.dp)
+                                                            )
+                                                            Text(
+                                                                text = strings.privateFolderEmptyTitle,
+                                                                style = MaterialTheme.typography.titleMedium,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                            Text(
+                                                                text = strings.privateFolderEmptyDesc,
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                            )
+                                                        }
+                                                    }
+                                                }
                                             }
 
                                             gridItemsIndexed(
@@ -1071,7 +1173,9 @@ fun LibraryScreen(
                                                         onSetProgress = { prog -> viewModel.setBookReadingProgress(book.id, prog) },
                                                         onCoverClick = { inspectingCoverBook = book },
                                                         onShare = { BookShareUtils.shareBookFile(context, book) },
-                                                        onChangeCover = { bookForCoverChange = book }
+                                                        onChangeCover = { bookForCoverChange = book },
+                                                        isPrivate = book.id in privateBookIds,
+                                                        onTogglePrivate = { handleTogglePrivate(book) }
                                                     )
                                                 } else {
                                                     BookCard(
@@ -1120,7 +1224,9 @@ fun LibraryScreen(
                                                         onSetProgress = { prog -> viewModel.setBookReadingProgress(book.id, prog) },
                                                         onCoverClick = { inspectingCoverBook = book },
                                                         onShare = { BookShareUtils.shareBookFile(context, book) },
-                                                        onChangeCover = { bookForCoverChange = book }
+                                                        onChangeCover = { bookForCoverChange = book },
+                                                        isPrivate = book.id in privateBookIds,
+                                                        onTogglePrivate = { handleTogglePrivate(book) }
                                                     )
                                                 }
                                             }
@@ -1160,7 +1266,7 @@ fun LibraryScreen(
                             onSaveSearchQuery = { query ->
                                 viewModel.saveLibrarySearchQuery(query)
                             },
-                            books = recentBooks,
+                            books = remember(recentBooks, privateBookIds) { recentBooks.filter { it.id !in privateBookIds } },
                             onBookClick = onBookSelected,
                             onDeleteBook = { book -> bookToDelete = book },
                             onToggleFavorite = { book -> viewModel.toggleFavorite(book.id) },
@@ -1398,6 +1504,86 @@ fun LibraryScreen(
             colors = holidaySeason.burstColors,
             symbols = holidaySeason.burstSymbols,
             durationMillis = 2600
+        )
+    }
+
+    if (showSetupPrivatePasswordDialog) {
+        SetupPrivatePasswordDialog(
+            onDismiss = {
+                showSetupPrivatePasswordDialog = false
+                pendingPrivateBookId = null
+            },
+            onSavePassword = { password ->
+                viewModel.setPrivateFolderPassword(password) {
+                    showSetupPrivatePasswordDialog = false
+                    pendingPrivateBookId?.let { bookId ->
+                        viewModel.addBooksToPrivateFolder(setOf(bookId))
+                        pendingPrivateBookId = null
+                    }
+                }
+            }
+        )
+    }
+
+    if (showUnlockPrivatePasswordDialog) {
+        UnlockPrivateFolderDialog(
+            errorMessage = privateFolderError,
+            onDismiss = {
+                showUnlockPrivatePasswordDialog = false
+                privateFolderError = null
+            },
+            onUnlock = { password ->
+                viewModel.unlockPrivateFolder(
+                    password = password,
+                    onSuccess = {
+                        showUnlockPrivatePasswordDialog = false
+                        privateFolderError = null
+                    },
+                    onError = {
+                        privateFolderError = strings.privateFolderWrongPassword
+                    }
+                )
+            }
+        )
+    }
+
+    if (showChangePrivatePasswordDialog) {
+        ChangePrivatePasswordDialog(
+            errorMessage = privateFolderError,
+            onDismiss = {
+                showChangePrivatePasswordDialog = false
+                privateFolderError = null
+            },
+            onChangePassword = { oldPassword, newPassword ->
+                viewModel.changePrivateFolderPassword(
+                    oldPassword = oldPassword,
+                    newPassword = newPassword,
+                    onSuccess = {
+                        showChangePrivatePasswordDialog = false
+                        privateFolderError = null
+                        scope.launch {
+                            snackbarHostState.showSnackbar(strings.privateFolderPasswordChanged)
+                        }
+                    },
+                    onError = {
+                        privateFolderError = strings.privateFolderWrongPassword
+                    }
+                )
+            }
+        )
+    }
+
+    if (showAddBooksToPrivateDialog) {
+        val availableBooksForPrivate = remember(recentBooks, privateBookIds) {
+            recentBooks.filter { it.id !in privateBookIds }
+        }
+        AddBooksToPrivateFolderDialog(
+            availableBooks = availableBooksForPrivate,
+            onDismiss = { showAddBooksToPrivateDialog = false },
+            onConfirm = { selectedIds ->
+                viewModel.addBooksToPrivateFolder(selectedIds)
+                showAddBooksToPrivateDialog = false
+            }
         )
     }
     }

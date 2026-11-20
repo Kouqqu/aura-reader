@@ -173,7 +173,7 @@ AnimatedContent(
     } else {
         val holidaySeason = LocalHolidaySeason.current
         var topBarCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
-        var logoCenterInTopBar by remember { mutableStateOf<Offset?>(null) }
+        var expandedLogoCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
         val glowColorA = if (holidaySeason != HolidaySeason.NONE) {
             holidaySeason.primaryAccent
@@ -223,24 +223,28 @@ AnimatedContent(
                     topBarCoords = coords
                 }
                 .drawBehind {
-                    val center = logoCenterInTopBar
-                    val collapsedFraction = scrollBehavior.state.collapsedFraction
-                    val scrollAlpha = (1f - collapsedFraction / 0.35f).coerceIn(0f, 1f)
-                    if (center != null && scrollAlpha > 0.01f) {
-                        val radiusPx = haloRadius.toPx()
-                        drawCircle(
-                            brush = Brush.radialGradient(
-                                0f to shimmerTint.copy(alpha = 0.75f * glowPulse * scrollAlpha),
-                                0.35f to shimmerTint.copy(alpha = 0.50f * glowPulse * scrollAlpha),
-                                0.65f to innerTint.copy(alpha = 0.22f * glowPulse * scrollAlpha),
-                                0.85f to glowColorC.copy(alpha = 0.05f * glowPulse * scrollAlpha),
-                                1f to Color.Transparent,
-                                center = center,
-                                radius = radiusPx
-                            ),
-                            radius = radiusPx,
-                            center = center
-                        )
+                    val top = topBarCoords
+                    val logo = expandedLogoCoords
+                    if (top != null && logo != null && top.isAttached && logo.isAttached) {
+                        val center = top.localPositionOf(logo, Offset(logo.size.width / 2f, logo.size.height / 2f))
+                        val collapsedFraction = scrollBehavior.state.collapsedFraction
+                        val scrollAlpha = (1f - collapsedFraction / 0.35f).coerceIn(0f, 1f)
+                        if (scrollAlpha > 0.01f) {
+                            val radiusPx = haloRadius.toPx()
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    0f to shimmerTint.copy(alpha = 0.75f * glowPulse * scrollAlpha),
+                                    0.35f to shimmerTint.copy(alpha = 0.50f * glowPulse * scrollAlpha),
+                                    0.65f to innerTint.copy(alpha = 0.22f * glowPulse * scrollAlpha),
+                                    0.85f to glowColorC.copy(alpha = 0.05f * glowPulse * scrollAlpha),
+                                    1f to Color.Transparent,
+                                    center = center,
+                                    radius = radiusPx
+                                ),
+                                radius = radiusPx,
+                                center = center
+                            )
+                        }
                     }
                 }
         ) {
@@ -267,10 +271,8 @@ AnimatedContent(
                                 modifier = Modifier
                                     .size(logoBoxSize)
                                     .onGloballyPositioned { logoCoords ->
-                                        val top = topBarCoords
-                                        if (top != null && top.isAttached && logoCoords.isAttached) {
-                                            val centerInLogo = Offset(logoCoords.size.width / 2f, logoCoords.size.height / 2f)
-                                            logoCenterInTopBar = top.localPositionOf(logoCoords, centerInLogo)
+                                        if (!isSmallTitle) {
+                                            expandedLogoCoords = logoCoords
                                         }
                                     }
                             ) {

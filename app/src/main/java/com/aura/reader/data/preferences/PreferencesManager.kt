@@ -16,6 +16,7 @@ import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.model.TwoColumnMode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
@@ -104,6 +105,8 @@ class PreferencesManager(private val context: Context) {
         val SEASONAL_EFFECTS_ENABLED_KEY = booleanPreferencesKey("seasonal_effects_enabled")
         val HOLIDAY_OVERRIDE_KEY = stringPreferencesKey("holiday_season_override")
         val LAST_HOLIDAY_SOUND_SEASON_KEY = stringPreferencesKey("last_holiday_sound_season")
+        val PRIVATE_FOLDER_PASSWORD_HASH_KEY = stringPreferencesKey("private_folder_password_hash")
+        val PRIVATE_BOOK_IDS_KEY = stringPreferencesKey("private_book_ids_json")
         val BOTTOM_PROGRESS_MODE_KEY = intPreferencesKey("reader_bottom_progress_mode")
     }
 
@@ -1137,6 +1140,72 @@ class PreferencesManager(private val context: Context) {
             val arr = JSONArray()
             for (id in order) arr.put(id)
             prefs[CUSTOM_BOOK_ORDER_KEY] = arr.toString()
+        }
+    }
+
+    // --- Private Folder ---
+    val privateFolderPasswordHash: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[PRIVATE_FOLDER_PASSWORD_HASH_KEY] ?: ""
+    }
+
+    val privateBookIds: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[PRIVATE_BOOK_IDS_KEY] ?: "[]"
+        try {
+            val arr = JSONArray(raw)
+            val set = mutableSetOf<String>()
+            for (i in 0 until arr.length()) set.add(arr.getString(i))
+            set
+        } catch (e: Exception) {
+            emptySet()
+        }
+    }
+
+    private fun hashPrivatePassword(password: String): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val bytes = digest.digest(password.toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    suspend fun setPrivateFolderPassword(password: String) {
+        val hash = hashPrivatePassword(password)
+        context.dataStore.edit { prefs ->
+            prefs[PRIVATE_FOLDER_PASSWORD_HASH_KEY] = hash
+        }
+    }
+
+    suspend fun verifyPrivateFolderPassword(password: String): Boolean {
+        val currentHash = context.dataStore.data.first()[PRIVATE_FOLDER_PASSWORD_HASH_KEY] ?: ""
+        if (currentHash.isEmpty()) return false
+        return hashPrivatePassword(password) == currentHash
+    }
+
+    suspend fun addBooksToPrivateFolder(bookIds: Collection<String>) {
+        context.dataStore.edit { prefs ->
+            val current = mutableSetOf<String>()
+            val raw = prefs[PRIVATE_BOOK_IDS_KEY] ?: "[]"
+            try {
+                val arr = JSONArray(raw)
+                for (i in 0 until arr.length()) current.add(arr.getString(i))
+            } catch (_: Exception) {}
+            current.addAll(bookIds)
+            val out = JSONArray()
+            for (id in current) out.put(id)
+            prefs[PRIVATE_BOOK_IDS_KEY] = out.toString()
+        }
+    }
+
+    suspend fun removeBookFromPrivateFolder(bookId: String) {
+        context.dataStore.edit { prefs ->
+            val current = mutableSetOf<String>()
+            val raw = prefs[PRIVATE_BOOK_IDS_KEY] ?: "[]"
+            try {
+                val arr = JSONArray(raw)
+                for (i in 0 until arr.length()) current.add(arr.getString(i))
+            } catch (_: Exception) {}
+            current.remove(bookId)
+            val out = JSONArray()
+            for (id in current) out.put(id)
+            prefs[PRIVATE_BOOK_IDS_KEY] = out.toString()
         }
     }
 }

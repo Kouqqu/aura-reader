@@ -55,7 +55,8 @@ enum class CollectionFilterType {
     SERIES,
     UNREAD,
     FINISHED,
-    CUSTOM
+    CUSTOM,
+    PRIVATE_FOLDER
 }
 
 data class ActiveCollectionFilter(
@@ -323,6 +324,67 @@ class LibraryViewModel(
     val userCollections: StateFlow<List<String>> = bookRepository.userCollections
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val privateBookIds: StateFlow<Set<String>> = preferencesManager.privateBookIds
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    val hasPrivatePassword: StateFlow<Boolean> = preferencesManager.privateFolderPasswordHash
+        .map { it.isNotBlank() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    private val _isPrivateFolderUnlocked = MutableStateFlow(false)
+    val isPrivateFolderUnlocked: StateFlow<Boolean> = _isPrivateFolderUnlocked.asStateFlow()
+
+    fun unlockPrivateFolder(password: String, onSuccess: () -> Unit, onError: () -> Unit) {
+        viewModelScope.launch {
+            if (preferencesManager.verifyPrivateFolderPassword(password)) {
+                _isPrivateFolderUnlocked.value = true
+                _activeCollectionFilter.value = ActiveCollectionFilter(CollectionFilterType.PRIVATE_FOLDER)
+                onSuccess()
+            } else {
+                onError()
+            }
+        }
+    }
+
+    fun setPrivateFolderPassword(password: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            preferencesManager.setPrivateFolderPassword(password)
+            _isPrivateFolderUnlocked.value = true
+            _activeCollectionFilter.value = ActiveCollectionFilter(CollectionFilterType.PRIVATE_FOLDER)
+            onSuccess()
+        }
+    }
+
+    fun changePrivateFolderPassword(oldPassword: String, newPassword: String, onSuccess: () -> Unit, onError: () -> Unit) {
+        viewModelScope.launch {
+            if (preferencesManager.verifyPrivateFolderPassword(oldPassword)) {
+                preferencesManager.setPrivateFolderPassword(newPassword)
+                onSuccess()
+            } else {
+                onError()
+            }
+        }
+    }
+
+    fun lockPrivateFolder() {
+        _isPrivateFolderUnlocked.value = false
+        if (_activeCollectionFilter.value.type == CollectionFilterType.PRIVATE_FOLDER) {
+            _activeCollectionFilter.value = ActiveCollectionFilter(CollectionFilterType.ALL)
+        }
+    }
+
+    fun addBooksToPrivateFolder(bookIds: Set<String>) {
+        viewModelScope.launch {
+            preferencesManager.addBooksToPrivateFolder(bookIds)
+        }
+    }
+
+    fun removeBookFromPrivateFolder(bookId: String) {
+        viewModelScope.launch {
+            preferencesManager.removeBookFromPrivateFolder(bookId)
+        }
+    }
+
     private val _activeCollectionFilter = MutableStateFlow(ActiveCollectionFilter(CollectionFilterType.ALL))
     val activeCollectionFilter: StateFlow<ActiveCollectionFilter> = _activeCollectionFilter.asStateFlow()
 
@@ -557,13 +619,31 @@ class LibraryViewModel(
         _searchQuery,
         _activeCollectionFilter,
         preferencesManager.librarySortOrder,
-        _customBookOrder
-    ) { books, query, filter, sortStr, customOrderList ->
+        _customBookOrder,
+        preferencesManager.privateBookIds
+    ) { args: Array<Any?> ->
+        @Suppress("UNCHECKED_CAST")
+        val books = args[0] as List<Book>
+        val query = args[1] as String
+        val filter = args[2] as ActiveCollectionFilter
+        val sortStr = args[3] as String
+        @Suppress("UNCHECKED_CAST")
+        val customOrderList = args[4] as List<String>
+        @Suppress("UNCHECKED_CAST")
+        val privateIds = args[5] as Set<String>
+
+        val isPrivateActive = filter.type == CollectionFilterType.PRIVATE_FOLDER
+        val baseBooks = if (isPrivateActive) {
+            books.filter { it.id in privateIds }
+        } else {
+            books.filter { it.id !in privateIds }
+        }
+
         val q = query.trim()
         val searchFiltered = if (q.isEmpty()) {
-            books
+            baseBooks
         } else {
-            books.filter {
+            baseBooks.filter {
                 it.title.contains(q, ignoreCase = true) ||
                 it.author.contains(q, ignoreCase = true) ||
                 (it.series?.contains(q, ignoreCase = true) == true) ||
@@ -572,7 +652,7 @@ class LibraryViewModel(
         }
 
         val collectionFiltered = when (filter.type) {
-            CollectionFilterType.ALL -> searchFiltered
+            CollectionFilterType.ALL, CollectionFilterType.PRIVATE_FOLDER -> searchFiltered
             CollectionFilterType.READING -> searchFiltered.filter { it.isReadingStarted }
             CollectionFilterType.FAVORITES -> searchFiltered.filter { it.isFavorite }
             CollectionFilterType.SERIES -> searchFiltered.filter { !it.series.isNullOrBlank() }
