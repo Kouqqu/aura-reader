@@ -1026,3 +1026,11 @@ Chumpy-inspired bottom dock transformation and consolidated single-pager archite
 - **Elimination of Modal Layers.** Removed the duplicate `SettingsBottomSheet` modal and hacky `LaunchedEffect` style observer that caused overlapping elements in previous builds. All settings categories render cleanly inside dedicated pager screens.
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.5 — Smooth Screen Transitions, Material 3 Classic Restoration & Instant Pill Capture (versionCode 170)
+
+- **Calibrated Screen Paging Speed.** Pager transition between screens tuned to a deliberate 450 ms `FastOutSlowInEasing` curve (`pageScrollSpec = tween(450, easing = FastOutSlowInEasing)`), restoring the comfortable, smooth pacing of previous releases.
+- **Strict Style Separation.** The bottom dock is rendered strictly when `readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS`. Material 3 stays purely in its classic layout (`ExtendedFloatingActionButton` [ + Добавить книги ] anchored at `FabPosition.End`, modal `SettingsBottomSheet` triggered via TopBar gear button, search bar in TopBar, `userScrollEnabled = false`).
+- **Instant Touch-Down Pill Capture.** Fixed `FloatingNavigationIsland` gesture kinematics: the pill now immediately targets the contact position `dragOffsetPx` on touch down with high-stiffness critically damped spring physics (`stiffness = 1200f`), eliminating the 250ms delayed hop from button center to finger. On release, it settles accurately onto the selected slot center.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).

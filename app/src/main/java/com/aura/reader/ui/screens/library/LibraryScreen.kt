@@ -112,7 +112,9 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Timer
+import com.aura.reader.ui.screens.settings.SettingsBottomSheet
 import com.aura.reader.ui.screens.reader.ReaderSettingsBottomSheet
+import androidx.compose.animation.core.FastOutSlowInEasing
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -282,13 +284,34 @@ fun LibraryScreen(
     val scope = rememberCoroutineScope()
     val gridState = rememberLazyGridState()
     var showAddBooksSheet by remember { mutableStateOf(false) }
+    var showSettingsSheet by remember { mutableStateOf(false) }
+
+    val pageScrollSpec = tween<Float>(durationMillis = 450, easing = FastOutSlowInEasing)
+    val smoothScrollToPage: (Int) -> Unit = { page ->
+        scope.launch {
+            pagerState.animateScrollToPage(page, animationSpec = pageScrollSpec)
+        }
+    }
+
     BackHandler(enabled = showAddBooksSheet) {
         showAddBooksSheet = false
     }
 
-    BackHandler(enabled = pagerState.currentPage != 0 && !showAddBooksSheet && !isReorderMode) {
-        scope.launch {
-            pagerState.animateScrollToPage(0)
+    BackHandler(enabled = !isGlass && showSettingsSheet) {
+        showSettingsSheet = false
+    }
+
+    BackHandler(enabled = isGlass && pagerState.currentPage != 0 && !showAddBooksSheet && !isReorderMode) {
+        smoothScrollToPage(0)
+    }
+
+    LaunchedEffect(isGlass) {
+        if (!isGlass && pagerState.currentPage != 0) {
+            pagerState.scrollToPage(0)
+            showSettingsSheet = true
+        } else if (isGlass && showSettingsSheet) {
+            showSettingsSheet = false
+            pagerState.scrollToPage(2)
         }
     }
     var showReaderThemeSheet by remember { mutableStateOf(false) }
@@ -472,7 +495,7 @@ fun LibraryScreen(
         containerColor = mainScreenBg,
         topBar = {
             androidx.compose.animation.AnimatedVisibility(
-                visible = pagerState.currentPage == 0,
+                visible = !isGlass || pagerState.currentPage == 0,
                 enter = fadeIn(animationSpec = tween(220)),
                 exit = fadeOut(animationSpec = tween(160))
             ) {
@@ -487,7 +510,11 @@ fun LibraryScreen(
                     onSearchQueryChange = { viewModel.setSearchQuery(it) },
                     onToggleViewMode = { viewModel.toggleLibraryViewMode() },
                     onOpenSettings = {
-                        scope.launch { pagerState.animateScrollToPage(2) }
+                        if (isGlass) {
+                            smoothScrollToPage(2)
+                        } else {
+                            showSettingsSheet = true
+                        }
                     },
                     onHolidayBadgeClick = { origin ->
                         holidayBurstKey = System.currentTimeMillis()
@@ -508,7 +535,7 @@ fun LibraryScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
-            } else {
+            } else if (isGlass) {
                 MorphingFloatingBottomBar(
                     isSettingsOpen = isSettingsOpen,
                     selectedMainTab = selectedMainTab,
@@ -517,36 +544,43 @@ fun LibraryScreen(
                     clarity = readerSettings.glassClarity,
                     isDark = isThemeDark,
                     onMyBooksClick = {
-                        scope.launch {
-                            if (pagerState.currentPage != 0) {
-                                pagerState.animateScrollToPage(0)
-                            } else {
-                                gridState.animateScrollToItem(0)
-                            }
+                        if (pagerState.currentPage != 0) {
+                            smoothScrollToPage(0)
+                        } else {
+                            scope.launch { gridState.animateScrollToItem(0) }
                         }
                     },
                     onSearchClick = {
-                        scope.launch { pagerState.animateScrollToPage(1) }
+                        smoothScrollToPage(1)
                     },
                     onSettingsClick = {
-                        scope.launch { pagerState.animateScrollToPage(2) }
+                        smoothScrollToPage(2)
                     },
                     onBackFromSettingsClick = {
-                        scope.launch { pagerState.animateScrollToPage(0) }
+                        smoothScrollToPage(0)
                     },
                     onSelectSettingsCategory = { categoryIndex ->
-                        scope.launch { pagerState.animateScrollToPage(2 + categoryIndex) }
+                        smoothScrollToPage(2 + categoryIndex)
                     },
                     onAddBooksClick = {
                         if (pagerState.currentPage != 0) {
-                            scope.launch { pagerState.animateScrollToPage(0) }
+                            smoothScrollToPage(0)
                         }
                         showAddBooksSheet = true
                     }
                 )
+            } else {
+                ExtendedFloatingActionButton(
+                    shape = RoundedCornerShape(20.dp),
+                    onClick = { showAddBooksSheet = true },
+                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
+                    text = { Text(strings.addBooks) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             }
         },
-        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButtonPosition = if (isGlass) FabPosition.Center else FabPosition.End,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
@@ -568,7 +602,7 @@ fun LibraryScreen(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = !isReorderMode
+                userScrollEnabled = isGlass && !isReorderMode
             ) { page ->
                 when (page) {
                     0 -> {
@@ -1130,7 +1164,7 @@ fun LibraryScreen(
                             onCoverClick = { book -> inspectingCoverBook = book },
                             onShare = { book -> BookShareUtils.shareBookFile(context, book) },
                             onChangeCover = { book -> bookForCoverChange = book },
-                            onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
+                            onBack = { smoothScrollToPage(0) },
                             libraryViewMode = libraryViewMode,
                             isDark = isThemeDark,
                             clarity = readerSettings.glassClarity
@@ -1225,6 +1259,68 @@ fun LibraryScreen(
         onSaveBookPlacement = { id, cols, shelf, fav -> viewModel.updateBookPlacement(id, cols, shelf, fav) },
         onNewCollectionRequested = { showNewCollectionDialog = true }
     )
+
+    if (!isGlass && showSettingsSheet) {
+        SettingsBottomSheet(
+            currentTheme = readerSettings.appThemeMode,
+            currentLanguage = appLanguage,
+            updateNotificationsEnabled = updateNotificationsEnabled,
+            anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
+            readingStatsEnabled = readingStatsEnabled,
+            materialYouEnabled = materialYouEnabled,
+            seasonalEffectsEnabled = seasonalEffectsEnabled,
+            onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
+            holidayOverride = holidayOverride,
+            onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
+            onDismiss = { showSettingsSheet = false },
+            onOpenOnboarding = onOpenOnboarding,
+            onThemeChange = { viewModel.setAppThemeMode(it) },
+            onLanguageChange = { viewModel.setAppLanguage(it) },
+            onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
+            onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
+            onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
+            onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
+            customOpdsEnabled = customOpdsEnabled,
+            customOpdsUrl = catalogBaseUrl,
+            onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
+            onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
+            developerModeEnabled = developerModeEnabled,
+            updateChannel = updateChannel,
+            updateCheckState = updateCheckState,
+            onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
+            onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
+            onCheckUpdates = {
+                viewModel.checkForUpdates(manual = true, context = context)
+            },
+            onExportBackup = {
+                showSettingsSheet = false
+                exportBackupLauncher.launch("AuraReader_Backup_${System.currentTimeMillis()}.aurabackup")
+            },
+            onSendToGoogleDrive = {
+                showSettingsSheet = false
+                sendToGoogleDriveAction()
+            },
+            onRestoreBackup = {
+                showSettingsSheet = false
+                restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+            },
+            readerTheme = readerSettings.themeMode,
+            syncThemesWithApp = readerSettings.syncThemesWithApp,
+            onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
+            onReaderThemeChange = { viewModel.setThemeMode(it) },
+            onOpenReaderThemeSettings = {
+                showSettingsSheet = false
+                showReaderThemeSheet = true
+            },
+            appDesignStyle = readerSettings.appDesignStyle,
+            onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
+            glassClarity = readerSettings.glassClarity,
+            onGlassClarityChange = { viewModel.setGlassClarity(it) },
+            appFont = appFont,
+            onAppFontChange = { viewModel.setAppFont(it) },
+            onResetReadingSpeed = { viewModel.resetReadingSpeed() }
+        )
+    }
 
     if (showReaderThemeSheet) {
         ReaderSettingsBottomSheet(
