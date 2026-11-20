@@ -1,0 +1,71 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <group>
+        <clip-path android:pathData="M24,0 L84,0 A24,24 0 0 1 108,24 L108,84 A24,24 0 0 1 84,108 L24,108 A24,24 0 0 1 0,84 L0,24 A24,24 0 0 1 24,0 Z" />
+
+        <!-- Gradient Background -->
+        <path android:pathData="M0,0 h108 v108 h-108 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="54"
+                    android:startY="0"
+                    android:endX="54"
+                    android:endY="108">
+                    <item android:color="#FF1E1035" android:offset="0.0" />
+                    <item android:color="#FF6B1D5C" android:offset="0.55" />
+                    <item android:color="#FFF43F5E" android:offset="1.0" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- Left Palm -->
+        <path
+            android:pathData="M12,108 Q16,84 22,68"
+            android:strokeColor="#FF140924"
+            android:strokeWidth="2.5"
+            android:strokeLineCap="round"
+            android:strokeAlpha="0.72" />
+        <path
+            android:pathData="M22,68 Q11,65 3,71 Q12,69 22,68 Z M22,68 Q12,58 4,60 Q13,62 22,68 Z M22,68 Q19,56 14,51 Q19,59 22,68 Z M22,68 Q28,57 37,60 Q28,62 22,68 Z M22,68 Q32,65 40,72 Q30,69 22,68 Z"
+            android:fillColor="#FF140924"
+            android:fillAlpha="0.72" />
+
+        <!-- Right Palm -->
+        <path
+            android:pathData="M98,108 Q94,86 88,72"
+            android:strokeColor="#FF140924"
+            android:strokeWidth="2.5"
+            android:strokeLineCap="round"
+            android:strokeAlpha="0.72" />
+        <path
+            android:pathData="M88,72 Q99,69 107,75 Q98,73 88,72 Z M88,72 Q98,62 106,64 Q97,66 88,72 Z M88,72 Q91,60 96,55 Q91,63 88,72 Z M88,72 Q82,61 73,64 Q82,66 88,72 Z M88,72 Q78,69 70,76 Q80,73 88,72 Z"
+            android:fillColor="#FF140924"
+            android:fillAlpha="0.72" />
+
+        <!-- Letter Dot -->
+        <path
+            android:pathData="M54,27 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0"
+            android:fillColor="#FFFF75B5" />
+
+        <!-- Letter Legs (White Arch) -->
+        <path
+            android:pathData="M32,78 L54,37 L76,78"
+            android:strokeColor="#FFFFF1F5"
+            android:strokeWidth="7.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+
+        <!-- Crossbar (Pink Smile) -->
+        <path
+            android:pathData="M38,66 Q54,57 70,66"
+            android:strokeColor="#FFFF75B5"
+            android:strokeWidth="6"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

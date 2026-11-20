@@ -67,7 +67,13 @@ data class Book(
     val seriesNumber: Int? = null,
     val currentBlockTextOffset: Int = 0,
     val currentScrollPixelOffset: Int = 0,
-    val manualShelf: String? = null
+    val manualShelf: String? = null,
+    val deletedAtTimestamp: Long? = null,
+    val fileSizeBytes: Long = 0L,
+    val addedTimestamp: Long = System.currentTimeMillis(),
+    val firstOpenedTimestamp: Long? = null,
+    val description: String? = null,
+    val genres: List<String> = emptyList()
 )
 
 @Immutable

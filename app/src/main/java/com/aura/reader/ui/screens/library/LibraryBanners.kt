@@ -1,6 +1,7 @@
 package com.aura.reader.ui.screens.library
 
 import com.aura.reader.ui.components.expressiveClickable
+import androidx.compose.foundation.background
 import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.ui.components.ExpressiveConnectedButtonItem
 import com.aura.reader.ui.components.LiquidGlassCard
@@ -21,6 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
@@ -242,7 +245,9 @@ internal fun LibraryCollectionChips(
     onFilterChange: (ActiveCollectionFilter) -> Unit,
     onDeleteCollection: (String) -> Unit,
     onNewCollection: () -> Unit,
-    onPrivateFolderClick: () -> Unit = {}
+    onPrivateFolderClick: () -> Unit = {},
+    trashCount: Int = 0,
+    onTrashClick: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
 
@@ -354,5 +359,104 @@ internal fun LibraryCollectionChips(
             isGlass = isGlass,
             isDark = isThemeDark
         )
+
+        // 5. Trash Chip (Корзина)
+        if (trashCount > 0 || activeFilter.type == CollectionFilterType.TRASH) {
+            val isTrashSelected = activeFilter.type == CollectionFilterType.TRASH
+            LiquidGlassFilterChip(
+                selected = isTrashSelected,
+                onClick = onTrashClick,
+                leadingIcon = {
+                    Icon(
+                        imageVector = if (isTrashSelected) Icons.Rounded.Delete else Icons.Rounded.DeleteOutline,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = if (isTrashSelected) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                label = { Text(if (trashCount > 0) "${strings.trashTitle} ($trashCount)" else strings.trashTitle) },
+                isGlass = isGlass,
+                isDark = isThemeDark
+            )
+        }
+    }
+}
+
+@Composable
+internal fun TrashBanner(
+    bookCount: Int,
+    isGlass: Boolean,
+    isDark: Boolean,
+    onClearTrash: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val strings = LocalAppStrings.current
+
+    androidx.compose.material3.Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = if (isGlass) {
+            if (isDark) androidx.compose.ui.graphics.Color(0x352B1E22) else androidx.compose.ui.graphics.Color(0x75FFF0F2)
+        } else {
+            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)
+        },
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (isGlass) {
+                if (isDark) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.12f) else androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.08f)
+            } else {
+                MaterialTheme.colorScheme.error.copy(alpha = 0.25f)
+            }
+        ),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        ) {
+            androidx.compose.foundation.layout.Box(
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.12f))
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.DeleteOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(10.dp))
+            androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = strings.trashTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = strings.trashRetentionDesc,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (bookCount > 0) {
+                OutlinedButton(
+                    onClick = onClearTrash,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.4f)),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    modifier = Modifier.height(34.dp)
+                ) {
+                    Text(strings.clearTrash, style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
     }
 }

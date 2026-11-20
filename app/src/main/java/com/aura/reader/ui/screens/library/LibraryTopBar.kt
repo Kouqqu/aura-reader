@@ -105,7 +105,8 @@ internal fun LibraryTopBar(
     onSearchQueryChange: (String) -> Unit,
     onToggleViewMode: () -> Unit,
     onOpenSettings: () -> Unit,
-    onHolidayBadgeClick: (Offset) -> Unit = {}
+    onHolidayBadgeClick: (Offset) -> Unit = {},
+    isGta6Vice: Boolean = false
 ) {
     val strings = LocalAppStrings.current
 
@@ -175,17 +176,23 @@ AnimatedContent(
         var topBarCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
         var expandedLogoCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
-        val glowColorA = if (holidaySeason != HolidaySeason.NONE) {
+        val glowColorA = if (isGta6Vice) {
+            Color(0xFFF43F5E)
+        } else if (holidaySeason != HolidaySeason.NONE) {
             holidaySeason.primaryAccent
         } else {
             MaterialTheme.colorScheme.primary
         }
-        val glowColorB = if (holidaySeason != HolidaySeason.NONE) {
+        val glowColorB = if (isGta6Vice) {
+            Color(0xFFFF75B5)
+        } else if (holidaySeason != HolidaySeason.NONE) {
             holidaySeason.secondaryAccent
         } else {
             MaterialTheme.colorScheme.tertiary
         }
-        val glowColorC = if (holidaySeason != HolidaySeason.NONE) {
+        val glowColorC = if (isGta6Vice) {
+            Color(0xFF6B1D5C)
+        } else if (holidaySeason != HolidaySeason.NONE) {
             holidaySeason.primaryAccent
         } else {
             MaterialTheme.colorScheme.secondary
@@ -267,7 +274,7 @@ AnimatedContent(
                         ) {
                             Surface(
                                 shape = RoundedCornerShape(logoCorner),
-                                color = Color(0xFF1E1B4B),
+                                color = if (isGta6Vice) Color(0xFF1E1035) else Color(0xFF1E1B4B),
                                 modifier = Modifier
                                     .size(logoBoxSize)
                                     .onGloballyPositioned { logoCoords ->
@@ -280,7 +287,8 @@ AnimatedContent(
                                     AuraLogoIcon(
                                         modifier = Modifier.size(if (isSmallTitle) 20.dp else 34.dp),
                                         bookColor = MaterialTheme.colorScheme.primary,
-                                        lineColor = MaterialTheme.colorScheme.primaryContainer
+                                        lineColor = MaterialTheme.colorScheme.primaryContainer,
+                                        isGta6Vice = isGta6Vice
                                     )
                                 }
                             }

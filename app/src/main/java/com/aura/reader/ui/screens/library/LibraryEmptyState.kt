@@ -111,10 +111,16 @@ fun EmptyLibraryView(
 fun AuraLogoIcon(
     modifier: Modifier = Modifier.size(28.dp),
     bookColor: Color = MaterialTheme.colorScheme.primary,
-    lineColor: Color = MaterialTheme.colorScheme.primaryContainer
+    lineColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    isGta6Vice: Boolean = false
 ) {
+    val resId = if (isGta6Vice) {
+        com.aura.reader.R.drawable.ic_aura_logo_vice
+    } else {
+        com.aura.reader.R.drawable.ic_aura_logo
+    }
     androidx.compose.foundation.Image(
-        painter = painterResource(com.aura.reader.R.drawable.ic_aura_logo),
+        painter = painterResource(resId),
         contentDescription = "Aura Logo",
         modifier = modifier
     )

@@ -1099,3 +1099,25 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 f
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
 
+## 2.3.0-beta.10 — Licenses Subtitle Removal, GTA VI Vice City Seasonal Emblem, Inline Card Dropdown Menu, Trash Bin (15 Days), and Book Profile (versionCode 175)
+
+- **Clean Licenses Row:** Removed the explanatory subtitle («шрифты, шейдеры и открытые библиотеки») under «Лицензии стороннего ПО» in the "About" settings section.
+- **GTA VI Vice City Seasonal Emblem (`ic_aura_logo_vice.xml`, `logo_vice_gta6.svg`):**
+  - Integrated the custom Vice City sunset gradient logo with palm silhouettes and Aura 'Å' emblem celebrating the upcoming GTA VI release.
+  - Active temporarily until November 30 with dedicated Vice City sunset aura glow (`#F43F5E`, `#FFFF75B5`, `#6B1D5C`) in the top bar.
+  - Added user toggle in Interface settings («GTA VI Edition: Закатная тема и эксклюзивный логотип Vice City»).
+- **Smooth Inline Book Action Drawer (Out of Book Card):**
+  - Replaced floating popups with an animated inline action accordion dropping down smoothly out of the bottom of the book card itself (`animateContentSize` + `expandVertically` + `fadeIn`).
+  - Available in both grid and list library view modes, seamlessly revealing actions (Profile, Favorite, Collection, Private, Cover, Share, Progress, Trash).
+- **Recycle Bin («Корзина» with 15-Day Retention):**
+  - Deleting books moves them to Trash with `deletedAtTimestamp`.
+  - Automatic purging of books older than 15 days upon library reload.
+  - Dedicated `🗑️ Корзина (count)` filter chip, in-trash banner with one-click «Очистить корзину», and individual actions to «Восстановить» or «Удалить навсегда».
+  - Books in trash are completely excluded from active library grids, hero banner, and search.
+- **Interactive Book Profile («О книге» / `BookProfileBottomSheet`):**
+  - Profile sheet displaying cover thumbnail, reading progress pill, and format/file size badges.
+  - Editable title, author, cycle/series name, and volume number.
+  - Interactive genre chips with instant deletion and «Добавить» dialog supporting popular presets (Фантастика, Фэнтези, Детектив, Роман, Научпоп, Триллер, Классика, Приключения) and custom input.
+  - Editable synopsis / book description with multi-line text input.
+  - Technical file details: format, file size in KB/MB, date added to library, first opened date (or «Ещё не открывалась»), and last read date.
+

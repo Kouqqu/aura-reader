@@ -49,6 +49,17 @@ class BookRepository(
                         val cArr = obj.getJSONArray("collections")
                         for (j in 0 until cArr.length()) collectionsList.add(cArr.getString(j))
                     }
+                    val genresList = mutableListOf<String>()
+                    if (obj.has("genres")) {
+                        val gArr = obj.getJSONArray("genres")
+                        for (j in 0 until gArr.length()) genresList.add(gArr.getString(j))
+                    }
+                    val deletedAt = if (obj.has("deletedAtTimestamp") && !obj.isNull("deletedAtTimestamp")) obj.getLong("deletedAtTimestamp") else null
+                    val fileSizeBytes = obj.optLong("fileSizeBytes", 0L)
+                    val addedTimestamp = obj.optLong("addedTimestamp", obj.optLong("lastReadTimestamp", System.currentTimeMillis()))
+                    val firstOpenedTimestamp = if (obj.has("firstOpenedTimestamp") && !obj.isNull("firstOpenedTimestamp")) obj.getLong("firstOpenedTimestamp") else null
+                    val description = if (obj.has("description") && !obj.isNull("description")) obj.getString("description") else null
+
                     list.add(
                         Book(
                             id = obj.getString("id"),
@@ -67,9 +78,21 @@ class BookRepository(
                             collections = collectionsList,
                             series = if (obj.has("series") && !obj.isNull("series")) obj.getString("series") else null,
                             seriesNumber = if (obj.has("seriesNumber") && !obj.isNull("seriesNumber")) obj.getInt("seriesNumber") else null,
-                            manualShelf = if (obj.has("manualShelf") && !obj.isNull("manualShelf")) obj.getString("manualShelf") else null
+                            manualShelf = if (obj.has("manualShelf") && !obj.isNull("manualShelf")) obj.getString("manualShelf") else null,
+                            deletedAtTimestamp = deletedAt,
+                            fileSizeBytes = fileSizeBytes,
+                            addedTimestamp = addedTimestamp,
+                            firstOpenedTimestamp = firstOpenedTimestamp,
+                            description = description,
+                            genres = genresList
                         )
                     )
+                }
+                val cutoff = System.currentTimeMillis() - (15L * 24L * 60L * 60L * 1000L)
+                val expired = list.filter { it.deletedAtTimestamp != null && it.deletedAtTimestamp < cutoff }
+                if (expired.isNotEmpty()) {
+                    list.removeAll { it.deletedAtTimestamp != null && it.deletedAtTimestamp < cutoff }
+                    saveRecentBooks(list)
                 }
                 _recentBooks.value = list
             } catch (e: Exception) {
@@ -78,7 +101,7 @@ class BookRepository(
         }
     }
 
-    private suspend fun saveRecentBooks(books: List<Book>) = withContext(Dispatchers.IO) {
+    internal suspend fun saveRecentBooks(books: List<Book>) = withContext(Dispatchers.IO) {
         val array = JSONArray()
         for (b in books) {
             val obj = JSONObject().apply {
@@ -100,6 +123,20 @@ class BookRepository(
                 if (b.manualShelf != null) {
                     put("manualShelf", b.manualShelf)
                 }
+                if (b.deletedAtTimestamp != null) {
+                    put("deletedAtTimestamp", b.deletedAtTimestamp)
+                }
+                put("fileSizeBytes", b.fileSizeBytes)
+                put("addedTimestamp", b.addedTimestamp)
+                if (b.firstOpenedTimestamp != null) {
+                    put("firstOpenedTimestamp", b.firstOpenedTimestamp)
+                }
+                if (b.description != null) {
+                    put("description", b.description)
+                }
+                val gArr = JSONArray()
+                for (g in b.genres) gArr.put(g)
+                put("genres", gArr)
                 val cArr = JSONArray()
                 for (c in b.collections) cArr.put(c)
                 put("collections", cArr)
@@ -132,7 +169,9 @@ class BookRepository(
                 progressPercent = bookToOpen.progressPercent,
                 manualShelf = bookToOpen.manualShelf ?: existingInMemory.manualShelf,
                 isFavorite = bookToOpen.isFavorite,
-                collections = if (bookToOpen.collections.isNotEmpty()) bookToOpen.collections else existingInMemory.collections
+                collections = if (bookToOpen.collections.isNotEmpty()) bookToOpen.collections else existingInMemory.collections,
+                firstOpenedTimestamp = existingInMemory.firstOpenedTimestamp ?: System.currentTimeMillis(),
+                lastReadTimestamp = System.currentTimeMillis()
             )
             _currentBook.value = updated
             addOrUpdateRecentBook(updated)
@@ -158,7 +197,14 @@ class BookRepository(
                 progressPercent = bookToOpen.progressPercent,
                 manualShelf = bookToOpen.manualShelf,
                 isFavorite = bookToOpen.isFavorite,
-                collections = bookToOpen.collections
+                collections = bookToOpen.collections,
+                firstOpenedTimestamp = bookToOpen.firstOpenedTimestamp ?: System.currentTimeMillis(),
+                lastReadTimestamp = System.currentTimeMillis(),
+                description = bookToOpen.description ?: book.description,
+                genres = if (bookToOpen.genres.isNotEmpty()) bookToOpen.genres else book.genres,
+                fileSizeBytes = if (bookToOpen.fileSizeBytes > 0) bookToOpen.fileSizeBytes else book.fileSizeBytes,
+                addedTimestamp = bookToOpen.addedTimestamp,
+                deletedAtTimestamp = bookToOpen.deletedAtTimestamp
             )
             _currentBook.value = resolved
             addOrUpdateRecentBook(resolved)
@@ -377,7 +423,13 @@ class BookRepository(
                 manualShelf = savedBook?.manualShelf,
                 isFavorite = savedBook?.isFavorite ?: false,
                 collections = savedBook?.collections ?: emptyList(),
-                coverBase64 = savedBook?.coverBase64 ?: parsedBook.coverBase64
+                coverBase64 = savedBook?.coverBase64 ?: parsedBook.coverBase64,
+                fileSizeBytes = if (bytes.isNotEmpty()) bytes.size.toLong() else (savedBook?.fileSizeBytes ?: 0L),
+                addedTimestamp = savedBook?.addedTimestamp ?: System.currentTimeMillis(),
+                firstOpenedTimestamp = savedBook?.firstOpenedTimestamp,
+                description = savedBook?.description ?: parsedBook.description,
+                genres = if (savedBook?.genres?.isNotEmpty() == true) savedBook.genres else parsedBook.genres,
+                deletedAtTimestamp = savedBook?.deletedAtTimestamp
             )
             return Result.success(resolved)
         } catch (e: Exception) {
@@ -412,7 +464,13 @@ class BookRepository(
                 manualShelf = savedBook?.manualShelf,
                 isFavorite = savedBook?.isFavorite ?: false,
                 collections = savedBook?.collections ?: emptyList(),
-                coverBase64 = savedBook?.coverBase64 ?: parsed.coverBase64
+                coverBase64 = savedBook?.coverBase64 ?: parsed.coverBase64,
+                fileSizeBytes = destination.length(),
+                addedTimestamp = savedBook?.addedTimestamp ?: System.currentTimeMillis(),
+                firstOpenedTimestamp = savedBook?.firstOpenedTimestamp,
+                description = savedBook?.description ?: parsed.description,
+                genres = if (savedBook?.genres?.isNotEmpty() == true) savedBook.genres else parsed.genres,
+                deletedAtTimestamp = savedBook?.deletedAtTimestamp
             ))
         } catch (error: Exception) {
             return Result.failure(error)
@@ -725,6 +783,86 @@ class BookRepository(
                     lastReadTimestamp = updated.lastReadTimestamp
                 )
             }
+        }
+    }
+
+    // --- Trash & Recycle Bin (15 days retention) ---
+
+    suspend fun moveToTrash(bookId: String) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == bookId }
+        if (index >= 0) {
+            val old = currentList[index]
+            currentList[index] = old.copy(deletedAtTimestamp = System.currentTimeMillis())
+            saveRecentBooks(currentList)
+        }
+    }
+
+    suspend fun restoreFromTrash(bookId: String) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == bookId }
+        if (index >= 0) {
+            val old = currentList[index]
+            currentList[index] = old.copy(deletedAtTimestamp = null)
+            saveRecentBooks(currentList)
+        }
+    }
+
+    suspend fun deletePermanently(bookId: String) = withLibraryLock {
+        removeBook(bookId)
+    }
+
+    suspend fun clearTrash() = withLibraryLock {
+        val trashed = _recentBooks.value.filter { it.deletedAtTimestamp != null }
+        for (b in trashed) {
+            removeBook(b.id)
+        }
+    }
+
+    suspend fun purgeExpiredTrash(maxAgeDays: Int = 15) = withLibraryLock {
+        val cutoff = System.currentTimeMillis() - (maxAgeDays * 24L * 60L * 60L * 1000L)
+        val expired = _recentBooks.value.filter { it.deletedAtTimestamp != null && it.deletedAtTimestamp < cutoff }
+        for (b in expired) {
+            removeBook(b.id)
+        }
+    }
+
+    // --- Book Profile Metadata ---
+
+    suspend fun updateBookMetadata(
+        bookId: String,
+        title: String,
+        author: String,
+        series: String?,
+        seriesNumber: Int?,
+        genres: List<String>,
+        description: String?
+    ) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == bookId }
+        if (index >= 0) {
+            val old = currentList[index]
+            val updated = old.copy(
+                title = title.trim(),
+                author = author.trim(),
+                series = series?.trim()?.ifBlank { null },
+                seriesNumber = seriesNumber,
+                genres = genres,
+                description = description?.trim()?.ifBlank { null }
+            )
+            currentList[index] = updated
+            saveRecentBooks(currentList)
+            if (_currentBook.value?.id == bookId) {
+                _currentBook.value = _currentBook.value?.copy(
+                    title = updated.title,
+                    author = updated.author,
+                    series = updated.series,
+                    seriesNumber = updated.seriesNumber,
+                    genres = updated.genres,
+                    description = updated.description
+                )
+            }
+            com.aura.reader.widget.BookAppWidgetProvider.updateAllWidgets(context, updated)
         }
     }
 }

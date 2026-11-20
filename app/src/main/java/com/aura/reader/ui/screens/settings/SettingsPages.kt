@@ -120,6 +120,8 @@ fun SettingsInterfacePage(
     onColorPresetChange: (String) -> Unit = {},
     onToggleSeasonalEffects: (Boolean) -> Unit,
     onHolidayOverrideChange: (String) -> Unit,
+    gta6LogoEnabled: Boolean = false,
+    onToggleGta6Logo: (Boolean) -> Unit = {},
     onOpenReaderThemeSettings: () -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     onAppFontChange: (String) -> Unit,
@@ -193,6 +195,8 @@ fun SettingsInterfacePage(
                     onToggleSeasonalEffects = onToggleSeasonalEffects,
                     holidayOverride = holidayOverride,
                     onHolidayOverrideChange = onHolidayOverrideChange,
+                    gta6LogoEnabled = gta6LogoEnabled,
+                    onToggleGta6Logo = onToggleGta6Logo,
                     onOpenReaderThemeSettings = onOpenReaderThemeSettings,
                     onThemePicked = { mode, origin, colors ->
                         burstOrigin = origin

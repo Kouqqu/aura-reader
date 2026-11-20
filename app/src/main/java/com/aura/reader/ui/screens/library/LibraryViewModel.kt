@@ -56,7 +56,8 @@ enum class CollectionFilterType {
     UNREAD,
     FINISHED,
     CUSTOM,
-    PRIVATE_FOLDER
+    PRIVATE_FOLDER,
+    TRASH
 }
 
 data class ActiveCollectionFilter(
@@ -121,6 +122,13 @@ class LibraryViewModel(
     fun toggleLibraryViewMode() {
         val next = if (libraryViewMode.value == "GRID") "LIST" else "GRID"
         viewModelScope.launch { preferencesManager.setLibraryViewMode(next) }
+    }
+
+    val gta6LogoEnabled: StateFlow<Boolean> = preferencesManager.gta6LogoEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setGta6LogoEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setGta6LogoEnabled(enabled) }
     }
 
     fun setAppLanguage(language: AppLanguage) {
@@ -292,6 +300,10 @@ class LibraryViewModel(
 
     val recentBooks: StateFlow<List<Book>> = bookRepository.recentBooks
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val trashCount: StateFlow<Int> = recentBooks.map { books ->
+        books.count { it.deletedAtTimestamp != null }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -632,15 +644,22 @@ class LibraryViewModel(
         @Suppress("UNCHECKED_CAST")
         val privateIds = args[5] as Set<String>
 
+        val isTrashActive = filter.type == CollectionFilterType.TRASH
         val isPrivateActive = filter.type == CollectionFilterType.PRIVATE_FOLDER
-        val baseBooks = if (isPrivateActive) {
-            books.filter { it.id in privateIds }
+
+        val baseBooks: List<Book> = if (isTrashActive) {
+            books.filter { it.deletedAtTimestamp != null }
         } else {
-            books.filter { it.id !in privateIds }
+            val nonTrash = books.filter { it.deletedAtTimestamp == null }
+            if (isPrivateActive) {
+                nonTrash.filter { it.id in privateIds }
+            } else {
+                nonTrash.filter { it.id !in privateIds }
+            }
         }
 
         val q = query.trim()
-        val searchFiltered = if (q.isEmpty()) {
+        val searchFiltered: List<Book> = if (q.isEmpty()) {
             baseBooks
         } else {
             baseBooks.filter {
@@ -651,8 +670,8 @@ class LibraryViewModel(
             }
         }
 
-        val collectionFiltered = when (filter.type) {
-            CollectionFilterType.ALL, CollectionFilterType.PRIVATE_FOLDER -> searchFiltered
+        val collectionFiltered: List<Book> = when (filter.type) {
+            CollectionFilterType.ALL, CollectionFilterType.PRIVATE_FOLDER, CollectionFilterType.TRASH -> searchFiltered
             CollectionFilterType.READING -> searchFiltered.filter { it.isReadingStarted }
             CollectionFilterType.FAVORITES -> searchFiltered.filter { it.isFavorite }
             CollectionFilterType.SERIES -> searchFiltered.filter { !it.series.isNullOrBlank() }
@@ -664,29 +683,80 @@ class LibraryViewModel(
             }
         }
 
-        val sortOption = try { LibrarySortOption.valueOf(sortStr) } catch (e: Exception) { LibrarySortOption.RECENT }
-        when (sortOption) {
-            LibrarySortOption.RECENT -> collectionFiltered.sortedByDescending { it.lastReadTimestamp }
-            LibrarySortOption.TITLE -> collectionFiltered.sortedBy { it.title.lowercase() }
-            LibrarySortOption.AUTHOR -> collectionFiltered.sortedBy { it.author.lowercase() }
-            LibrarySortOption.SERIES -> {
-                collectionFiltered.sortedWith(
-                    compareBy<Book> { it.series.isNullOrBlank() }
-                        .thenBy { it.series?.lowercase() ?: "" }
-                        .thenBy { it.seriesNumber ?: Int.MAX_VALUE }
-                        .thenBy { it.title.lowercase() }
-                )
-            }
-            LibrarySortOption.CUSTOM -> {
-                if (customOrderList.isEmpty()) {
-                    collectionFiltered
-                } else {
-                    val orderMap = customOrderList.withIndex().associate { it.value to it.index }
-                    collectionFiltered.sortedBy { orderMap[it.id] ?: Int.MAX_VALUE }
+        val sortedBooks: List<Book> = if (isTrashActive) {
+            collectionFiltered.sortedByDescending { it.deletedAtTimestamp ?: 0L }
+        } else {
+            val sortOption = try { LibrarySortOption.valueOf(sortStr) } catch (e: Exception) { LibrarySortOption.RECENT }
+            when (sortOption) {
+                LibrarySortOption.RECENT -> collectionFiltered.sortedByDescending { it.lastReadTimestamp }
+                LibrarySortOption.TITLE -> collectionFiltered.sortedBy { it.title.lowercase() }
+                LibrarySortOption.AUTHOR -> collectionFiltered.sortedBy { it.author.lowercase() }
+                LibrarySortOption.SERIES -> {
+                    collectionFiltered.sortedWith(
+                        compareBy<Book> { it.series.isNullOrBlank() }
+                            .thenBy { it.series?.lowercase() ?: "" }
+                            .thenBy { it.seriesNumber ?: Int.MAX_VALUE }
+                            .thenBy { it.title.lowercase() }
+                    )
+                }
+                LibrarySortOption.CUSTOM -> {
+                    if (customOrderList.isEmpty()) {
+                        collectionFiltered
+                    } else {
+                        val orderMap = customOrderList.withIndex().associate { it.value to it.index }
+                        collectionFiltered.sortedBy { orderMap[it.id] ?: Int.MAX_VALUE }
+                    }
                 }
             }
         }
+        sortedBooks
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun moveToTrash(bookId: String) {
+        viewModelScope.launch {
+            bookRepository.moveToTrash(bookId)
+        }
+    }
+
+    fun restoreFromTrash(bookId: String) {
+        viewModelScope.launch {
+            bookRepository.restoreFromTrash(bookId)
+        }
+    }
+
+    fun deletePermanently(bookId: String) {
+        viewModelScope.launch {
+            bookRepository.deletePermanently(bookId)
+        }
+    }
+
+    fun clearTrash() {
+        viewModelScope.launch {
+            bookRepository.clearTrash()
+        }
+    }
+
+    fun updateBookMetadata(
+        bookId: String,
+        title: String,
+        author: String,
+        series: String?,
+        seriesNumber: Int?,
+        genres: List<String>,
+        description: String?
+    ) {
+        viewModelScope.launch {
+            bookRepository.updateBookMetadata(
+                bookId = bookId,
+                title = title,
+                author = author,
+                series = series,
+                seriesNumber = seriesNumber,
+                genres = genres,
+                description = description
+            )
+        }
+    }
 
     fun removeBook(bookId: String) {
         viewModelScope.launch {

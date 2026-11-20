@@ -261,6 +261,11 @@ fun LibraryScreen(
     val holidayOverride by viewModel.holidayOverride.collectAsState()
     val holidaySeason = LocalHolidaySeason.current
     val lastHolidaySoundSeason by viewModel.lastHolidaySoundSeason.collectAsState()
+    val trashCount by viewModel.trashCount.collectAsState()
+    val gta6LogoEnabled by viewModel.gta6LogoEnabled.collectAsState()
+    var selectedBookForProfile by remember { mutableStateOf<Book?>(null) }
+    var showClearTrashConfirmDialog by remember { mutableStateOf(false) }
+    var bookToDeletePermanently by remember { mutableStateOf<Book?>(null) }
 
     var holidayBurstKey by remember { mutableLongStateOf(0L) }
     var holidayBurstOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -534,6 +539,7 @@ fun LibraryScreen(
                     searchQuery = searchQuery,
                     libraryViewMode = libraryViewMode,
                     scrollBehavior = scrollBehavior,
+                    isGta6Vice = gta6LogoEnabled,
                     onSearchExpandedChange = { isSearchExpanded = it },
                     onSearchQueryChange = { viewModel.setSearchQuery(it) },
                     onToggleViewMode = { viewModel.toggleLibraryViewMode() },
@@ -740,6 +746,14 @@ fun LibraryScreen(
                                                             privateFolderError = null
                                                             showUnlockPrivatePasswordDialog = true
                                                         }
+                                                    },
+                                                    trashCount = trashCount,
+                                                    onTrashClick = {
+                                                        if (activeCollectionFilter.type == CollectionFilterType.TRASH) {
+                                                            viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.ALL))
+                                                        } else {
+                                                            viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.TRASH))
+                                                        }
                                                     }
                                                 )
                                             }
@@ -756,6 +770,18 @@ fun LibraryScreen(
                                                             showChangePrivatePasswordDialog = true
                                                         },
                                                         onLock = { viewModel.lockPrivateFolder() },
+                                                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            if (activeCollectionFilter.type == CollectionFilterType.TRASH) {
+                                                item(key = "trash_banner", span = { GridItemSpan(maxLineSpan) }) {
+                                                    TrashBanner(
+                                                        bookCount = filteredRecentBooks.size,
+                                                        isGlass = isGlass,
+                                                        isDark = isThemeDark,
+                                                        onClearTrash = { showClearTrashConfirmDialog = true },
                                                         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                                                     )
                                                 }
@@ -1109,6 +1135,54 @@ fun LibraryScreen(
                                                         }
                                                     }
                                                 }
+                                            } else if (displayedRecentBooks.isEmpty() && activeCollectionFilter.type == CollectionFilterType.TRASH) {
+                                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                                    Surface(
+                                                        shape = RoundedCornerShape(16.dp),
+                                                        color = if (isGlass) {
+                                                            if (isThemeDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)
+                                                        } else {
+                                                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f)
+                                                        },
+                                                        border = BorderStroke(
+                                                            0.5.dp,
+                                                            if (isGlass) {
+                                                                if (isThemeDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f)
+                                                            } else {
+                                                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                                                            }
+                                                        ),
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = 16.dp)
+                                                    ) {
+                                                        Column(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(24.dp),
+                                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Rounded.DeleteOutline,
+                                                                contentDescription = null,
+                                                                tint = MaterialTheme.colorScheme.outline,
+                                                                modifier = Modifier.size(40.dp)
+                                                            )
+                                                            Text(
+                                                                text = strings.trashEmptyTitle,
+                                                                style = MaterialTheme.typography.titleMedium,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                            Text(
+                                                                text = strings.trashEmptyDesc,
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                            )
+                                                        }
+                                                    }
+                                                }
                                             }
 
                                             gridItemsIndexed(
@@ -1167,7 +1241,34 @@ fun LibraryScreen(
                                                             accumulatedDragOffset = Offset.Zero
                                                         },
                                                         onClick = { onBookSelected(book) },
-                                                        onDelete = { bookToDelete = book },
+                                                        onDelete = {
+                                                            if (activeCollectionFilter.type == CollectionFilterType.TRASH) {
+                                                                bookToDeletePermanently = book
+                                                            } else {
+                                                                viewModel.moveToTrash(book.id)
+                                                                scope.launch {
+                                                                    val res = snackbarHostState.showSnackbar(
+                                                                        message = strings.movedToTrashSnackbar,
+                                                                        actionLabel = strings.undo
+                                                                    )
+                                                                    if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                                                                        viewModel.restoreFromTrash(book.id)
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        onRestore = {
+                                                             viewModel.restoreFromTrash(book.id)
+                                                             scope.launch {
+                                                                 snackbarHostState.showSnackbar(strings.restoredFromTrashSnackbar)
+                                                             }
+                                                        },
+                                                        onDeletePermanently = {
+                                                            bookToDeletePermanently = book
+                                                        },
+                                                        onOpenProfile = {
+                                                            selectedBookForProfile = book
+                                                        },
                                                         onToggleFavorite = { viewModel.toggleFavorite(book.id) },
                                                         onAddToCollection = { bookForCollections = book },
                                                         onSetProgress = { prog -> viewModel.setBookReadingProgress(book.id, prog) },
@@ -1218,7 +1319,34 @@ fun LibraryScreen(
                                                             accumulatedDragOffset = Offset.Zero
                                                         },
                                                         onClick = { onBookSelected(book) },
-                                                        onDelete = { bookToDelete = book },
+                                                        onDelete = {
+                                                            if (activeCollectionFilter.type == CollectionFilterType.TRASH) {
+                                                                bookToDeletePermanently = book
+                                                            } else {
+                                                                viewModel.moveToTrash(book.id)
+                                                                scope.launch {
+                                                                    val res = snackbarHostState.showSnackbar(
+                                                                        message = strings.movedToTrashSnackbar,
+                                                                        actionLabel = strings.undo
+                                                                    )
+                                                                    if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                                                                        viewModel.restoreFromTrash(book.id)
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        onRestore = {
+                                                             viewModel.restoreFromTrash(book.id)
+                                                             scope.launch {
+                                                                 snackbarHostState.showSnackbar(strings.restoredFromTrashSnackbar)
+                                                             }
+                                                        },
+                                                        onDeletePermanently = {
+                                                            bookToDeletePermanently = book
+                                                        },
+                                                        onOpenProfile = {
+                                                            selectedBookForProfile = book
+                                                        },
                                                         onToggleFavorite = { viewModel.toggleFavorite(book.id) },
                                                         onAddToCollection = { bookForCollections = book },
                                                         onSetProgress = { prog -> viewModel.setBookReadingProgress(book.id, prog) },
@@ -1266,9 +1394,20 @@ fun LibraryScreen(
                             onSaveSearchQuery = { query ->
                                 viewModel.saveLibrarySearchQuery(query)
                             },
-                            books = remember(recentBooks, privateBookIds) { recentBooks.filter { it.id !in privateBookIds } },
+                            books = remember(recentBooks, privateBookIds) { recentBooks.filter { it.deletedAtTimestamp == null && it.id !in privateBookIds } },
                             onBookClick = onBookSelected,
-                            onDeleteBook = { book -> bookToDelete = book },
+                            onDeleteBook = { book ->
+                                viewModel.moveToTrash(book.id)
+                                scope.launch {
+                                    val res = snackbarHostState.showSnackbar(
+                                        message = strings.movedToTrashSnackbar,
+                                        actionLabel = strings.undo
+                                    )
+                                    if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                                        viewModel.restoreFromTrash(book.id)
+                                    }
+                                }
+                            },
                             onToggleFavorite = { book -> viewModel.toggleFavorite(book.id) },
                             onAddToCollection = { book -> bookForCollections = book },
                             onSetProgress = { book, prog -> viewModel.setBookReadingProgress(book.id, prog) },
@@ -1300,6 +1439,8 @@ fun LibraryScreen(
                             onColorPresetChange = { viewModel.setColorPreset(it) },
                             onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
                             onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
+                            gta6LogoEnabled = gta6LogoEnabled,
+                            onToggleGta6Logo = { viewModel.setGta6LogoEnabled(it) },
                             onOpenReaderThemeSettings = {
                                 showReaderThemeSheet = true
                             },
@@ -1386,6 +1527,8 @@ fun LibraryScreen(
             onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
             holidayOverride = holidayOverride,
             onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
+            gta6LogoEnabled = gta6LogoEnabled,
+            onToggleGta6Logo = { viewModel.setGta6LogoEnabled(it) },
             onDismiss = { showSettingsSheet = false },
             onOpenOnboarding = onOpenOnboarding,
             onThemeChange = { viewModel.setAppThemeMode(it) },
@@ -1584,6 +1727,83 @@ fun LibraryScreen(
                 viewModel.addBooksToPrivateFolder(selectedIds)
                 showAddBooksToPrivateDialog = false
             }
+        )
+    }
+
+    bookToDeletePermanently?.let { book ->
+        AlertDialog(
+            onDismissRequest = { bookToDeletePermanently = null },
+            title = { Text(strings.deletePermanentlyConfirmTitle, fontWeight = FontWeight.Bold) },
+            text = { Text(strings.deletePermanentlyConfirmDesc) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deletePermanently(book.id)
+                        bookToDeletePermanently = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(strings.deletePermanently, color = MaterialTheme.colorScheme.onError)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { bookToDeletePermanently = null }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
+    if (showClearTrashConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearTrashConfirmDialog = false },
+            title = { Text(strings.clearTrashConfirmTitle, fontWeight = FontWeight.Bold) },
+            text = { Text(strings.clearTrashConfirmDesc) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.clearTrash()
+                        showClearTrashConfirmDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(strings.clearTrash, color = MaterialTheme.colorScheme.onError)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearTrashConfirmDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
+    selectedBookForProfile?.let { book ->
+        BookProfileBottomSheet(
+            book = book,
+            onDismiss = { selectedBookForProfile = null },
+            onSave = { title, author, series, seriesNumber, genres, description ->
+                viewModel.updateBookMetadata(
+                    bookId = book.id,
+                    title = title,
+                    author = author,
+                    series = series,
+                    seriesNumber = seriesNumber,
+                    genres = genres,
+                    description = description
+                )
+                selectedBookForProfile = null
+                scope.launch {
+                    snackbarHostState.showSnackbar(strings.metadataSaved)
+                }
+            },
+            onChangeCover = {
+                val target = book
+                selectedBookForProfile = null
+                bookForCoverChange = target
+            },
+            isGlass = isGlass,
+            isDark = isThemeDark
         )
     }
     }

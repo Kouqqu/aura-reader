@@ -159,7 +159,7 @@ internal fun SettingsAboutSection(
         ExpressiveDivider()
         ExpressiveSettingsRow(
             title = strings.licensesTitle,
-            subtitle = strings.licensesSubtitle,
+            subtitle = null,
             icon = {
                 SettingsIconBox(
                     icon = Icons.Rounded.Policy,

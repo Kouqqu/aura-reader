@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="216" height="216">
+  <defs>
+    <!-- Тот самый закатный градиент из 1-го варианта -->
+    <linearGradient id="viceBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E1035" />
+      <stop offset="55%" stop-color="#6B1D5C" />
+      <stop offset="100%" stop-color="#F43F5E" />
+    </linearGradient>
+    <clipPath id="iconClip">
+      <rect width="108" height="108" rx="24" />
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#iconClip)">
+    <!-- Фон -->
+    <rect width="108" height="108" fill="url(#viceBg)" />
+
+    <!-- Пальмы по краям (по 5 листьев) -->
+    <g fill="#140924" opacity="0.72">
+      <!-- Левая пальма -->
+      <path d="M12 108 Q16 84 22 68" fill="none" stroke="#140924" stroke-width="2.5" stroke-linecap="round" />
+      <path d="M22 68 Q11 65 3 71 Q12 69 22 68 Z" />
+      <path d="M22 68 Q12 58 4 60 Q13 62 22 68 Z" />
+      <path d="M22 68 Q19 56 14 51 Q19 59 22 68 Z" />
+      <path d="M22 68 Q28 57 37 60 Q28 62 22 68 Z" />
+      <path d="M22 68 Q32 65 40 72 Q30 69 22 68 Z" />
+
+      <!-- Правая пальма -->
+      <path d="M98 108 Q94 86 88 72" fill="none" stroke="#140924" stroke-width="2.5" stroke-linecap="round" />
+      <path d="M88 72 Q99 69 107 75 Q98 73 88 72 Z" />
+      <path d="M88 72 Q98 62 106 64 Q97 66 88 72 Z" />
+      <path d="M88 72 Q91 60 96 55 Q91 63 88 72 Z" />
+      <path d="M88 72 Q82 61 73 64 Q82 66 88 72 Z" />
+      <path d="M88 72 Q78 69 70 76 Q80 73 88 72 Z" />
+    </g>
+
+    <!-- Оригинальная буква A с теми же оттенками -->
+    <circle cx="54" cy="27" r="4.5" fill="#FF75B5" />
+    <path d="M32 78 L54 37 L76 78" fill="none" stroke="#FFF1F5" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M38 66 Q54 57 70 66" fill="none" stroke="#FF75B5" stroke-width="6" stroke-linecap="round" />
+  </g>
+</svg>
