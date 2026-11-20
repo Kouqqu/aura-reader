@@ -1007,3 +1007,22 @@ Official stable release consolidating all 2.2.1 updates:
 - **M3 Expressive Token Accuracy.** Split buttons, connected button groups, and action chips strictly match Google Material 3 Expressive token geometry and styling.
 
 Verified with `testDebugUnitTest lintDebug`.
+
+## 2.3.0-beta.4 — Morphing Bottom Dock & Unified HorizontalPager Architecture (versionCode 169)
+
+Chumpy-inspired bottom dock transformation and consolidated single-pager architecture:
+- **Unified HorizontalPager.** All top-level screens reside consecutively in a single `HorizontalPager(5)`:
+  - Page 0: Library («Мои книги»)
+  - Page 1: Search («Поиск»)
+  - Page 2: Settings: Interface («Интерфейс»)
+  - Page 3: Settings: General («Основные»)
+  - Page 4: Settings: About («О приложении»)
+- **Morphing Bottom Dock.** Transitioning to settings smoothly morphs the floating dock:
+  - Main state: Floating navigation island («Мои книги», «Поиск», «Настройки») + Floating Add glass button.
+  - Settings state: Circular 60dp «Назад» (←) button on the left + floating capsule with categories («Интерфейс», «Основные», «О приложении») on the right.
+  - Active category tab expands to display its label, while inactive tabs remain compact icons.
+  - Spring-driven slide and fade animations between states.
+- **Back Navigation.** Pressing the dock's round back button (←) or Android system back smoothly slides the dock back to main mode and scrolls the pager back to «Мои книги» (page 0).
+- **Elimination of Modal Layers.** Removed the duplicate `SettingsBottomSheet` modal and hacky `LaunchedEffect` style observer that caused overlapping elements in previous builds. All settings categories render cleanly inside dedicated pager screens.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).

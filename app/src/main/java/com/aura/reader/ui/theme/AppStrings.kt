@@ -230,6 +230,9 @@ interface Strings {
     val updateDownloadFailed: String
     val installPermissionNeeded: String
     val aboutSectionTitle: String
+    val settingsCategoryInterface: String
+    val settingsCategoryGeneral: String
+    val settingsCategoryAbout: String
     val githubRepository: String
 
     val chapter: String
@@ -689,6 +692,9 @@ class RuStrings : Strings {
     override val updateDownloadFailed = "Не удалось скачать обновление. Попробуйте ещё раз или скачайте с GitHub."
     override val installPermissionNeeded = "Разрешите Aura Reader устанавливать приложения в настройках Android, затем нажмите «Установить»."
     override val aboutSectionTitle = "О приложении"
+    override val settingsCategoryInterface = "Интерфейс"
+    override val settingsCategoryGeneral = "Основные"
+    override val settingsCategoryAbout = "О приложении"
     override val githubRepository = "Репозиторий на GitHub"
 
     override val chapter = "Глава"
@@ -1135,6 +1141,9 @@ class EnStrings : Strings {
     override val updateDownloadFailed = "Couldn't download the update. Try again or download it from GitHub."
     override val installPermissionNeeded = "Allow Aura Reader to install apps in Android settings, then tap Install."
     override val aboutSectionTitle = "About"
+    override val settingsCategoryInterface = "Interface"
+    override val settingsCategoryGeneral = "General"
+    override val settingsCategoryAbout = "About"
     override val githubRepository = "GitHub Repository"
 
     override val chapter = "Chapter"
@@ -1581,6 +1590,9 @@ class UkStrings : Strings {
     override val updateDownloadFailed = "Не вдалося завантажити оновлення. Спробуйте ще раз або завантажте з GitHub."
     override val installPermissionNeeded = "Дозвольте Aura Reader встановлювати програми в налаштуваннях Android, потім натисніть «Установити»."
     override val aboutSectionTitle = "Про додаток"
+    override val settingsCategoryInterface = "Інтерфейс"
+    override val settingsCategoryGeneral = "Основні"
+    override val settingsCategoryAbout = "Про додаток"
     override val githubRepository = "Репозиторій на GitHub"
 
     override val chapter = "Розділ"
@@ -2027,6 +2039,9 @@ class BeStrings : Strings {
     override val updateDownloadFailed = "Не ўдалося спампаваць абнаўленне. Паспрабуйце яшчэ раз або спампуйце з GitHub."
     override val installPermissionNeeded = "Дазвольце Aura Reader усталёўваць праграмы ў наладах Android, потым націсніце «Усталяваць»."
     override val aboutSectionTitle = "Пра праграму"
+    override val settingsCategoryInterface = "Інтэрфейс"
+    override val settingsCategoryGeneral = "Асноўныя"
+    override val settingsCategoryAbout = "Пра праграму"
     override val githubRepository = "Рэпазіторый на GitHub"
 
     override val chapter = "Раздзел"
@@ -2473,6 +2488,9 @@ class PlStrings : Strings {
     override val updateDownloadFailed = "Nie udało się pobrać aktualizacji. Spróbuj ponownie lub pobierz ją z GitHuba."
     override val installPermissionNeeded = "Zezwól Aura Reader na instalowanie aplikacji w ustawieniach Androida, a następnie dotknij Zainstaluj."
     override val aboutSectionTitle = "O aplikacji"
+    override val settingsCategoryInterface = "Interfejs"
+    override val settingsCategoryGeneral = "Główne"
+    override val settingsCategoryAbout = "O aplikacji"
     override val githubRepository = "Repozytorium GitHub"
 
     override val chapter = "Rozdział"
@@ -2913,6 +2931,9 @@ class CsStrings : Strings {
     override val updateDownloadFailed = "Aktualizaci se nepodařilo stáhnout. Zkuste to znovu nebo ji stáhněte z GitHubu."
     override val installPermissionNeeded = "Povolte aplikaci Aura Reader instalovat aplikace v nastavení Androidu a poté klepněte na Nainstalovat."
     override val aboutSectionTitle = "O aplikaci"
+    override val settingsCategoryInterface = "Rozhraní"
+    override val settingsCategoryGeneral = "Obecné"
+    override val settingsCategoryAbout = "O aplikaci"
     override val githubRepository = "GitHub repozitář"
     override val chapter = "Kapitola"
     override val ofChapters = "z"
@@ -3337,6 +3358,9 @@ class HeStrings : Strings {
     override val updateDownloadFailed = "לא ניתן היה להוריד את העדכון. נסה שוב או הורד אותו מ-GitHub."
     override val installPermissionNeeded = "אפשר ל-Aura Reader להתקין אפליקציות בהגדרות Android, ואז הקש התקן."
     override val aboutSectionTitle = "אודות"
+    override val settingsCategoryInterface = "ממשק"
+    override val settingsCategoryGeneral = "כללי"
+    override val settingsCategoryAbout = "אודות"
     override val githubRepository = "מאגר GitHub"
     override val chapter = "פרק"
     override val ofChapters = "מתוך"

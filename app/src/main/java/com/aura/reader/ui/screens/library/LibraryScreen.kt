@@ -30,11 +30,17 @@ import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.ui.components.FloatingNavigationIsland
 import com.aura.reader.ui.components.FloatingAddGlassButton
+import com.aura.reader.ui.components.MorphingFloatingBottomBar
 import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.ui.components.LiquidGlassCard
 import com.aura.reader.ui.components.liquidGlassMenuAppearance
 import com.aura.reader.ui.components.ParallaxCoverViewer
 import com.aura.reader.util.BookShareUtils
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import com.aura.reader.ui.screens.settings.SettingsInterfacePage
+import com.aura.reader.ui.screens.settings.SettingsGeneralPage
+import com.aura.reader.ui.screens.settings.SettingsAboutPage
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material3.HorizontalDivider
@@ -106,7 +112,6 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Timer
-import com.aura.reader.ui.screens.settings.SettingsBottomSheet
 import com.aura.reader.ui.screens.reader.ReaderSettingsBottomSheet
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material3.AlertDialog
@@ -189,7 +194,14 @@ fun LibraryScreen(
         accumulatedDragOffset = Offset.Zero
     }
 
-    var currentMainTab by rememberSaveable { mutableIntStateOf(0) }
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 5 })
+    val isSettingsOpen = pagerState.currentPage >= 2 || (pagerState.isScrollInProgress && pagerState.targetPage >= 2)
+    val selectedMainTab = when {
+        pagerState.currentPage == 1 -> 1
+        pagerState.currentPage >= 2 -> 2
+        else -> 0
+    }
+    val selectedSettingsCategory = (pagerState.currentPage - 2).coerceIn(0, 2)
 
     val infiniteTransition = rememberInfiniteTransition(label = "ios_wobble")
     val wobbleAngle by infiniteTransition.animateFloat(
@@ -274,10 +286,11 @@ fun LibraryScreen(
         showAddBooksSheet = false
     }
 
-    BackHandler(enabled = isGlass && currentMainTab != 0 && !showAddBooksSheet) {
-        currentMainTab = 0
+    BackHandler(enabled = pagerState.currentPage != 0 && !showAddBooksSheet && !isReorderMode) {
+        scope.launch {
+            pagerState.animateScrollToPage(0)
+        }
     }
-    var showSettingsSheet by remember { mutableStateOf(false) }
     var showReaderThemeSheet by remember { mutableStateOf(false) }
     var bookToDelete by remember { mutableStateOf<Book?>(null) }
     var inspectingCoverBook by remember { mutableStateOf<Book?>(null) }
@@ -291,16 +304,6 @@ fun LibraryScreen(
     var showNewCollectionDialog by remember { mutableStateOf(false) }
     var bookForCollections by remember { mutableStateOf<Book?>(null) }
     var collectionToDelete by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(readerSettings.appDesignStyle) {
-        if (readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS && showSettingsSheet) {
-            showSettingsSheet = false
-            currentMainTab = 2
-        } else if (readerSettings.appDesignStyle != AppDesignStyle.LIQUID_GLASS && currentMainTab == 2) {
-            currentMainTab = 0
-            showSettingsSheet = true
-        }
-    }
 
     // Backup & Restore Launchers
     val exportBackupLauncher = rememberLauncherForActivityResult(
@@ -469,7 +472,7 @@ fun LibraryScreen(
         containerColor = mainScreenBg,
         topBar = {
             androidx.compose.animation.AnimatedVisibility(
-                visible = currentMainTab == 0,
+                visible = pagerState.currentPage == 0,
                 enter = fadeIn(animationSpec = tween(220)),
                 exit = fadeOut(animationSpec = tween(160))
             ) {
@@ -483,7 +486,9 @@ fun LibraryScreen(
                     onSearchExpandedChange = { isSearchExpanded = it },
                     onSearchQueryChange = { viewModel.setSearchQuery(it) },
                     onToggleViewMode = { viewModel.toggleLibraryViewMode() },
-                    onOpenSettings = { showSettingsSheet = true },
+                    onOpenSettings = {
+                        scope.launch { pagerState.animateScrollToPage(2) }
+                    },
                     onHolidayBadgeClick = { origin ->
                         holidayBurstKey = System.currentTimeMillis()
                         holidayBurstOrigin = origin
@@ -503,58 +508,45 @@ fun LibraryScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
-            } else if (isGlass) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FloatingNavigationIsland(
-                        designStyle = readerSettings.appDesignStyle,
-                        clarity = readerSettings.glassClarity,
-                        selectedTab = currentMainTab,
-                        isDark = isThemeDark,
-                        onMyBooksClick = {
-                            if (currentMainTab != 0) {
-                                currentMainTab = 0
-                            } else {
-                                scope.launch { gridState.animateScrollToItem(0) }
-                            }
-                        },
-                        onSearchClick = {
-                            currentMainTab = 1
-                        },
-                        onSettingsClick = {
-                            currentMainTab = 2
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    FloatingAddGlassButton(
-                        onClick = {
-                            if (currentMainTab != 0) {
-                                currentMainTab = 0
-                            }
-                            showAddBooksSheet = true
-                        },
-                        isDark = isThemeDark
-                    )
-                }
             } else {
-                ExtendedFloatingActionButton(
-                    shape = RoundedCornerShape(20.dp),
-                    onClick = { showAddBooksSheet = true },
-                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
-                    text = { Text(strings.addBooks) },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                MorphingFloatingBottomBar(
+                    isSettingsOpen = isSettingsOpen,
+                    selectedMainTab = selectedMainTab,
+                    selectedSettingsCategory = selectedSettingsCategory,
+                    designStyle = readerSettings.appDesignStyle,
+                    clarity = readerSettings.glassClarity,
+                    isDark = isThemeDark,
+                    onMyBooksClick = {
+                        scope.launch {
+                            if (pagerState.currentPage != 0) {
+                                pagerState.animateScrollToPage(0)
+                            } else {
+                                gridState.animateScrollToItem(0)
+                            }
+                        }
+                    },
+                    onSearchClick = {
+                        scope.launch { pagerState.animateScrollToPage(1) }
+                    },
+                    onSettingsClick = {
+                        scope.launch { pagerState.animateScrollToPage(2) }
+                    },
+                    onBackFromSettingsClick = {
+                        scope.launch { pagerState.animateScrollToPage(0) }
+                    },
+                    onSelectSettingsCategory = { categoryIndex ->
+                        scope.launch { pagerState.animateScrollToPage(2 + categoryIndex) }
+                    },
+                    onAddBooksClick = {
+                        if (pagerState.currentPage != 0) {
+                            scope.launch { pagerState.animateScrollToPage(0) }
+                        }
+                        showAddBooksSheet = true
+                    }
                 )
             }
         },
-        floatingActionButtonPosition = if (isGlass) FabPosition.Center else FabPosition.End,
+        floatingActionButtonPosition = FabPosition.Center,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
@@ -573,125 +565,13 @@ fun LibraryScreen(
                 )
             }
 
-            AnimatedContent(
-                targetState = currentMainTab,
-                transitionSpec = {
-                    val forward = targetState > initialState
-                    val slideFraction = 0.28f
-                    if (forward) {
-                        (slideInHorizontally(
-                            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
-                        ) { width -> (width * slideFraction).toInt() } + fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)))
-                            .togetherWith(
-                                slideOutHorizontally(
-                                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
-                                ) { width -> (-width * slideFraction).toInt() } + fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing))
-                            )
-                    } else {
-                        (slideInHorizontally(
-                            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
-                        ) { width -> (-width * slideFraction).toInt() } + fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)))
-                            .togetherWith(
-                                slideOutHorizontally(
-                                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
-                                ) { width -> (width * slideFraction).toInt() } + fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing))
-                            )
-                    }
-                },
-                label = "dockTabNavigationTransition",
-                modifier = Modifier.fillMaxSize()
-            ) { tab ->
-                when (tab) {
-                    1 -> {
-                        LibrarySearchScreen(
-                                        searchQuery = searchQuery,
-                                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                                        searchHistory = librarySearchHistory,
-                                        onSelectHistoryQuery = { query ->
-                                            viewModel.setSearchQuery(query)
-                                        },
-                                        onRemoveHistoryQuery = { query ->
-                                            viewModel.removeLibrarySearchQuery(query)
-                                        },
-                                        onClearSearchHistory = {
-                                            viewModel.clearLibrarySearchHistory()
-                                        },
-                                        onSaveSearchQuery = { query ->
-                                            viewModel.saveLibrarySearchQuery(query)
-                                        },
-                                        books = recentBooks,
-                                        onBookClick = onBookSelected,
-                                        onDeleteBook = { book -> bookToDelete = book },
-                                        onToggleFavorite = { book -> viewModel.toggleFavorite(book.id) },
-                                        onAddToCollection = { book -> bookForCollections = book },
-                                        onSetProgress = { book, prog -> viewModel.setBookReadingProgress(book.id, prog) },
-                                        onCoverClick = { book -> inspectingCoverBook = book },
-                                        onShare = { book -> BookShareUtils.shareBookFile(context, book) },
-                                        onChangeCover = { book -> bookForCoverChange = book },
-                                        onBack = { currentMainTab = 0 },
-                                        libraryViewMode = libraryViewMode,
-                                        isDark = isThemeDark,
-                                        clarity = readerSettings.glassClarity
-                                    )
-                    }
-                    2 -> {
-                        SettingsBottomSheet(
-                                        currentTheme = readerSettings.appThemeMode,
-                                        currentLanguage = appLanguage,
-                                        updateNotificationsEnabled = updateNotificationsEnabled,
-                                        anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
-                                        readingStatsEnabled = readingStatsEnabled,
-                                        materialYouEnabled = materialYouEnabled,
-                                        seasonalEffectsEnabled = seasonalEffectsEnabled,
-                                        onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
-                                        holidayOverride = holidayOverride,
-                                        onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
-                                        isFullScreen = true,
-                                        onDismiss = { currentMainTab = 0 },
-                                        onOpenOnboarding = onOpenOnboarding,
-                                        onThemeChange = { viewModel.setAppThemeMode(it) },
-                                        onLanguageChange = { viewModel.setAppLanguage(it) },
-                                        onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
-                                        onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
-                                        onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
-                                        onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
-                                        customOpdsEnabled = customOpdsEnabled,
-                                        customOpdsUrl = catalogBaseUrl,
-                                        onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
-                                        onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
-                                        developerModeEnabled = developerModeEnabled,
-                                        updateChannel = updateChannel,
-                                        onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
-                                        onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
-                                        onCheckUpdates = {
-                                            viewModel.checkForUpdates(manual = true, context = context)
-                                        },
-                                        onExportBackup = {
-                                            exportBackupLauncher.launch("AuraReader_Backup_${System.currentTimeMillis()}.aurabackup")
-                                        },
-                                        onSendToGoogleDrive = {
-                                            sendToGoogleDriveAction()
-                                        },
-                                        onRestoreBackup = {
-                                            restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
-                                        },
-                                        readerTheme = readerSettings.themeMode,
-                                        syncThemesWithApp = readerSettings.syncThemesWithApp,
-                                        onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
-                                        onReaderThemeChange = { viewModel.setThemeMode(it) },
-                                        onOpenReaderThemeSettings = {
-                                            showReaderThemeSheet = true
-                                        },
-                                        appDesignStyle = readerSettings.appDesignStyle,
-                                        onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
-                                        glassClarity = readerSettings.glassClarity,
-                                        onGlassClarityChange = { viewModel.setGlassClarity(it) },
-                                        appFont = appFont,
-                                        onAppFontChange = { viewModel.setAppFont(it) },
-                                        onResetReadingSpeed = { viewModel.resetReadingSpeed() }
-                                    )
-                    }
-                    else -> {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                userScrollEnabled = !isReorderMode
+            ) { page ->
+                when (page) {
+                    0 -> {
                         Box(
                                         modifier = Modifier
                                             .fillMaxSize()
@@ -1224,6 +1104,101 @@ fun LibraryScreen(
                                     }
                                 }
                     }
+                    1 -> {
+                        LibrarySearchScreen(
+                            searchQuery = searchQuery,
+                            onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                            searchHistory = librarySearchHistory,
+                            onSelectHistoryQuery = { query ->
+                                viewModel.setSearchQuery(query)
+                            },
+                            onRemoveHistoryQuery = { query ->
+                                viewModel.removeLibrarySearchQuery(query)
+                            },
+                            onClearSearchHistory = {
+                                viewModel.clearLibrarySearchHistory()
+                            },
+                            onSaveSearchQuery = { query ->
+                                viewModel.saveLibrarySearchQuery(query)
+                            },
+                            books = recentBooks,
+                            onBookClick = onBookSelected,
+                            onDeleteBook = { book -> bookToDelete = book },
+                            onToggleFavorite = { book -> viewModel.toggleFavorite(book.id) },
+                            onAddToCollection = { book -> bookForCollections = book },
+                            onSetProgress = { book, prog -> viewModel.setBookReadingProgress(book.id, prog) },
+                            onCoverClick = { book -> inspectingCoverBook = book },
+                            onShare = { book -> BookShareUtils.shareBookFile(context, book) },
+                            onChangeCover = { book -> bookForCoverChange = book },
+                            onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
+                            libraryViewMode = libraryViewMode,
+                            isDark = isThemeDark,
+                            clarity = readerSettings.glassClarity
+                        )
+                    }
+                    2 -> {
+                        SettingsInterfacePage(
+                            currentTheme = readerSettings.appThemeMode,
+                            currentLanguage = appLanguage,
+                            materialYouEnabled = materialYouEnabled,
+                            seasonalEffectsEnabled = seasonalEffectsEnabled,
+                            holidayOverride = holidayOverride,
+                            syncThemesWithApp = readerSettings.syncThemesWithApp,
+                            appDesignStyle = readerSettings.appDesignStyle,
+                            glassClarity = readerSettings.glassClarity,
+                            appFont = appFont,
+                            onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
+                            onThemeChange = { viewModel.setAppThemeMode(it) },
+                            onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
+                            onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
+                            onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
+                            onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
+                            onOpenReaderThemeSettings = {
+                                showReaderThemeSheet = true
+                            },
+                            onLanguageChange = { viewModel.setAppLanguage(it) },
+                            onAppFontChange = { viewModel.setAppFont(it) }
+                        )
+                    }
+                    3 -> {
+                        SettingsGeneralPage(
+                            readingStatsEnabled = readingStatsEnabled,
+                            onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
+                            customOpdsEnabled = customOpdsEnabled,
+                            customOpdsUrl = catalogBaseUrl,
+                            onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
+                            onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
+                            onResetReadingSpeed = { viewModel.resetReadingSpeed() },
+                            updateNotificationsEnabled = updateNotificationsEnabled,
+                            onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
+                            anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
+                            onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
+                            developerModeEnabled = developerModeEnabled,
+                            updateChannel = updateChannel,
+                            updateCheckState = updateCheckState,
+                            onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
+                            onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
+                            onCheckUpdates = {
+                                viewModel.checkForUpdates(manual = true, context = context)
+                            },
+                            onExportBackup = {
+                                exportBackupLauncher.launch("AuraReader_Backup_${System.currentTimeMillis()}.aurabackup")
+                            },
+                            onSendToGoogleDrive = {
+                                sendToGoogleDriveAction()
+                            },
+                            onRestoreBackup = {
+                                restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+                            },
+                            appDesignStyle = readerSettings.appDesignStyle
+                        )
+                    }
+                    4 -> {
+                        SettingsAboutPage(
+                            appDesignStyle = readerSettings.appDesignStyle,
+                            onOpenOnboarding = onOpenOnboarding
+                        )
+                    }
                 }
             }
     }
@@ -1250,68 +1225,6 @@ fun LibraryScreen(
         onSaveBookPlacement = { id, cols, shelf, fav -> viewModel.updateBookPlacement(id, cols, shelf, fav) },
         onNewCollectionRequested = { showNewCollectionDialog = true }
     )
-
-    if (showSettingsSheet) {
-        SettingsBottomSheet(
-            currentTheme = readerSettings.appThemeMode,
-            currentLanguage = appLanguage,
-            updateNotificationsEnabled = updateNotificationsEnabled,
-            anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
-            readingStatsEnabled = readingStatsEnabled,
-            materialYouEnabled = materialYouEnabled,
-            seasonalEffectsEnabled = seasonalEffectsEnabled,
-            onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
-            holidayOverride = holidayOverride,
-            onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
-            onDismiss = { showSettingsSheet = false },
-            onOpenOnboarding = onOpenOnboarding,
-            onThemeChange = { viewModel.setAppThemeMode(it) },
-            onLanguageChange = { viewModel.setAppLanguage(it) },
-            onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
-            onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
-            onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
-            onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
-            customOpdsEnabled = customOpdsEnabled,
-            customOpdsUrl = catalogBaseUrl,
-            onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
-            onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
-            developerModeEnabled = developerModeEnabled,
-            updateChannel = updateChannel,
-            updateCheckState = updateCheckState,
-            onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
-            onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
-            onCheckUpdates = {
-                viewModel.checkForUpdates(manual = true, context = context)
-            },
-            onExportBackup = {
-                showSettingsSheet = false
-                exportBackupLauncher.launch("AuraReader_Backup_${System.currentTimeMillis()}.aurabackup")
-            },
-            onSendToGoogleDrive = {
-                showSettingsSheet = false
-                sendToGoogleDriveAction()
-            },
-            onRestoreBackup = {
-                showSettingsSheet = false
-                restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
-            },
-            readerTheme = readerSettings.themeMode,
-            syncThemesWithApp = readerSettings.syncThemesWithApp,
-            onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
-            onReaderThemeChange = { viewModel.setThemeMode(it) },
-            onOpenReaderThemeSettings = {
-                showSettingsSheet = false
-                showReaderThemeSheet = true
-            },
-            appDesignStyle = readerSettings.appDesignStyle,
-            onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
-            glassClarity = readerSettings.glassClarity,
-            onGlassClarityChange = { viewModel.setGlassClarity(it) },
-            appFont = appFont,
-            onAppFontChange = { viewModel.setAppFont(it) },
-            onResetReadingSpeed = { viewModel.resetReadingSpeed() }
-        )
-    }
 
     if (showReaderThemeSheet) {
         ReaderSettingsBottomSheet(
