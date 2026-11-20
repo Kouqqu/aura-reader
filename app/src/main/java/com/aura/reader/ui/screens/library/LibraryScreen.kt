@@ -313,17 +313,13 @@ fun LibraryScreen(
         showSettingsSheet = false
     }
 
-    BackHandler(enabled = isGlass && pagerState.currentPage != 0 && !showAddBooksSheet && !isReorderMode) {
+    BackHandler(enabled = pagerState.currentPage != 0 && !showAddBooksSheet && !isReorderMode) {
         smoothScrollToPage(0)
     }
 
     LaunchedEffect(isGlass) {
-        if (!isGlass && pagerState.currentPage != 0) {
-            pagerState.scrollToPage(0)
-            showSettingsSheet = true
-        } else if (isGlass && showSettingsSheet) {
+        if (showSettingsSheet) {
             showSettingsSheet = false
-            pagerState.scrollToPage(2)
         }
     }
     var showReaderThemeSheet by remember { mutableStateOf(false) }
@@ -538,7 +534,7 @@ fun LibraryScreen(
         containerColor = mainScreenBg,
         topBar = {
             androidx.compose.animation.AnimatedVisibility(
-                visible = !isGlass || pagerState.currentPage == 0,
+                visible = pagerState.currentPage == 0,
                 enter = fadeIn(animationSpec = tween(220)),
                 exit = fadeOut(animationSpec = tween(160))
             ) {
@@ -553,11 +549,7 @@ fun LibraryScreen(
                     onSearchQueryChange = { viewModel.setSearchQuery(it) },
                     onToggleViewMode = { viewModel.toggleLibraryViewMode() },
                     onOpenSettings = {
-                        if (isGlass) {
-                            smoothScrollToPage(2)
-                        } else {
-                            showSettingsSheet = true
-                        }
+                        smoothScrollToPage(2)
                     },
                     onHolidayBadgeClick = { origin ->
                         holidayBurstKey = System.currentTimeMillis()
@@ -578,7 +570,7 @@ fun LibraryScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
-            } else if (isGlass) {
+            } else {
                 MorphingFloatingBottomBar(
                     isSettingsOpen = isSettingsOpen,
                     selectedMainTab = selectedMainTab,
@@ -612,18 +604,9 @@ fun LibraryScreen(
                         showAddBooksSheet = true
                     }
                 )
-            } else {
-                ExtendedFloatingActionButton(
-                    shape = RoundedCornerShape(20.dp),
-                    onClick = { showAddBooksSheet = true },
-                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
-                    text = { Text(strings.addBooks) },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
             }
         },
-        floatingActionButtonPosition = if (isGlass) FabPosition.Center else FabPosition.End,
+        floatingActionButtonPosition = FabPosition.Center,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
@@ -645,7 +628,7 @@ fun LibraryScreen(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = isGlass && !isReorderMode
+                userScrollEnabled = !isReorderMode
             ) { page ->
                 when (page) {
                     0 -> {
@@ -1219,6 +1202,8 @@ fun LibraryScreen(
                                                 }
                                             }
 
+                                            val canReorder = librarySortOrder == LibrarySortOption.CUSTOM && !isSelectionMode && activeCollectionFilter.type != CollectionFilterType.TRASH
+
                                             gridItemsIndexed(
                                                 items = displayedRecentBooks,
                                                 key = { _, book -> book.id }
@@ -1232,6 +1217,7 @@ fun LibraryScreen(
                                                         isReorderMode = isReorderMode,
                                                         isSelectionMode = isSelectionMode,
                                                         isSelected = book.id in selectedBookIds,
+                                                        canReorder = canReorder,
                                                         onToggleSelect = {
                                                             selectedBookIds = if (book.id in selectedBookIds) {
                                                                 selectedBookIds - book.id
@@ -1330,6 +1316,7 @@ fun LibraryScreen(
                                                         isReorderMode = isReorderMode,
                                                         isSelectionMode = isSelectionMode,
                                                         isSelected = book.id in selectedBookIds,
+                                                        canReorder = canReorder,
                                                         onToggleSelect = {
                                                             selectedBookIds = if (book.id in selectedBookIds) {
                                                                 selectedBookIds - book.id
@@ -1435,7 +1422,7 @@ fun LibraryScreen(
                                         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
                                         modifier = Modifier
                                             .align(Alignment.BottomCenter)
-                                            .padding(bottom = if (isGlass) 96.dp else 24.dp, start = 16.dp, end = 16.dp)
+                                            .padding(bottom = 96.dp, start = 16.dp, end = 16.dp)
                                             .fillMaxWidth()
                                     ) {
                                         Surface(

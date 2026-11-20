@@ -1,5 +1,7 @@
 package com.aura.reader.ui.components
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -633,132 +635,74 @@ fun FloatingNavigationIsland(
             }
         }
     } else {
-        // MATERIAL 3 EXPRESSIVE STYLE FALLBACK
+        // MATERIAL 3 EXPRESSIVE STYLE
         Surface(
-            shape = CircleShape,
+            shape = RoundedCornerShape(30.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
             shadowElevation = 8.dp,
             modifier = modifier
                 .height(60.dp)
-                .width(320.dp)
+                .width(294.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 6.dp, vertical = 6.dp),
+                    .padding(horizontal = 6.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Tab 0: Books
-                val isBooksActive = selectedTab == 0
-                Surface(
-                    onClick = onMyBooksClick,
-                    shape = CircleShape,
-                    color = if (isBooksActive) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else Color.Transparent,
-                    modifier = Modifier
-                        .height(46.dp)
-                        .weight(1f)
-                        .expressiveClickable(scaleDown = 0.94f, onClick = onMyBooksClick)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                val tabs = listOf(
+                    Triple(Icons.AutoMirrored.Rounded.MenuBook, strings.navMyBooks, onMyBooksClick),
+                    Triple(Icons.Rounded.Search, strings.search, onSearchClick),
+                    Triple(Icons.Rounded.Settings, strings.settingsTitle, onSettingsClick)
+                )
+
+                tabs.forEachIndexed { index, (icon, label, onClick) ->
+                    val isTabActive = selectedTab == index
+                    val itemShape = RoundedCornerShape(25.dp)
+
+                    val containerColor by animateColorAsState(
+                        targetValue = if (isTabActive) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                        animationSpec = tween(180),
+                        label = "m3DockTabBg_$index"
+                    )
+                    val contentColor by animateColorAsState(
+                        targetValue = if (isTabActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        animationSpec = tween(180),
+                        label = "m3DockTabContent_$index"
+                    )
+
+                    Surface(
+                        onClick = onClick,
+                        shape = itemShape,
+                        color = containerColor,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(1f)
+                            .expressiveClickable(scaleDown = 0.94f, onClick = onClick)
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.MenuBook,
-                            contentDescription = strings.navMyBooks,
-                            tint = if (isBooksActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = strings.navMyBooks,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isBooksActive) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isBooksActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(4.dp))
-
-                // Tab 1: Search
-                val isSearchActive = selectedTab == 1
-                Surface(
-                    onClick = onSearchClick,
-                    shape = CircleShape,
-                    color = if (isSearchActive) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else Color.Transparent,
-                    modifier = Modifier
-                        .height(46.dp)
-                        .weight(1f)
-                        .expressiveClickable(scaleDown = 0.90f, onClick = onSearchClick)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Search,
-                            contentDescription = strings.search,
-                            tint = if (isSearchActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = strings.search,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isSearchActive) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSearchActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(4.dp))
-
-                // Tab 2: Settings
-                val isSettingsActive = selectedTab == 2
-                Surface(
-                    onClick = onSettingsClick,
-                    shape = CircleShape,
-                    color = if (isSettingsActive) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else Color.Transparent,
-                    modifier = Modifier
-                        .height(46.dp)
-                        .weight(1f)
-                        .expressiveClickable(scaleDown = 0.94f, onClick = onSettingsClick)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Settings,
-                            contentDescription = strings.settingsTitle,
-                            tint = if (isSettingsActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = strings.settingsTitle,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isSettingsActive) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSettingsActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = label,
+                                tint = contentColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
+                                fontWeight = if (isTabActive) FontWeight.Bold else FontWeight.Medium,
+                                color = contentColor,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
             }
@@ -832,13 +776,13 @@ private fun TabDockRow(
 fun FloatingAddGlassButton(
     onClick: () -> Unit,
     isDark: Boolean = false,
+    isGlass: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
-    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val shape = CircleShape
     val hazeState = LocalHazeState.current
-    val hazeModifier = if (hazeState != null) {
+    val hazeModifier = if (isGlass && hazeState != null) {
         Modifier.clip(shape).hazeBlur(
             input = HazeInput.Sources(hazeState),
             style = HazeBlurStyle {
@@ -851,7 +795,7 @@ fun FloatingAddGlassButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val containerScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
+        targetValue = if (isPressed) 0.94f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 650f),
         label = "addButtonScale"
     )
@@ -861,91 +805,128 @@ fun FloatingAddGlassButton(
         label = "addButtonPress"
     )
 
-    // Exact same dock glass styling as FloatingNavigationIsland
-    val dockBgColor = if (isDark) {
-        if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
-    } else {
-        Color(0xF4F7F8FA)
-    }
-    val dockBorderColor = if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
+    if (isGlass) {
+        val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
+        // Exact same dock glass styling as FloatingNavigationIsland
+        val dockBgColor = if (isDark) {
+            if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
+        } else {
+            Color(0xF4F7F8FA)
+        }
+        val dockBorderColor = if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
 
-    // Exact same inner pill styling as the sliding tablet in the dock
-    val pillBgColor = if (isDark) {
-        if (isAmoled) Color(0x10FFFFFF) else Color(0x0EFFFFFF)
-    } else {
-        Color(0x08000000)
-    }
-    val borderAlpha = if (isDark) {
-        0.05f + 0.22f * expansionProgress
-    } else {
-        0.04f + 0.16f * expansionProgress
-    }
-    val pillBorderColor = if (isDark) {
-        Color.White.copy(alpha = borderAlpha)
-    } else {
-        Color.Black.copy(alpha = borderAlpha)
-    }
-    val borderWidthDp = (0.5f + 0.4f * expansionProgress).dp
+        // Exact same inner pill styling as the sliding tablet in the dock
+        val pillBgColor = if (isDark) {
+            if (isAmoled) Color(0x10FFFFFF) else Color(0x0EFFFFFF)
+        } else {
+            Color(0x08000000)
+        }
+        val borderAlpha = if (isDark) {
+            0.05f + 0.22f * expansionProgress
+        } else {
+            0.04f + 0.16f * expansionProgress
+        }
+        val pillBorderColor = if (isDark) {
+            Color.White.copy(alpha = borderAlpha)
+        } else {
+            Color.Black.copy(alpha = borderAlpha)
+        }
+        val borderWidthDp = (0.5f + 0.4f * expansionProgress).dp
 
-    // Outer anchored glass vessel (matches 60dp height of FloatingNavigationIsland)
-    Box(
-        modifier = modifier
-            .then(
-                if (!isDark) {
-                    Modifier.shadow(
-                        elevation = 8.dp,
-                        shape = shape,
-                        clip = false,
-                        ambientColor = Color.Black.copy(alpha = 0.06f),
-                        spotColor = Color.Black.copy(alpha = 0.08f)
-                    )
-                } else Modifier
-            )
-            .size(60.dp)
-            .graphicsLayer {
-                scaleX = containerScale
-                scaleY = containerScale
-            }
-            .clip(shape)
-            .then(hazeModifier)
-            .background(dockBgColor)
-            .border(
-                width = 0.6.dp,
-                color = dockBorderColor,
-                shape = shape
-            )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                role = Role.Button,
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onClick()
-                }
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        // A centered press response always fits inside the 60dp glass circle.
-        val pillSize = (46 + 6 * expansionProgress).dp
+        // Outer anchored glass vessel (matches 60dp height of FloatingNavigationIsland)
         Box(
-            modifier = Modifier
-                .size(pillSize)
-                .clip(CircleShape)
-                .background(pillBgColor)
+            modifier = modifier
+                .then(
+                    if (!isDark) {
+                        Modifier.shadow(
+                            elevation = 8.dp,
+                            shape = shape,
+                            clip = false,
+                            ambientColor = Color.Black.copy(alpha = 0.06f),
+                            spotColor = Color.Black.copy(alpha = 0.08f)
+                        )
+                    } else Modifier
+                )
+                .size(60.dp)
+                .graphicsLayer {
+                    scaleX = containerScale
+                    scaleY = containerScale
+                }
+                .clip(shape)
+                .then(hazeModifier)
+                .background(dockBgColor)
                 .border(
-                    width = borderWidthDp,
-                    color = pillBorderColor,
-                    shape = CircleShape
+                    width = 0.6.dp,
+                    color = dockBorderColor,
+                    shape = shape
+                )
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    role = Role.Button,
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onClick()
+                    }
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Add,
-                contentDescription = LocalAppStrings.current.addBooks,
-                tint = MaterialTheme.colorScheme.primary,
+            // A centered press response always fits inside the 60dp glass circle.
+            val pillSize = (46 + 6 * expansionProgress).dp
+            Box(
                 modifier = Modifier
-                    .size(26.dp)
-            )
+                    .size(pillSize)
+                    .clip(CircleShape)
+                    .background(pillBgColor)
+                    .border(
+                        width = borderWidthDp,
+                        color = pillBorderColor,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = LocalAppStrings.current.addBooks,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+        }
+    } else {
+        // MATERIAL 3 EXPRESSIVE STYLE
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+            shadowElevation = 8.dp,
+            modifier = modifier
+                .size(60.dp)
+                .graphicsLayer {
+                    scaleX = containerScale
+                    scaleY = containerScale
+                }
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                    role = Role.Button,
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onClick()
+                    }
+                )
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = LocalAppStrings.current.addBooks,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
         }
     }
 }

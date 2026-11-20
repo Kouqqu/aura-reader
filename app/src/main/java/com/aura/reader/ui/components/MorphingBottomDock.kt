@@ -463,14 +463,13 @@ fun MorphingFloatingBottomBar(
                         onSettingsClick = onSettingsClick
                     )
 
-                    if (isGlass) {
-                        Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
 
-                        FloatingAddGlassButton(
-                            onClick = onAddBooksClick,
-                            isDark = isDark
-                        )
-                    }
+                    FloatingAddGlassButton(
+                        onClick = onAddBooksClick,
+                        isDark = isDark,
+                        isGlass = isGlass
+                    )
                 }
             }
         }

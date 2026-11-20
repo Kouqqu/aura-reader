@@ -51,6 +51,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -112,6 +113,7 @@ fun BookCard(
     isReorderMode: Boolean = false,
     isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
+    canReorder: Boolean = false,
     onToggleSelect: () -> Unit = {},
     wobbleAngle: Float = 0f,
     wobbleOffset: Float = 0f,
@@ -155,6 +157,22 @@ fun BookCard(
         label = "cardBounce"
     )
 
+    val dragModifier = if (canReorder) {
+        Modifier.pointerInput(book.id) {
+            detectDragGesturesAfterLongPress(
+                onDragStart = {
+                    onDragStart()
+                },
+                onDragEnd = { onDragEnd() },
+                onDragCancel = { onDragEnd() },
+                onDrag = { change, dragAmount ->
+                    change.consume()
+                    onDrag(dragAmount)
+                }
+            )
+        }
+    } else Modifier
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -170,32 +188,27 @@ fun BookCard(
                     this.shadowElevation = 16f
                 }
             }
-            .pointerInput(book.id) {
-                detectDragGesturesAfterLongPress(
-                    onDragStart = {
-                        onDragStart()
-                    },
-                    onDragEnd = { onDragEnd() },
-                    onDragCancel = { onDragEnd() },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        onDrag(dragAmount)
-                    }
-                )
-            }
             .clip(RoundedCornerShape(20.dp))
-            .clickable(
+            .then(dragModifier)
+            .combinedClickable(
                 interactionSource = cardInteractionSource,
-                indication = if (isGlass) null else LocalIndication.current
-            ) {
-                if (isSelectionMode) {
-                    onToggleSelect()
-                } else if (isReorderMode) {
-                    showMenu = true
-                } else {
-                    onClick()
-                }
-            },
+                indication = if (isGlass) null else LocalIndication.current,
+                onClick = {
+                    if (isSelectionMode) {
+                        onToggleSelect()
+                    } else if (isReorderMode) {
+                        showMenu = true
+                    } else {
+                        onClick()
+                    }
+                },
+                onLongClick = if (!canReorder) {
+                    {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onToggleSelect()
+                    }
+                } else null
+            ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
@@ -258,7 +271,21 @@ fun BookCard(
                 modifier = Modifier
                     .size(width = 64.dp, height = 90.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .clickable { onOpenProfile() }
+                    .combinedClickable(
+                        onClick = {
+                            if (isSelectionMode) {
+                                onToggleSelect()
+                            } else {
+                                onOpenProfile()
+                            }
+                        },
+                        onLongClick = if (!canReorder) {
+                            {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onToggleSelect()
+                            }
+                        } else null
+                    )
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -539,6 +566,7 @@ fun BookGridCard(
     isReorderMode: Boolean = false,
     isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
+    canReorder: Boolean = false,
     onToggleSelect: () -> Unit = {},
     wobbleAngle: Float = 0f,
     wobbleOffset: Float = 0f,
@@ -583,6 +611,22 @@ fun BookGridCard(
         label = "gridCardBounce"
     )
 
+    val dragModifier = if (canReorder) {
+        Modifier.pointerInput(book.id) {
+            detectDragGesturesAfterLongPress(
+                onDragStart = {
+                    onDragStart()
+                },
+                onDragEnd = { onDragEnd() },
+                onDragCancel = { onDragEnd() },
+                onDrag = { change, dragAmount ->
+                    change.consume()
+                    onDrag(dragAmount)
+                }
+            )
+        }
+    } else Modifier
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -598,32 +642,27 @@ fun BookGridCard(
                     this.shadowElevation = 16f
                 }
             }
-            .pointerInput(book.id) {
-                detectDragGesturesAfterLongPress(
-                    onDragStart = {
-                        onDragStart()
-                    },
-                    onDragEnd = { onDragEnd() },
-                    onDragCancel = { onDragEnd() },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        onDrag(dragAmount)
-                    }
-                )
-            }
             .clip(RoundedCornerShape(20.dp))
-            .clickable(
+            .then(dragModifier)
+            .combinedClickable(
                 interactionSource = gridInteractionSource,
-                indication = if (isGlass) null else LocalIndication.current
-            ) {
-                if (isSelectionMode) {
-                    onToggleSelect()
-                } else if (isReorderMode) {
-                    showMenu = true
-                } else {
-                    onClick()
-                }
-            },
+                indication = if (isGlass) null else LocalIndication.current,
+                onClick = {
+                    if (isSelectionMode) {
+                        onToggleSelect()
+                    } else if (isReorderMode) {
+                        showMenu = true
+                    } else {
+                        onClick()
+                    }
+                },
+                onLongClick = if (!canReorder) {
+                    {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onToggleSelect()
+                    }
+                } else null
+            ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
@@ -663,7 +702,21 @@ fun BookGridCard(
                     bookId = book.id,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clickable { onOpenProfile() }
+                        .combinedClickable(
+                            onClick = {
+                                if (isSelectionMode) {
+                                    onToggleSelect()
+                                } else {
+                                    onOpenProfile()
+                                }
+                            },
+                            onLongClick = if (!canReorder) {
+                                {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onToggleSelect()
+                                }
+                            } else null
+                        )
                 )
 
                 Surface(
