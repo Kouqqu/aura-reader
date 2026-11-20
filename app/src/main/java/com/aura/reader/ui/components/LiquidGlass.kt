@@ -641,12 +641,24 @@ fun FloatingNavigationIsland(
         val density = LocalDensity.current
         val haptic = LocalHapticFeedback.current
         val dockShape = RoundedCornerShape(30.dp)
+        val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
+
+        val m3DockBgColor = if (isDark) {
+            if (isAmoled) Color(0xF40A0A0C) else Color(0xF4141416)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f)
+        }
+
+        val m3DockBorder = BorderStroke(
+            1.dp,
+            if (isDark) Color.White.copy(alpha = 0.08f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        )
 
         Surface(
             shape = dockShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-            shadowElevation = 8.dp,
+            color = m3DockBgColor,
+            border = m3DockBorder,
+            shadowElevation = if (isDark) 0.dp else 8.dp,
             modifier = modifier
                 .height(60.dp)
         ) {
@@ -698,7 +710,7 @@ fun FloatingNavigationIsland(
                                 tint = if (isTabActive) {
                                     MaterialTheme.colorScheme.onPrimaryContainer
                                 } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                    if (isDark) Color.White.copy(alpha = 0.55f) else MaterialTheme.colorScheme.onSurfaceVariant
                                 },
                                 modifier = Modifier.size(20.dp)
                             )

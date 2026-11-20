@@ -1,6 +1,8 @@
 package com.aura.reader.ui.theme
 
+import android.content.Context
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -114,6 +116,34 @@ private fun ColorScheme.withAmoledReaderSurfaces(): ColorScheme = copy(
     surfaceContainerHighest = Color(0xFF202020)
 )
 
+@RequiresApi(Build.VERSION_CODES.S)
+private fun dynamicDarkAdjusted(context: Context): ColorScheme {
+    val dyn = dynamicDarkColorScheme(context)
+    return dyn.copy(
+        background = Color(0xFF121316),
+        surface = Color(0xFF121316),
+        surfaceContainerLowest = Color(0xFF0C0D0F),
+        surfaceContainerLow = Color(0xFF17181C),
+        surfaceContainer = Color(0xFF1C1D22),
+        surfaceContainerHigh = Color(0xFF23252B),
+        surfaceContainerHighest = Color(0xFF2B2D34)
+    )
+}
+
+@RequiresApi(Build.VERSION_CODES.S)
+private fun dynamicAmoledAdjusted(context: Context): ColorScheme {
+    val dyn = dynamicDarkColorScheme(context)
+    return dyn.copy(
+        background = Color.Black,
+        surface = Color.Black,
+        surfaceContainerLowest = Color.Black,
+        surfaceContainerLow = Color(0xFF080808),
+        surfaceContainer = Color(0xFF101010),
+        surfaceContainerHigh = Color(0xFF181818),
+        surfaceContainerHighest = Color(0xFF202020)
+    )
+}
+
 val LocalColorPreset = androidx.compose.runtime.compositionLocalOf { "PURPLE" }
 
 @Composable
@@ -171,20 +201,14 @@ fun AuraReaderTheme(
         }
         ReaderThemeMode.DARK -> {
             if (hasDynamic) {
-                dynamicDarkColorScheme(context)
+                dynamicDarkAdjusted(context)
             } else {
                 baseDark
             }
         }
         ReaderThemeMode.AMOLED -> {
             if (hasDynamic) {
-                val dyn = dynamicDarkColorScheme(context)
-                dyn.copy(
-                    background = androidx.compose.ui.graphics.Color.Black,
-                    surface = androidx.compose.ui.graphics.Color.Black,
-                    surfaceContainer = androidx.compose.ui.graphics.Color(0xFF101010),
-                    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF181818)
-                )
+                dynamicAmoledAdjusted(context)
             } else {
                 baseAmoled
             }
@@ -205,7 +229,7 @@ fun AuraReaderTheme(
         }
         ReaderThemeMode.SYSTEM_DYNAMIC -> {
             if (systemDark) {
-                if (hasDynamic) dynamicDarkColorScheme(context) else baseDark
+                if (hasDynamic) dynamicDarkAdjusted(context) else baseDark
             } else {
                 if (hasDynamic) dynamicLightColorScheme(context) else baseLight
             }

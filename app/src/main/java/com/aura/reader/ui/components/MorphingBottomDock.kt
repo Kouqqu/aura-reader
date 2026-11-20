@@ -111,13 +111,17 @@ fun RoundBackGlassButton(
             Color(0xF4F7F8FA)
         }
     } else {
-        MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f)
+        if (isDark) {
+            if (isAmoled) Color(0xF40A0A0C) else Color(0xF4141416)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f)
+        }
     }
 
     val dockBorderColor = if (isGlass) {
         if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
     } else {
-        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        if (isDark) Color.White.copy(alpha = 0.08f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
     }
 
     val pillBgColor = if (isGlass) {
@@ -242,13 +246,17 @@ fun SettingsCategoryDock(
             Color(0xF4F7F8FA)
         }
     } else {
-        MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f)
+        if (isDark) {
+            if (isAmoled) Color(0xF40A0A0C) else Color(0xF4141416)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f)
+        }
     }
 
     val dockBorderColor = if (isGlass) {
         if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
     } else {
-        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        if (isDark) Color.White.copy(alpha = 0.08f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
     }
 
     val categories = listOf(

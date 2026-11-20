@@ -90,7 +90,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.aura.reader.data.model.HolidaySeason
 import com.aura.reader.data.model.LocalHolidaySeason
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.platform.LocalDensity
 import kotlin.math.sin
+import kotlin.math.cos
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -175,46 +178,33 @@ AnimatedContent(
         var topBarCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
         var expandedLogoCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
-        val glowColorA = if (holidaySeason != HolidaySeason.NONE) {
-            holidaySeason.primaryAccent
+        val isHoliday = holidaySeason != HolidaySeason.NONE
+        val nodeColors = if (isHoliday) {
+            listOf(
+                holidaySeason.primaryAccent,
+                holidaySeason.secondaryAccent,
+                Color(0xFF8A4DFF),
+                holidaySeason.primaryAccent.copy(alpha = 0.85f)
+            )
         } else {
-            MaterialTheme.colorScheme.primary
-        }
-        val glowColorB = if (holidaySeason != HolidaySeason.NONE) {
-            holidaySeason.secondaryAccent
-        } else {
-            MaterialTheme.colorScheme.tertiary
-        }
-        val glowColorC = if (holidaySeason != HolidaySeason.NONE) {
-            holidaySeason.primaryAccent
-        } else {
-            MaterialTheme.colorScheme.secondary
+            listOf(
+                Color(0xFFFFB300), // 1. Warm Amber-Gold
+                Color(0xFFFF4081), // 2. Coral Sunset Rose
+                Color(0xFF7C4DFF), // 3. Vibrant Electric Violet
+                Color(0xFF00E676)  // 4. Emerald Aurora Mint
+            )
         }
 
-        val glowTransition = rememberInfiniteTransition(label = "logoGlow")
-        val glowPhase by glowTransition.animateFloat(
+        val auraTransition = rememberInfiniteTransition(label = "auraLivingMesh")
+        val meshPhase by auraTransition.animateFloat(
             initialValue = 0f,
-            targetValue = 1f,
+            targetValue = 62.831853f, // 10 * 2 * PI
             animationSpec = infiniteRepeatable(
-                animation = tween(9000, easing = LinearEasing),
+                animation = tween(36000, easing = LinearEasing),
                 repeatMode = RepeatMode.Restart
             ),
-            label = "logoGlowPhase"
+            label = "meshPhase"
         )
-        val glowPulse by glowTransition.animateFloat(
-            initialValue = 0.55f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(3400, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "logoGlowPulse"
-        )
-
-        val shimmer = (sin(glowPhase * 2f * Math.PI.toFloat()) + 1f) / 2f
-        val shimmerTint = lerp(glowColorA, glowColorB, shimmer)
-        val innerTint = lerp(shimmerTint, glowColorC, 0.35f * shimmer)
-        val haloRadius = 78.dp
 
         Box(
             modifier = Modifier
@@ -225,24 +215,66 @@ AnimatedContent(
                 .drawBehind {
                     val top = topBarCoords
                     val logo = expandedLogoCoords
-                    if (top != null && logo != null && top.isAttached && logo.isAttached) {
-                        val center = top.localPositionOf(logo, Offset(logo.size.width / 2f, logo.size.height / 2f))
-                        val collapsedFraction = scrollBehavior.state.collapsedFraction
-                        val scrollAlpha = (1f - collapsedFraction / 0.35f).coerceIn(0f, 1f)
-                        if (scrollAlpha > 0.01f) {
-                            val radiusPx = haloRadius.toPx()
+                    val collapsedFraction = scrollBehavior.state.collapsedFraction
+                    val scrollAlpha = (1f - collapsedFraction / 0.35f).coerceIn(0f, 1f)
+
+                    if (scrollAlpha > 0.005f) {
+                        val cloudCenter = if (top != null && logo != null && top.isAttached && logo.isAttached) {
+                            val logoPos = top.localPositionOf(logo, Offset(logo.size.width / 2f, logo.size.height / 2f))
+                            Offset(logoPos.x + 56.dp.toPx(), logoPos.y)
+                        } else {
+                            Offset(size.width * 0.38f, size.height * 0.60f)
+                        }
+
+                        val baseRadiusPx = 150.dp.toPx()
+                        val t = meshPhase
+
+                        // Dynamic harmonic displacement (Simplex/Perlin noise-like organic wander)
+                        val x1 = cloudCenter.x + baseRadiusPx * (0.36f * sin(0.41f * t) + 0.16f * cos(0.83f * t) - 0.10f)
+                        val y1 = cloudCenter.y + baseRadiusPx * (0.28f * cos(0.53f * t) + 0.14f * sin(1.07f * t) - 0.06f)
+                        val r1 = baseRadiusPx * (1.10f + 0.16f * sin(0.67f * t))
+                        val a1 = (if (isThemeDark) 0.38f else 0.15f) * (1.0f + 0.14f * cos(0.47f * t)) * scrollAlpha
+
+                        val x2 = cloudCenter.x + baseRadiusPx * (0.40f * cos(0.37f * t + 1.4f) + 0.15f * sin(0.91f * t) + 0.08f)
+                        val y2 = cloudCenter.y + baseRadiusPx * (0.32f * sin(0.61f * t + 0.8f) - 0.13f * cos(1.19f * t) + 0.10f)
+                        val r2 = baseRadiusPx * (1.18f + 0.18f * cos(0.59f * t))
+                        val a2 = (if (isThemeDark) 0.35f else 0.14f) * (1.0f + 0.15f * sin(0.73f * t)) * scrollAlpha
+
+                        val x3 = cloudCenter.x + baseRadiusPx * (0.38f * sin(0.47f * t + 2.8f) - 0.15f * cos(0.79f * t) - 0.16f)
+                        val y3 = cloudCenter.y + baseRadiusPx * (0.36f * cos(0.43f * t + 2.1f) + 0.16f * sin(1.13f * t) + 0.06f)
+                        val r3 = baseRadiusPx * (1.26f + 0.20f * sin(0.51f * t))
+                        val a3 = (if (isThemeDark) 0.39f else 0.16f) * (1.0f + 0.13f * cos(0.63f * t)) * scrollAlpha
+
+                        val x4 = cloudCenter.x + baseRadiusPx * (0.42f * cos(0.53f * t + 4.2f) + 0.18f * sin(0.71f * t) + 0.18f)
+                        val y4 = cloudCenter.y + baseRadiusPx * (0.30f * sin(0.39f * t + 3.5f) + 0.13f * cos(0.97f * t) - 0.12f)
+                        val r4 = baseRadiusPx * (1.12f + 0.16f * cos(0.77f * t))
+                        val a4 = (if (isThemeDark) 0.33f else 0.13f) * (1.0f + 0.16f * sin(0.55f * t)) * scrollAlpha
+
+                        val nodes = listOf(
+                            Triple(Offset(x1, y1), r1, nodeColors[0] to a1),
+                            Triple(Offset(x2, y2), r2, nodeColors[1] to a2),
+                            Triple(Offset(x3, y3), r3, nodeColors[2] to a3),
+                            Triple(Offset(x4, y4), r4, nodeColors[3] to a4)
+                        )
+
+                        val blend = if (isThemeDark) BlendMode.Screen else BlendMode.SrcOver
+
+                        for ((center, radius, colorAlpha) in nodes) {
+                            val (color, alpha) = colorAlpha
                             drawCircle(
                                 brush = Brush.radialGradient(
-                                    0f to shimmerTint.copy(alpha = 0.75f * glowPulse * scrollAlpha),
-                                    0.35f to shimmerTint.copy(alpha = 0.50f * glowPulse * scrollAlpha),
-                                    0.65f to innerTint.copy(alpha = 0.22f * glowPulse * scrollAlpha),
-                                    0.85f to glowColorC.copy(alpha = 0.05f * glowPulse * scrollAlpha),
-                                    1f to Color.Transparent,
+                                    0.00f to color.copy(alpha = alpha),
+                                    0.25f to color.copy(alpha = alpha * 0.78f),
+                                    0.50f to color.copy(alpha = alpha * 0.45f),
+                                    0.72f to color.copy(alpha = alpha * 0.18f),
+                                    0.88f to color.copy(alpha = alpha * 0.05f),
+                                    1.00f to Color.Transparent,
                                     center = center,
-                                    radius = radiusPx
+                                    radius = radius
                                 ),
-                                radius = radiusPx,
-                                center = center
+                                radius = radius,
+                                center = center,
+                                blendMode = blend
                             )
                         }
                     }
