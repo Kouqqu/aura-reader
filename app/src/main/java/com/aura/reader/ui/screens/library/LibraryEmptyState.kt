@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.Book
@@ -108,49 +109,13 @@ fun EmptyLibraryView(
 }
 @Composable
 fun AuraLogoIcon(
-    modifier: Modifier = Modifier.size(width = 20.dp, height = 24.dp),
+    modifier: Modifier = Modifier.size(28.dp),
     bookColor: Color = MaterialTheme.colorScheme.primary,
     lineColor: Color = MaterialTheme.colorScheme.primaryContainer
 ) {
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-
-        // Book body with rounded corners
-        drawRoundRect(
-            color = bookColor,
-            topLeft = Offset(0f, 0f),
-            size = Size(w, h),
-            cornerRadius = CornerRadius(w * 0.16f, w * 0.16f)
-        )
-
-        // 3 lines representing lines of text on the book
-        val left = w * 0.20f
-        val rightLong = w * 0.80f
-        val rightShort = w * 0.58f
-        val lineH = h * 0.085f
-        val lineR = CornerRadius(lineH / 2, lineH / 2)
-
-        // Line 1 (top)
-        drawRoundRect(
-            color = lineColor,
-            topLeft = Offset(left, h * 0.26f),
-            size = Size(rightLong - left, lineH),
-            cornerRadius = lineR
-        )
-        // Line 2 (middle)
-        drawRoundRect(
-            color = lineColor,
-            topLeft = Offset(left, h * 0.46f),
-            size = Size(rightLong - left, lineH),
-            cornerRadius = lineR
-        )
-        // Line 3 (bottom - short)
-        drawRoundRect(
-            color = lineColor,
-            topLeft = Offset(left, h * 0.66f),
-            size = Size(rightShort - left, lineH),
-            cornerRadius = lineR
-        )
-    }
+    androidx.compose.foundation.Image(
+        painter = painterResource(com.aura.reader.R.drawable.ic_aura_logo),
+        contentDescription = "Aura Logo",
+        modifier = modifier
+    )
 }

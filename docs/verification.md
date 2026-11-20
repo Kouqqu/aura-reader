@@ -1034,3 +1034,19 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 
 - **Instant Touch-Down Pill Capture.** Fixed `FloatingNavigationIsland` gesture kinematics: the pill now immediately targets the contact position `dragOffsetPx` on touch down with high-stiffness critically damped spring physics (`stiffness = 1200f`), eliminating the 250ms delayed hop from button center to finger. On release, it settles accurately onto the selected slot center.
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.6 — New Official Logo & Branding, Restored Responsive Pill Kinematics & Snappy Navigation (versionCode 171)
+
+- **New Official Logo (Å).** Integrated the new official logo across all brand touchpoints:
+  - Adaptive launcher icons (`ic_launcher.png`, `ic_launcher_round.png`, `ic_launcher_foreground.png`).
+  - Android 13+ Material You monochrome themed icon (`ic_launcher_monochrome.png`).
+  - Background color set to deep twilight indigo `#1E1B4B` in `colors.xml`.
+  - Android 12+ splash screen animated icon (`ic_splash_logo.png`).
+  - In-app `AuraLogoIcon` in `LibraryEmptyState` and `LibraryTopBar` with halo shimmer glow.
+- **Restored Dock Pill Kinematics.** Restored the proven instant button snap (`tapTargetSlot`) in `FloatingNavigationIsland`:
+  - Instantaneous target slot lock upon touch-down without waiting or detours.
+  - Smooth finger tracking when dragging.
+  - Eliminated the delayed or jumping transition artifact.
+- **Natural, Snappy Screen Transitions.** Removed the 450 ms artificial tween delay in `HorizontalPager`, restoring instant and smooth spring paging with synchronized dock morphing.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).

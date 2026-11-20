@@ -396,23 +396,23 @@ fun MorphingFloatingBottomBar(
                 if (targetState) {
                     // Main -> Settings
                     (slideInHorizontally(
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 320f)
-                    ) { width -> (width * 0.35f).toInt() } + fadeIn(tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)))
+                        animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f)
+                    ) { width -> (width * 0.35f).toInt() } + fadeIn(tween(200)))
                         .togetherWith(
                             slideOutHorizontally(
-                                animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 320f)
-                            ) { width -> (-width * 0.35f).toInt() } + fadeOut(tween(200, easing = androidx.compose.animation.core.FastOutLinearInEasing))
+                                animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f)
+                            ) { width -> (-width * 0.35f).toInt() } + fadeOut(tween(160))
                         )
                         .using(SizeTransform(clip = false))
                 } else {
                     // Settings -> Main
                     (slideInHorizontally(
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 320f)
-                    ) { width -> (-width * 0.35f).toInt() } + fadeIn(tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)))
+                        animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f)
+                    ) { width -> (-width * 0.35f).toInt() } + fadeIn(tween(200)))
                         .togetherWith(
                             slideOutHorizontally(
-                                animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 320f)
-                            ) { width -> (width * 0.35f).toInt() } + fadeOut(tween(200, easing = androidx.compose.animation.core.FastOutLinearInEasing))
+                                animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f)
+                            ) { width -> (width * 0.35f).toInt() } + fadeOut(tween(160))
                         )
                         .using(SizeTransform(clip = false))
                 }

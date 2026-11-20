@@ -197,13 +197,14 @@ fun LibraryScreen(
     }
 
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 5 })
-    val isSettingsOpen = pagerState.currentPage >= 2 || (pagerState.isScrollInProgress && pagerState.targetPage >= 2)
+    val activePage = if (pagerState.isScrollInProgress) pagerState.targetPage else pagerState.currentPage
+    val isSettingsOpen = activePage >= 2
     val selectedMainTab = when {
-        pagerState.currentPage == 1 -> 1
-        pagerState.currentPage >= 2 -> 2
+        activePage == 1 -> 1
+        activePage >= 2 -> 2
         else -> 0
     }
-    val selectedSettingsCategory = (pagerState.currentPage - 2).coerceIn(0, 2)
+    val selectedSettingsCategory = (activePage - 2).coerceIn(0, 2)
 
     val infiniteTransition = rememberInfiniteTransition(label = "ios_wobble")
     val wobbleAngle by infiniteTransition.animateFloat(
@@ -286,10 +287,9 @@ fun LibraryScreen(
     var showAddBooksSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
 
-    val pageScrollSpec = tween<Float>(durationMillis = 450, easing = FastOutSlowInEasing)
     val smoothScrollToPage: (Int) -> Unit = { page ->
         scope.launch {
-            pagerState.animateScrollToPage(page, animationSpec = pageScrollSpec)
+            pagerState.animateScrollToPage(page)
         }
     }
 

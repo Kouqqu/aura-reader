@@ -267,12 +267,12 @@ AnimatedContent(
                         )
                         Surface(
                             shape = RoundedCornerShape(logoCorner),
-                            color = MaterialTheme.colorScheme.primaryContainer,
+                            color = Color(0xFF1E1B4B),
                             modifier = Modifier.size(logoBoxSize)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 AuraLogoIcon(
-                                    modifier = Modifier.size(width = logoWidth, height = logoHeight),
+                                    modifier = Modifier.size(if (isSmallTitle) 18.dp else 30.dp),
                                     bookColor = MaterialTheme.colorScheme.primary,
                                     lineColor = MaterialTheme.colorScheme.primaryContainer
                                 )
