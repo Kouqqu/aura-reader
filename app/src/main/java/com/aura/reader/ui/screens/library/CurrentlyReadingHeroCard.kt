@@ -128,11 +128,15 @@ fun CurrentlyReadingHeroCard(
 
     val primaryAccent = if (isFestive) {
         holidaySeason.primaryAccent
+    } else if (isGlass) {
+        MaterialTheme.colorScheme.primary
     } else {
         accentColor ?: MaterialTheme.colorScheme.primary
     }
     val cardBg = if (isFestive) {
         holidaySeason.primaryAccent
+    } else if (isGlass) {
+        dominantColor ?: MaterialTheme.colorScheme.primary
     } else {
         dominantColor ?: MaterialTheme.colorScheme.primaryContainer
     }
@@ -171,13 +175,22 @@ fun CurrentlyReadingHeroCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            cardBg.copy(alpha = if (isDark) 0.32f else 0.10f),
-                            cardBg.copy(alpha = if (isDark) 0.10f else 0.03f),
-                            Color.Transparent
+                    if (isGlass) {
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                cardBg.copy(alpha = if (isDark) 0.18f else 0.08f),
+                                Color.Transparent
+                            )
                         )
-                    )
+                    } else {
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                cardBg.copy(alpha = if (isDark) 0.32f else 0.10f),
+                                cardBg.copy(alpha = if (isDark) 0.10f else 0.03f),
+                                Color.Transparent
+                            )
+                        )
+                    }
                 )
                 .padding(18.dp)
         ) {
@@ -413,7 +426,9 @@ fun CurrentlyReadingHeroCard(
                                 .clip(RoundedCornerShape(3.dp)),
                             strokeCap = StrokeCap.Round,
                             color = primaryAccent,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            trackColor = if (isGlass) {
+                                if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+                            } else MaterialTheme.colorScheme.surfaceVariant
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -441,7 +456,8 @@ fun CurrentlyReadingHeroCard(
                         onClick = { onBookClick(book) },
                         shape = RoundedCornerShape(20.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = primaryAccent
+                            containerColor = primaryAccent,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         ),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(
                             horizontal = 18.dp,

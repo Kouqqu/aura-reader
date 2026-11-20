@@ -146,10 +146,22 @@ fun BookProfileBottomSheet(
     val dateFormat = remember { SimpleDateFormat("d MMMM yyyy", Locale.getDefault()) }
 
     // Pure neutral graphite/obsidian palette: completely removes blue cast
-    val sheetBg = if (isDark) Color(0xFF141416) else Color(0xFFF7F7F9)
+    val sheetBg = if (isGlass) {
+        if (isDark) Color(0xF2121316) else Color(0xF7F8FA)
+    } else {
+        if (isDark) Color(0xFF141416) else Color(0xFFF7F7F9)
+    }
     val sheetContentColor = if (isDark) Color(0xFFF5F5F7) else Color(0xFF161618)
-    val cardBg = if (isDark) Color(0xFF1C1C1F) else Color(0xFFFFFFFF)
-    val cardBorder = if (isDark) Color(0xFF28282D) else Color(0xFFE4E4E8)
+    val cardBg = if (isGlass) {
+        if (isDark) Color(0x1AFFFFFF) else Color(0x0A000000)
+    } else {
+        if (isDark) Color(0xFF1C1C1F) else Color(0xFFFFFFFF)
+    }
+    val cardBorder = if (isGlass) {
+        if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
+    } else {
+        if (isDark) Color(0xFF28282D) else Color(0xFFE4E4E8)
+    }
     val titleColor = if (isDark) Color.White else Color(0xFF111113)
     val subtitleColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73)
     val bodyColor = if (isDark) Color(0xFFD1D1D6) else Color(0xFF2C2C2E)
@@ -411,7 +423,11 @@ fun BookProfileBottomSheet(
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp)),
-                            strokeCap = StrokeCap.Round
+                            strokeCap = StrokeCap.Round,
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = if (isGlass) {
+                                if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+                            } else MaterialTheme.colorScheme.surfaceVariant
                         )
                     }
                 }

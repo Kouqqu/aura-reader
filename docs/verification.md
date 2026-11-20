@@ -1281,5 +1281,22 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all 97 unit tests passed, 0 errors, exit code 0).
 
+## 2.3.0-beta.16 (versionCode 181) — Ambient Editorial Visual Refinement in Liquid Glass Mode
+
+- **Book Card Decluttering (`BookCards.kt`):**
+  - Preserved the full `LinearProgressIndicator` line with rounded caps and enhanced translucent track in Liquid Glass mode (`Color.White.copy(alpha = 0.08f)` in dark).
+  - Relocated the format indicator from the crowded top-right row down directly above the progress bar: format capsule on the left (`FB2`), progress percentage on the right, and the sleek progress bar underneath.
+  - Gave the book title and author unrestricted horizontal breathing room next to favorite and menu icon buttons.
+  - Strictly preserved original Material Design layout untouched for `!isGlass`.
+- **Currently Reading Hero Card Harmony (`CurrentlyReadingHeroCard.kt`):**
+  - Unified the «Продолжить чтение» action button and progress indicator in Liquid Glass mode with the primary theme/Aura color (`MaterialTheme.colorScheme.primary` or festive accent), preventing jarring peach/orange Palette extraction mismatches on grayscale covers.
+  - Added subtle vertical specular gradient to the card background in Liquid Glass mode for enhanced depth.
+- **Airy Book Profile Sheet (`BookProfileBottomSheet.kt`):**
+  - Refined container surfaces in Liquid Glass mode into translucent frosted panels (`Color(0x1AFFFFFF)`) with thin specular borders (`Color.White.copy(alpha = 0.08f)`).
+  - Eliminated the dense «cards inside cards» heavy gray box look, elevating the profile into an airy, editorial literary overview.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed, 0 errors, exit code 0).
+
+
 
 
