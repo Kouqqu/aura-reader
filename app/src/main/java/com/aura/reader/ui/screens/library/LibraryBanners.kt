@@ -2,6 +2,8 @@ package com.aura.reader.ui.screens.library
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Surface
 import androidx.compose.ui.unit.sp
 import com.aura.reader.ui.components.expressiveClickable
@@ -193,39 +195,49 @@ internal fun LibraryReadingStatsBanner(
 ) {
     val strings = LocalAppStrings.current
 
-    LiquidGlassCard(
-        isGlass = isGlass,
-        isDark = isThemeDark,
-        shape = RoundedCornerShape(20.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .expressiveClickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+    if (isGlass) {
+        val bannerBg = if (isThemeDark) {
+            Color.White.copy(alpha = 0.06f)
+        } else {
+            Color.Black.copy(alpha = 0.04f)
+        }
+        val bannerBorder = if (isThemeDark) {
+            Color.White.copy(alpha = 0.08f)
+        } else {
+            Color.Black.copy(alpha = 0.05f)
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(bannerBg)
+                .border(width = 0.6.dp, color = bannerBorder, shape = RoundedCornerShape(18.dp))
+                .expressiveClickable(scaleDown = 0.98f, onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 11.dp)
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Timer,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = if (todayMinutes > 0) "${strings.todayReadingTime}: ${strings.minutesRead(todayMinutes)}" else strings.readingStatsEmpty,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-            if (currentStreakDays > 0) {
-                if (isGlass) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Timer,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(19.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = if (todayMinutes > 0) "${strings.todayReadingTime}: ${strings.minutesRead(todayMinutes)}" else strings.readingStatsEmpty,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                if (currentStreakDays > 0) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFFF9500).copy(alpha = if (isThemeDark) 0.16f else 0.12f),
-                        border = BorderStroke(1.dp, Color(0xFFFF9500).copy(alpha = if (isThemeDark) 0.32f else 0.24f))
+                        color = Color(0xFFFF9500).copy(alpha = if (isThemeDark) 0.14f else 0.10f),
+                        border = BorderStroke(0.6.dp, Color(0xFFFF9500).copy(alpha = if (isThemeDark) 0.30f else 0.22f))
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
@@ -244,22 +256,60 @@ internal fun LibraryReadingStatsBanner(
                             )
                         }
                     }
-                } else {
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    } else {
+        LiquidGlassCard(
+            isGlass = false,
+            isDark = isThemeDark,
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .clickable(onClick = onClick)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Timer,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = if (todayMinutes > 0) "${strings.todayReadingTime}: ${strings.minutesRead(todayMinutes)}" else strings.readingStatsEmpty,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                if (currentStreakDays > 0) {
                     Text(
                         text = "\uD83D\uDD25 ${currentStreakDays}",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
+                    Spacer(modifier = Modifier.width(6.dp))
                 }
-                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.size(18.dp)
+                )
             }
-            Icon(
-                imageVector = Icons.Rounded.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.size(18.dp)
-            )
         }
     }
 }

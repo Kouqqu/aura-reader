@@ -531,12 +531,12 @@ fun ExpressiveConnectedButtonItem(
     if (isGlass) {
         val primaryColor = MaterialTheme.colorScheme.primary
         val bg = if (selected) {
-            primaryColor.copy(alpha = if (isDark) 0.28f else 0.18f)
+            primaryColor.copy(alpha = if (isDark) 0.24f else 0.16f)
         } else {
             if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.04f)
         }
         val borderColor = if (selected) {
-            primaryColor.copy(alpha = 0.75f)
+            primaryColor.copy(alpha = 0.70f)
         } else {
             if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
         }
@@ -547,7 +547,7 @@ fun ExpressiveConnectedButtonItem(
                 .height(size.height)
                 .clip(shape)
                 .background(bg)
-                .border(width = 0.5.dp, color = borderColor, shape = shape)
+                .border(width = 0.6.dp, color = borderColor, shape = shape)
                 .clip(shape)
                 .expressiveClickable(scaleDown = 0.95f, onClick = onClick)
                 .padding(horizontal = size.containerSpace),

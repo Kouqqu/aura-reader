@@ -1276,7 +1276,7 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed
 - **Refined Action Chips in Liquid Glass (`BookCards.kt`):**
   - Enhanced inline action chips (`BookActionChip`) with delicate specular borders (`0.08f` white alpha / `0.06f` dark alpha) in Liquid Glass mode.
 
-Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed, 0 errors, exit code 0).
 
 ## 2.3.0-beta.15 (versionCode 180) — Deep Module Architecture Refactoring (AppSettings, BookIngestionPipeline, BookEnricher, BookActionDispatcher)
 
@@ -1330,6 +1330,22 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed
   - Enhanced `StreakBanner` in the reading stats bottom sheet with a coordinated amber glowing border.
 - **Refined Action Chips in Liquid Glass (`BookCards.kt`):**
   - Enhanced inline action chips (`BookActionChip`) with delicate specular borders (`0.08f` white alpha / `0.06f` dark alpha) in Liquid Glass mode.
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+## 2.3.0-beta.18 (versionCode 183) — True Hardware Frosted Glass Blur, Ethereal Reader Aura Bars & Header Contrast Unification
+
+- **True Hardware Frosted Glass Blur (`LiquidGlass.kt`, `MorphingBottomDock.kt`):**
+  - Solved the root cause behind invisible blur across all Liquid Glass surfaces: previously, `LiquidGlassSurface` and bottom docks drew an opaque `0xEE` (93.3% alpha) background fill directly over `hazeChild`, obliterating the blurred pixels underneath.
+  - Migrated to Haze 1.7.3 modern `hazeEffect` with `HazeMaterials.regular(containerColor = ...)` (or `thin` in light mode), rendering the authentic 20dp frosted blur and material tint in a single pass.
+  - Set `baseFill = Color.Transparent` whenever `hazeState != null`, allowing the live blurred content beneath floating bars and docks to shine through with full clarity.
+- **Ethereal Reader Aura Tinted Bars (`ReaderTopBar.kt`, `ReaderBottomBar.kt`):**
+  - Eliminated the flat, dull gray/black slabs in the reader: added a luminous translucent purple aura tint (`primary.copy(alpha = 0.16f)`) in dark mode and warm sepia tint (`Color(0x388D6E63)`) in sepia mode.
+  - Real-time 120 FPS frosted glass blur now softly diffuses the book typography and illustrations directly under the top and bottom bars.
+- **Unified Library Header Contrast (`LibraryBanners.kt`, `ExpressiveButtons.kt`):**
+  - Resolved the jarring contrast and aesthetic mismatch between the Daily Reading Stats banner (`LibraryReadingStatsBanner`) and the collection filter chips row (`LibraryCollectionChips`).
+  - Unified `LibraryReadingStatsBanner` with the exact same frosted glass material tokens as the chips: `Color.White.copy(alpha = 0.06f)` fill in dark (`0.04f` in light), identical `0.6.dp` specular border (`Color.White.copy(0.08f)`), and matching `18.dp` squircle radius.
+  - The streak badge inside the banner now nests harmoniously with balanced font scale and soft amber glow (`#FFFF9500`).
 
 Verified with `testDebugUnitTest assembleDebug` (exit code 0).
 

@@ -101,7 +101,8 @@ import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.theme.LocalAppStrings
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -166,6 +167,7 @@ fun liquidGlassMenuAppearance(
  * Authentic Apple iOS-inspired Liquid Glass Surface.
  * Balanced translucent frosted glass with delicate specular rim highlights and optional Haze blur.
  */
+@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun LiquidGlassSurface(
     modifier: Modifier = Modifier,
@@ -178,18 +180,30 @@ fun LiquidGlassSurface(
     hazeState: HazeState? = null,
     content: @Composable () -> Unit
 ) {
+    val hazeStyle = if (isDark) {
+        HazeMaterials.regular(containerColor = tintColor ?: Color(0x28141416))
+    } else {
+        HazeMaterials.thin(containerColor = tintColor ?: Color(0x35FFFFFF))
+    }
+
     val hazeModifier = if (hazeState != null) {
-        Modifier.clip(shape).hazeChild(
+        Modifier.clip(shape).hazeEffect(
             state = hazeState,
-            style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
+            style = hazeStyle
         )
     } else Modifier
 
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
-    val baseFill = tintColor ?: if (isDark) {
-        if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
+    val baseFill = if (hazeState != null) {
+        // Frosted glass mode: do NOT paint an opaque cover over the blur!
+        // HazeStyle already paints containerColor directly in the blur pass.
+        Color.Transparent
     } else {
-        Color(0xF5F7F8FA)
+        tintColor ?: if (isDark) {
+            if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
+        } else {
+            Color(0xF5F7F8FA)
+        }
     }
 
     val borderBrush = if (isDark) {
@@ -271,14 +285,21 @@ fun FloatingNavigationIsland(
 
         val dockShape = RoundedCornerShape(30.dp)
         val hazeState = LocalHazeState.current
+        val hazeStyle = if (isDark) {
+            HazeMaterials.regular(containerColor = Color(0x28141416))
+        } else {
+            HazeMaterials.thin(containerColor = Color(0x35FFFFFF))
+        }
         val hazeModifier = if (hazeState != null) {
-            Modifier.clip(dockShape).hazeChild(
+            Modifier.clip(dockShape).hazeEffect(
                 state = hazeState,
-                style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
+                style = hazeStyle
             )
         } else Modifier
 
-        val dockBgColor = if (isDark) {
+        val dockBgColor = if (hazeState != null) {
+            Color.Transparent
+        } else if (isDark) {
             if (isAmoled) Color(0xF20A0A0C)
             else Color(0xEE141416)
         } else {
@@ -820,10 +841,15 @@ fun FloatingAddGlassButton(
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val shape = CircleShape
     val hazeState = LocalHazeState.current
+    val hazeStyle = if (isDark) {
+        HazeMaterials.regular(containerColor = Color(0x28141416))
+    } else {
+        HazeMaterials.thin(containerColor = Color(0x35FFFFFF))
+    }
     val hazeModifier = if (hazeState != null) {
-        Modifier.clip(shape).hazeChild(
+        Modifier.clip(shape).hazeEffect(
             state = hazeState,
-            style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
+            style = hazeStyle
         )
     } else Modifier
 
@@ -841,7 +867,9 @@ fun FloatingAddGlassButton(
     )
 
     // Exact same dock glass styling as FloatingNavigationIsland
-    val dockBgColor = if (isDark) {
+    val dockBgColor = if (hazeState != null) {
+        Color.Transparent
+    } else if (isDark) {
         if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
     } else {
         Color(0xF4F7F8FA)

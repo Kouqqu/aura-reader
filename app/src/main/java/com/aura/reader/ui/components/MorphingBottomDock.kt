@@ -61,8 +61,9 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.theme.LocalAppStrings
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
-import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.hazeEffect
 
 /**
  * Circular back button for the morphing settings dock.
@@ -92,19 +93,26 @@ fun RoundBackGlassButton(
     )
 
     val hazeState = LocalHazeState.current
+    val hazeStyle = if (isDark) {
+        HazeMaterials.regular(containerColor = Color(0x28141416))
+    } else {
+        HazeMaterials.thin(containerColor = Color(0x35FFFFFF))
+    }
     val hazeModifier = if (isGlass && hazeState != null) {
-        Modifier.clip(CircleShape).hazeChild(
+        Modifier.clip(CircleShape).hazeEffect(
             state = hazeState,
-            style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
+            style = hazeStyle
         )
     } else Modifier
 
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val dockBgColor = if (isGlass) {
-        if (isDark) {
-            if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)
+        if (hazeState != null) {
+            Color.Transparent
+        } else if (isDark) {
+            if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
         } else {
-            Color(0xF4F5F6FA)
+            Color(0xF4F7F8FA)
         }
     } else {
         MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f)
@@ -220,19 +228,26 @@ fun SettingsCategoryDock(
     val dockShape = RoundedCornerShape(30.dp)
 
     val hazeState = LocalHazeState.current
+    val hazeStyle = if (isDark) {
+        HazeMaterials.regular(containerColor = Color(0x28141416))
+    } else {
+        HazeMaterials.thin(containerColor = Color(0x35FFFFFF))
+    }
     val hazeModifier = if (isGlass && hazeState != null) {
-        Modifier.clip(dockShape).hazeChild(
+        Modifier.clip(dockShape).hazeEffect(
             state = hazeState,
-            style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
+            style = hazeStyle
         )
     } else Modifier
 
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val dockBgColor = if (isGlass) {
-        if (isDark) {
-            if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)
+        if (hazeState != null) {
+            Color.Transparent
+        } else if (isDark) {
+            if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
         } else {
-            Color(0xF4F5F6FA)
+            Color(0xF4F7F8FA)
         }
     } else {
         MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f)
