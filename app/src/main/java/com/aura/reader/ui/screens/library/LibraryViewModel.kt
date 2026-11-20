@@ -36,6 +36,7 @@ import com.aura.reader.data.model.HolidaySeason
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.service.CoverSearchService
+import com.aura.reader.data.service.BookMetadataSearchService
 import com.aura.reader.ui.theme.AppLanguage
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -218,6 +219,13 @@ class LibraryViewModel(
 
     fun setReadingStatsEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setReadingStatsEnabled(enabled) }
+    }
+
+    val autoFetchMetadataEnabled: StateFlow<Boolean> = preferencesManager.autoFetchMetadataEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun setAutoFetchMetadataEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setAutoFetchMetadataEnabled(enabled) }
     }
 
     val customOpdsEnabled: StateFlow<Boolean> = preferencesManager.customOpdsEnabled
@@ -969,6 +977,29 @@ class LibraryViewModel(
         }
     }
 
+    private fun tryAutoFetchMetadata(book: Book) {
+        if (!autoFetchMetadataEnabled.value) return
+        if (!book.description.isNullOrBlank() && book.genres.isNotEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val meta = BookMetadataSearchService.fetchMetadata(book.title, book.author) ?: return@launch
+            val newDesc = if (book.description.isNullOrBlank()) meta.description else book.description
+            val newGenres = if (book.genres.isEmpty()) meta.genres else book.genres
+            val newSeries = if (book.series.isNullOrBlank()) meta.series else book.series
+            val newSeriesNumber = book.seriesNumber ?: meta.seriesNumber
+            if (newDesc != book.description || newGenres != book.genres || newSeries != book.series || newSeriesNumber != book.seriesNumber) {
+                bookRepository.updateBookMetadata(
+                    bookId = book.id,
+                    title = book.title,
+                    author = book.author,
+                    description = newDesc ?: "",
+                    genres = newGenres,
+                    series = newSeries,
+                    seriesNumber = newSeriesNumber
+                )
+            }
+        }
+    }
+
     fun openBook(book: Book) {
         viewModelScope.launch {
             _uiState.value = LibraryUiState.Loading
@@ -987,6 +1018,7 @@ class LibraryViewModel(
             val result = bookRepository.openBookFromUri(uri)
             result.onSuccess { book ->
                 _uiState.value = LibraryUiState.Success(book)
+                tryAutoFetchMetadata(book)
             }.onFailure { error ->
                 _uiState.value = LibraryUiState.Error(error.localizedMessage ?: "Не удалось открыть книгу")
             }
@@ -1007,8 +1039,9 @@ class LibraryViewModel(
 
             for (uri in uris) {
                 val result = bookRepository.openBookFromUri(uri)
-                result.onSuccess {
+                result.onSuccess { book ->
                     addedCount++
+                    tryAutoFetchMetadata(book)
                 }.onFailure { e ->
                     errors.add(e.localizedMessage ?: "Неизвестная ошибка")
                 }
@@ -1086,7 +1119,10 @@ class LibraryViewModel(
             var addedCount = 0
             for (uri in foundUris) {
                 val res = bookRepository.openBookFromUri(uri)
-                if (res.isSuccess) addedCount++
+                if (res.isSuccess) {
+                    addedCount++
+                    res.getOrNull()?.let { tryAutoFetchMetadata(it) }
+                }
             }
 
             if (addedCount > 0) {

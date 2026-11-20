@@ -1238,3 +1238,26 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 f
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
 
+## 2.3.0-beta.14 (versionCode 179) — Compact Book Action Tray, Cover Change in Profile, Multi-source Online Metadata & Auto-fetch Setting
+
+- **Streamlined Inline Book Action Tray (`BookCards.kt`):**
+  - Removed clutter from the inline book menu: removed «Выбрать книги», «О книге», and «Сменить обложку» (cover change moved directly into Book Profile).
+  - Maintained core actions: «В коллекцию», «В личную папку», «Отметить прочитанной» / «Сбросить прогресс».
+  - Increased button touch targets (min height 34 dp, padding 10 dp horiz / 6 dp vert, icon 16 dp, typography labelSmall 12 sp) while tightening layout spacing to 5 dp between items.
+  - Converted share and delete buttons to sleek icon-only chips (`Icons.Rounded.Share`, `Icons.Rounded.Delete`).
+- **Clean Book Profile UI (`BookProfileBottomSheet.kt`):**
+  - Eliminated in-place «Изменить» and «Добавить» buttons and flattened bracket artifacts `[]` from the view mode of the Genres section. When empty, displays a clean «Не указаны».
+  - Simplified the description section title to pure «Описание». Removed redundant inline edit/add buttons from view mode. When empty, displays «Описание книги пока не добавлено».
+  - Editing is strictly initiated via the pencil icon button in the sheet header, keeping view mode clean and uncluttered.
+  - Integrated cover changing directly into the profile sheet: added interactive thumbnail badge (`Icons.Rounded.AddPhotoAlternate`) and a quick action button in edit mode.
+- **Multi-Source Online Metadata Search (`BookMetadataSearchService.kt`):**
+  - Built a multi-source book metadata search service querying LitRes API (clean annotations, genres, series), FantLab API (synopses, cycles, genres), and OpenLibrary API without requiring API keys or VPN.
+  - In edit mode, added a prominent «Загрузить из сети» quick action with progress indicator and source attribution toast/badge.
+  - In view mode, provides a one-tap «Загрузить из сети» button when metadata is missing, automatically saving results.
+- **Auto-fetch Setting & Background Import Enrichment (`SettingsSections.kt`, `LibraryViewModel.kt`):**
+  - Added an «Автозагрузка данных книги» toggle in General Settings («Автоматически находить жанры и описание в сети при добавлении книг»), enabled by default.
+  - On single book open/import, multi-file import, or folder scanning, books missing genres or synopsis automatically query online metadata in the background and update their profiles seamlessly.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed, 0 errors, exit code 0).
+
+

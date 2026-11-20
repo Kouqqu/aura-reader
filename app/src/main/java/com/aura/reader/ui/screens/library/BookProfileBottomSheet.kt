@@ -37,6 +37,12 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.ZoomIn
+import androidx.compose.material.icons.rounded.AddPhotoAlternate
+import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import com.aura.reader.data.service.BookMetadataSearchService
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -133,6 +139,10 @@ fun BookProfileBottomSheet(
     var showDiscardConfirmDialog by remember { mutableStateOf(false) }
     var pendingDismissAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
+    val coroutineScope = rememberCoroutineScope()
+    var isFetchingOnlineMetadata by remember { mutableStateOf(false) }
+    var fetchStatusMessage by remember { mutableStateOf<String?>(null) }
+
     val dateFormat = remember { SimpleDateFormat("d MMMM yyyy", Locale.getDefault()) }
 
     // Pure neutral graphite/obsidian palette: completely removes blue cast
@@ -189,27 +199,51 @@ fun BookProfileBottomSheet(
                     // Cover thumbnail: tap opens full-screen cover viewer
                     Box(
                         modifier = Modifier
-                            .size(width = 92.dp, height = 132.dp)
+                            .size(width = 96.dp, height = 138.dp)
                             .clip(RoundedCornerShape(14.dp))
-                            .clickable { onInspectCover() }
                     ) {
                         BookCoverView(
                             coverBase64 = book.coverBase64,
                             title = book.title,
                             bookId = null, // null prevents sharedElement duplicate key collision crash
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clickable { onInspectCover() }
                         )
+
+                        // Inspect Cover Pill (bottom-start)
                         Surface(
                             shape = CircleShape,
-                            color = Color.Black.copy(alpha = 0.65f),
+                            color = Color.Black.copy(alpha = 0.72f),
                             modifier = Modifier
-                                .align(Alignment.BottomEnd)
+                                .align(Alignment.BottomStart)
                                 .padding(5.dp)
-                                .size(24.dp)
+                                .size(28.dp)
+                                .clickable { onInspectCover() }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Rounded.ZoomIn,
+                                    contentDescription = strings.viewCover,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = Color.White
+                                )
+                            }
+                        }
+
+                        // Change Cover Pill (bottom-end)
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.Black.copy(alpha = 0.72f),
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(5.dp)
+                                .size(28.dp)
+                                .clickable { onChangeCover() }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.AddPhotoAlternate,
                                     contentDescription = strings.changeCover,
                                     modifier = Modifier.size(16.dp),
                                     tint = Color.White
@@ -398,34 +432,21 @@ fun BookProfileBottomSheet(
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Category,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = strings.genresSectionTitle,
-                                    style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.5.sp),
-                                    fontWeight = FontWeight.Bold,
-                                    color = titleColor
-                                )
-                            }
-                            TextButton(
-                                onClick = { isEditMode = true },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
-                                modifier = Modifier.height(28.dp)
-                            ) {
-                                Text(
-                                    text = strings.editAction,
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Rounded.Category,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = strings.genresSectionTitle,
+                                style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.5.sp),
+                                fontWeight = FontWeight.Bold,
+                                color = titleColor
+                            )
                         }
 
                         if (genres.isNotEmpty()) {
@@ -455,46 +476,19 @@ fun BookProfileBottomSheet(
                                 }
                             }
                         } else {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = strings.noGenresAdded,
-                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                                    color = subtitleColor
-                                )
-                                OutlinedButton(
-                                    onClick = { showAddGenreDialog = true },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                    modifier = Modifier.height(28.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Add,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(
-                                        text = strings.addGenre,
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = FontWeight.Medium,
-                                            fontSize = 11.sp
-                                        )
-                                    )
-                                }
-                            }
+                            Text(
+                                text = strings.noGenresAdded,
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                color = subtitleColor,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Card 3: Описание книги
+                // Card 3: Описание
                 Card(
                     shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(containerColor = cardBg),
@@ -508,34 +502,21 @@ fun BookProfileBottomSheet(
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Description,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = strings.bookDescriptionSectionTitle,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = titleColor
-                                )
-                            }
-                            TextButton(
-                                onClick = { isEditMode = true },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
-                                modifier = Modifier.height(28.dp)
-                            ) {
-                                Text(
-                                    text = if (description.isNotBlank()) strings.editAction else strings.addGenre,
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Rounded.Description,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = strings.bookDescriptionSectionTitle,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = titleColor
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(6.dp))
@@ -554,6 +535,55 @@ fun BookProfileBottomSheet(
                                 color = subtitleColor
                             )
                         }
+                    }
+                }
+
+                if (genres.isEmpty() && description.isBlank()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedButton(
+                        onClick = {
+                            isFetchingOnlineMetadata = true
+                            fetchStatusMessage = null
+                            coroutineScope.launch {
+                                val meta = BookMetadataSearchService.fetchMetadata(book.title, book.author)
+                                isFetchingOnlineMetadata = false
+                                if (meta != null) {
+                                    val newDesc = meta.description ?: ""
+                                    val newGenres = meta.genres
+                                    val newSeries = meta.series ?: series
+                                    val newSeriesNum = meta.seriesNumber ?: seriesNumber.toIntOrNull()
+                                    if (newDesc.isNotBlank()) description = newDesc
+                                    if (newGenres.isNotEmpty()) genres = newGenres
+                                    if (newSeries.isNotBlank()) series = newSeries
+                                    if (newSeriesNum != null) seriesNumber = newSeriesNum.toString()
+                                    onSave(title, author, newSeries.takeIf { it.isNotBlank() }, newSeriesNum, newGenres, newDesc.takeIf { it.isNotBlank() })
+                                    fetchStatusMessage = strings.metadataFound(meta.source)
+                                } else {
+                                    fetchStatusMessage = strings.metadataNotFound
+                                }
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isFetchingOnlineMetadata,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (isFetchingOnlineMetadata) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(strings.fetchingMetadata)
+                        } else {
+                            Icon(Icons.Rounded.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(strings.fetchFromNetwork)
+                        }
+                    }
+                    fetchStatusMessage?.let { msg ->
+                        Text(
+                            text = msg,
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+                        )
                     }
                 }
 
@@ -687,6 +717,84 @@ fun BookProfileBottomSheet(
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
                         )
                     }
+                }
+
+                // Edit Mode Quick Action Bar: Change Cover & Fetch from Network
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onChangeCover,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.AddPhotoAlternate,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = strings.changeCover,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            isFetchingOnlineMetadata = true
+                            fetchStatusMessage = null
+                            coroutineScope.launch {
+                                val meta = BookMetadataSearchService.fetchMetadata(title, author)
+                                isFetchingOnlineMetadata = false
+                                if (meta != null) {
+                                    if (!meta.description.isNullOrBlank()) description = meta.description
+                                    if (meta.genres.isNotEmpty()) genres = (genres + meta.genres).distinct()
+                                    if (!meta.series.isNullOrBlank() && series.isBlank()) series = meta.series
+                                    if (meta.seriesNumber != null && seriesNumber.isBlank()) seriesNumber = meta.seriesNumber.toString()
+                                    fetchStatusMessage = strings.metadataFound(meta.source)
+                                } else {
+                                    fetchStatusMessage = strings.metadataNotFound
+                                }
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isFetchingOnlineMetadata,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        if (isFetchingOnlineMetadata) {
+                            CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(strings.fetchingMetadata, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        } else {
+                            Icon(
+                                imageVector = Icons.Rounded.CloudDownload,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = strings.fetchFromNetwork,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
+                fetchStatusMessage?.let { msg ->
+                    Text(
+                        text = msg,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 10.dp, start = 4.dp)
+                    )
                 }
 
                 // Card 1: Название и Автор

@@ -109,6 +109,7 @@ class PreferencesManager(private val context: Context) {
         val PRIVATE_BOOK_IDS_KEY = stringPreferencesKey("private_book_ids_json")
         val BOTTOM_PROGRESS_MODE_KEY = intPreferencesKey("reader_bottom_progress_mode")
         val READER_TAP_ZONES_HINT_SHOWN_KEY = booleanPreferencesKey("reader_tap_zones_hint_shown")
+        val AUTO_FETCH_METADATA_KEY = booleanPreferencesKey("auto_fetch_metadata")
     }
 
     val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -1233,6 +1234,16 @@ class PreferencesManager(private val context: Context) {
     suspend fun setReaderTapZonesHintShown(shown: Boolean = true) {
         context.dataStore.edit { prefs ->
             prefs[READER_TAP_ZONES_HINT_SHOWN_KEY] = shown
+        }
+    }
+
+    val autoFetchMetadataEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[AUTO_FETCH_METADATA_KEY] ?: true
+    }
+
+    suspend fun setAutoFetchMetadataEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[AUTO_FETCH_METADATA_KEY] = enabled
         }
     }
 }

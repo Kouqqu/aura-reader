@@ -176,6 +176,8 @@ fun SettingsBottomSheet(
     appFont: String = "GOOGLE_SANS",
     onAppFontChange: (String) -> Unit = {},
     onResetReadingSpeed: () -> Unit = {},
+    autoFetchMetadataEnabled: Boolean = true,
+    onToggleAutoFetchMetadata: (Boolean) -> Unit = {},
     onOpenOnboarding: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
@@ -514,7 +516,9 @@ fun SettingsBottomSheet(
                 customOpdsUrl = customOpdsUrl,
                 onToggleCustomOpds = onToggleCustomOpds,
                 onCustomOpdsUrlChange = onCustomOpdsUrlChange,
-                onResetReadingSpeed = { showResetSpeedConfirmDialog = true }
+                onResetReadingSpeed = { showResetSpeedConfirmDialog = true },
+                autoFetchMetadataEnabled = autoFetchMetadataEnabled,
+                onToggleAutoFetchMetadata = onToggleAutoFetchMetadata
             )
 
             Spacer(modifier = Modifier.height(20.dp))

@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -892,23 +893,9 @@ private fun BookListInlineActionTray(
 
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            BookActionChip(
-                icon = Icons.Rounded.Checklist,
-                label = strings.selectBooks,
-                onClick = onSelect,
-                tint = MaterialTheme.colorScheme.primary
-            )
-
-            BookActionChip(
-                icon = Icons.Rounded.Info,
-                label = strings.bookProfileTitle,
-                onClick = onOpenProfile,
-                tint = MaterialTheme.colorScheme.primary
-            )
-
             if (!isTrash) {
                 BookActionChip(
                     icon = Icons.Rounded.FolderOpen,
@@ -922,18 +909,6 @@ private fun BookListInlineActionTray(
                     label = if (isPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate,
                     onClick = onTogglePrivate,
                     tint = MaterialTheme.colorScheme.secondary
-                )
-
-                BookActionChip(
-                    icon = if (hasCover) Icons.Rounded.Image else Icons.Rounded.Download,
-                    label = if (hasCover) strings.changeCover else strings.downloadCover,
-                    onClick = onChangeCover
-                )
-
-                BookActionChip(
-                    icon = Icons.Rounded.Share,
-                    label = strings.shareBookFile,
-                    onClick = onShare
                 )
 
                 if (book.progressPercent < 100) {
@@ -953,8 +928,16 @@ private fun BookListInlineActionTray(
                 }
 
                 BookActionChip(
+                    icon = Icons.Rounded.Share,
+                    label = null,
+                    contentDescription = strings.shareBookFile,
+                    onClick = onShare
+                )
+
+                BookActionChip(
                     icon = Icons.Rounded.Delete,
-                    label = strings.moveToTrash,
+                    label = null,
+                    contentDescription = strings.moveToTrash,
                     onClick = onDelete,
                     tint = MaterialTheme.colorScheme.error,
                     containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
@@ -969,7 +952,8 @@ private fun BookListInlineActionTray(
                 )
                 BookActionChip(
                     icon = Icons.Rounded.DeleteForever,
-                    label = strings.deletePermanently,
+                    label = null,
+                    contentDescription = strings.deletePermanently,
                     onClick = onDeletePermanently,
                     tint = MaterialTheme.colorScheme.error,
                     containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
@@ -987,11 +971,11 @@ private fun BookGridInlineActionTray(
     isGlass: Boolean,
     isDark: Boolean,
     onSelect: () -> Unit = {},
-    onOpenProfile: () -> Unit,
-    onToggleFavorite: () -> Unit,
+    onOpenProfile: () -> Unit = {},
+    onToggleFavorite: () -> Unit = {},
     onAddToCollection: () -> Unit,
     onTogglePrivate: () -> Unit,
-    onChangeCover: () -> Unit,
+    onChangeCover: () -> Unit = {},
     onShare: () -> Unit,
     onSetProgress: (Int) -> Unit,
     onDelete: () -> Unit,
@@ -1016,20 +1000,6 @@ private fun BookGridInlineActionTray(
             modifier = Modifier.padding(bottom = 4.dp)
         )
 
-        GridMenuRow(
-            icon = Icons.Rounded.Checklist,
-            text = strings.selectBooks,
-            onClick = onSelect,
-            tint = MaterialTheme.colorScheme.primary
-        )
-
-        GridMenuRow(
-            icon = Icons.Rounded.Info,
-            text = strings.bookProfileTitle,
-            onClick = onOpenProfile,
-            tint = MaterialTheme.colorScheme.primary
-        )
-
         if (!isTrash) {
             GridMenuRow(
                 icon = Icons.Rounded.FolderOpen,
@@ -1040,16 +1010,6 @@ private fun BookGridInlineActionTray(
                 icon = if (isPrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
                 text = if (isPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate,
                 onClick = onTogglePrivate
-            )
-            GridMenuRow(
-                icon = if (hasCover) Icons.Rounded.Image else Icons.Rounded.Download,
-                text = if (hasCover) strings.changeCover else strings.downloadCover,
-                onClick = onChangeCover
-            )
-            GridMenuRow(
-                icon = Icons.Rounded.Share,
-                text = strings.shareBookFile,
-                onClick = onShare
             )
             if (book.progressPercent < 100) {
                 GridMenuRow(
@@ -1066,12 +1026,43 @@ private fun BookGridInlineActionTray(
                     onClick = { onSetProgress(0) }
                 )
             }
-            GridMenuRow(
-                icon = Icons.Rounded.Delete,
-                text = strings.moveToTrash,
-                onClick = onDelete,
-                tint = MaterialTheme.colorScheme.error
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    onClick = onShare,
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.Share,
+                            contentDescription = strings.shareBookFile,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                Surface(
+                    onClick = onDelete,
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = strings.moveToTrash,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
         } else {
             GridMenuRow(
                 icon = Icons.Rounded.Restore,
@@ -1092,38 +1083,44 @@ private fun BookGridInlineActionTray(
 @Composable
 private fun BookActionChip(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
+    label: String? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    contentDescription: String? = label,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f)
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(10.dp),
         color = containerColor,
-        modifier = modifier
+        modifier = modifier.heightIn(min = 34.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.5.dp),
+            modifier = Modifier.padding(
+                horizontal = if (!label.isNullOrBlank()) 10.dp else 9.dp,
+                vertical = 6.dp
+            ),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = contentDescription,
                 tint = tint,
-                modifier = Modifier.size(13.5.dp)
+                modifier = Modifier.size(16.dp)
             )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                ),
-                color = tint,
-                maxLines = 1
-            )
+            if (!label.isNullOrBlank()) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = tint,
+                    maxLines = 1
+                )
+            }
         }
     }
 }

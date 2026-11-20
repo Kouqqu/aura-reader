@@ -546,8 +546,8 @@ interface Strings {
     val addGenreTitle: String get() = "Добавление жанра"
     val customGenreLabel: String get() = "Свой жанр"
     val suggestedGenresLabel: String get() = "Популярные жанры"
-    val noGenresAdded: String get() = "Жанры не указаны. Нажмите «Добавить», чтобы выбрать"
-    val bookDescriptionSectionTitle: String get() = "О чём книга (Описание)"
+    val noGenresAdded: String get() = "Не указаны"
+    val bookDescriptionSectionTitle: String get() = "Описание"
     val bookDescriptionPlaceholder: String get() = "Краткое содержание или ваши заметки о книге..."
     val metadataSectionTitle: String get() = "Информация о файле"
     val dateAddedLabel: String get() = "Добавлена в библиотеку"
@@ -600,6 +600,15 @@ interface Strings {
     val tapZonesHintMenu: String get() = "Меню и настройки"
     val tapZonesHintNext: String get() = "Следующая страница"
     val tapZonesGotIt: String get() = "Всё понятно"
+
+    // --- Online Metadata & Settings ---
+    val fetchFromNetwork: String get() = "Загрузить из сети"
+    val fetchingMetadata: String get() = "Поиск информации в сети..."
+    fun metadataFound(source: String): String = "Загружено из $source"
+    val metadataNotFound: String get() = "Информация не найдена в сети"
+    val autoFetchMetadataTitle: String get() = "Автозагрузка данных книги"
+    val autoFetchMetadataDesc: String get() = "Автоматически находить жанры и описание в сети при добавлении книг"
+    val viewCover: String get() = "Просмотр обложки"
 }
 
 class RuStrings : Strings {
@@ -1201,8 +1210,8 @@ class EnStrings : Strings {
     override val addGenreTitle = "Add Genre"
     override val customGenreLabel = "Custom genre"
     override val suggestedGenresLabel = "Popular genres"
-    override val noGenresAdded = "No genres added yet"
-    override val bookDescriptionSectionTitle = "About Book (Description)"
+    override val noGenresAdded = "Not specified"
+    override val bookDescriptionSectionTitle = "Description"
     override val bookDescriptionPlaceholder = "Synopsis or your reading notes..."
     override val metadataSectionTitle = "File & Reading Info"
     override val dateAddedLabel = "Added to library"
@@ -1614,6 +1623,17 @@ class EnStrings : Strings {
     override val onboardingStartReading = "Start Reading"
     override val onboardingSkip = "Skip"
     override val onboardingNext = "Next"
+
+    override val tapZonesHintMenu = "Menu & settings"
+    override val tapZonesHintNext = "Next page"
+    override val tapZonesGotIt = "Got it"
+    override val fetchFromNetwork = "Fetch from Network"
+    override val fetchingMetadata = "Searching online metadata..."
+    override fun metadataFound(source: String) = "Loaded from $source"
+    override val metadataNotFound = "No metadata found online"
+    override val autoFetchMetadataTitle = "Auto-fetch Book Metadata"
+    override val autoFetchMetadataDesc = "Automatically fetch genres and synopsis online when adding books"
+    override val viewCover = "View cover"
 }
 
 class UkStrings : Strings {
@@ -1732,7 +1752,7 @@ class UkStrings : Strings {
     override val customGenreLabel = "Свій жанр"
     override val suggestedGenresLabel = "Популярні жанри"
     override val noGenresAdded = "Жанри не вказані"
-    override val bookDescriptionSectionTitle = "Про що книга (Опис)"
+    override val bookDescriptionSectionTitle = "Опис"
     override val bookDescriptionPlaceholder = "Короткий зміст або ваші нотатки..."
     override val metadataSectionTitle = "Інформація про файл"
     override val dateAddedLabel = "Додана до бібліотеки"
@@ -2144,6 +2164,17 @@ class UkStrings : Strings {
     override val onboardingStartReading = "Почати читати"
     override val onboardingSkip = "Пропустити"
     override val onboardingNext = "Далі"
+
+    override val tapZonesHintMenu = "Меню та налаштування"
+    override val tapZonesHintNext = "Наступна сторінка"
+    override val tapZonesGotIt = "Зрозуміло"
+    override val fetchFromNetwork = "Завантажити з мережі"
+    override val fetchingMetadata = "Пошук інформації в мережі..."
+    override fun metadataFound(source: String) = "Завантажено з $source"
+    override val metadataNotFound = "Інформацію не знайдено в мережі"
+    override val autoFetchMetadataTitle = "Автозавантаження даних книги"
+    override val autoFetchMetadataDesc = "Автоматично шукати жанри та опис у мережі при додаванні книг"
+    override val viewCover = "Перегляд обкладинки"
 }
 
 class BeStrings : Strings {

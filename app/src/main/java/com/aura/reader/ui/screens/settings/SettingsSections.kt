@@ -42,6 +42,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Notifications
@@ -441,7 +442,9 @@ internal fun SettingsAdditionalFeaturesSection(
     customOpdsUrl: String,
     onToggleCustomOpds: (Boolean) -> Unit,
     onCustomOpdsUrlChange: (String) -> Unit,
-    onResetReadingSpeed: () -> Unit
+    onResetReadingSpeed: () -> Unit,
+    autoFetchMetadataEnabled: Boolean = true,
+    onToggleAutoFetchMetadata: (Boolean) -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     var expanded by rememberSaveable { mutableStateOf(true) }
@@ -471,6 +474,30 @@ ExpressiveSettingsGroup {
                 Switch(
                     checked = readingStatsEnabled,
                     onCheckedChange = onToggleReadingStats,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            }
+        }
+    )
+    ExpressiveDivider()
+    ExpressiveSettingsRow(
+        title = strings.autoFetchMetadataTitle,
+        subtitle = strings.autoFetchMetadataDesc,
+        icon = { SettingsIconBox(Icons.Rounded.CloudDownload) },
+        onClick = { onToggleAutoFetchMetadata(!autoFetchMetadataEnabled) },
+        trailing = {
+            if (isGlass) {
+                LiquidGlassSwitch(
+                    checked = autoFetchMetadataEnabled,
+                    onCheckedChange = onToggleAutoFetchMetadata
+                )
+            } else {
+                Switch(
+                    checked = autoFetchMetadataEnabled,
+                    onCheckedChange = onToggleAutoFetchMetadata,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer

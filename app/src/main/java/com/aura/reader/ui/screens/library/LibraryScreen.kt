@@ -248,6 +248,7 @@ fun LibraryScreen(
     val updateNotificationsEnabled by viewModel.updateNotificationsEnabled.collectAsState()
     val anonymousAnalyticsEnabled by viewModel.anonymousAnalyticsEnabled.collectAsState()
     val readingStatsEnabled by viewModel.readingStatsEnabled.collectAsState()
+    val autoFetchMetadataEnabled by viewModel.autoFetchMetadataEnabled.collectAsState()
     val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
     val colorPreset by viewModel.colorPreset.collectAsState()
     val userCollections by viewModel.userCollections.collectAsState()
@@ -1685,6 +1686,8 @@ fun LibraryScreen(
                             onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
                             onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
                             onResetReadingSpeed = { viewModel.resetReadingSpeed() },
+                            autoFetchMetadataEnabled = autoFetchMetadataEnabled,
+                            onToggleAutoFetchMetadata = { viewModel.setAutoFetchMetadataEnabled(it) },
                             updateNotificationsEnabled = updateNotificationsEnabled,
                             onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
                             anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
@@ -1764,6 +1767,8 @@ fun LibraryScreen(
             onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
             onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
             onColorPresetChange = { viewModel.setColorPreset(it) },
+            autoFetchMetadataEnabled = autoFetchMetadataEnabled,
+            onToggleAutoFetchMetadata = { viewModel.setAutoFetchMetadataEnabled(it) },
             customOpdsEnabled = customOpdsEnabled,
             customOpdsUrl = catalogBaseUrl,
             onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },

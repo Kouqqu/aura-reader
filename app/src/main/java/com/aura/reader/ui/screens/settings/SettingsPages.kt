@@ -302,6 +302,8 @@ fun SettingsGeneralPage(
     onToggleCustomOpds: (Boolean) -> Unit,
     onCustomOpdsUrlChange: (String) -> Unit,
     onResetReadingSpeed: () -> Unit,
+    autoFetchMetadataEnabled: Boolean = true,
+    onToggleAutoFetchMetadata: (Boolean) -> Unit = {},
     updateNotificationsEnabled: Boolean,
     onToggleUpdateNotifications: (Boolean) -> Unit,
     anonymousAnalyticsEnabled: Boolean,
@@ -361,7 +363,9 @@ fun SettingsGeneralPage(
                 customOpdsUrl = customOpdsUrl,
                 onToggleCustomOpds = onToggleCustomOpds,
                 onCustomOpdsUrlChange = onCustomOpdsUrlChange,
-                onResetReadingSpeed = { showResetSpeedConfirmDialog = true }
+                onResetReadingSpeed = { showResetSpeedConfirmDialog = true },
+                autoFetchMetadataEnabled = autoFetchMetadataEnabled,
+                onToggleAutoFetchMetadata = onToggleAutoFetchMetadata
             )
 
             Spacer(modifier = Modifier.height(16.dp))
