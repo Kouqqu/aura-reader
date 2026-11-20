@@ -46,6 +46,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -108,6 +109,9 @@ fun BookCard(
     isGlass: Boolean = false,
     isDark: Boolean = isSystemInDarkTheme(),
     isReorderMode: Boolean = false,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onToggleSelect: () -> Unit = {},
     wobbleAngle: Float = 0f,
     wobbleOffset: Float = 0f,
     currentlyDraggedBookId: String? = null,
@@ -183,7 +187,9 @@ fun BookCard(
                 interactionSource = cardInteractionSource,
                 indication = if (isGlass) null else LocalIndication.current
             ) {
-                if (isReorderMode) {
+                if (isSelectionMode) {
+                    onToggleSelect()
+                } else if (isReorderMode) {
                     showMenu = true
                 } else {
                     onClick()
@@ -199,7 +205,9 @@ fun BookCard(
                 MaterialTheme.colorScheme.surfaceContainerLow
             }
         ),
-        border = if (isGlass) {
+        border = if (isSelected) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else if (isGlass) {
             BorderStroke(
                 0.5.dp,
                 if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
@@ -217,6 +225,30 @@ fun BookCard(
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+            if (isSelectionMode) {
+                Box(
+                    modifier = Modifier
+                        .padding(end = 12.dp)
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                        .border(
+                            1.5.dp,
+                            if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
             val hasCover = !book.coverBase64.isNullOrBlank()
             BookCoverView(
                 coverBase64 = book.coverBase64,
@@ -384,6 +416,7 @@ fun BookCard(
                     hasCover = hasCover,
                     isGlass = isGlass,
                     isDark = isDark,
+                    onSelect = { showMenu = false; onToggleSelect() },
                     onOpenProfile = { showMenu = false; onOpenProfile() },
                     onToggleFavorite = { showMenu = false; onToggleFavorite() },
                     onAddToCollection = { showMenu = false; onAddToCollection() },
@@ -480,6 +513,9 @@ fun BookGridCard(
     isGlass: Boolean = false,
     isDark: Boolean = isSystemInDarkTheme(),
     isReorderMode: Boolean = false,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onToggleSelect: () -> Unit = {},
     wobbleAngle: Float = 0f,
     wobbleOffset: Float = 0f,
     currentlyDraggedBookId: String? = null,
@@ -556,7 +592,9 @@ fun BookGridCard(
                 interactionSource = gridInteractionSource,
                 indication = if (isGlass) null else LocalIndication.current
             ) {
-                if (isReorderMode) {
+                if (isSelectionMode) {
+                    onToggleSelect()
+                } else if (isReorderMode) {
                     showMenu = true
                 } else {
                     onClick()
@@ -572,7 +610,9 @@ fun BookGridCard(
                 MaterialTheme.colorScheme.surfaceContainerLow
             }
         ),
-        border = if (isGlass) {
+        border = if (isSelected) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else if (isGlass) {
             BorderStroke(
                 0.5.dp,
                 if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
@@ -622,49 +662,75 @@ fun BookGridCard(
                     )
                 }
 
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    if (book.isFavorite) {
+                if (isSelectionMode) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.55f))
+                            .border(
+                                1.5.dp,
+                                if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.85f),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Rounded.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (book.isFavorite) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
+                                shadowElevation = 2.dp,
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Rounded.Favorite,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                }
+                            }
+                        }
                         Surface(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
                             shadowElevation = 2.dp,
                             modifier = Modifier.size(28.dp)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
+                            IconButton(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    showMenu = !showMenu
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            ) {
                                 Icon(
-                                    Icons.Rounded.Favorite,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(15.dp)
+                                    imageVector = if (showMenu) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.MoreVert,
+                                    contentDescription = strings.moreOptions,
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
-                        }
-                    }
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
-                        shadowElevation = 2.dp,
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                showMenu = !showMenu
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Icon(
-                                imageVector = if (showMenu) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.MoreVert,
-                                contentDescription = strings.moreOptions,
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(16.dp)
-                            )
                         }
                     }
                 }
@@ -769,6 +835,7 @@ fun BookGridCard(
                     hasCover = hasCover,
                     isGlass = isGlass,
                     isDark = isDark,
+                    onSelect = { showMenu = false; onToggleSelect() },
                     onOpenProfile = { showMenu = false; onOpenProfile() },
                     onToggleFavorite = { showMenu = false; onToggleFavorite() },
                     onAddToCollection = { showMenu = false; onAddToCollection() },
@@ -793,6 +860,7 @@ private fun BookListInlineActionTray(
     hasCover: Boolean,
     isGlass: Boolean,
     isDark: Boolean,
+    onSelect: () -> Unit = {},
     onOpenProfile: () -> Unit,
     onToggleFavorite: () -> Unit,
     onAddToCollection: () -> Unit,
@@ -827,6 +895,13 @@ private fun BookListInlineActionTray(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            BookActionChip(
+                icon = Icons.Rounded.Checklist,
+                label = strings.selectBooks,
+                onClick = onSelect,
+                tint = MaterialTheme.colorScheme.primary
+            )
+
             BookActionChip(
                 icon = Icons.Rounded.Info,
                 label = strings.bookProfileTitle,
@@ -911,6 +986,7 @@ private fun BookGridInlineActionTray(
     hasCover: Boolean,
     isGlass: Boolean,
     isDark: Boolean,
+    onSelect: () -> Unit = {},
     onOpenProfile: () -> Unit,
     onToggleFavorite: () -> Unit,
     onAddToCollection: () -> Unit,
@@ -938,6 +1014,13 @@ private fun BookGridInlineActionTray(
             },
             thickness = 0.8.dp,
             modifier = Modifier.padding(bottom = 4.dp)
+        )
+
+        GridMenuRow(
+            icon = Icons.Rounded.Checklist,
+            text = strings.selectBooks,
+            onClick = onSelect,
+            tint = MaterialTheme.colorScheme.primary
         )
 
         GridMenuRow(

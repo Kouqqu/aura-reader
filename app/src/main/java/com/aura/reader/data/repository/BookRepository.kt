@@ -827,6 +827,78 @@ class BookRepository(
         }
     }
 
+    // --- Batch Operations (Multi-Select) ---
+
+    suspend fun batchMoveToTrash(bookIds: Set<String>) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        val now = System.currentTimeMillis()
+        var changed = false
+        for (i in currentList.indices) {
+            if (currentList[i].id in bookIds) {
+                currentList[i] = currentList[i].copy(deletedAtTimestamp = now)
+                changed = true
+            }
+        }
+        if (changed) saveRecentBooks(currentList)
+    }
+
+    suspend fun batchRestoreFromTrash(bookIds: Set<String>) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        var changed = false
+        for (i in currentList.indices) {
+            if (currentList[i].id in bookIds) {
+                currentList[i] = currentList[i].copy(deletedAtTimestamp = null)
+                changed = true
+            }
+        }
+        if (changed) saveRecentBooks(currentList)
+    }
+
+    suspend fun batchDeletePermanently(bookIds: Set<String>) = withLibraryLock {
+        for (id in bookIds) {
+            removeBook(id)
+        }
+    }
+
+    suspend fun batchSetReadingProgress(bookIds: Set<String>, progress: Int) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        val p = progress.coerceIn(0, 100)
+        var changed = false
+        for (i in currentList.indices) {
+            if (currentList[i].id in bookIds) {
+                val old = currentList[i]
+                val newManualShelf = when {
+                    p >= 100 -> "FINISHED"
+                    p == 0 -> "UNREAD"
+                    else -> old.manualShelf ?: "READING"
+                }
+                currentList[i] = old.copy(
+                    progressPercent = p,
+                    manualShelf = newManualShelf,
+                    lastReadTimestamp = System.currentTimeMillis()
+                )
+                changed = true
+            }
+        }
+        if (changed) saveRecentBooks(currentList)
+    }
+
+    suspend fun batchAddToCollection(bookIds: Set<String>, collectionName: String) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        var changed = false
+        for (i in currentList.indices) {
+            if (currentList[i].id in bookIds) {
+                val old = currentList[i]
+                if (collectionName !in old.collections) {
+                    val updated = old.copy(collections = old.collections + collectionName)
+                    currentList[i] = updated
+                    changed = true
+                }
+            }
+        }
+        if (changed) saveRecentBooks(currentList)
+    }
+
     // --- Book Profile Metadata ---
 
     suspend fun updateBookMetadata(

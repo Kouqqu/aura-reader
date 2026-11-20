@@ -1,5 +1,6 @@
 package com.aura.reader.ui.screens.library
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -33,13 +34,11 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.ZoomIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -122,20 +121,48 @@ fun BookProfileBottomSheet(
     var description by remember(book) { mutableStateOf(book.description.orEmpty()) }
     var showAddGenreDialog by remember { mutableStateOf(false) }
 
+    // Data loss protection
+    val hasUnsavedChanges = remember(title, author, series, seriesNumber, genres, description, book) {
+        title.trim() != book.title ||
+            author.trim() != book.author ||
+            series.trim() != book.series.orEmpty() ||
+            seriesNumber.trim() != (book.seriesNumber?.toString().orEmpty()) ||
+            genres != book.genres ||
+            description.trim() != book.description.orEmpty()
+    }
+    var showDiscardConfirmDialog by remember { mutableStateOf(false) }
+    var pendingDismissAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
     val dateFormat = remember { SimpleDateFormat("d MMMM yyyy", Locale.getDefault()) }
 
-    // Solid, opaque color palette engineered specifically for Aura Reader
-    // Completely eliminates transparency bleed-through of underlying library text
-    val sheetBg = if (isDark) Color(0xFF161722) else Color(0xFFF7F6FA)
-    val sheetContentColor = if (isDark) Color(0xFFF3F2F8) else Color(0xFF1C1B1F)
-    val cardBg = if (isDark) Color(0xFF212330) else Color(0xFFFFFFFF)
-    val cardBorder = if (isDark) Color(0xFF2E3245) else Color(0xFFE5E2EC)
-    val titleColor = if (isDark) Color.White else Color(0xFF1C1B1F)
-    val subtitleColor = if (isDark) Color(0xFFB4B0C2) else Color(0xFF555260)
-    val bodyColor = if (isDark) Color(0xFFE2DFEC) else Color(0xFF2C2B30)
+    // Pure neutral graphite/obsidian palette: completely removes blue cast
+    val sheetBg = if (isDark) Color(0xFF141416) else Color(0xFFF7F7F9)
+    val sheetContentColor = if (isDark) Color(0xFFF5F5F7) else Color(0xFF161618)
+    val cardBg = if (isDark) Color(0xFF1C1C1F) else Color(0xFFFFFFFF)
+    val cardBorder = if (isDark) Color(0xFF28282D) else Color(0xFFE4E4E8)
+    val titleColor = if (isDark) Color.White else Color(0xFF111113)
+    val subtitleColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73)
+    val bodyColor = if (isDark) Color(0xFFD1D1D6) else Color(0xFF2C2C2E)
+
+    // Back handler for unsaved changes in edit mode
+    BackHandler(enabled = isEditMode) {
+        if (hasUnsavedChanges) {
+            pendingDismissAction = { isEditMode = false }
+            showDiscardConfirmDialog = true
+        } else {
+            isEditMode = false
+        }
+    }
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (isEditMode && hasUnsavedChanges) {
+                pendingDismissAction = { onDismiss() }
+                showDiscardConfirmDialog = true
+            } else {
+                onDismiss()
+            }
+        },
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = sheetBg,
@@ -154,7 +181,7 @@ fun BookProfileBottomSheet(
                 // AURA READER BOOK PROFILE: VIEW MODE
                 // ==========================================
 
-                // Header: Cover + Book Meta
+                // Header: Cover + Book Meta + Compact Edit Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Top
@@ -202,8 +229,8 @@ fun BookProfileBottomSheet(
                             text = title,
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp,
-                                lineHeight = 26.sp
+                                fontSize = 19.sp,
+                                lineHeight = 25.sp
                             ),
                             color = titleColor,
                             maxLines = 3,
@@ -216,7 +243,7 @@ fun BookProfileBottomSheet(
                                 text = author,
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.Medium,
-                                    fontSize = 14.5.sp
+                                    fontSize = 14.sp
                                 ),
                                 color = subtitleColor,
                                 maxLines = 2,
@@ -268,59 +295,22 @@ fun BookProfileBottomSheet(
                             }
                         }
                     }
+
+                    // Compact edit button right in the header
+                    IconButton(
+                        onClick = { isEditMode = true },
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Edit,
+                            contentDescription = strings.editAction,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-
-                // Action Bar: "Читать" / "Продолжить чтение" + Edit button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val isStarted = book.progressPercent > 0
-                    Button(
-                        onClick = onOpenBook,
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.MenuBook,
-                            contentDescription = null,
-                            modifier = Modifier.size(19.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (isStarted) strings.continueReadingAction else strings.startReadingAction,
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
-                        )
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = cardBg,
-                        border = BorderStroke(1.dp, cardBorder),
-                        onClick = { isEditMode = true },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Rounded.Edit,
-                                contentDescription = strings.editAction,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
 
                 // Card 1: Прогресс чтения
                 Card(
@@ -332,7 +322,7 @@ fun BookProfileBottomSheet(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
+                            .padding(14.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -379,7 +369,7 @@ fun BookProfileBottomSheet(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         LinearProgressIndicator(
                             progress = { (book.progressPercent / 100f).coerceIn(0f, 1f) },
@@ -394,9 +384,9 @@ fun BookProfileBottomSheet(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Card 2: Жанры
+                // Card 2: Жанры (аккуратная и компактная плашка)
                 Card(
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = cardBg),
                     border = BorderStroke(1.dp, cardBorder),
                     modifier = Modifier.fillMaxWidth()
@@ -404,7 +394,7 @@ fun BookProfileBottomSheet(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
+                            .padding(12.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -416,23 +406,24 @@ fun BookProfileBottomSheet(
                                     imageVector = Icons.Rounded.Category,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = strings.genresSectionTitle,
-                                    style = MaterialTheme.typography.titleSmall,
+                                    style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.5.sp),
                                     fontWeight = FontWeight.Bold,
                                     color = titleColor
                                 )
                             }
                             TextButton(
                                 onClick = { isEditMode = true },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                modifier = Modifier.height(28.dp)
                             ) {
                                 Text(
                                     text = strings.editAction,
-                                    style = MaterialTheme.typography.labelMedium
+                                    style = MaterialTheme.typography.labelSmall
                                 )
                             }
                         }
@@ -441,21 +432,24 @@ fun BookProfileBottomSheet(
                             FlowRow(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 8.dp),
+                                    .padding(top = 6.dp),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 genres.forEach { genre ->
                                     Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (isDark) Color(0xFF2C2F40) else Color(0xFFEAE6F2),
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (isDark) Color(0xFF252529) else Color(0xFFEFEFF4),
                                         border = BorderStroke(0.5.dp, cardBorder)
                                     ) {
                                         Text(
                                             text = genre,
-                                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                fontWeight = FontWeight.Medium,
+                                                fontSize = 11.5.sp
+                                            ),
                                             color = bodyColor,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                         )
                                     }
                                 }
@@ -464,29 +458,33 @@ fun BookProfileBottomSheet(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 6.dp),
+                                    .padding(top = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = strings.noGenresAdded,
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                                     color = subtitleColor
                                 )
                                 OutlinedButton(
                                     onClick = { showAddGenreDialog = true },
-                                    shape = RoundedCornerShape(10.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(28.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.Add,
                                         contentDescription = null,
-                                        modifier = Modifier.size(14.dp)
+                                        modifier = Modifier.size(12.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
                                     Text(
                                         text = strings.addGenre,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium)
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Medium,
+                                            fontSize = 11.sp
+                                        )
                                     )
                                 }
                             }
@@ -506,7 +504,7 @@ fun BookProfileBottomSheet(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
+                            .padding(14.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -518,9 +516,9 @@ fun BookProfileBottomSheet(
                                     imageVector = Icons.Rounded.Description,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = strings.bookDescriptionSectionTitle,
                                     style = MaterialTheme.typography.titleSmall,
@@ -530,11 +528,12 @@ fun BookProfileBottomSheet(
                             }
                             TextButton(
                                 onClick = { isEditMode = true },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                modifier = Modifier.height(28.dp)
                             ) {
                                 Text(
                                     text = if (description.isNotBlank()) strings.editAction else strings.addGenre,
-                                    style = MaterialTheme.typography.labelMedium
+                                    style = MaterialTheme.typography.labelSmall
                                 )
                             }
                         }
@@ -578,7 +577,7 @@ fun BookProfileBottomSheet(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -586,9 +585,9 @@ fun BookProfileBottomSheet(
                                 imageVector = Icons.Rounded.Info,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = strings.metadataSectionTitle,
                                 style = MaterialTheme.typography.titleSmall,
@@ -647,7 +646,14 @@ fun BookProfileBottomSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { isEditMode = false }) {
+                        IconButton(onClick = {
+                            if (hasUnsavedChanges) {
+                                pendingDismissAction = { isEditMode = false }
+                                showDiscardConfirmDialog = true
+                            } else {
+                                isEditMode = false
+                            }
+                        }) {
                             Icon(
                                 imageVector = Icons.Rounded.ArrowBack,
                                 contentDescription = strings.cancel,
@@ -872,6 +878,64 @@ fun BookProfileBottomSheet(
                 }
             }
         }
+    }
+
+    // Unsaved Changes Confirmation Dialog
+    if (showDiscardConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardConfirmDialog = false },
+            title = { Text(strings.unsavedChangesTitle) },
+            text = { Text(strings.unsavedChangesDesc) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onSave(
+                            title.trim(),
+                            author.trim(),
+                            series.trim().ifBlank { null },
+                            seriesNumber.trim().toIntOrNull(),
+                            genres,
+                            description.trim().ifBlank { null }
+                        )
+                        showDiscardConfirmDialog = false
+                        isEditMode = false
+                        pendingDismissAction?.invoke()
+                        pendingDismissAction = null
+                    }
+                ) {
+                    Text(strings.saveAction)
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            // Discard unsaved changes and reset
+                            title = book.title
+                            author = book.author
+                            series = book.series.orEmpty()
+                            seriesNumber = book.seriesNumber?.toString().orEmpty()
+                            genres = book.genres
+                            description = book.description.orEmpty()
+                            showDiscardConfirmDialog = false
+                            isEditMode = false
+                            pendingDismissAction?.invoke()
+                            pendingDismissAction = null
+                        }
+                    ) {
+                        Text(strings.discardChanges)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = {
+                        showDiscardConfirmDialog = false
+                        pendingDismissAction = null
+                    }) {
+                        Text(strings.keepEditing)
+                    }
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
     }
 
     // Add Genre Dialog

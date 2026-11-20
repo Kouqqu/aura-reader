@@ -567,6 +567,39 @@ interface Strings {
     // --- GTA VI Event ---
     val gta6EventTitle: String get() = "GTA VI Edition"
     val gta6EventSubtitle: String get() = "Закатная тема и эксклюзивный логотип Vice City (до 30 ноября)"
+
+    // --- Multi-Select & Batch Actions ---
+    val selectBooks: String get() = "Выбрать книги"
+    val selectAll: String get() = "Выбрать все"
+    val deselectAll: String get() = "Снять выбор"
+    fun selectedCount(count: Int): String = "Выбрано: $count"
+    val batchActions: String get() = "Действия"
+    val batchMoveToTrash: String get() = "В корзину"
+    val batchAddToCollection: String get() = "В коллекцию"
+    val batchMakePrivate: String get() = "В личную папку"
+    val batchRemoveFromPrivate: String get() = "Убрать из личной"
+    val batchMarkRead: String get() = "Отметить прочитанным"
+    val batchMarkUnread: String get() = "Сбросить прогресс"
+    val batchRestore: String get() = "Восстановить"
+    val batchDeletePermanently: String get() = "Удалить навсегда"
+    fun batchMovedToTrashSnackbar(count: Int): String = "Перемещено в корзину: $count"
+    fun batchAddedToCollectionSnackbar(count: Int, collection: String): String = "Добавлено в «$collection»: $count"
+    fun batchPrivateSnackbar(count: Int): String = "Перемещено в личную папку: $count"
+    fun batchUnprivateSnackbar(count: Int): String = "Убрано из личной папки: $count"
+    fun batchMarkedReadSnackbar(count: Int): String = "Отмечено прочитанными: $count"
+
+    // --- Unsaved Changes Protection ---
+    val unsavedChangesTitle: String get() = "Несохранённые изменения"
+    val unsavedChangesDesc: String get() = "Вы внесли изменения в профиль книги. Сохранить их перед выходом?"
+    val discardChanges: String get() = "Сбросить"
+    val keepEditing: String get() = "Остаться"
+
+    // --- Tap Zones Hint ---
+    val tapZonesHintTitle: String get() = "Зоны управления чтением"
+    val tapZonesHintPrev: String get() = "Предыдущая страница"
+    val tapZonesHintMenu: String get() = "Меню и настройки"
+    val tapZonesHintNext: String get() = "Следующая страница"
+    val tapZonesGotIt: String get() = "Всё понятно"
 }
 
 class RuStrings : Strings {

@@ -757,6 +757,48 @@ class LibraryViewModel(
         }
     }
 
+    // --- Batch Operations (Multi-Select) ---
+
+    fun batchMoveToTrash(bookIds: Set<String>) {
+        viewModelScope.launch {
+            bookRepository.batchMoveToTrash(bookIds)
+        }
+    }
+
+    fun batchRestoreFromTrash(bookIds: Set<String>) {
+        viewModelScope.launch {
+            bookRepository.batchRestoreFromTrash(bookIds)
+        }
+    }
+
+    fun batchDeletePermanently(bookIds: Set<String>) {
+        viewModelScope.launch {
+            bookRepository.batchDeletePermanently(bookIds)
+        }
+    }
+
+    fun batchSetReadingProgress(bookIds: Set<String>, progress: Int) {
+        viewModelScope.launch {
+            bookRepository.batchSetReadingProgress(bookIds, progress)
+        }
+    }
+
+    fun batchAddToCollection(bookIds: Set<String>, collectionName: String) {
+        viewModelScope.launch {
+            bookRepository.batchAddToCollection(bookIds, collectionName)
+        }
+    }
+
+    fun batchTogglePrivate(bookIds: Set<String>, makePrivate: Boolean) {
+        viewModelScope.launch {
+            if (makePrivate) {
+                preferencesManager.addBooksToPrivateFolder(bookIds)
+            } else {
+                preferencesManager.removeBooksFromPrivateFolder(bookIds)
+            }
+        }
+    }
+
     private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Idle)
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 

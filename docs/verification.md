@@ -1194,3 +1194,47 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 f
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
 
+## 2.3.0-beta.13 — Multi-Select Batch Actions, Pure Graphite Book Profile, Unsaved Changes Protection & Reader Tap Zones Hint (versionCode 178)
+
+- **Multi-Select Batch Actions (Пакетное управление книгами):**
+  - Added batch selection state `selectedBookIds: Set<String>` in `LibraryScreen`.
+  - Added selection indicator checkboxes on `BookCard` (list view) and `BookGridCard` (grid view), along with glowing active border highlight.
+  - Added «Выбрать книги» option in both `BookListInlineActionTray` and `BookGridInlineActionTray`.
+  - Implemented floating batch action dock `AnimatedVisibility(visible = isSelectionMode)`:
+    - Counter of selected books (`strings.selectedCount`) and clear selection button (✕).
+    - Quick "Выбрать все" / "Снять выбор" toggle for currently displayed books.
+    - Normal view actions:
+      - «В коллекцию»: opens collection picker with existing collections list and inline new shelf creation dialog.
+      - «В личную папку» / «Из личной папки»: batch add or remove from encrypted private folder with notification snackbar.
+      - «Отметить прочитанным» / «Сбросить»: marks all selected books as 100% finished or resets progress to 0%.
+      - «В корзину»: moves all selected books to Trash with 15-day retention policy and an immediate «Отменить» (Undo) snackbar.
+    - Trash view actions:
+      - «Восстановить»: batch restores books from trash to the active library.
+      - «Удалить навсегда»: permanently removes selected book files and metadata.
+  - Added batch repository & ViewModel operations: `batchMoveToTrash`, `batchRestoreFromTrash`, `batchDeletePermanently`, `batchSetReadingProgress`, `batchAddToCollection`, `batchTogglePrivate`.
+- **Unsaved Changes Protection in Book Profile (Защита от потери данных):**
+  - Integrated `hasUnsavedChanges` dirty-state tracking comparing edited fields (title, author, series title, series number, genres, description) against the original book metadata.
+  - Intercepted system back gesture (`BackHandler(enabled = isEditMode)`), bottom sheet dismiss gestures (`onDismissRequest`), and back arrow navigation.
+  - Presents an interactive confirmation dialog with three clear options:
+    - «Сохранить»: commits all edited metadata and exits edit mode.
+    - «Сбросить»: discards all unsaved changes and reverts to view mode.
+    - «Остаться» (Cancel): cancels dialog dismiss and keeps editing intact.
+- **Reader Tap Zones Onboarding Tutorial (Неочевидность зон нажатия):**
+  - Created `ReaderTapZonesHintOverlay` in `ReaderScreen`: an elegant semi-transparent guided overlay appearing on first reader launch.
+  - Clearly visually delineates and explains the 3 reader tap zones:
+    - Left zone (25% width): Prev page (`ChevronLeft`, «Предыдущая страница»).
+    - Center zone (50% width): Menu & controls (`Tune`, «Панель управления и настройки»).
+    - Right zone (25% width): Next page (`ChevronRight`, «Следующая страница»).
+  - Includes a bold «Всё понятно» dismissal button.
+  - Dismissal preference is stored persistently in `PreferencesManager` (`readerTapZonesHintShown: Flow<Boolean>`), ensuring it is displayed only once.
+- **Seamless Full-Screen Cover Inspection:**
+  - Clicking book cover inside `BookProfileBottomSheet` directly launches `ParallaxCoverViewer` without dismissing `selectedBookForProfile`.
+  - Closing the cover viewer smoothly reveals the profile sheet right where the user left off, eliminating flickering and sheet reloads.
+- **Pure Graphite Book Profile Redesign:**
+  - Completely eliminated all blueish hues (`#161722`, `#212330`) in favor of rich, matte graphite and charcoal tones (`#141416`, `#1C1C1F`, `#28282D`).
+  - Removed the redundant and clunky «Читать» / «Продолжить чтение» button from the profile bottom sheet.
+  - Moved the Edit button to the top header row as an elegant icon button.
+  - Optimized the «Жанры» card: tightened padding (12 dp), reduced chip sizing (12 sp) for an ultra-clean, compact presentation.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
+

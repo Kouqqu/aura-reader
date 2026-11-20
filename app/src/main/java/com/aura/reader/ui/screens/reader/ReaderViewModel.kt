@@ -41,6 +41,15 @@ class ReaderViewModel(
     val appLanguage: StateFlow<com.aura.reader.ui.theme.AppLanguage> = preferencesManager.appLanguage
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.aura.reader.ui.theme.AppLanguage.RU)
 
+    val tapZonesHintShown: StateFlow<Boolean> = preferencesManager.readerTapZonesHintShown
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun dismissTapZonesHint() {
+        viewModelScope.launch {
+            preferencesManager.setReaderTapZonesHintShown(true)
+        }
+    }
+
     val nextBookInSeries: StateFlow<Book?> = combine(
         bookRepository.currentBook,
         bookRepository.recentBooks

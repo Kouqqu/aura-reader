@@ -108,6 +108,7 @@ class PreferencesManager(private val context: Context) {
         val PRIVATE_FOLDER_PASSWORD_HASH_KEY = stringPreferencesKey("private_folder_password_hash")
         val PRIVATE_BOOK_IDS_KEY = stringPreferencesKey("private_book_ids_json")
         val BOTTOM_PROGRESS_MODE_KEY = intPreferencesKey("reader_bottom_progress_mode")
+        val READER_TAP_ZONES_HINT_SHOWN_KEY = booleanPreferencesKey("reader_tap_zones_hint_shown")
     }
 
     val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -1206,6 +1207,32 @@ class PreferencesManager(private val context: Context) {
             val out = JSONArray()
             for (id in current) out.put(id)
             prefs[PRIVATE_BOOK_IDS_KEY] = out.toString()
+        }
+    }
+
+    suspend fun removeBooksFromPrivateFolder(bookIds: Collection<String>) {
+        context.dataStore.edit { prefs ->
+            val current = mutableSetOf<String>()
+            val raw = prefs[PRIVATE_BOOK_IDS_KEY] ?: "[]"
+            try {
+                val arr = JSONArray(raw)
+                for (i in 0 until arr.length()) current.add(arr.getString(i))
+            } catch (_: Exception) {}
+            current.removeAll(bookIds.toSet())
+            val out = JSONArray()
+            for (id in current) out.put(id)
+            prefs[PRIVATE_BOOK_IDS_KEY] = out.toString()
+        }
+    }
+
+    // --- Reader Tap Zones Tutorial ---
+    val readerTapZonesHintShown: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[READER_TAP_ZONES_HINT_SHOWN_KEY] ?: false
+    }
+
+    suspend fun setReaderTapZonesHintShown(shown: Boolean = true) {
+        context.dataStore.edit { prefs ->
+            prefs[READER_TAP_ZONES_HINT_SHOWN_KEY] = shown
         }
     }
 }
