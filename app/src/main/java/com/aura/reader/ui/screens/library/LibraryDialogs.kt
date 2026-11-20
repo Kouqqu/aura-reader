@@ -92,19 +92,25 @@ fun LibraryDialogs(
             },
             text = {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 380.dp)
-                        .verticalScroll(rememberScrollState())
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = info.changelog,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    OutlinedButton(
+                        onClick = { onOpenUpdatePage(info.releaseUrl) },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_github),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(strings.downloadFromGithub)
+                    }
 
                     if (isDownloading) {
-                        Spacer(modifier = Modifier.height(14.dp))
                         WavyProgressIndicator(
                             progress = progress ?: 0f,
                             modifier = Modifier.fillMaxWidth(),
@@ -120,38 +126,38 @@ fun LibraryDialogs(
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
 
                     if (needsPermission) {
-                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
                             text = strings.installPermissionNeeded,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
 
                     if (failure != null) {
-                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
                             text = strings.updateDownloadFailed,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedButton(
-                        onClick = { onOpenUpdatePage(info.releaseUrl) },
-                        shape = RoundedCornerShape(14.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 280.dp)
+                            .verticalScroll(rememberScrollState())
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_github),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                        Text(
+                            text = info.changelog,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(strings.downloadFromGithub)
                     }
                 }
             },

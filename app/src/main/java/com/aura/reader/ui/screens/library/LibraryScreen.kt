@@ -287,9 +287,13 @@ fun LibraryScreen(
     var showAddBooksSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
 
+    val pageAnimationSpec = spring<Float>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = 420f
+    )
     val smoothScrollToPage: (Int) -> Unit = { page ->
         scope.launch {
-            pagerState.animateScrollToPage(page)
+            pagerState.animateScrollToPage(page, animationSpec = pageAnimationSpec)
         }
     }
 

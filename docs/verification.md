@@ -1050,3 +1050,15 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 
 - **Natural, Snappy Screen Transitions.** Removed the 450 ms artificial tween delay in `HorizontalPager`, restoring instant and smooth spring paging with synchronized dock morphing.
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.7 — 2.2.1 Screen Animation Kinematics, Proportional Logo Scaling & Topbar Aura Fix (versionCode 172)
+
+- **Authentic 2.2.1 Transition Dynamics.** Set `HorizontalPager` smooth scrolling to `spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)` matching the exact comfortable pacing of the 2.2.1 release.
+- **Balanced Logo Proportions.**
+  - Top bar emblem: tightly cropped logo scaled to 34.dp inside the 46.dp squircle container, properly filling the mark.
+  - Launcher icon: scaled down letter to height 220px in 512px canvas (safe zone ~43%), preventing the oversized look on Android launchers.
+- **Distinct Crossbar for Material You.** In `ic_launcher_monochrome.png`, the crossbar has a 2.5px negative space boundary separating it from the legs and a 60%–85% alpha gradient, making the smile arc clearly readable under Android 13+ dynamic palettes.
+- **Aura Clipping Elimination.** Calibrated halo radius to 1.05x with radial alpha decay reaching 0 at boundary, keeping the shimmer aura cleanly within top bar padding and preventing vertical/horizontal cutoff.
+- **Immediate «Перейти на GitHub» Access.** Relocated the GitHub update button to the top of `LibraryDialogs` update content right below the title, with updated localized string «Перейти на GitHub».
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
