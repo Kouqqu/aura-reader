@@ -397,7 +397,7 @@ fun ReaderScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (isGlass) Modifier.hazeSource(readerHazeState) else Modifier)
+                    .hazeSource(readerHazeState)
                     .navigationBarsPadding()
             ) {
                 if (chapters.isNotEmpty()) {
@@ -587,7 +587,7 @@ fun ReaderScreen(
             onOpenTtsSheet = { showTtsSheet = true },
             onOpenBookmarks = { showBookmarksQuotesSheet = true },
             onOpenSettings = { showSettingsSheet = true },
-            hazeState = if (isGlass) readerHazeState else null
+            hazeState = readerHazeState
         )
 
 
@@ -606,7 +606,7 @@ fun ReaderScreen(
             isThemeDark = isThemeDark,
             isSepiaTheme = isSepiaTheme,
             viewModel = viewModel,
-            hazeState = if (isGlass) readerHazeState else null
+            hazeState = readerHazeState
         )
 
 

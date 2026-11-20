@@ -1,6 +1,13 @@
 package com.aura.reader.ui.screens.reader
 
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.hazeBlur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.border
+import androidx.compose.ui.unit.dp
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -365,7 +372,7 @@ fun BoxScope.ReaderTopBar(
 
             if (isGlass) {
                 val topBarBg = if (isSepiaTheme) {
-                    Color(0xD8FAF0E6)
+                    Color(0x66FAF0E6)
                 } else {
                     null
                 }
@@ -379,16 +386,49 @@ fun BoxScope.ReaderTopBar(
                     content = topBarContent
                 )
             } else {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    content = { topBarContent() }
-                )
+                val m3HazeModifier = if (hazeState != null) {
+                    Modifier.clip(RoundedCornerShape(24.dp)).hazeBlur(
+                        input = HazeInput.Sources(hazeState),
+                        style = HazeBlurStyle {
+                            blurRadius(24.dp)
+                            noiseFactor(0.015f)
+                        }
+                    )
+                } else Modifier
+
+                val m3BgColor = if (isSepiaTheme) {
+                    Color(0x66FAF0E6)
+                } else if (isThemeDark) {
+                    Color(0x60141416)
+                } else {
+                    Color(0x66F7F8FA)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (!isThemeDark) {
+                                Modifier.shadow(
+                                    elevation = 6.dp,
+                                    shape = RoundedCornerShape(24.dp),
+                                    clip = false,
+                                    ambientColor = Color.Black.copy(alpha = 0.05f),
+                                    spotColor = Color.Black.copy(alpha = 0.07f)
+                                )
+                            } else Modifier
+                        )
+                        .clip(RoundedCornerShape(24.dp))
+                        .then(m3HazeModifier)
+                        .background(m3BgColor)
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = if (isThemeDark) 0.20f else 0.35f),
+                            shape = RoundedCornerShape(24.dp)
+                        )
+                ) {
+                    topBarContent()
+                }
             }
         }
 }

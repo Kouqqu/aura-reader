@@ -1,11 +1,13 @@
 package com.aura.reader.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Settings
@@ -190,16 +192,16 @@ fun LiquidGlassSurface(
             input = HazeInput.Sources(hazeState),
             style = HazeBlurStyle {
                 blurRadius(24.dp)
-                noiseFactor(0f)
+                noiseFactor(0.015f)
             }
         )
     } else Modifier
 
     val baseFill = if (hazeState != null) {
         tintColor ?: if (isDark) {
-            if (isAmoled) Color(0xD808080A) else Color(0xCC141416)
+            if (isAmoled) Color(0x5508080A) else Color(0x60141416)
         } else {
-            Color(0xDDF7F8FA)
+            Color(0x66F7F8FA)
         }
     } else {
         tintColor ?: if (isDark) {
@@ -635,22 +637,25 @@ fun FloatingNavigationIsland(
             }
         }
     } else {
-        // MATERIAL 3 EXPRESSIVE STYLE
+        // MATERIAL 3 EXPRESSIVE STYLE (Authentic Chumpy-style Pill Dock)
+        val density = LocalDensity.current
+        val haptic = LocalHapticFeedback.current
+        val dockShape = RoundedCornerShape(30.dp)
+
         Surface(
-            shape = RoundedCornerShape(30.dp),
+            shape = dockShape,
             color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
             shadowElevation = 8.dp,
             modifier = modifier
                 .height(60.dp)
-                .width(294.dp)
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxHeight()
                     .padding(horizontal = 6.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 val tabs = listOf(
                     Triple(Icons.AutoMirrored.Rounded.MenuBook, strings.navMyBooks, onMyBooksClick),
@@ -662,46 +667,68 @@ fun FloatingNavigationIsland(
                     val isTabActive = selectedTab == index
                     val itemShape = RoundedCornerShape(25.dp)
 
-                    val containerColor by animateColorAsState(
-                        targetValue = if (isTabActive) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                        animationSpec = tween(180),
-                        label = "m3DockTabBg_$index"
-                    )
-                    val contentColor by animateColorAsState(
-                        targetValue = if (isTabActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                        animationSpec = tween(180),
-                        label = "m3DockTabContent_$index"
-                    )
-
                     Surface(
-                        onClick = onClick,
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onClick()
+                        },
                         shape = itemShape,
-                        color = containerColor,
+                        color = if (isTabActive) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else Color.Transparent,
                         modifier = Modifier
                             .fillMaxHeight()
-                            .weight(1f)
-                            .expressiveClickable(scaleDown = 0.94f, onClick = onClick)
+                            .animateContentSize(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioNoBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                )
+                            )
                     ) {
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Row(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .padding(horizontal = if (isTabActive) 14.dp else 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(
                                 imageVector = icon,
                                 contentDescription = label,
-                                tint = contentColor,
+                                tint = if (isTabActive) {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                                 modifier = Modifier.size(20.dp)
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
-                                fontWeight = if (isTabActive) FontWeight.Bold else FontWeight.Medium,
-                                color = contentColor,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            AnimatedVisibility(
+                                visible = isTabActive,
+                                enter = fadeIn(tween(180)) + expandHorizontally(
+                                    animationSpec = spring<IntSize>(
+                                        dampingRatio = Spring.DampingRatioNoBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    )
+                                ),
+                                exit = fadeOut(tween(120)) + shrinkHorizontally(
+                                    animationSpec = spring<IntSize>(
+                                        dampingRatio = Spring.DampingRatioNoBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    )
+                                )
+                            ) {
+                                Row {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Clip
+                                    )
+                                }
+                            }
                         }
                     }
                 }

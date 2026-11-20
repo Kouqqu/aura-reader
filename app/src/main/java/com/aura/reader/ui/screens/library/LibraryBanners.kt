@@ -210,11 +210,11 @@ internal fun LibraryReadingStatsBanner(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
+                .clip(RoundedCornerShape(13.dp))
                 .background(bannerBg)
-                .border(width = 0.6.dp, color = bannerBorder, shape = RoundedCornerShape(18.dp))
+                .border(width = 0.6.dp, color = bannerBorder, shape = RoundedCornerShape(13.dp))
                 .expressiveClickable(scaleDown = 0.98f, onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 11.dp)
+                .padding(horizontal = 12.dp, vertical = 6.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -223,34 +223,34 @@ internal fun LibraryReadingStatsBanner(
                     imageVector = Icons.Rounded.Timer,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(19.dp)
+                    modifier = Modifier.size(15.dp)
                 )
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = if (todayMinutes > 0) "${strings.todayReadingTime}: ${strings.minutesRead(todayMinutes)}" else strings.readingStatsEmpty,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp),
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 if (currentStreakDays > 0) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(6.dp),
                         color = Color(0xFFFF9500).copy(alpha = if (isThemeDark) 0.14f else 0.10f),
                         border = BorderStroke(0.6.dp, Color(0xFFFF9500).copy(alpha = if (isThemeDark) 0.30f else 0.22f))
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Text(
                                 text = "\uD83D\uDD25",
-                                fontSize = 12.sp
+                                fontSize = 11.sp
                             )
                             Text(
                                 text = "$currentStreakDays",
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFFF9500)
                             )
@@ -262,7 +262,7 @@ internal fun LibraryReadingStatsBanner(
                     imageVector = Icons.Rounded.ChevronRight,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(15.dp)
                 )
             }
         }
@@ -270,26 +270,26 @@ internal fun LibraryReadingStatsBanner(
         LiquidGlassCard(
             isGlass = false,
             isDark = isThemeDark,
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(13.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(13.dp))
                 .clickable(onClick = onClick)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Timer,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(15.dp)
                 )
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = if (todayMinutes > 0) "${strings.todayReadingTime}: ${strings.minutesRead(todayMinutes)}" else strings.readingStatsEmpty,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp),
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
@@ -297,7 +297,7 @@ internal fun LibraryReadingStatsBanner(
                 if (currentStreakDays > 0) {
                     Text(
                         text = "\uD83D\uDD25 ${currentStreakDays}",
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -307,7 +307,7 @@ internal fun LibraryReadingStatsBanner(
                     imageVector = Icons.Rounded.ChevronRight,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(15.dp)
                 )
             }
         }
