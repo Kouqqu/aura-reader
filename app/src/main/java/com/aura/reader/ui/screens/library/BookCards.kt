@@ -199,7 +199,7 @@ fun BookCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
-                if (isDark) Color(0x281C1E26) else Color(0x65FFFFFF)
+                if (isDark) Color(0x2818181B) else Color(0x65FFFFFF)
             } else if (isDraggingThis) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
             } else {
@@ -627,7 +627,7 @@ fun BookGridCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
-                if (isDark) Color(0x281C1E26) else Color(0x65FFFFFF)
+                if (isDark) Color(0x2818181B) else Color(0x65FFFFFF)
             } else if (isDraggingThis) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
             } else {
@@ -898,6 +898,9 @@ private fun BookListInlineActionTray(
 ) {
     val strings = LocalAppStrings.current
     val isTrash = book.deletedAtTimestamp != null
+    val chipBorder = if (isGlass) {
+        BorderStroke(0.75.dp, if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f))
+    } else null
 
     Column(
         modifier = Modifier
@@ -924,14 +927,16 @@ private fun BookListInlineActionTray(
                     icon = Icons.Rounded.FolderOpen,
                     label = strings.addToCollection,
                     onClick = onAddToCollection,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
+                    border = chipBorder
                 )
 
                 BookActionChip(
                     icon = if (isPrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
                     label = if (isPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate,
                     onClick = onTogglePrivate,
-                    tint = MaterialTheme.colorScheme.secondary
+                    tint = MaterialTheme.colorScheme.secondary,
+                    border = chipBorder
                 )
 
                 if (book.progressPercent < 100) {
@@ -939,14 +944,16 @@ private fun BookListInlineActionTray(
                         icon = Icons.Rounded.CheckCircle,
                         label = strings.markAsFinished,
                         onClick = { onSetProgress(100) },
-                        tint = MaterialTheme.colorScheme.tertiary
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        border = chipBorder
                     )
                 }
                 if (book.progressPercent > 0) {
                     BookActionChip(
                         icon = Icons.Rounded.Refresh,
                         label = strings.resetProgress,
-                        onClick = { onSetProgress(0) }
+                        onClick = { onSetProgress(0) },
+                        border = chipBorder
                     )
                 }
 
@@ -954,7 +961,8 @@ private fun BookListInlineActionTray(
                     icon = Icons.Rounded.Share,
                     label = null,
                     contentDescription = strings.shareBookFile,
-                    onClick = onShare
+                    onClick = onShare,
+                    border = chipBorder
                 )
 
                 BookActionChip(
@@ -963,7 +971,8 @@ private fun BookListInlineActionTray(
                     contentDescription = strings.moveToTrash,
                     onClick = onDelete,
                     tint = MaterialTheme.colorScheme.error,
-                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
+                    border = chipBorder
                 )
             } else {
                 BookActionChip(
@@ -971,7 +980,8 @@ private fun BookListInlineActionTray(
                     label = strings.restoreFromTrash,
                     onClick = onRestore,
                     tint = MaterialTheme.colorScheme.primary,
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    border = chipBorder
                 )
                 BookActionChip(
                     icon = Icons.Rounded.DeleteForever,
@@ -979,7 +989,8 @@ private fun BookListInlineActionTray(
                     contentDescription = strings.deletePermanently,
                     onClick = onDeletePermanently,
                     tint = MaterialTheme.colorScheme.error,
-                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+                    border = chipBorder
                 )
             }
         }
@@ -1111,12 +1122,14 @@ private fun BookActionChip(
     modifier: Modifier = Modifier,
     contentDescription: String? = label,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f)
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f),
+    border: BorderStroke? = null
 ) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(10.dp),
         color = containerColor,
+        border = border,
         modifier = modifier.heightIn(min = 34.dp)
     ) {
         Row(

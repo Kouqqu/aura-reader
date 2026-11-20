@@ -1,5 +1,6 @@
 package com.aura.reader.ui.screens.reader
 
+import dev.chrisbanes.haze.HazeState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -89,7 +90,8 @@ fun BoxScope.ReaderTopBar(
     onOpenBookInfo: () -> Unit,
     onOpenTtsSheet: () -> Unit,
     onOpenBookmarks: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    hazeState: HazeState? = null
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
@@ -368,6 +370,7 @@ fun BoxScope.ReaderTopBar(
                     shadowElevation = 10.dp,
                     isDark = isThemeDark,
                     tintColor = topBarBg,
+                    hazeState = hazeState,
                     modifier = Modifier.fillMaxWidth(),
                     content = topBarContent
                 )

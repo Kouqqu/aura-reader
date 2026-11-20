@@ -1,5 +1,7 @@
 package com.aura.reader.ui.screens.reader
 
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.runtime.mutableLongStateOf
 import com.aura.reader.ui.components.PixelFullScreenBurst
@@ -384,6 +386,7 @@ fun ReaderScreen(
         val chapters = book?.chapters ?: emptyList()
         val currentChapter = chapters.getOrNull(currentChapterIndex)
         val footnotes = book?.footnotes ?: emptyMap()
+        val readerHazeState = remember { HazeState() }
 
         Box(
             modifier = Modifier
@@ -394,6 +397,7 @@ fun ReaderScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .then(if (isGlass) Modifier.haze(readerHazeState) else Modifier)
                     .navigationBarsPadding()
             ) {
                 if (chapters.isNotEmpty()) {
@@ -582,7 +586,8 @@ fun ReaderScreen(
             onOpenBookInfo = { showBookInfoDialog = true },
             onOpenTtsSheet = { showTtsSheet = true },
             onOpenBookmarks = { showBookmarksQuotesSheet = true },
-            onOpenSettings = { showSettingsSheet = true }
+            onOpenSettings = { showSettingsSheet = true },
+            hazeState = if (isGlass) readerHazeState else null
         )
 
 
@@ -600,7 +605,8 @@ fun ReaderScreen(
             isGlass = isGlass,
             isThemeDark = isThemeDark,
             isSepiaTheme = isSepiaTheme,
-            viewModel = viewModel
+            viewModel = viewModel,
+            hazeState = if (isGlass) readerHazeState else null
         )
 
 

@@ -1260,6 +1260,24 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 f
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed, 0 errors, exit code 0).
 
+## 2.3.0-beta.17 (versionCode 182) — 100% Solid Obsidian Book Profile, Reader Haze Blur & Fiery Streak Badge
+
+- **100% Opaque Obsidian Book Profile (`BookProfileBottomSheet.kt`):**
+  - Completely resolved the semi-transparent bottom sheet issue where underlying library screen text ("Aura Reader / Добрый вечер") bled through as dirty smudges: sheet container is now 100% opaque solid obsidian `#141416` in dark mode (`#000000` in AMOLED, `#F7F7F9` in light mode) with 0% alpha.
+  - Enforced solid elevated card containers (`#1C1C1F`) and crisp specular borders (`0.08f` white alpha), ensuring zero transparency artifacts while retaining high contrast.
+- **Hardware-Accelerated Frosted Glass Blur in Reader (`ReaderScreen.kt`, `ReaderTopBar.kt`, `ReaderBottomBar.kt`):**
+  - Wired `HazeState` from `dev.chrisbanes.haze:1.7.3` directly into `ReaderScreen`, applying `.haze(readerHazeState)` to the stable content box containing reader chapters and text.
+  - Passed `readerHazeState` into `ReaderTopBar` and `ReaderBottomBar`, unlocking authentic 120 FPS frosted glass background blur under the top and bottom navigation bars.
+- **Elimination of Cold Blueish Casts Across Reader & Docks (`LiquidGlass.kt`, `ReaderSettingsBottomSheet.kt`, `TtsControlBar.kt`, `ReadingStatsBottomSheet.kt`, `BookCards.kt`):**
+  - Replaced cold blue-tinted container fills (`#181A20`, `#1F2129`, `#14151C`, `#1E2125`, `#281C1E26`) with Aura Reader's signature pure graphite obsidian palette (`#141416`, `#1C1C1F`, `#242429`, `#161618`).
+- **Fiery Reading Streak Achievement Badge (`LibraryBanners.kt`, `ReadingStatsBottomSheet.kt`):**
+  - Redesigned the streak indicator in `LibraryReadingStatsBanner` from plain text into an achievement badge pill: rounded surface with fiery translucent amber fill (`#FFFF9500` at 16% alpha), crisp amber border, flame emoji, and bold amber day counter.
+  - Enhanced `StreakBanner` in the reading stats bottom sheet with a coordinated amber glowing border.
+- **Refined Action Chips in Liquid Glass (`BookCards.kt`):**
+  - Enhanced inline action chips (`BookActionChip`) with delicate specular borders (`0.08f` white alpha / `0.06f` dark alpha) in Liquid Glass mode.
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
 ## 2.3.0-beta.15 (versionCode 180) — Deep Module Architecture Refactoring (AppSettings, BookIngestionPipeline, BookEnricher, BookActionDispatcher)
 
 - **Candidate 1: Deep AppSettings Architecture (`AppSettings.kt`, `PreferencesManager.kt`, `SettingsPages.kt`):**
@@ -1296,6 +1314,24 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all 97 unit tests pas
   - Eliminated the dense «cards inside cards» heavy gray box look, elevating the profile into an airy, editorial literary overview.
 
 Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed, 0 errors, exit code 0).
+
+## 2.3.0-beta.17 (versionCode 182) — 100% Solid Obsidian Book Profile, Reader Haze Blur & Fiery Streak Badge
+
+- **100% Opaque Obsidian Book Profile (`BookProfileBottomSheet.kt`):**
+  - Completely resolved the semi-transparent bottom sheet issue where underlying library screen text ("Aura Reader / Добрый вечер") bled through as dirty smudges: sheet container is now 100% opaque solid obsidian `#141416` in dark mode (`#000000` in AMOLED, `#F7F7F9` in light mode) with 0% alpha.
+  - Enforced solid elevated card containers (`#1C1C1F`) and crisp specular borders (`0.08f` white alpha), ensuring zero transparency artifacts while retaining high contrast.
+- **Hardware-Accelerated Frosted Glass Blur in Reader (`ReaderScreen.kt`, `ReaderTopBar.kt`, `ReaderBottomBar.kt`):**
+  - Wired `HazeState` from `dev.chrisbanes.haze:1.7.3` directly into `ReaderScreen`, applying `.haze(readerHazeState)` to the stable content box containing reader chapters and text.
+  - Passed `readerHazeState` into `ReaderTopBar` and `ReaderBottomBar`, unlocking authentic 120 FPS frosted glass background blur under the top and bottom navigation bars.
+- **Elimination of Cold Blueish Casts Across Reader & Docks (`LiquidGlass.kt`, `ReaderSettingsBottomSheet.kt`, `TtsControlBar.kt`, `ReadingStatsBottomSheet.kt`, `BookCards.kt`):**
+  - Replaced cold blue-tinted container fills (`#181A20`, `#1F2129`, `#14151C`, `#1E2125`, `#281C1E26`) with Aura Reader's signature pure graphite obsidian palette (`#141416`, `#1C1C1F`, `#242429`, `#161618`).
+- **Fiery Reading Streak Achievement Badge (`LibraryBanners.kt`, `ReadingStatsBottomSheet.kt`):**
+  - Redesigned the streak indicator in `LibraryReadingStatsBanner` from plain text into an achievement badge pill: rounded surface with fiery translucent amber fill (`#FFFF9500` at 16% alpha), crisp amber border, flame emoji, and bold amber day counter.
+  - Enhanced `StreakBanner` in the reading stats bottom sheet with a coordinated amber glowing border.
+- **Refined Action Chips in Liquid Glass (`BookCards.kt`):**
+  - Enhanced inline action chips (`BookActionChip`) with delicate specular borders (`0.08f` white alpha / `0.06f` dark alpha) in Liquid Glass mode.
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
 
 
 

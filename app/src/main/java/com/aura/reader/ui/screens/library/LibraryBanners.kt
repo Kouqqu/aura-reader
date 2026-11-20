@@ -1,5 +1,9 @@
 package com.aura.reader.ui.screens.library
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.Surface
+import androidx.compose.ui.unit.sp
 import com.aura.reader.ui.components.expressiveClickable
 import androidx.compose.foundation.background
 import com.aura.reader.ui.components.LiquidGlassFilterChip
@@ -217,12 +221,37 @@ internal fun LibraryReadingStatsBanner(
                 modifier = Modifier.weight(1f)
             )
             if (currentStreakDays > 0) {
-                Text(
-                    text = "\uD83D\uDD25 ${currentStreakDays}",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                if (isGlass) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFFF9500).copy(alpha = if (isThemeDark) 0.16f else 0.12f),
+                        border = BorderStroke(1.dp, Color(0xFFFF9500).copy(alpha = if (isThemeDark) 0.32f else 0.24f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Text(
+                                text = "\uD83D\uDD25",
+                                fontSize = 12.sp
+                            )
+                            Text(
+                                text = "$currentStreakDays",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFF9500)
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "\uD83D\uDD25 ${currentStreakDays}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 Spacer(modifier = Modifier.width(6.dp))
             }
             Icon(

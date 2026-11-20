@@ -169,7 +169,7 @@ fun TtsControlBar(
     }
 
     if (isGlass) {
-        val ttsBg = if (isDark) Color(0xEB18191E) else Color(0xF2F5F6F8)
+        val ttsBg = if (isDark) Color(0xEB141416) else Color(0xF2F7F8FA)
         LiquidGlassSurface(
             shape = RoundedCornerShape(18.dp),
             shadowElevation = 8.dp,

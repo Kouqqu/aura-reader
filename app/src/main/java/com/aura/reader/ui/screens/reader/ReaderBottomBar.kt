@@ -1,5 +1,6 @@
 package com.aura.reader.ui.screens.reader
 
+import dev.chrisbanes.haze.HazeState
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -74,7 +75,8 @@ fun BoxScope.ReaderBottomBar(
     isGlass: Boolean,
     isThemeDark: Boolean,
     isSepiaTheme: Boolean,
-    viewModel: ReaderViewModel
+    viewModel: ReaderViewModel,
+    hazeState: HazeState? = null
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
@@ -401,6 +403,7 @@ fun BoxScope.ReaderBottomBar(
                             shadowElevation = 10.dp,
                             isDark = isThemeDark,
                             tintColor = bottomBarBg,
+                            hazeState = hazeState,
                             modifier = Modifier.fillMaxWidth(),
                             content = bottomBarContent
                         )

@@ -187,9 +187,9 @@ fun LiquidGlassSurface(
 
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val baseFill = tintColor ?: if (isDark) {
-        if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)
+        if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
     } else {
-        Color(0xF5F6F7FA)
+        Color(0xF5F7F8FA)
     }
 
     val borderBrush = if (isDark) {
@@ -279,10 +279,10 @@ fun FloatingNavigationIsland(
         } else Modifier
 
         val dockBgColor = if (isDark) {
-            if (isAmoled) Color(0xF2121316)
-            else Color(0xEE181A20)
+            if (isAmoled) Color(0xF20A0A0C)
+            else Color(0xEE141416)
         } else {
-            Color(0xF4F5F6FA)
+            Color(0xF4F7F8FA)
         }
         val dockBorderColor = if (isDark) {
             Color.White.copy(alpha = 0.06f)
@@ -842,9 +842,9 @@ fun FloatingAddGlassButton(
 
     // Exact same dock glass styling as FloatingNavigationIsland
     val dockBgColor = if (isDark) {
-        if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)
+        if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
     } else {
-        Color(0xF4F5F6FA)
+        Color(0xF4F7F8FA)
     }
     val dockBorderColor = if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
 

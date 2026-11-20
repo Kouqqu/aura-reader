@@ -162,9 +162,9 @@ fun ReaderSettingsBottomSheet(
         if (isSepia) {
             Color(0xFFFAF0E6)
         } else if (isThemeDark) {
-            if (isAmoled) Color(0xFF000000) else Color(0xFF14151C)
+            if (isAmoled) Color(0xFF000000) else Color(0xFF141416)
         } else {
-            Color(0xFFF2F3F8)
+            Color(0xFFF7F7F9)
         }
     } else {
         MaterialTheme.colorScheme.surfaceContainerHigh
@@ -174,10 +174,10 @@ fun ReaderSettingsBottomSheet(
         if (isThemeDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
     } else Color.Transparent
 
-    // Card background with clean contrast in neutral slate grey-blue
+    // Card background with clean contrast in neutral obsidian graphite
     val cardBg = if (isGlass) {
         if (isThemeDark) {
-            if (isAmoled) Color(0xFF141419) else Color(0xFF1F2129)
+            if (isAmoled) Color(0xFF101012) else Color(0xFF1C1C1F)
         } else {
             Color(0xFFFFFFFF)
         }
@@ -212,7 +212,7 @@ fun ReaderSettingsBottomSheet(
     val chipColors = FilterChipDefaults.filterChipColors(
         containerColor = if (isGlass) {
             if (isThemeDark) {
-                if (isAmoled) Color(0xFF141419) else Color(0xFF1F2129)
+                if (isAmoled) Color(0xFF141416) else Color(0xFF242429)
             } else Color(0xFFEEEEF2)
         } else MaterialTheme.colorScheme.surfaceContainerLow,
         labelColor = if (isGlass) {
@@ -337,7 +337,7 @@ fun ReaderSettingsBottomSheet(
 
                     ThemeOptionButton(
                         label = strings.themeDark,
-                        bgColor = Color(0xFF1E2125),
+                        bgColor = Color(0xFF161618),
                         textColor = Color(0xFFE2E2E6),
                         isSelected = settings.themeMode == ReaderThemeMode.DARK || settings.themeMode == ReaderThemeMode.SYSTEM_DYNAMIC,
                         hapticEnabled = settings.hapticFeedbackEnabled,
