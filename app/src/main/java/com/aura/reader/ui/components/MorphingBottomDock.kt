@@ -62,8 +62,8 @@ import androidx.compose.ui.unit.dp
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.theme.LocalAppStrings
 import dev.chrisbanes.haze.HazeInput
-import dev.chrisbanes.haze.glass.GlassStyle
-import dev.chrisbanes.haze.glass.hazeGlass
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.hazeBlur
 
 /**
  * Circular back button for the morphing settings dock.
@@ -95,25 +95,17 @@ fun RoundBackGlassButton(
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val hazeState = LocalHazeState.current
     val hazeModifier = if (isGlass && hazeState != null) {
-        val dockGlassStyle = if (isDark) {
-            GlassStyle.regular.then {
-                backgroundColor(if (isAmoled) Color(0x20000000) else Color(0x28141416))
-            }
-        } else {
-            GlassStyle.regular.then {
-                backgroundColor(Color(0x35FFFFFF))
-            }
-        }
-        Modifier.clip(CircleShape).hazeGlass(
+        Modifier.clip(CircleShape).hazeBlur(
             input = HazeInput.Sources(hazeState),
-            style = dockGlassStyle
+            style = HazeBlurStyle {
+                blurRadius(16.dp)
+                noiseFactor(0f)
+            }
         )
     } else Modifier
 
     val dockBgColor = if (isGlass) {
-        if (hazeState != null) {
-            Color.Transparent
-        } else if (isDark) {
+        if (isDark) {
             if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
         } else {
             Color(0xF4F7F8FA)
@@ -234,25 +226,17 @@ fun SettingsCategoryDock(
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val hazeState = LocalHazeState.current
     val hazeModifier = if (isGlass && hazeState != null) {
-        val dockGlassStyle = if (isDark) {
-            GlassStyle.regular.then {
-                backgroundColor(if (isAmoled) Color(0x20000000) else Color(0x28141416))
-            }
-        } else {
-            GlassStyle.regular.then {
-                backgroundColor(Color(0x35FFFFFF))
-            }
-        }
-        Modifier.clip(dockShape).hazeGlass(
+        Modifier.clip(dockShape).hazeBlur(
             input = HazeInput.Sources(hazeState),
-            style = dockGlassStyle
+            style = HazeBlurStyle {
+                blurRadius(16.dp)
+                noiseFactor(0f)
+            }
         )
     } else Modifier
 
     val dockBgColor = if (isGlass) {
-        if (hazeState != null) {
-            Color.Transparent
-        } else if (isDark) {
+        if (isDark) {
             if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
         } else {
             Color(0xF4F7F8FA)

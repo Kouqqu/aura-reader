@@ -102,6 +102,8 @@ import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.theme.LocalAppStrings
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.hazeBlur
 import dev.chrisbanes.haze.glass.GlassStyle
 import dev.chrisbanes.haze.glass.hazeGlass
 import kotlinx.coroutines.launch
@@ -182,33 +184,21 @@ fun LiquidGlassSurface(
     val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
 
     val hazeModifier = if (hazeState != null) {
-        val glassStyle = if (isDark) {
-            val baseContainer = tintColor ?: if (isAmoled) Color(0x20000000) else Color(0x28141416)
-            GlassStyle.regular.then {
-                backgroundColor(baseContainer)
-                if (tintColor != null) {
-                    tint(tintColor)
-                }
-            }
-        } else {
-            val baseContainer = tintColor ?: Color(0x35FFFFFF)
-            GlassStyle.regular.then {
-                backgroundColor(baseContainer)
-                if (tintColor != null) {
-                    tint(tintColor)
-                }
-            }
-        }
-        Modifier.clip(shape).hazeGlass(
+        Modifier.clip(shape).hazeBlur(
             input = HazeInput.Sources(hazeState),
-            style = glassStyle
+            style = HazeBlurStyle {
+                blurRadius(24.dp)
+                noiseFactor(0f)
+            }
         )
     } else Modifier
 
     val baseFill = if (hazeState != null) {
-        // Frosted glass mode: do NOT paint an opaque cover over the blur!
-        // HazeGlass already renders the glass backdrop, diffusion, and specular light.
-        Color.Transparent
+        tintColor ?: if (isDark) {
+            if (isAmoled) Color(0xD808080A) else Color(0xCC141416)
+        } else {
+            Color(0xDDF7F8FA)
+        }
     } else {
         tintColor ?: if (isDark) {
             if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
@@ -297,24 +287,16 @@ fun FloatingNavigationIsland(
         val dockShape = RoundedCornerShape(30.dp)
         val hazeState = LocalHazeState.current
         val hazeModifier = if (hazeState != null) {
-            val navGlassStyle = if (isDark) {
-                GlassStyle.regular.then {
-                    backgroundColor(if (isAmoled) Color(0x20000000) else Color(0x28141416))
-                }
-            } else {
-                GlassStyle.regular.then {
-                    backgroundColor(Color(0x35FFFFFF))
-                }
-            }
-            Modifier.clip(dockShape).hazeGlass(
+            Modifier.clip(dockShape).hazeBlur(
                 input = HazeInput.Sources(hazeState),
-                style = navGlassStyle
+                style = HazeBlurStyle {
+                    blurRadius(16.dp)
+                    noiseFactor(0f)
+                }
             )
         } else Modifier
 
-        val dockBgColor = if (hazeState != null) {
-            Color.Transparent
-        } else if (isDark) {
+        val dockBgColor = if (isDark) {
             if (isAmoled) Color(0xF20A0A0C)
             else Color(0xEE141416)
         } else {
@@ -857,18 +839,12 @@ fun FloatingAddGlassButton(
     val shape = CircleShape
     val hazeState = LocalHazeState.current
     val hazeModifier = if (hazeState != null) {
-        val addGlassStyle = if (isDark) {
-            GlassStyle.regular.then {
-                backgroundColor(if (isAmoled) Color(0x20000000) else Color(0x28141416))
-            }
-        } else {
-            GlassStyle.regular.then {
-                backgroundColor(Color(0x35FFFFFF))
-            }
-        }
-        Modifier.clip(shape).hazeGlass(
+        Modifier.clip(shape).hazeBlur(
             input = HazeInput.Sources(hazeState),
-            style = addGlassStyle
+            style = HazeBlurStyle {
+                blurRadius(16.dp)
+                noiseFactor(0f)
+            }
         )
     } else Modifier
 
@@ -886,9 +862,7 @@ fun FloatingAddGlassButton(
     )
 
     // Exact same dock glass styling as FloatingNavigationIsland
-    val dockBgColor = if (hazeState != null) {
-        Color.Transparent
-    } else if (isDark) {
+    val dockBgColor = if (isDark) {
         if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
     } else {
         Color(0xF4F7F8FA)

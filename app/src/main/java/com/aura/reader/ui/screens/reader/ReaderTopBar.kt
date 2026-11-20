@@ -365,7 +365,7 @@ fun BoxScope.ReaderTopBar(
 
             if (isGlass) {
                 val topBarBg = if (isSepiaTheme) {
-                    Color(0x388D6E63)
+                    Color(0xD8FAF0E6)
                 } else {
                     null
                 }
