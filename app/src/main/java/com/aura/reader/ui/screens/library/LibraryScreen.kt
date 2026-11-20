@@ -801,7 +801,7 @@ fun LibraryScreen(
                                                         onToggleFavorite = { viewModel.toggleFavorite(currentHeroBook.id) },
                                                         onAddToCollection = { bookForCollections = currentHeroBook },
                                                         onSetProgress = { prog -> viewModel.setBookReadingProgress(currentHeroBook.id, prog) },
-                                                        onCoverClick = { inspectingCoverBook = currentHeroBook },
+                                                        onCoverClick = { selectedBookForProfile = currentHeroBook },
                                                         onShare = { BookShareUtils.shareBookFile(context, currentHeroBook) },
                                                         onChangeCover = { bookForCoverChange = currentHeroBook },
                                                         isPrivate = currentHeroBook.id in privateBookIds,

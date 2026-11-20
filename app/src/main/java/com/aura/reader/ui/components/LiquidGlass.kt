@@ -934,26 +934,27 @@ fun FloatingAddGlassButton(
         }
     } else {
         // MATERIAL 3 EXPRESSIVE STYLE
+        val m3AddBorder = BorderStroke(
+            1.dp,
+            if (isDark) Color.White.copy(alpha = 0.16f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.50f)
+        )
         Surface(
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            },
             shape = CircleShape,
             color = MaterialTheme.colorScheme.primaryContainer,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-            shadowElevation = 8.dp,
+            border = m3AddBorder,
+            shadowElevation = if (isDark) 0.dp else 6.dp,
+            interactionSource = interactionSource,
             modifier = modifier
                 .size(60.dp)
                 .graphicsLayer {
                     scaleX = containerScale
                     scaleY = containerScale
                 }
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = LocalIndication.current,
-                    role = Role.Button,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onClick()
-                    }
-                )
+                .clip(CircleShape)
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),

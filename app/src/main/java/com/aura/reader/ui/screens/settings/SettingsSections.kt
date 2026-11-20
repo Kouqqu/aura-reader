@@ -747,7 +747,7 @@ ExpressiveSettingsGroup {
         // when the network is unavailable. No more red error snackbar for a check
         // that simply found nothing new.
         AnimatedVisibility(
-            visible = updateCheckState !is UpdateCheckState.Idle,
+            visible = updateCheckState is UpdateCheckState.UpToDate || updateCheckState is UpdateCheckState.Failed,
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
@@ -759,17 +759,7 @@ ExpressiveSettingsGroup {
             ) {
                 when (val state = updateCheckState) {
                     is UpdateCheckState.Checking -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(14.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = strings.checkingUpdates,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        // Handled by the button itself to prevent duplicate indicators
                     }
                     is UpdateCheckState.UpToDate -> {
                         Icon(

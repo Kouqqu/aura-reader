@@ -676,7 +676,8 @@ class LibraryViewModel(
                 it.title.contains(q, ignoreCase = true) ||
                 it.author.contains(q, ignoreCase = true) ||
                 (it.series?.contains(q, ignoreCase = true) == true) ||
-                it.format.name.equals(q, ignoreCase = true)
+                it.format.name.equals(q, ignoreCase = true) ||
+                it.genres.any { genre -> genre.contains(q, ignoreCase = true) }
             }
         }
 

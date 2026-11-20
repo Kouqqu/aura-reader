@@ -188,10 +188,10 @@ AnimatedContent(
             )
         } else {
             listOf(
-                Color(0xFFFFB300), // 1. Warm Amber-Gold
-                Color(0xFFFF4081), // 2. Coral Sunset Rose
-                Color(0xFF7C4DFF), // 3. Vibrant Electric Violet
-                Color(0xFF00E676)  // 4. Emerald Aurora Mint
+                Color(0xFFFFB74D), // 1. Warm Golden Amber
+                Color(0xFFF06292), // 2. Soft Rose-Coral
+                Color(0xFF7E57C2), // 3. Lavender Royal Twilight
+                Color(0xFF26A69A)  // 4. Celestial Sea Teal
             )
         }
 
@@ -200,7 +200,7 @@ AnimatedContent(
             initialValue = 0f,
             targetValue = 62.831853f, // 10 * 2 * PI
             animationSpec = infiniteRepeatable(
-                animation = tween(36000, easing = LinearEasing),
+                animation = tween(72000, easing = LinearEasing),
                 repeatMode = RepeatMode.Restart
             ),
             label = "meshPhase"
@@ -229,26 +229,26 @@ AnimatedContent(
                         val baseRadiusPx = 150.dp.toPx()
                         val t = meshPhase
 
-                        // Dynamic harmonic displacement (Simplex/Perlin noise-like organic wander)
-                        val x1 = cloudCenter.x + baseRadiusPx * (0.36f * sin(0.41f * t) + 0.16f * cos(0.83f * t) - 0.10f)
-                        val y1 = cloudCenter.y + baseRadiusPx * (0.28f * cos(0.53f * t) + 0.14f * sin(1.07f * t) - 0.06f)
-                        val r1 = baseRadiusPx * (1.10f + 0.16f * sin(0.67f * t))
-                        val a1 = (if (isThemeDark) 0.38f else 0.15f) * (1.0f + 0.14f * cos(0.47f * t)) * scrollAlpha
+                        // Gentle, slow harmonic displacement (Simplex/Perlin noise-like organic wander)
+                        val x1 = cloudCenter.x + baseRadiusPx * (0.34f * sin(0.21f * t) + 0.15f * cos(0.42f * t) - 0.10f)
+                        val y1 = cloudCenter.y + baseRadiusPx * (0.26f * cos(0.27f * t) + 0.12f * sin(0.53f * t) - 0.06f)
+                        val r1 = baseRadiusPx * (1.10f + 0.14f * sin(0.33f * t))
+                        val a1 = (if (isThemeDark) 0.34f else 0.14f) * (1.0f + 0.12f * cos(0.24f * t)) * scrollAlpha
 
-                        val x2 = cloudCenter.x + baseRadiusPx * (0.40f * cos(0.37f * t + 1.4f) + 0.15f * sin(0.91f * t) + 0.08f)
-                        val y2 = cloudCenter.y + baseRadiusPx * (0.32f * sin(0.61f * t + 0.8f) - 0.13f * cos(1.19f * t) + 0.10f)
-                        val r2 = baseRadiusPx * (1.18f + 0.18f * cos(0.59f * t))
-                        val a2 = (if (isThemeDark) 0.35f else 0.14f) * (1.0f + 0.15f * sin(0.73f * t)) * scrollAlpha
+                        val x2 = cloudCenter.x + baseRadiusPx * (0.38f * cos(0.19f * t + 1.4f) + 0.14f * sin(0.45f * t) + 0.08f)
+                        val y2 = cloudCenter.y + baseRadiusPx * (0.30f * sin(0.31f * t + 0.8f) - 0.12f * cos(0.59f * t) + 0.10f)
+                        val r2 = baseRadiusPx * (1.16f + 0.15f * cos(0.29f * t))
+                        val a2 = (if (isThemeDark) 0.32f else 0.13f) * (1.0f + 0.13f * sin(0.37f * t)) * scrollAlpha
 
-                        val x3 = cloudCenter.x + baseRadiusPx * (0.38f * sin(0.47f * t + 2.8f) - 0.15f * cos(0.79f * t) - 0.16f)
-                        val y3 = cloudCenter.y + baseRadiusPx * (0.36f * cos(0.43f * t + 2.1f) + 0.16f * sin(1.13f * t) + 0.06f)
-                        val r3 = baseRadiusPx * (1.26f + 0.20f * sin(0.51f * t))
-                        val a3 = (if (isThemeDark) 0.39f else 0.16f) * (1.0f + 0.13f * cos(0.63f * t)) * scrollAlpha
+                        val x3 = cloudCenter.x + baseRadiusPx * (0.35f * sin(0.24f * t + 2.8f) - 0.14f * cos(0.39f * t) - 0.14f)
+                        val y3 = cloudCenter.y + baseRadiusPx * (0.34f * cos(0.22f * t + 2.1f) + 0.14f * sin(0.56f * t) + 0.06f)
+                        val r3 = baseRadiusPx * (1.22f + 0.16f * sin(0.26f * t))
+                        val a3 = (if (isThemeDark) 0.35f else 0.15f) * (1.0f + 0.12f * cos(0.31f * t)) * scrollAlpha
 
-                        val x4 = cloudCenter.x + baseRadiusPx * (0.42f * cos(0.53f * t + 4.2f) + 0.18f * sin(0.71f * t) + 0.18f)
-                        val y4 = cloudCenter.y + baseRadiusPx * (0.30f * sin(0.39f * t + 3.5f) + 0.13f * cos(0.97f * t) - 0.12f)
-                        val r4 = baseRadiusPx * (1.12f + 0.16f * cos(0.77f * t))
-                        val a4 = (if (isThemeDark) 0.33f else 0.13f) * (1.0f + 0.16f * sin(0.55f * t)) * scrollAlpha
+                        val x4 = cloudCenter.x + baseRadiusPx * (0.39f * cos(0.27f * t + 4.2f) + 0.16f * sin(0.36f * t) + 0.16f)
+                        val y4 = cloudCenter.y + baseRadiusPx * (0.28f * sin(0.20f * t + 3.5f) + 0.12f * cos(0.49f * t) - 0.10f)
+                        val r4 = baseRadiusPx * (1.10f + 0.14f * cos(0.39f * t))
+                        val a4 = (if (isThemeDark) 0.30f else 0.12f) * (1.0f + 0.14f * sin(0.28f * t)) * scrollAlpha
 
                         val nodes = listOf(
                             Triple(Offset(x1, y1), r1, nodeColors[0] to a1),
@@ -376,25 +376,7 @@ AnimatedContent(
                 }
             }
         },
-        actions = {
-            if (!isGlass) {
-                // Search Button in Material mode
-                IconButton(onClick = { onSearchExpandedChange(true) }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Search,
-                        contentDescription = strings.searchInLibrary
-                    )
-                }
-
-                // Settings Button in Material mode
-                IconButton(onClick = { onOpenSettings() }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Settings,
-                        contentDescription = strings.settingsTitle
-                    )
-                }
-            }
-        },
+        actions = {},
         scrollBehavior = scrollBehavior,
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,

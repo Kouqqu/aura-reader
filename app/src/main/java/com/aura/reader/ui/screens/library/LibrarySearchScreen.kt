@@ -116,9 +116,18 @@ fun LibrarySearchScreen(
                 book.author.contains(trimmedQuery, ignoreCase = true) ||
                 (book.series?.contains(trimmedQuery, ignoreCase = true) == true) ||
                 book.format.name.contains(trimmedQuery, ignoreCase = true) ||
-                book.collections.any { it.contains(trimmedQuery, ignoreCase = true) }
+                book.collections.any { it.contains(trimmedQuery, ignoreCase = true) } ||
+                book.genres.any { it.contains(trimmedQuery, ignoreCase = true) }
             }
         }
+    }
+
+    val availableGenres = remember(books) {
+        books.flatMap { it.genres }
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
     }
 
     Box(
@@ -262,6 +271,41 @@ fun LibrarySearchScreen(
                     }
                 }
 
+                // Available Genres Section
+                if (availableGenres.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 18.dp, bottom = 8.dp, start = 4.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = strings.catGenres,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 2.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(availableGenres) { genre ->
+                            SearchGenreChip(
+                                genre = genre,
+                                isSelected = false,
+                                isDark = isDark,
+                                onClick = {
+                                    onSearchQueryChange(genre)
+                                    onSaveSearchQuery(genre)
+                                }
+                            )
+                        }
+                    }
+                }
+
                 // Centered Empty State Prompt
                 Box(
                     modifier = Modifier
@@ -319,6 +363,34 @@ fun LibrarySearchScreen(
                     }
                 }
             } else {
+                // Quick genre filter strip
+                if (availableGenres.isNotEmpty()) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 6.dp)
+                    ) {
+                        items(availableGenres) { genre ->
+                            val isSelected = trimmedQuery.equals(genre, ignoreCase = true)
+                            SearchGenreChip(
+                                genre = genre,
+                                isSelected = isSelected,
+                                isDark = isDark,
+                                onClick = {
+                                    if (isSelected) {
+                                        onSearchQueryChange("")
+                                    } else {
+                                        onSearchQueryChange(genre)
+                                        onSaveSearchQuery(genre)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
                 // Search Results
                 if (searchResults.isEmpty()) {
                     Box(
@@ -502,6 +574,59 @@ private fun SearchHistoryChip(
                     modifier = Modifier.size(14.dp)
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun SearchGenreChip(
+    genre: String,
+    isSelected: Boolean,
+    isDark: Boolean,
+    onClick: () -> Unit
+) {
+    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
+    val surfaceColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else if (isDark) {
+        if (isAmoled) Color(0x1CFFFFFF) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.50f)
+    } else {
+        Color(0x95FFFFFF)
+    }
+    val contentColor = if (isSelected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    LiquidGlassSurface(
+        shape = RoundedCornerShape(16.dp),
+        isDark = isDark,
+        shadowElevation = if (isAmoled) 0.dp else if (isSelected) 3.dp else 1.dp,
+        tintColor = surfaceColor,
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Category,
+                contentDescription = null,
+                tint = if (isSelected) contentColor else MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(15.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = genre,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                color = contentColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

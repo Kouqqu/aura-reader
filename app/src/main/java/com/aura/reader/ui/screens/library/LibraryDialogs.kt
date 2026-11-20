@@ -175,10 +175,7 @@ fun LibraryDialogs(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                if (progress != null) "${(progress * 100).toInt()}%"
-                                else strings.downloading
-                            )
+                            Text(strings.downloading)
                         }
                     }
                     isReady -> {
