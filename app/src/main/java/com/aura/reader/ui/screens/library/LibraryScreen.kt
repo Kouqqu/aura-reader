@@ -102,6 +102,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -183,6 +184,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import com.aura.reader.data.model.HolidaySeason
 import com.aura.reader.data.model.LocalHolidaySeason
 
@@ -370,6 +373,8 @@ fun LibraryScreen(
     var showBatchCollectionDialog by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
     var showHeroMenu by remember { mutableStateOf(false) }
+    var rootCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var sortButtonCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
     BackHandler(enabled = showSortMenu) {
         showSortMenu = false
@@ -642,7 +647,9 @@ fun LibraryScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { rootCoordinates = it }
         ) {
             Box(
                 modifier = Modifier
@@ -901,33 +908,37 @@ fun LibraryScreen(
                                                                 LibrarySortOption.SERIES -> strings.sortBySeries
                                                                 LibrarySortOption.CUSTOM -> strings.sortCustomOrder
                                                             }
-                                                            ExpressiveSplitButton(
-                                                                leadingContent = {
-                                                                    Icon(
-                                                                        imageVector = Icons.AutoMirrored.Rounded.Sort,
-                                                                        contentDescription = strings.sortTitle,
-                                                                        modifier = Modifier.size(20.dp)
-                                                                    )
-                                                                    Text(
-                                                                        text = sortLabel,
-                                                                        style = MaterialTheme.typography.labelLarge
-                                                                    )
-                                                                },
-                                                                trailingContent = {
-                                                                    Icon(
-                                                                        imageVector = if (libraryViewMode == "GRID") Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
-                                                                        contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid,
-                                                                        tint = MaterialTheme.colorScheme.onSurface,
-                                                                        modifier = Modifier.size(22.dp)
-                                                                    )
-                                                                },
-                                                                onLeadingClick = { showSortMenu = true },
-                                                                onTrailingClick = { viewModel.toggleLibraryViewMode() },
-                                                                containerColor = buttonBg,
-                                                                contentColor = MaterialTheme.colorScheme.onSurface,
-                                                                border = buttonBorder,
-                                                                size = ExpressiveButtonSize.Small
-                                                            )
+                                                            Box(
+                                                                modifier = Modifier.onGloballyPositioned { sortButtonCoordinates = it }
+                                                            ) {
+                                                                ExpressiveSplitButton(
+                                                                    leadingContent = {
+                                                                        Icon(
+                                                                            imageVector = Icons.AutoMirrored.Rounded.Sort,
+                                                                            contentDescription = strings.sortTitle,
+                                                                            modifier = Modifier.size(20.dp)
+                                                                        )
+                                                                        Text(
+                                                                            text = sortLabel,
+                                                                            style = MaterialTheme.typography.labelLarge
+                                                                        )
+                                                                    },
+                                                                    trailingContent = {
+                                                                        Icon(
+                                                                            imageVector = if (libraryViewMode == "GRID") Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
+                                                                            contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid,
+                                                                            tint = MaterialTheme.colorScheme.onSurface,
+                                                                            modifier = Modifier.size(22.dp)
+                                                                        )
+                                                                    },
+                                                                    onLeadingClick = { showSortMenu = true },
+                                                                    onTrailingClick = { viewModel.toggleLibraryViewMode() },
+                                                                    containerColor = buttonBg,
+                                                                    contentColor = MaterialTheme.colorScheme.onSurface,
+                                                                    border = buttonBorder,
+                                                                    size = ExpressiveButtonSize.Small
+                                                                )
+                                                            }
                                                         }
 
                                                         if (displayedRecentBooks.isNotEmpty() && librarySortOrder == LibrarySortOption.CUSTOM && !isSelectionMode) {
@@ -1332,6 +1343,12 @@ fun LibraryScreen(
                         )
                     }
                     3 -> {
+                        val booksWithoutCoversCount = remember(recentBooks) {
+                            recentBooks.count { it.deletedAtTimestamp == null && it.coverBase64.isNullOrBlank() }
+                        }
+                        val booksWithoutMetadataCount = remember(recentBooks) {
+                            recentBooks.count { it.deletedAtTimestamp == null && (it.description.isNullOrBlank() || it.genres.isEmpty()) }
+                        }
                         SettingsGeneralPage(
                             appSettings = appSettings,
                             onUpdateSettings = { viewModel.updateAppSettings(it) },
@@ -1348,7 +1365,21 @@ fun LibraryScreen(
                             },
                             onRestoreBackup = {
                                 restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
-                            }
+                            },
+                            onDownloadMissingCovers = {
+                                Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
+                                viewModel.autoDownloadMissingCovers(recentBooks) { count ->
+                                    Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            onDownloadMissingMetadata = {
+                                Toast.makeText(context, strings.downloadMissingMetadata + "...", Toast.LENGTH_SHORT).show()
+                                viewModel.autoEnrichMissingMetadata(recentBooks) { count ->
+                                    Toast.makeText(context, strings.metadataDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            booksWithoutCoversCount = booksWithoutCoversCount,
+                            booksWithoutMetadataCount = booksWithoutMetadataCount
                         )
                     }
                     4 -> {
@@ -1364,9 +1395,43 @@ fun LibraryScreen(
         // --- In-Window Sort Menu Overlay (placed outside hazeSource to sample genuine blur) ---
         AnimatedVisibility(
             visible = showSortMenu,
-            enter = fadeIn(tween(220, easing = FastOutSlowInEasing)),
-            exit = fadeOut(tween(180, easing = FastOutSlowInEasing))
+            enter = fadeIn(tween(200, easing = FastOutSlowInEasing)),
+            exit = fadeOut(tween(160, easing = FastOutSlowInEasing))
         ) {
+            val menuWidthDp = 240.dp
+            val estimatedMenuHeightDp = 250.dp
+            val menuWidthPx = with(density) { menuWidthDp.toPx() }
+            val estimatedMenuHeightPx = with(density) { estimatedMenuHeightDp.toPx() }
+            val gapPx = with(density) { 6.dp.toPx() }
+            val marginPx = with(density) { 16.dp.toPx() }
+
+            val isAttached = rootCoordinates?.isAttached == true && sortButtonCoordinates?.isAttached == true
+            val (menuX, menuY, isBelow) = remember(showSortMenu, rootCoordinates, sortButtonCoordinates) {
+                if (isAttached) {
+                    val root = rootCoordinates!!
+                    val btn = sortButtonCoordinates!!
+                    val btnPos = root.localPositionOf(btn, Offset.Zero)
+                    val btnSize = btn.size
+                    val rootSize = root.size
+
+                    val btnRight = btnPos.x + btnSize.width
+                    val btnBottom = btnPos.y + btnSize.height
+                    val btnTop = btnPos.y
+
+                    val targetX = (btnRight - menuWidthPx).coerceIn(marginPx, (rootSize.width - menuWidthPx - marginPx).coerceAtLeast(marginPx))
+                    val spaceBelow = rootSize.height - btnBottom
+                    val below = spaceBelow >= estimatedMenuHeightPx + marginPx
+                    val targetY = if (below) {
+                        btnBottom + gapPx
+                    } else {
+                        (btnTop - estimatedMenuHeightPx - gapPx).coerceAtLeast(marginPx)
+                    }
+                    Triple(targetX, targetY, below)
+                } else {
+                    Triple(marginPx, with(density) { 140.dp.toPx() }, true)
+                }
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -1377,26 +1442,21 @@ fun LibraryScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .offset { IntOffset(menuX.roundToInt(), menuY.roundToInt()) }
+                        .width(menuWidthDp)
                 ) {
                     AnimatedVisibility(
                         visible = showSortMenu,
-                        enter = fadeIn(tween(240, easing = FastOutSlowInEasing)) + scaleIn(
-                            initialScale = 0.80f,
-                            transformOrigin = TransformOrigin(0.95f, 0.05f),
-                            animationSpec = tween(240, easing = FastOutSlowInEasing)
+                        enter = fadeIn(tween(220, easing = FastOutSlowInEasing)) + scaleIn(
+                            initialScale = 0.85f,
+                            transformOrigin = if (isBelow) TransformOrigin(0.9f, 0.05f) else TransformOrigin(0.9f, 0.95f),
+                            animationSpec = tween(220, easing = FastOutSlowInEasing)
                         ),
-                        exit = fadeOut(tween(180, easing = FastOutSlowInEasing)) + scaleOut(
-                            targetScale = 0.82f,
-                            transformOrigin = TransformOrigin(0.95f, 0.05f),
-                            animationSpec = tween(180, easing = FastOutSlowInEasing)
-                        ),
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 115.dp, end = 4.dp)
-                            .width(260.dp)
+                        exit = fadeOut(tween(160, easing = FastOutSlowInEasing)) + scaleOut(
+                            targetScale = 0.85f,
+                            transformOrigin = if (isBelow) TransformOrigin(0.9f, 0.05f) else TransformOrigin(0.9f, 0.95f),
+                            animationSpec = tween(160, easing = FastOutSlowInEasing)
+                        )
                     ) {
                         LiquidGlassMenuContainer(
                             isGlass = isGlass,
@@ -1484,44 +1544,6 @@ fun LibraryScreen(
                                     showSortMenu = false
                                 }
                             )
-
-                            val booksWithoutCovers = recentBooks.filter { it.coverBase64.isNullOrBlank() }
-                            if (booksWithoutCovers.isNotEmpty()) {
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
-                                LiquidGlassMenuItem(
-                                    text = strings.downloadMissingCovers,
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                    },
-                                    onClick = {
-                                        showSortMenu = false
-                                        Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
-                                        viewModel.autoDownloadMissingCovers(recentBooks) { count ->
-                                            Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                )
-                            }
-
-                            val booksWithoutMetadata = recentBooks.filter { it.deletedAtTimestamp == null && (it.description.isNullOrBlank() || it.genres.isEmpty()) }
-                            if (booksWithoutMetadata.isNotEmpty()) {
-                                if (booksWithoutCovers.isEmpty()) {
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
-                                }
-                                LiquidGlassMenuItem(
-                                    text = strings.downloadMissingMetadata,
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.AutoStories, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                    },
-                                    onClick = {
-                                        showSortMenu = false
-                                        Toast.makeText(context, strings.downloadMissingMetadata + "...", Toast.LENGTH_SHORT).show()
-                                        viewModel.autoEnrichMissingMetadata(recentBooks) { count ->
-                                            Toast.makeText(context, strings.metadataDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                )
-                            }
                         }
                     }
                 }

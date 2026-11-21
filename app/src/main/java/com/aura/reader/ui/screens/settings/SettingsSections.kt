@@ -37,6 +37,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Analytics
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -45,6 +46,7 @@ import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Speed
@@ -439,7 +441,11 @@ internal fun SettingsAdditionalFeaturesSection(
     isGlass: Boolean,
     appSettings: AppSettings,
     onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
-    onResetReadingSpeed: () -> Unit
+    onResetReadingSpeed: () -> Unit,
+    onDownloadMissingCovers: (() -> Unit)? = null,
+    onDownloadMissingMetadata: (() -> Unit)? = null,
+    booksWithoutCoversCount: Int = 0,
+    booksWithoutMetadataCount: Int = 0
 ) {
     val strings = LocalAppStrings.current
     var expanded by rememberSaveable { mutableStateOf(true) }
@@ -501,6 +507,38 @@ ExpressiveSettingsGroup {
             }
         }
     )
+    if (onDownloadMissingCovers != null) {
+        ExpressiveDivider()
+        ExpressiveSettingsRow(
+            title = strings.downloadMissingCovers,
+            subtitle = strings.booksWithoutCoversCount(booksWithoutCoversCount),
+            icon = { SettingsIconBox(Icons.Rounded.Image) },
+            onClick = onDownloadMissingCovers,
+            trailing = {
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        )
+    }
+    if (onDownloadMissingMetadata != null) {
+        ExpressiveDivider()
+        ExpressiveSettingsRow(
+            title = strings.downloadMissingMetadata,
+            subtitle = strings.booksWithoutMetadataCount(booksWithoutMetadataCount),
+            icon = { SettingsIconBox(Icons.Rounded.AutoStories) },
+            onClick = onDownloadMissingMetadata,
+            trailing = {
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        )
+    }
     ExpressiveDivider()
     Column(modifier = Modifier.padding(16.dp)) {
         Row(

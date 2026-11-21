@@ -291,6 +291,10 @@ fun SettingsGeneralPage(
     onExportBackup: () -> Unit,
     onSendToGoogleDrive: () -> Unit,
     onRestoreBackup: () -> Unit,
+    onDownloadMissingCovers: (() -> Unit)? = null,
+    onDownloadMissingMetadata: (() -> Unit)? = null,
+    booksWithoutCoversCount: Int = 0,
+    booksWithoutMetadataCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -332,7 +336,11 @@ fun SettingsGeneralPage(
                 isGlass = isGlass,
                 appSettings = appSettings,
                 onUpdateSettings = onUpdateSettings,
-                onResetReadingSpeed = { showResetSpeedConfirmDialog = true }
+                onResetReadingSpeed = { showResetSpeedConfirmDialog = true },
+                onDownloadMissingCovers = onDownloadMissingCovers,
+                onDownloadMissingMetadata = onDownloadMissingMetadata,
+                booksWithoutCoversCount = booksWithoutCoversCount,
+                booksWithoutMetadataCount = booksWithoutMetadataCount
             )
 
             Spacer(modifier = Modifier.height(16.dp))
