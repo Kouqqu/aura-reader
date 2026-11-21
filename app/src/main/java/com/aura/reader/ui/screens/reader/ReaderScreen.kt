@@ -38,6 +38,18 @@ import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.ui.components.liquidGlassMenuAppearance
 import androidx.compose.material3.DropdownMenuItem
+import com.aura.reader.ui.components.LiquidGlassMenuContainer
+import com.aura.reader.ui.components.LiquidGlassMenuItem
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.CollectionsBookmark
+import androidx.compose.material.icons.rounded.FormatSize
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.window.Popup
@@ -221,6 +233,8 @@ fun ReaderScreen(
     val isTtsHighlightActive = ttsState.isServiceRunning && !showTtsSheet && ttsState.isPlaying
     var showChaptersSheet by remember { mutableStateOf(false) }
     var showBookmarksQuotesSheet by remember { mutableStateOf(false) }
+    var showReaderMenu by remember { mutableStateOf(false) }
+    var isSearchActive by remember { mutableStateOf(false) }
     var selectedFootnote by remember { mutableStateOf<Pair<String, String>?>(null) }
     var quoteToSave by remember { mutableStateOf<String?>(null) }
     val strings = LocalAppStrings.current
@@ -612,7 +626,10 @@ fun ReaderScreen(
             onOpenTtsSheet = { showTtsSheet = true },
             onOpenBookmarks = { showBookmarksQuotesSheet = true },
             onOpenSettings = { showSettingsSheet = true },
-            hazeState = readerHazeState
+            hazeState = readerHazeState,
+            isSearchActive = isSearchActive,
+            onSearchActiveChange = { isSearchActive = it },
+            onOpenReaderMenu = { showReaderMenu = true }
         )
 
 
@@ -633,6 +650,88 @@ fun ReaderScreen(
             viewModel = viewModel,
             hazeState = readerHazeState
         )
+
+        // In-window overflow menu with real Haze blur sampling readerHazeState
+        if (showReaderMenu) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { showReaderMenu = false }
+            )
+
+            BackHandler { showReaderMenu = false }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                AnimatedVisibility(
+                    visible = showReaderMenu,
+                    enter = fadeIn(tween(140)) + scaleIn(initialScale = 0.85f, transformOrigin = TransformOrigin(0.95f, 0f)),
+                    exit = fadeOut(tween(100)) + scaleOut(targetScale = 0.85f, transformOrigin = TransformOrigin(0.95f, 0f)),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 58.dp, end = 2.dp)
+                        .width(250.dp)
+                ) {
+                    LiquidGlassMenuContainer(
+                        isGlass = isGlass,
+                        isDark = isThemeDark,
+                        isSepia = isSepiaTheme,
+                        hazeState = readerHazeState
+                    ) {
+                        LiquidGlassMenuItem(
+                            text = strings.ttsListenAction,
+                            leadingIcon = {
+                                Icon(Icons.Rounded.Headphones, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            onClick = {
+                                showReaderMenu = false
+                                if (!ttsState.isServiceRunning) {
+                                    viewModel.startTts(context)
+                                }
+                                showTtsSheet = true
+                            }
+                        )
+                        LiquidGlassMenuItem(
+                            text = strings.searchInBook,
+                            leadingIcon = {
+                                Icon(Icons.Rounded.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            onClick = {
+                                showReaderMenu = false
+                                isSearchActive = true
+                            }
+                        )
+                        LiquidGlassMenuItem(
+                            text = strings.bookmarksAndQuotes,
+                            leadingIcon = {
+                                Icon(Icons.Rounded.CollectionsBookmark, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            onClick = {
+                                showReaderMenu = false
+                                showBookmarksQuotesSheet = true
+                            }
+                        )
+                        LiquidGlassMenuItem(
+                            text = strings.fontAndTheme,
+                            leadingIcon = {
+                                Icon(Icons.Rounded.FormatSize, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            onClick = {
+                                showReaderMenu = false
+                                showSettingsSheet = true
+                            }
+                        )
+                    }
+                }
+            }
+        }
 
 
             if (celebrationTriggerKey != 0L) {

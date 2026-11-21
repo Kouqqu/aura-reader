@@ -38,10 +38,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -1365,6 +1367,114 @@ fun LiquidGlassCard(
             )
         ) {
             content()
+        }
+    }
+}
+
+/**
+ * Authentic Liquid Glass Menu Container.
+ * Renders in-window directly on top of hazeSource, applying genuine 24.dp Haze blur
+ * identical to ReaderTopBar and ReaderBottomBar.
+ */
+@Composable
+fun LiquidGlassMenuContainer(
+    isGlass: Boolean,
+    isDark: Boolean,
+    isSepia: Boolean = MaterialTheme.colorScheme.background == SepiaBackground,
+    hazeState: HazeState? = LocalHazeState.current,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(22.dp),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    if (isGlass) {
+        val tint = if (isSepia) Color(0x66FAF0E6) else null
+        LiquidGlassSurface(
+            shape = shape,
+            shadowElevation = 18.dp,
+            isDark = isDark,
+            tintColor = tint,
+            hazeState = hazeState,
+            modifier = modifier
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+            ) {
+                content()
+            }
+        }
+    } else {
+        Card(
+            shape = shape,
+            colors = CardDefaults.cardColors(
+                containerColor = if (isSepia) Color(0xFFE6DDCF) else MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            modifier = modifier
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+/**
+ * Liquid Glass Menu Item with crisp typography and tactile ripple.
+ */
+@Composable
+fun LiquidGlassMenuItem(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
+    trailingText: String? = null,
+    textColor: Color = MaterialTheme.colorScheme.onSurface,
+    fontWeight: FontWeight = FontWeight.Normal
+) {
+    Surface(
+        onClick = onClick,
+        color = Color.Transparent,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (leadingIcon != null) {
+                Box(modifier = Modifier.size(22.dp), contentAlignment = Alignment.Center) {
+                    leadingIcon()
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = fontWeight,
+                color = textColor,
+                modifier = Modifier.weight(1f)
+            )
+            if (trailingIcon != null) {
+                Box(modifier = Modifier.size(20.dp), contentAlignment = Alignment.Center) {
+                    trailingIcon()
+                }
+            } else if (trailingText != null) {
+                Text(
+                    text = trailingText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

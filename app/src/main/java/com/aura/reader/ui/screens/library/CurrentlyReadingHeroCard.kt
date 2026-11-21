@@ -82,13 +82,13 @@ fun CurrentlyReadingHeroCard(
     onChangeCover: () -> Unit = {},
     isPrivate: Boolean = false,
     onTogglePrivate: () -> Unit = {},
+    onOpenMenu: () -> Unit = {},
     isGlass: Boolean = false,
     isDark: Boolean = isSystemInDarkTheme(),
     clarity: Float = 0.85f,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
-    var showMenu by remember { mutableStateOf(false) }
 
     val hasCover = !book.coverBase64.isNullOrBlank()
 
@@ -297,7 +297,7 @@ fun CurrentlyReadingHeroCard(
                             // 3-dots Menu
                             Box {
                                 IconButton(
-                                    onClick = { showMenu = true },
+                                    onClick = onOpenMenu,
                                     modifier = Modifier.size(30.dp)
                                 ) {
                                     Icon(
@@ -305,84 +305,6 @@ fun CurrentlyReadingHeroCard(
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(18.dp)
-                                    )
-                                }
-
-                                val heroMenuAppearance = liquidGlassMenuAppearance(isGlass, isDark)
-                                DropdownMenu(
-                                    expanded = showMenu,
-                                    onDismissRequest = { showMenu = false },
-                                    shape = RoundedCornerShape(20.dp),
-                                    containerColor = heroMenuAppearance.containerColor,
-                                    border = heroMenuAppearance.border,
-                                    shadowElevation = heroMenuAppearance.shadowElevation
-                                ) {
-                                    PopupBlurBehind(isGlass = isGlass)
-                                    DropdownMenuItem(
-                                        text = { Text(strings.shareBookFile) },
-                                        leadingIcon = { Icon(Icons.Rounded.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                        onClick = {
-                                            showMenu = false
-                                            onShare()
-                                        }
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(if (hasCover) strings.changeCover else strings.downloadCover) },
-                                        leadingIcon = { Icon(if (hasCover) Icons.Rounded.Image else Icons.Rounded.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                        onClick = {
-                                            showMenu = false
-                                            onChangeCover()
-                                        }
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(strings.addToCollection) },
-                                        leadingIcon = { Icon(Icons.Rounded.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                        onClick = {
-                                            showMenu = false
-                                            onAddToCollection()
-                                        }
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(if (isPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate) },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = if (isPrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                        },
-                                        onClick = {
-                                            showMenu = false
-                                            onTogglePrivate()
-                                        }
-                                    )
-                                    if (book.progressPercent < 100) {
-                                        DropdownMenuItem(
-                                            text = { Text(strings.markAsFinished) },
-                                            leadingIcon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                            onClick = {
-                                                showMenu = false
-                                                onSetProgress(100)
-                                            }
-                                        )
-                                    }
-                                    if (book.progressPercent > 0) {
-                                        DropdownMenuItem(
-                                            text = { Text(strings.resetProgress) },
-                                            leadingIcon = { Icon(Icons.Rounded.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                                            onClick = {
-                                                showMenu = false
-                                                onSetProgress(0)
-                                            }
-                                        )
-                                    }
-                                    DropdownMenuItem(
-                                        text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
-                                        leadingIcon = { Icon(Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-                                        onClick = {
-                                            showMenu = false
-                                            onDelete()
-                                        }
                                     )
                                 }
                             }

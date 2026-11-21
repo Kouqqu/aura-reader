@@ -99,12 +99,13 @@ fun BoxScope.ReaderTopBar(
     onOpenTtsSheet: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenSettings: () -> Unit,
-    hazeState: HazeState? = null
+    hazeState: HazeState? = null,
+    isSearchActive: Boolean = false,
+    onSearchActiveChange: (Boolean) -> Unit = {},
+    onOpenReaderMenu: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
-    var isSearchActive by remember { mutableStateOf(false) }
-    var showReaderMenu by remember { mutableStateOf(false) }
 
         AnimatedVisibility(
             visible = visible,
@@ -124,7 +125,7 @@ fun BoxScope.ReaderTopBar(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = {
-                            isSearchActive = false
+                            onSearchActiveChange(false)
                             viewModel.clearSearch()
                         }) {
                             Icon(
@@ -185,7 +186,7 @@ fun BoxScope.ReaderTopBar(
 
                         IconButton(
                             onClick = {
-                                isSearchActive = false
+                                onSearchActiveChange(false)
                                 viewModel.clearSearch()
                             },
                             modifier = Modifier.size(36.dp)
@@ -303,70 +304,12 @@ fun BoxScope.ReaderTopBar(
                         }
 
                         // Three-dots Overflow Menu
-                        Box {
-                            IconButton(onClick = { showReaderMenu = true }) {
-                                Icon(
-                                    imageVector = Icons.Rounded.MoreVert,
-                                    contentDescription = strings.moreOptions,
-                                    tint = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-
-                            val readerMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
-                            DropdownMenu(
-                                expanded = showReaderMenu,
-                                onDismissRequest = { showReaderMenu = false },
-                                shape = RoundedCornerShape(20.dp),
-                                containerColor = readerMenuAppearance.containerColor,
-                                border = readerMenuAppearance.border,
-                                shadowElevation = readerMenuAppearance.shadowElevation
-                            ) {
-                                PopupBlurBehind(isGlass = isGlass)
-                                DropdownMenuItem(
-                                    text = { Text(strings.ttsListenAction) },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.Headphones, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        if (!ttsState.isServiceRunning) {
-                                            viewModel.startTts(context)
-                                        }
-                                        onOpenTtsSheet()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(strings.searchInBook) },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.Search, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        isSearchActive = true
-                                    }
-                                )
-
-                                DropdownMenuItem(
-                                    text = { Text(strings.bookmarksAndQuotes) },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.CollectionsBookmark, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        onOpenBookmarks()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(strings.fontAndTheme) },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.FormatSize, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        onOpenSettings()
-                                    }
-                                )
-                            }
+                        IconButton(onClick = onOpenReaderMenu) {
+                            Icon(
+                                imageVector = Icons.Rounded.MoreVert,
+                                contentDescription = strings.moreOptions,
+                                tint = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
                 }

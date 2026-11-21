@@ -26,6 +26,14 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 import androidx.compose.material3.FabPosition
+import com.aura.reader.ui.components.LiquidGlassMenuContainer
+import com.aura.reader.ui.components.LiquidGlassMenuItem
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.ui.components.FloatingNavigationIsland
@@ -345,6 +353,9 @@ fun LibraryScreen(
     var collectionToDelete by remember { mutableStateOf<String?>(null) }
 
     val privateBookIds by viewModel.privateBookIds.collectAsState()
+    val currentHeroBook = remember(recentBooks, privateBookIds) {
+        recentBooks.firstOrNull { it.isReadingStarted && it.id !in privateBookIds }
+    }
     val hasPrivatePassword by viewModel.hasPrivatePassword.collectAsState()
     val isPrivateUnlocked by viewModel.isPrivateFolderUnlocked.collectAsState()
     var showSetupPrivatePasswordDialog by remember { mutableStateOf(false) }
@@ -357,6 +368,16 @@ fun LibraryScreen(
     var selectedBookIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedBookIds.isNotEmpty()
     var showBatchCollectionDialog by remember { mutableStateOf(false) }
+    var showSortMenu by remember { mutableStateOf(false) }
+    var showHeroMenu by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = showSortMenu) {
+        showSortMenu = false
+    }
+
+    BackHandler(enabled = showHeroMenu) {
+        showHeroMenu = false
+    }
 
     PredictiveBackHandler(enabled = isSelectionMode) { progress ->
         try {
@@ -646,14 +667,13 @@ fun LibraryScreen(
             ) { page ->
                 when (page) {
                     0 -> {
-                        val currentHeroBook = recentBooks.firstOrNull { it.isReadingStarted && it.id !in privateBookIds }
                         val showHeroCard = currentHeroBook != null &&
                                 searchQuery.isBlank() &&
                                 (activeCollectionFilter.type == CollectionFilterType.ALL || activeCollectionFilter.type == CollectionFilterType.READING) &&
                                 librarySortOrder != LibrarySortOption.CUSTOM &&
                                 !isReorderMode
 
-                        val displayedRecentBooks = if (showHeroCard && currentHeroBook != null) {
+                        val displayedRecentBooks = if (showHeroCard) {
                             filteredRecentBooks.filter { it.id != currentHeroBook.id }
                         } else {
                             filteredRecentBooks
@@ -806,20 +826,22 @@ fun LibraryScreen(
                                                 }
                                             }
 
-                                            if (showHeroCard && currentHeroBook != null) {
+                                            if (showHeroCard) {
+                                                val heroBook = currentHeroBook ?: return@LazyVerticalGrid
                                                 item(key = "currently_reading_hero", span = { GridItemSpan(maxLineSpan) }) {
                                                     CurrentlyReadingHeroCard(
-                                                        book = currentHeroBook,
+                                                        book = heroBook,
                                                         onBookClick = onBookSelected,
-                                                        onDelete = { bookToDelete = currentHeroBook },
-                                                        onToggleFavorite = { viewModel.toggleFavorite(currentHeroBook.id) },
-                                                        onAddToCollection = { bookForCollections = currentHeroBook },
-                                                        onSetProgress = { prog -> viewModel.setBookReadingProgress(currentHeroBook.id, prog) },
-                                                        onCoverClick = { selectedBookForProfile = currentHeroBook },
-                                                        onShare = { BookShareUtils.shareBookFile(context, currentHeroBook) },
-                                                        onChangeCover = { bookForCoverChange = currentHeroBook },
-                                                        isPrivate = currentHeroBook.id in privateBookIds,
-                                                        onTogglePrivate = { handleTogglePrivate(currentHeroBook) },
+                                                        onDelete = { bookToDelete = heroBook },
+                                                        onToggleFavorite = { viewModel.toggleFavorite(heroBook.id) },
+                                                        onAddToCollection = { bookForCollections = heroBook },
+                                                        onSetProgress = { prog -> viewModel.setBookReadingProgress(heroBook.id, prog) },
+                                                        onCoverClick = { selectedBookForProfile = heroBook },
+                                                        onShare = { BookShareUtils.shareBookFile(context, heroBook) },
+                                                        onChangeCover = { bookForCoverChange = heroBook },
+                                                        isPrivate = heroBook.id in privateBookIds,
+                                                        onTogglePrivate = { handleTogglePrivate(heroBook) },
+                                                        onOpenMenu = { showHeroMenu = true },
                                                         isGlass = readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS,
                                                         isDark = isThemeDark,
                                                         clarity = readerSettings.glassClarity,
@@ -872,217 +894,40 @@ fun LibraryScreen(
                                                     ) {
                                                         // 1. Sort Button [ ≡ Последние ]
                                                         if (searchQuery.isBlank()) {
-                                                            Box {
-                                                                var showSortMenu by remember { mutableStateOf(false) }
-                                                                val sortLabel = when (librarySortOrder) {
-                                                                    LibrarySortOption.RECENT -> strings.sortByRecent
-                                                                    LibrarySortOption.TITLE -> strings.sortByTitle
-                                                                    LibrarySortOption.AUTHOR -> strings.sortByAuthor
-                                                                    LibrarySortOption.SERIES -> strings.sortBySeries
-                                                                    LibrarySortOption.CUSTOM -> strings.sortCustomOrder
-                                                                }
-                                                                ExpressiveSplitButton(
-                                                                    leadingContent = {
-                                                                        Icon(
-                                                                            imageVector = Icons.AutoMirrored.Rounded.Sort,
-                                                                            contentDescription = strings.sortTitle,
-                                                                            modifier = Modifier.size(20.dp)
-                                                                        )
-                                                                        Text(
-                                                                            text = sortLabel,
-                                                                            style = MaterialTheme.typography.labelLarge
-                                                                        )
-                                                                    },
-                                                                    trailingContent = {
-                                                                        Icon(
-                                                                            imageVector = if (libraryViewMode == "GRID") Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
-                                                                            contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid,
-                                                                            tint = MaterialTheme.colorScheme.onSurface,
-                                                                            modifier = Modifier.size(22.dp)
-                                                                        )
-                                                                    },
-                                                                    onLeadingClick = { showSortMenu = true },
-                                                                    onTrailingClick = { viewModel.toggleLibraryViewMode() },
-                                                                    containerColor = buttonBg,
-                                                                    contentColor = MaterialTheme.colorScheme.onSurface,
-                                                                    border = buttonBorder,
-                                                                    size = ExpressiveButtonSize.Small
-                                                                )
-
-                                                                val sortMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
-                                                                DropdownMenu(
-                                                                    expanded = showSortMenu,
-                                                                    onDismissRequest = { showSortMenu = false },
-                                                                    shape = RoundedCornerShape(16.dp),
-                                                                    containerColor = sortMenuAppearance.containerColor,
-                                                                    border = sortMenuAppearance.border,
-                                                                    shadowElevation = sortMenuAppearance.shadowElevation
-                                                                ) {
-                                                                    PopupBlurBehind(isGlass = isGlass)
-                                                                    // 1. По недавним
-                                                                    val isRecent = librarySortOrder == LibrarySortOption.RECENT
-                                                                    DropdownMenuItem(
-                                                                        text = {
-                                                                            Text(
-                                                                                strings.sortByRecent,
-                                                                                style = MaterialTheme.typography.bodyLarge,
-                                                                                fontWeight = if (isRecent) FontWeight.SemiBold else FontWeight.Normal
-                                                                            )
-                                                                        },
-                                                                        onClick = {
-                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.RECENT)
-                                                                            showSortMenu = false
-                                                                        },
-                                                                        leadingIcon = {
-                                                                            Icon(
-                                                                                imageVector = Icons.Rounded.Schedule,
-                                                                                contentDescription = null,
-                                                                                tint = if (isRecent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                                modifier = Modifier.size(20.dp)
-                                                                            )
-                                                                        },
-                                                                        trailingIcon = {
-                                                                            if (isRecent) {
-                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                                                            }
-                                                                        }
-                                                                    )
-
-                                                                    // 2. По названию
-                                                                    val isTitle = librarySortOrder == LibrarySortOption.TITLE
-                                                                    DropdownMenuItem(
-                                                                        text = {
-                                                                            Text(
-                                                                                strings.sortByTitle,
-                                                                                style = MaterialTheme.typography.bodyLarge,
-                                                                                fontWeight = if (isTitle) FontWeight.SemiBold else FontWeight.Normal
-                                                                            )
-                                                                        },
-                                                                        onClick = {
-                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.TITLE)
-                                                                            showSortMenu = false
-                                                                        },
-                                                                        leadingIcon = {
-                                                                            Icon(
-                                                                                imageVector = Icons.AutoMirrored.Rounded.Sort,
-                                                                                contentDescription = null,
-                                                                                tint = if (isTitle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                                modifier = Modifier.size(20.dp)
-                                                                            )
-                                                                        },
-                                                                        trailingIcon = {
-                                                                            if (isTitle) {
-                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                                                            }
-                                                                        }
-                                                                    )
-
-                                                                    // 3. По автору
-                                                                    val isAuthor = librarySortOrder == LibrarySortOption.AUTHOR
-                                                                    DropdownMenuItem(
-                                                                        text = {
-                                                                            Text(
-                                                                                strings.sortByAuthor,
-                                                                                style = MaterialTheme.typography.bodyLarge,
-                                                                                fontWeight = if (isAuthor) FontWeight.SemiBold else FontWeight.Normal
-                                                                            )
-                                                                        },
-                                                                        onClick = {
-                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.AUTHOR)
-                                                                            showSortMenu = false
-                                                                        },
-                                                                        leadingIcon = {
-                                                                            Icon(
-                                                                                imageVector = Icons.Rounded.Person,
-                                                                                contentDescription = null,
-                                                                                tint = if (isAuthor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                                modifier = Modifier.size(20.dp)
-                                                                            )
-                                                                        },
-                                                                        trailingIcon = {
-                                                                            if (isAuthor) {
-                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                                                            }
-                                                                        }
-                                                                    )
-
-                                                                    // 4. По серии
-                                                                    val isSeries = librarySortOrder == LibrarySortOption.SERIES
-                                                                    DropdownMenuItem(
-                                                                        text = {
-                                                                            Text(
-                                                                                strings.sortBySeries,
-                                                                                style = MaterialTheme.typography.bodyLarge,
-                                                                                fontWeight = if (isSeries) FontWeight.SemiBold else FontWeight.Normal
-                                                                            )
-                                                                        },
-                                                                        onClick = {
-                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.SERIES)
-                                                                            showSortMenu = false
-                                                                        },
-                                                                        leadingIcon = {
-                                                                            Icon(
-                                                                                imageVector = Icons.Rounded.AutoStories,
-                                                                                contentDescription = null,
-                                                                                tint = if (isSeries) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                                modifier = Modifier.size(20.dp)
-                                                                            )
-                                                                        },
-                                                                        trailingIcon = {
-                                                                            if (isSeries) {
-                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                                                            }
-                                                                        }
-                                                                    )
-
-                                                                    // 5. Свой порядок
-                                                                    val isCustom = librarySortOrder == LibrarySortOption.CUSTOM
-                                                                    DropdownMenuItem(
-                                                                        text = {
-                                                                            Text(
-                                                                                strings.sortCustomOrder,
-                                                                                style = MaterialTheme.typography.bodyLarge,
-                                                                                fontWeight = if (isCustom) FontWeight.SemiBold else FontWeight.Normal
-                                                                            )
-                                                                        },
-                                                                        onClick = {
-                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.CUSTOM)
-                                                                            showSortMenu = false
-                                                                        },
-                                                                        leadingIcon = {
-                                                                            Icon(
-                                                                                imageVector = Icons.Rounded.CollectionsBookmark,
-                                                                                contentDescription = null,
-                                                                                tint = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                                modifier = Modifier.size(20.dp)
-                                                                            )
-                                                                        },
-                                                                        trailingIcon = {
-                                                                            if (isCustom) {
-                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                                                            }
-                                                                        }
-                                                                    )
-
-                                                                    val booksWithoutCovers = remember(recentBooks) { recentBooks.filter { it.coverBase64.isNullOrBlank() } }
-                                                                    if (booksWithoutCovers.isNotEmpty()) {
-                                                                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                                                                        DropdownMenuItem(
-                                                                            text = { Text(strings.downloadMissingCovers, style = MaterialTheme.typography.bodyLarge) },
-                                                                            leadingIcon = {
-                                                                                Icon(Icons.Rounded.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                                                                            },
-                                                                            onClick = {
-                                                                                showSortMenu = false
-                                                                                Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
-                                                                                viewModel.autoDownloadMissingCovers(recentBooks) { count ->
-                                                                                    Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
-                                                                                }
-                                                                            }
-                                                                        )
-                                                                    }
-                                                                }
+                                                            val sortLabel = when (librarySortOrder) {
+                                                                LibrarySortOption.RECENT -> strings.sortByRecent
+                                                                LibrarySortOption.TITLE -> strings.sortByTitle
+                                                                LibrarySortOption.AUTHOR -> strings.sortByAuthor
+                                                                LibrarySortOption.SERIES -> strings.sortBySeries
+                                                                LibrarySortOption.CUSTOM -> strings.sortCustomOrder
                                                             }
+                                                            ExpressiveSplitButton(
+                                                                leadingContent = {
+                                                                    Icon(
+                                                                        imageVector = Icons.AutoMirrored.Rounded.Sort,
+                                                                        contentDescription = strings.sortTitle,
+                                                                        modifier = Modifier.size(20.dp)
+                                                                    )
+                                                                    Text(
+                                                                        text = sortLabel,
+                                                                        style = MaterialTheme.typography.labelLarge
+                                                                    )
+                                                                },
+                                                                trailingContent = {
+                                                                    Icon(
+                                                                        imageVector = if (libraryViewMode == "GRID") Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
+                                                                        contentDescription = if (libraryViewMode == "GRID") strings.viewModeList else strings.viewModeGrid,
+                                                                        tint = MaterialTheme.colorScheme.onSurface,
+                                                                        modifier = Modifier.size(22.dp)
+                                                                    )
+                                                                },
+                                                                onLeadingClick = { showSortMenu = true },
+                                                                onTrailingClick = { viewModel.toggleLibraryViewMode() },
+                                                                containerColor = buttonBg,
+                                                                contentColor = MaterialTheme.colorScheme.onSurface,
+                                                                border = buttonBorder,
+                                                                size = ExpressiveButtonSize.Small
+                                                            )
                                                         }
 
                                                         if (displayedRecentBooks.isNotEmpty() && librarySortOrder == LibrarySortOption.CUSTOM && !isSelectionMode) {
@@ -1510,6 +1355,262 @@ fun LibraryScreen(
                         SettingsAboutPage(
                             appDesignStyle = readerSettings.appDesignStyle,
                             onOpenOnboarding = onOpenOnboarding
+                        )
+                    }
+                }
+            }
+        }
+
+        // --- In-Window Sort Menu Overlay (placed outside hazeSource to sample genuine blur) ---
+        if (showSortMenu) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { showSortMenu = false }
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                AnimatedVisibility(
+                    visible = showSortMenu,
+                    enter = fadeIn(tween(140)) + scaleIn(initialScale = 0.85f, transformOrigin = TransformOrigin(0.95f, 0.15f)),
+                    exit = fadeOut(tween(100)) + scaleOut(targetScale = 0.85f, transformOrigin = TransformOrigin(0.95f, 0.15f)),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 115.dp, end = 4.dp)
+                        .width(260.dp)
+                ) {
+                    LiquidGlassMenuContainer(
+                        isGlass = isGlass,
+                        isDark = isThemeDark,
+                        isSepia = isSepiaTheme,
+                        hazeState = hazeState
+                    ) {
+                        val isRecent = librarySortOrder == LibrarySortOption.RECENT
+                        LiquidGlassMenuItem(
+                            text = strings.sortByRecent,
+                            leadingIcon = {
+                                Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = null, tint = if (isRecent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            },
+                            trailingIcon = if (isRecent) {
+                                { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                            } else null,
+                            textColor = if (isRecent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (isRecent) FontWeight.SemiBold else FontWeight.Normal,
+                            onClick = {
+                                viewModel.setLibrarySortOrder(LibrarySortOption.RECENT)
+                                showSortMenu = false
+                            }
+                        )
+                        val isTitle = librarySortOrder == LibrarySortOption.TITLE
+                        LiquidGlassMenuItem(
+                            text = strings.sortByTitle,
+                            leadingIcon = {
+                                Icon(Icons.Rounded.Title, contentDescription = null, tint = if (isTitle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            },
+                            trailingIcon = if (isTitle) {
+                                { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                            } else null,
+                            textColor = if (isTitle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (isTitle) FontWeight.SemiBold else FontWeight.Normal,
+                            onClick = {
+                                viewModel.setLibrarySortOrder(LibrarySortOption.TITLE)
+                                showSortMenu = false
+                            }
+                        )
+                        val isAuthor = librarySortOrder == LibrarySortOption.AUTHOR
+                        LiquidGlassMenuItem(
+                            text = strings.sortByAuthor,
+                            leadingIcon = {
+                                Icon(Icons.Rounded.Person, contentDescription = null, tint = if (isAuthor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            },
+                            trailingIcon = if (isAuthor) {
+                                { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                            } else null,
+                            textColor = if (isAuthor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (isAuthor) FontWeight.SemiBold else FontWeight.Normal,
+                            onClick = {
+                                viewModel.setLibrarySortOrder(LibrarySortOption.AUTHOR)
+                                showSortMenu = false
+                            }
+                        )
+                        val isSeries = librarySortOrder == LibrarySortOption.SERIES
+                        LiquidGlassMenuItem(
+                            text = strings.sortBySeries,
+                            leadingIcon = {
+                                Icon(Icons.Rounded.AutoStories, contentDescription = null, tint = if (isSeries) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            },
+                            trailingIcon = if (isSeries) {
+                                { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                            } else null,
+                            textColor = if (isSeries) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (isSeries) FontWeight.SemiBold else FontWeight.Normal,
+                            onClick = {
+                                viewModel.setLibrarySortOrder(LibrarySortOption.SERIES)
+                                showSortMenu = false
+                            }
+                        )
+                        val isCustom = librarySortOrder == LibrarySortOption.CUSTOM
+                        LiquidGlassMenuItem(
+                            text = strings.sortCustomOrder,
+                            leadingIcon = {
+                                Icon(Icons.Rounded.CollectionsBookmark, contentDescription = null, tint = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            },
+                            trailingIcon = if (isCustom) {
+                                { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                            } else null,
+                            textColor = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (isCustom) FontWeight.SemiBold else FontWeight.Normal,
+                            onClick = {
+                                viewModel.setLibrarySortOrder(LibrarySortOption.CUSTOM)
+                                showSortMenu = false
+                            }
+                        )
+
+                        val booksWithoutCovers = recentBooks.filter { it.coverBase64.isNullOrBlank() }
+                        if (booksWithoutCovers.isNotEmpty()) {
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                            LiquidGlassMenuItem(
+                                text = strings.downloadMissingCovers,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                onClick = {
+                                    showSortMenu = false
+                                    Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
+                                    viewModel.autoDownloadMissingCovers(recentBooks) { count ->
+                                        Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- In-Window Hero Card Menu Overlay (outside hazeSource to sample genuine blur) ---
+        if (showHeroMenu && currentHeroBook != null) {
+            val heroBook = currentHeroBook
+            val heroHasCover = !heroBook.coverBase64.isNullOrBlank()
+            val heroIsPrivate = heroBook.id in privateBookIds
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { showHeroMenu = false }
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                AnimatedVisibility(
+                    visible = showHeroMenu,
+                    enter = fadeIn(tween(140)) + scaleIn(initialScale = 0.85f, transformOrigin = TransformOrigin(0.95f, 0.15f)),
+                    exit = fadeOut(tween(100)) + scaleOut(targetScale = 0.85f, transformOrigin = TransformOrigin(0.95f, 0.15f)),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 130.dp, end = 8.dp)
+                        .width(260.dp)
+                ) {
+                    LiquidGlassMenuContainer(
+                        isGlass = isGlass,
+                        isDark = isThemeDark,
+                        isSepia = isSepiaTheme,
+                        hazeState = hazeState
+                    ) {
+                        LiquidGlassMenuItem(
+                            text = strings.shareBookFile,
+                            leadingIcon = {
+                                Icon(Icons.Rounded.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            onClick = {
+                                showHeroMenu = false
+                                BookShareUtils.shareBookFile(context, heroBook)
+                            }
+                        )
+                        LiquidGlassMenuItem(
+                            text = if (heroHasCover) strings.changeCover else strings.downloadCover,
+                            leadingIcon = {
+                                Icon(if (heroHasCover) Icons.Rounded.Image else Icons.Rounded.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            onClick = {
+                                showHeroMenu = false
+                                bookForCoverChange = heroBook
+                            }
+                        )
+                        LiquidGlassMenuItem(
+                            text = strings.addToCollection,
+                            leadingIcon = {
+                                Icon(Icons.Rounded.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            onClick = {
+                                showHeroMenu = false
+                                bookForCollections = heroBook
+                            }
+                        )
+                        LiquidGlassMenuItem(
+                            text = if (heroIsPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate,
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = if (heroIsPrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            onClick = {
+                                showHeroMenu = false
+                                handleTogglePrivate(heroBook)
+                            }
+                        )
+                        if (heroBook.progressPercent < 100) {
+                            LiquidGlassMenuItem(
+                                text = strings.markAsFinished,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                onClick = {
+                                    showHeroMenu = false
+                                    viewModel.setBookReadingProgress(heroBook.id, 100)
+                                }
+                            )
+                        }
+                        if (heroBook.progressPercent > 0) {
+                            LiquidGlassMenuItem(
+                                text = strings.resetProgress,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                },
+                                onClick = {
+                                    showHeroMenu = false
+                                    viewModel.setBookReadingProgress(heroBook.id, 0)
+                                }
+                            )
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                        LiquidGlassMenuItem(
+                            text = strings.delete,
+                            textColor = MaterialTheme.colorScheme.error,
+                            leadingIcon = {
+                                Icon(Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            },
+                            onClick = {
+                                showHeroMenu = false
+                                bookToDelete = heroBook
+                            }
                         )
                     }
                 }
