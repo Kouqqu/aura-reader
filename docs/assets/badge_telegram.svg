@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="124" height="36" viewBox="0 0 124 36" fill="none">
+  <rect width="124" height="36" rx="18" fill="#229ED9"/>
+  <path transform="translate(14, 8.5) scale(0.79)" fill="#FFFFFF" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.57 7.41c-.12.53-.43.66-.88.41l-2.42-1.78-1.17 1.13c-.13.13-.24.24-.49.24l.17-2.47 4.5-4.06c.2-.17-.04-.27-.31-.09l-5.56 3.5-2.39-.75c-.52-.16-.53-.52.11-.77l9.35-3.6c.43-.16.81.1.67.78z"/>
+  <text x="40" y="23" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#FFFFFF">Telegram</text>
+</svg>
