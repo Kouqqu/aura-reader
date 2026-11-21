@@ -185,7 +185,7 @@ internal fun SettingsThemeSection(
             shadowElevation = 8.dp,
             tintColor = if (isThemeDark) {
                 if (materialYouEnabled) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.50f)
-                else Color(0x301D212E)
+                else MaterialTheme.colorScheme.surfaceContainer
             } else if (isSepia) Color(0x60F4E8D6) else Color(0x85FFFFFF),
             modifier = Modifier.fillMaxWidth(),
             content = themeCardContent
@@ -244,7 +244,11 @@ internal fun SettingsThemeSection(
                 )
             }
         )
-        ExpressiveDivider()
+    }
+
+    Spacer(modifier = Modifier.height(14.dp))
+
+    ExpressiveSettingsGroup {
         ExpressiveSettingsRow(
             title = strings.materialYouToggle,
             subtitle = strings.materialYouSubtitle,

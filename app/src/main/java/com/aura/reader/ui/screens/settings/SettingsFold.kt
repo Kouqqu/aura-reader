@@ -55,7 +55,7 @@ internal fun SettingsFoldHeader(
     val isDark = LocalIsThemeDark.current
     val headerShape = RoundedCornerShape(if (expanded) 16.dp else 20.dp)
     val containerColor = if (isGlass) {
-        if (isDark) Color(0x301D212E) else Color(0x60FFFFFF)
+        if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh else Color(0x60FFFFFF)
     } else {
         MaterialTheme.colorScheme.surfaceContainerHigh
     }

@@ -464,30 +464,6 @@ SettingsFoldHeader(
 SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
 ExpressiveSettingsGroup {
     ExpressiveSettingsRow(
-        title = strings.readingStatsToggle,
-        subtitle = strings.readingStatsSubtitle,
-        icon = { SettingsIconBox(Icons.Rounded.BarChart) },
-        onClick = { onUpdateSettings { it.copy(readingStatsEnabled = !it.readingStatsEnabled) } },
-        trailing = {
-            if (isGlass) {
-                LiquidGlassSwitch(
-                    checked = appSettings.readingStatsEnabled,
-                    onCheckedChange = { v -> onUpdateSettings { it.copy(readingStatsEnabled = v) } }
-                )
-            } else {
-                Switch(
-                    checked = appSettings.readingStatsEnabled,
-                    onCheckedChange = { v -> onUpdateSettings { it.copy(readingStatsEnabled = v) } },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.primary,
-                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                )
-            }
-        }
-    )
-    ExpressiveDivider()
-    ExpressiveSettingsRow(
         title = strings.autoFetchMetadataTitle,
         subtitle = strings.autoFetchMetadataDesc,
         icon = { SettingsIconBox(Icons.Rounded.CloudDownload) },
@@ -542,36 +518,6 @@ ExpressiveSettingsGroup {
             }
         )
     }
-    if (onClearCache != null) {
-        ExpressiveDivider()
-        ExpressiveSettingsRow(
-            title = strings.clearAppCacheTitle,
-            subtitle = strings.clearAppCacheSubtitle(cacheSizeString),
-            icon = { SettingsIconBox(Icons.Rounded.DeleteOutline) },
-            onClick = onClearCache,
-            trailing = {
-                Icon(
-                    imageVector = Icons.Rounded.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        )
-    }
-    ExpressiveDivider()
-    ExpressiveSettingsRow(
-        title = strings.readingSpeedSettingTitle,
-        subtitle = strings.resetReadingSpeedSubtitle,
-        icon = { SettingsIconBox(Icons.Rounded.Speed) },
-        onClick = onResetReadingSpeed,
-        trailing = {
-            Icon(
-                imageVector = Icons.Rounded.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    )
     ExpressiveDivider()
     Column(modifier = Modifier.padding(16.dp)) {
         Row(
@@ -649,6 +595,64 @@ ExpressiveSettingsGroup {
                 )
             }
         }
+    }
+}
+
+Spacer(modifier = Modifier.height(14.dp))
+
+ExpressiveSettingsGroup {
+    ExpressiveSettingsRow(
+        title = strings.readingStatsToggle,
+        subtitle = strings.readingStatsSubtitle,
+        icon = { SettingsIconBox(Icons.Rounded.BarChart) },
+        onClick = { onUpdateSettings { it.copy(readingStatsEnabled = !it.readingStatsEnabled) } },
+        trailing = {
+            if (isGlass) {
+                LiquidGlassSwitch(
+                    checked = appSettings.readingStatsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(readingStatsEnabled = v) } }
+                )
+            } else {
+                Switch(
+                    checked = appSettings.readingStatsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(readingStatsEnabled = v) } },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            }
+        }
+    )
+    ExpressiveDivider()
+    ExpressiveSettingsRow(
+        title = strings.readingSpeedSettingTitle,
+        subtitle = strings.resetReadingSpeedSubtitle,
+        icon = { SettingsIconBox(Icons.Rounded.Speed) },
+        onClick = onResetReadingSpeed,
+        trailing = {
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    )
+    if (onClearCache != null) {
+        ExpressiveDivider()
+        ExpressiveSettingsRow(
+            title = strings.clearAppCacheTitle,
+            subtitle = strings.clearAppCacheSubtitle(cacheSizeString),
+            icon = { SettingsIconBox(Icons.Rounded.DeleteOutline) },
+            onClick = onClearCache,
+            trailing = {
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        )
     }
 }
 }

@@ -84,7 +84,7 @@ internal fun SettingsHolidayStyleSection(
 
     val cardShape = RoundedCornerShape(20.dp)
     val containerColor = if (isGlass) {
-        if (isThemeDark) Color(0x301D212E) else Color(0x60FFFFFF)
+        if (isThemeDark) MaterialTheme.colorScheme.surfaceContainer else Color(0x60FFFFFF)
     } else {
         MaterialTheme.colorScheme.surfaceContainer
     }
