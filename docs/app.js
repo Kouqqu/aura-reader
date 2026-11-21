@@ -10,12 +10,12 @@
   const FALLBACK_URL = `https://github.com/${REPO}/releases/download/${DEFAULT_VERSION}/AuraReader-${DEFAULT_VERSION}.apk`;
 
   async function resolveLatestRelease() {
-    const downloadBtns = document.querySelectorAll('.apk-download-link');
+    const downloadLinks = document.querySelectorAll('.apk-download-link');
     const versionLabels = document.querySelectorAll('.release-version-label');
     const sizeLabels = document.querySelectorAll('.release-size-label');
 
-    // Default values
-    downloadBtns.forEach(btn => btn.href = FALLBACK_URL);
+    // Default fallback
+    downloadLinks.forEach(link => link.href = FALLBACK_URL);
 
     try {
       const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=5`);
@@ -34,11 +34,8 @@
           const version = rel.tag_name || DEFAULT_VERSION;
           const sizeMb = (apk.size / (1024 * 1024)).toFixed(1) + ' МБ';
 
-          downloadBtns.forEach(btn => {
-            btn.href = apk.browser_download_url;
-            if (btn.dataset.withVersion) {
-              btn.textContent = `Скачать APK (${version})`;
-            }
+          downloadLinks.forEach(link => {
+            link.href = apk.browser_download_url;
           });
 
           versionLabels.forEach(el => el.textContent = version);
@@ -47,17 +44,17 @@
         }
       }
     } catch (e) {
-      console.warn('Fallback to bundled release info:', e);
+      console.warn('Using bundled release fallback:', e);
     }
   }
 
   function initOpdsCopy() {
     const copyBtn = document.getElementById('copy-opds-btn');
-    const urlInput = document.getElementById('opds-url-input');
-    if (!copyBtn || !urlInput) return;
+    const urlField = document.getElementById('opds-url-field');
+    if (!copyBtn || !urlField) return;
 
     copyBtn.addEventListener('click', async () => {
-      const url = urlInput.textContent.trim();
+      const url = urlField.textContent.trim();
       try {
         await navigator.clipboard.writeText(url);
         const originalText = copyBtn.textContent;

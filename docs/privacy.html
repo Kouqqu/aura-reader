@@ -6,7 +6,13 @@
   <title>Политика конфиденциальности — Aura Reader</title>
   <meta name="description" content="Политика конфиденциальности Aura Reader. Ваши книги, цитаты и данные остаются только на вашем устройстве. Никакой рекламы и скрытых трекеров.">
   <link rel="icon" type="image/png" href="assets/logo_square.png">
-  <link rel="stylesheet" href="style.css">
+
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css?v=20261121_4">
   <style>
     .privacy-wrap {
       padding: 56px 0 80px;
@@ -19,8 +25,9 @@
       gap: 6px;
       color: var(--text-muted);
       text-decoration: none;
-      font-size: 0.9rem;
-      margin-bottom: 32px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      margin-bottom: 28px;
       transition: color 0.15s ease;
     }
     .privacy-back-link:hover {
@@ -32,24 +39,24 @@
       padding-bottom: 24px;
     }
     .privacy-header h1 {
-      font-size: 2.2rem;
-      font-weight: 800;
+      font-size: 2rem;
+      font-weight: 600;
       letter-spacing: -0.02em;
       margin-bottom: 8px;
     }
     .privacy-header p {
       color: var(--text-muted);
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
     .privacy-body h2 {
-      font-size: 1.35rem;
-      font-weight: 700;
+      font-size: 1.25rem;
+      font-weight: 600;
       margin: 32px 0 12px;
       color: var(--text-main);
     }
     .privacy-body p, .privacy-body li {
       color: var(--text-muted);
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       line-height: 1.65;
       margin-bottom: 12px;
     }
@@ -58,7 +65,7 @@
       margin-bottom: 16px;
     }
     .privacy-card {
-      background-color: var(--bg-surface);
+      background-color: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
       padding: 20px;
@@ -66,14 +73,15 @@
     }
     .privacy-card h4 {
       color: var(--text-main);
-      font-size: 1rem;
+      font-size: 0.95rem;
+      font-weight: 600;
       margin-bottom: 6px;
     }
     .privacy-table {
       width: 100%;
       border-collapse: collapse;
       margin: 16px 0 24px;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
     }
     .privacy-table th, .privacy-table td {
       border: 1px solid var(--border-subtle);
@@ -81,16 +89,16 @@
       text-align: left;
     }
     .privacy-table th {
-      background-color: var(--bg-surface-elevated);
+      background-color: rgba(255, 255, 255, 0.04);
       color: var(--text-main);
-      font-weight: 600;
+      font-weight: 500;
     }
     .privacy-table td {
       color: var(--text-muted);
     }
     code {
       font-family: var(--font-mono);
-      background-color: var(--bg-surface-elevated);
+      background-color: rgba(255, 255, 255, 0.06);
       padding: 2px 5px;
       border-radius: 4px;
       font-size: 0.85em;
@@ -116,7 +124,7 @@
 
   <main class="container privacy-wrap">
     <a href="index.html" class="privacy-back-link">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="15 18 9 12 15 6"></polyline>
       </svg>
       Вернуться на главную
@@ -124,7 +132,7 @@
 
     <div class="privacy-header">
       <h1>Политика конфиденциальности</h1>
-      <p>Aura Reader — открытый проект без рекламы и сбора персональных данных</p>
+      <p>Aura Reader — открытый проект без рекламы и скрытого сбора данных</p>
     </div>
 
     <div class="privacy-card">
@@ -182,7 +190,7 @@
       </ul>
 
       <h2>4. Открытый исходный код</h2>
-      <p>Исходный код приложения опубликован под лицензией GPL-3.0. Вы можете лично изучить архитектуру и сетевые вызовы в официальном репозитории на <a href="https://github.com/Kouqqu/aura-reader" target="_blank" rel="noopener" style="color: var(--accent-primary);">GitHub</a>.</p>
+      <p>Исходный код приложения опубликован под лицензией GPL-3.0. Вы можете лично изучить архитектуру и сетевые вызовы в официальном репозитории на <a href="https://github.com/Kouqqu/aura-reader" target="_blank" rel="noopener" style="color: var(--accent);">GitHub</a>.</p>
     </article>
   </main>
 
@@ -199,6 +207,6 @@
     </div>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20261121_4"></script>
 </body>
 </html>
