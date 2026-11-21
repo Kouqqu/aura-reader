@@ -32,7 +32,7 @@
 
 ### Installation
 
-Download the latest **`AuraReader.apk`** from the [Releases](https://github.com/Kouqqu/aura-reader/releases/latest) page and install it on your Android device. Subsequent updates can be downloaded and installed directly inside the app.
+Download the latest `AuraReader-v*.apk` from the [Releases](https://github.com/Kouqqu/aura-reader/releases/latest) page and install it on your Android device.
 
 ### License
 
@@ -62,7 +62,7 @@ This project is open-source and licensed under the [GNU General Public License v
 
 ### Установка
 
-Скачайте свежий **`AuraReader.apk`** со страницы [Releases](https://github.com/Kouqqu/aura-reader/releases/latest) и установите на смартфон. Дальше приложение сможет проверять и устанавливать обновления самостоятельно.
+Скачайте свежий файл `AuraReader-v*.apk` со страницы [Releases](https://github.com/Kouqqu/aura-reader/releases/latest) и установите на смартфон.
 
 ### Лицензия
 
