@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="52" viewBox="0 0 220 52" fill="none">
+  <defs>
+    <linearGradient id="bg-tg" x1="0" y1="0" x2="220" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E1C2E"/>
+      <stop offset="100%" stop-color="#131220"/>
+    </linearGradient>
+    <linearGradient id="border-tg" x1="0" y1="0" x2="220" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3E3A5A"/>
+      <stop offset="100%" stop-color="#252338"/>
+    </linearGradient>
+    <linearGradient id="tg-circle" x1="8" y1="8" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2BB4F6"/>
+      <stop offset="100%" stop-color="#1B88D4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background pill -->
+  <rect x="0.5" y="0.5" width="219" height="51" rx="25.5" fill="url(#bg-tg)" stroke="url(#border-tg)"/>
+
+  <!-- Icon Circle -->
+  <circle cx="26" cy="26" r="16" fill="url(#tg-circle)"/>
+
+  <!-- Telegram paper plane icon -->
+  <path transform="translate(14, 14)" fill="#FFFFFF" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.57 7.41c-.12.53-.43.66-.88.41l-2.42-1.78-1.17 1.13c-.13.13-.24.24-.49.24l.17-2.47 4.5-4.06c.2-.17-.04-.27-.31-.09l-5.56 3.5-2.39-.75c-.52-.16-.53-.52.11-.77l9.35-3.6c.43-.16.81.1.67.78z"/>
+
+  <!-- Texts -->
+  <text x="52" y="21" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="600" fill="#9D9AA8" letter-spacing="0.5">TELEGRAM-КАНАЛ</text>
+  <text x="52" y="37" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#FFFFFF">@koukkuteka</text>
+
+  <!-- Trailing Chevron -->
+  <path d="M198 22l4 4-4 4" stroke="#6C6784" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
