@@ -67,3 +67,15 @@ This project is open-source and licensed under the [GNU General Public License v
 ### Лицензия
 
 Проект распространяется под свободной лицензией [GNU General Public License v3.0](LICENSE).
+
+---
+
+<div align="center">
+  <a href="https://t.me/koukkuteka" target="_blank">
+    <img src="assets/badge_telegram.svg" alt="Telegram @koukkuteka" height="48">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://dalink.to/koukku" target="_blank">
+    <img src="assets/badge_donate.svg" alt="Поддержать автора" height="48">
+  </a>
+</div>
