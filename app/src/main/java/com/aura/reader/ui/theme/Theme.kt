@@ -333,6 +333,25 @@ fun AuraReaderTheme(
         finalColorScheme
     }
 
+    val isAppDark = when (themeMode) {
+        ReaderThemeMode.LIGHT -> false
+        ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
+        ReaderThemeMode.SEPIA -> false
+        ReaderThemeMode.SYSTEM_DYNAMIC -> systemDark
+    }
+
+    val view = androidx.compose.ui.platform.LocalView.current
+    if (!view.isInEditMode) {
+        androidx.compose.runtime.SideEffect {
+            val window = (view.context as? android.app.Activity)?.window
+            if (window != null) {
+                val insetsController = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                insetsController.isAppearanceLightStatusBars = !isAppDark
+                insetsController.isAppearanceLightNavigationBars = !isAppDark
+            }
+        }
+    }
+
     MaterialTheme(
         colorScheme = festiveColorScheme,
         typography = typography,

@@ -676,6 +676,41 @@ class BookRepository(
         if (changed) saveRecentBooks(currentList)
     }
 
+    suspend fun batchSetManualShelf(bookIds: Set<String>, manualShelf: String?) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        var changed = false
+        for (i in currentList.indices) {
+            if (currentList[i].id in bookIds) {
+                val old = currentList[i]
+                val updatedProgress = when (manualShelf) {
+                    "FINISHED" -> 100
+                    "UNREAD" -> 0
+                    "READING" -> if (old.progressPercent == 0 || old.progressPercent >= 100) 1 else old.progressPercent
+                    else -> old.progressPercent
+                }
+                currentList[i] = old.copy(
+                    manualShelf = manualShelf,
+                    progressPercent = updatedProgress,
+                    lastReadTimestamp = System.currentTimeMillis()
+                )
+                changed = true
+            }
+        }
+        if (changed) saveRecentBooks(currentList)
+    }
+
+    suspend fun batchSetFavorite(bookIds: Set<String>, isFavorite: Boolean) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        var changed = false
+        for (i in currentList.indices) {
+            if (currentList[i].id in bookIds) {
+                currentList[i] = currentList[i].copy(isFavorite = isFavorite)
+                changed = true
+            }
+        }
+        if (changed) saveRecentBooks(currentList)
+    }
+
     // --- Book Profile Metadata ---
 
     suspend fun updateBookMetadata(

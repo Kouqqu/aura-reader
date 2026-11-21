@@ -4,6 +4,12 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.SlowMotionVideo
+import androidx.compose.material.icons.rounded.PauseCircle
 import com.aura.reader.ui.components.PixelFullScreenBurst
 import com.aura.reader.ui.components.triggerThemeHaptic
 import androidx.compose.foundation.BorderStroke
@@ -240,6 +246,8 @@ fun ReaderScreen(
     var showReaderMenu by remember { mutableStateOf(false) }
     var showAmbientSoundSheet by remember { mutableStateOf(false) }
     val currentAmbientSound by AmbientSoundPlayer.currentSound.collectAsState()
+    var isAutoScrolling by remember { mutableStateOf(false) }
+    var autoScrollSpeedMultiplier by remember { mutableFloatStateOf(1.0f) }
     var isSearchActive by remember { mutableStateOf(false) }
     var selectedFootnote by remember { mutableStateOf<Pair<String, String>?>(null) }
     var quoteToSave by remember { mutableStateOf<String?>(null) }
@@ -570,6 +578,8 @@ fun ReaderScreen(
                                     onOpenNextBook = { viewModel.openNextBookInSeries(it) },
                                     ttsState = ttsState,
                                     isTtsHighlightActive = isTtsHighlightActive,
+                                    isAutoScrolling = isAutoScrolling && !settings.pagingMode,
+                                    autoScrollSpeedMultiplier = autoScrollSpeedMultiplier,
                                     onSelectionTextChange = { text ->
                                         if (text.isNotEmpty()) selectedReaderText = text
                                     }
@@ -747,6 +757,22 @@ fun ReaderScreen(
                                     showSettingsSheet = true
                                 }
                             )
+                            if (!settings.pagingMode) {
+                                LiquidGlassMenuItem(
+                                    text = if (isAutoScrolling) strings.autoScrollStop else strings.autoScrollTitle,
+                                    leadingIcon = {
+                                        Icon(
+                                            if (isAutoScrolling) Icons.Rounded.PauseCircle else Icons.Rounded.SlowMotionVideo,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    onClick = {
+                                        showReaderMenu = false
+                                        isAutoScrolling = !isAutoScrolling
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -876,6 +902,85 @@ fun ReaderScreen(
                         isDark = isThemeDark
                     )
                 }
+
+            // Floating Auto-Scroll Control Bar when active
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isAutoScrolling && !settings.pagingMode,
+                enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = if (showControls) 185.dp else (44.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()))
+            ) {
+                LiquidGlassSurface(
+                    shape = RoundedCornerShape(24.dp),
+                    isDark = isThemeDark,
+                    hazeState = readerHazeState,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.SlowMotionVideo,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = strings.autoScrollTitle,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        IconButton(
+                            onClick = {
+                                autoScrollSpeedMultiplier = (autoScrollSpeedMultiplier - 0.25f).coerceAtLeast(0.25f)
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Remove,
+                                contentDescription = "-",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Text(
+                            text = String.format(java.util.Locale.US, "%.1fx", autoScrollSpeedMultiplier),
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        IconButton(
+                            onClick = {
+                                autoScrollSpeedMultiplier = (autoScrollSpeedMultiplier + 0.25f).coerceAtMost(5.0f)
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Add,
+                                contentDescription = "+",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconButton(
+                            onClick = { isAutoScrolling = false },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = strings.close,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
 
             // Bottom Sheets
             if (showTtsSheet) {

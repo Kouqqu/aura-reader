@@ -44,6 +44,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.isActive
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -86,6 +89,8 @@ fun ChapterContentView(
     ttsState: com.aura.reader.service.TtsState = com.aura.reader.service.TtsState(),
     isTtsHighlightActive: Boolean = false,
     onSelectionTextChange: (String) -> Unit = {},
+    isAutoScrolling: Boolean = false,
+    autoScrollSpeedMultiplier: Float = 1.0f,
     onBookFinished: () -> Unit = {}
 ) {
     val selectionState = rememberSelectionState()
@@ -140,6 +145,25 @@ fun ChapterContentView(
             if (targetScrollOffset != null) {
                 listState.animateScrollToItem(targetScrollOffset.coerceAtLeast(0))
                 onConsumeTargetScrollOffset()
+            }
+        }
+
+        val density = LocalDensity.current
+        LaunchedEffect(isAutoScrolling, autoScrollSpeedMultiplier) {
+            if (isAutoScrolling) {
+                val baseSpeed = 48f * autoScrollSpeedMultiplier
+                val speedPx = with(density) { baseSpeed.dp.toPx() }
+                var lastTime = 0L
+                while (isActive && isAutoScrolling) {
+                    withFrameNanos { now ->
+                        if (lastTime != 0L) {
+                            val dt = (now - lastTime) / 1_000_000_000f
+                            val deltaPx = speedPx * dt
+                            listState.dispatchRawDelta(deltaPx)
+                        }
+                        lastTime = now
+                    }
+                }
             }
         }
     }

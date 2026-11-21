@@ -523,15 +523,16 @@ fun ReaderSettingsBottomSheet(
                 }
 
                 val fontChoices = (when (settings.fontFamily) {
-                    ReaderFontFamily.SERIF -> listOf(strings.fontDefault, "Literata", "PT Serif", "Lora")
-                    ReaderFontFamily.SANS_SERIF -> listOf(strings.fontDefault, "Google Sans", "Inter")
-                    ReaderFontFamily.MONOSPACE -> listOf(strings.fontDefault, "JetBrains Mono")
-                    ReaderFontFamily.SYSTEM_DEFAULT -> listOf(strings.fontDefault)
+                    ReaderFontFamily.SERIF -> listOf(strings.fontDefault, "Literata", "PT Serif", "Lora", strings.fontBionic)
+                    ReaderFontFamily.SANS_SERIF -> listOf(strings.fontDefault, "Google Sans", "Inter", strings.fontBionic)
+                    ReaderFontFamily.MONOSPACE -> listOf(strings.fontDefault, "JetBrains Mono", strings.fontBionic)
+                    ReaderFontFamily.SYSTEM_DEFAULT -> listOf(strings.fontDefault, strings.fontBionic)
                 }) + customFonts.map { "CUSTOM:${it.name}" }
 
                 var fontDropdownExpanded by remember { mutableStateOf(false) }
                 val currentFontLabel = when {
                     settings.fontName.isBlank() || settings.fontName == strings.fontDefault -> strings.fontDefault
+                    settings.fontName.equals("Bionic", ignoreCase = true) || settings.fontName == strings.fontBionic -> strings.fontBionic
                     settings.fontName.startsWith("CUSTOM:") -> settings.fontName.removePrefix("CUSTOM:").substringBeforeLast(".")
                     else -> settings.fontName
                 }
@@ -560,7 +561,9 @@ fun ReaderSettingsBottomSheet(
                         onDismissRequest = { fontDropdownExpanded = false }
                     ) {
                         fontChoices.forEach { fontOption ->
-                            val isSelected = (settings.fontName.isBlank() && fontOption == strings.fontDefault) || settings.fontName == fontOption
+                            val isSelected = (settings.fontName.isBlank() && fontOption == strings.fontDefault) ||
+                                settings.fontName == fontOption ||
+                                (fontOption == strings.fontBionic && settings.fontName.equals("Bionic", ignoreCase = true))
                             val fontDisplay = if (fontOption.startsWith("CUSTOM:")) {
                                 fontOption.removePrefix("CUSTOM:").substringBeforeLast(".")
                             } else {
@@ -569,7 +572,11 @@ fun ReaderSettingsBottomSheet(
                             DropdownMenuItem(
                                 text = { Text(fontDisplay) },
                                 onClick = {
-                                    val toSave = if (fontOption == strings.fontDefault) "" else fontOption
+                                    val toSave = when (fontOption) {
+                                        strings.fontDefault -> ""
+                                        strings.fontBionic -> "Bionic"
+                                        else -> fontOption
+                                    }
                                     onFontNameChange(toSave)
                                     fontDropdownExpanded = false
                                 },

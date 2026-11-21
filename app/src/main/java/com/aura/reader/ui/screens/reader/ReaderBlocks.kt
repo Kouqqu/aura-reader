@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -52,6 +53,39 @@ import com.aura.reader.data.model.ReaderSettings
 import java.io.File
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+
+// ------------------------------------------------------------------------------------------------
+// BIONIC READING HELPER
+// ------------------------------------------------------------------------------------------------
+
+fun AnnotatedString.Builder.applyBionicStyles(text: String) {
+    var i = 0
+    val len = text.length
+    while (i < len) {
+        while (i < len && !text[i].isLetterOrDigit()) {
+            i++
+        }
+        if (i >= len) break
+        val start = i
+        while (i < len && text[i].isLetterOrDigit()) {
+            i++
+        }
+        val wordLen = i - start
+        val fixationLen = when {
+            wordLen <= 1 -> 1
+            wordLen <= 3 -> 1
+            wordLen <= 5 -> 2
+            wordLen <= 7 -> 3
+            wordLen <= 9 -> 4
+            else -> (wordLen * 0.45f).toInt().coerceAtLeast(1)
+        }
+        addStyle(
+            style = SpanStyle(fontWeight = FontWeight.Bold),
+            start = start,
+            end = start + fixationLen
+        )
+    }
+}
 
 // ------------------------------------------------------------------------------------------------
 // BLOCK RENDERER WITH SEARCH HIGHLIGHTING & FOOTNOTES
@@ -73,6 +107,10 @@ fun RenderBlock(
     onToggleControls: () -> Unit,
     onSaveQuote: (String) -> Unit
 ) {
+    val isBionic = remember(settings.fontName) {
+        settings.fontName.equals("Bionic", ignoreCase = true) ||
+        settings.fontName.equals("Бионический", ignoreCase = true)
+    }
     when (block.type) {
         BlockType.TITLE -> {
             val titleStyle = TextStyle(
@@ -335,6 +373,7 @@ fun RenderBlock(
                 ttsWordStart = ttsWordStart,
                 ttsWordEnd = ttsWordEnd,
                 ttsSpokenWord = ttsSpokenWord,
+                isBionic = isBionic,
                 onFootnoteClick = onFootnoteClick,
                 onNavigateToChapter = onNavigateToChapter,
                 onToggleControls = onToggleControls,
@@ -360,6 +399,7 @@ fun InteractiveText(
     ttsWordStart: Int = -1,
     ttsWordEnd: Int = -1,
     ttsSpokenWord: String = "",
+    isBionic: Boolean = false,
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onNavigateToChapter: ((chapterIndex: Int, blockIndex: Int) -> Unit)? = null,
     onToggleControls: () -> Unit,
@@ -368,9 +408,13 @@ fun InteractiveText(
 ) {
     val strings = LocalAppStrings.current
     val primaryColor = MaterialTheme.colorScheme.primary
-    val annotated = remember(rawText, searchQuery, footnotes, quotes, links, primaryColor, ttsWordStart, ttsWordEnd, ttsSpokenWord) {
+    val annotated = remember(rawText, searchQuery, footnotes, quotes, links, primaryColor, ttsWordStart, ttsWordEnd, ttsSpokenWord, isBionic) {
         buildAnnotatedString {
             append(rawText)
+
+            if (isBionic) {
+                applyBionicStyles(rawText)
+            }
 
             // Highlight real-time spoken TTS word
             if (ttsWordStart >= 0 || ttsSpokenWord.isNotBlank()) {

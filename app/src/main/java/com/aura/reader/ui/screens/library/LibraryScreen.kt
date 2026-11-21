@@ -571,53 +571,7 @@ fun LibraryScreen(
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = mainScreenBg,
-        topBar = {
-            val libraryPageOffset by remember(pagerState) {
-                derivedStateOf {
-                    val page = pagerState.currentPage
-                    val offset = pagerState.currentPageOffsetFraction
-                    if (page == 0) {
-                        offset.coerceIn(0f, 1f)
-                    } else if (page == 1 && offset < 0f) {
-                        (1f + offset).coerceIn(0f, 1f)
-                    } else {
-                        1f
-                    }
-                }
-            }
-            if (libraryPageOffset < 0.999f) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .graphicsLayer {
-                            val progress = libraryPageOffset
-                            alpha = (1f - progress).coerceIn(0f, 1f)
-                            translationX = -progress * size.width * 0.35f
-                        }
-                ) {
-                    LibraryTopBar(
-                        isSearchExpanded = isSearchExpanded,
-                        isGlass = isGlass,
-                        isThemeDark = isThemeDark,
-                        searchQuery = searchQuery,
-                        libraryViewMode = libraryViewMode,
-                        scrollBehavior = scrollBehavior,
-                        onSearchExpandedChange = { isSearchExpanded = it },
-                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                        onToggleViewMode = { viewModel.toggleLibraryViewMode() },
-                        onOpenSettings = {
-                            smoothScrollToPage(2)
-                        },
-                        onHolidayBadgeClick = { origin ->
-                            holidayBurstKey = System.currentTimeMillis()
-                            holidayBurstOrigin = origin
-                            triggerThemeHaptic(context)
-                            com.aura.reader.util.HolidaySoundPlayer.playHolidaySound(context, holidaySeason)
-                        }
-                    )
-                }
-            }
-        },
+        topBar = {},
         floatingActionButton = {
             if (isReorderMode) {
                 ExtendedFloatingActionButton(
@@ -707,11 +661,35 @@ fun LibraryScreen(
                             filteredRecentBooks
                         }
 
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(innerPadding)
+                        Column(
+                            modifier = Modifier.fillMaxSize()
                         ) {
+                            LibraryTopBar(
+                                isSearchExpanded = isSearchExpanded,
+                                isGlass = isGlass,
+                                isThemeDark = isThemeDark,
+                                searchQuery = searchQuery,
+                                libraryViewMode = libraryViewMode,
+                                scrollBehavior = scrollBehavior,
+                                onSearchExpandedChange = { isSearchExpanded = it },
+                                onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                                onToggleViewMode = { viewModel.toggleLibraryViewMode() },
+                                onOpenSettings = {
+                                    smoothScrollToPage(2)
+                                },
+                                onHolidayBadgeClick = { origin ->
+                                    holidayBurstKey = System.currentTimeMillis()
+                                    holidayBurstOrigin = origin
+                                    triggerThemeHaptic(context)
+                                    com.aura.reader.util.HolidaySoundPlayer.playHolidaySound(context, holidaySeason)
+                                }
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                            ) {
                                     if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
                                         Column(Modifier.fillMaxSize()) {
                                             if (isSearchExpanded && !isGlass) {
@@ -740,7 +718,7 @@ fun LibraryScreen(
                                                     val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
                                                     val subdued = searchQuery.isNotBlank() || keyboardOpen
                                                     val height by animateDpAsState(if (subdued) 72.dp else 240.dp, tween(350), label = "materialSearchHero")
-                                                    AnimatedVisibility(
+                                                    androidx.compose.animation.AnimatedVisibility(
                                                         visible = isSearchExpanded && !isGlass,
                                                         enter = expandVertically(tween(320)) + fadeIn(tween(250)),
                                                         exit = shrinkVertically(tween(250)) + fadeOut(tween(200))
@@ -1307,7 +1285,8 @@ fun LibraryScreen(
                                         }
                                     }
                                 }
-                    }
+                            }
+                        }
                     1 -> {
                         LibrarySearchScreen(
                             searchQuery = searchQuery,
@@ -2207,13 +2186,106 @@ fun LibraryScreen(
             onDismissRequest = { showBatchCollectionDialog = false },
             title = { Text(strings.batchAddToCollection) },
             text = {
-                Column(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
                     Text(
                         text = strings.selectedCount(selectedBookIds.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 1. Built-in Shelves
+                    Text(
+                        text = strings.shelvesTitle,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    val builtInShelves = listOf<Triple<String, androidx.compose.ui.graphics.vector.ImageVector, () -> Unit>>(
+                        Triple(strings.colFinished, Icons.Rounded.CheckCircle) {
+                            val count = selectedBookIds.size
+                            viewModel.batchSetManualShelf(selectedBookIds, "FINISHED")
+                            viewModel.batchSetReadingProgress(selectedBookIds, 100)
+                            showBatchCollectionDialog = false
+                            selectedBookIds = emptySet()
+                            scope.launch { snackbarHostState.showSnackbar(strings.batchMovedToShelfSnackbar(count, strings.colFinished)) }
+                        },
+                        Triple(strings.colReading, Icons.Rounded.AutoStories) {
+                            val count = selectedBookIds.size
+                            viewModel.batchSetManualShelf(selectedBookIds, "READING")
+                            showBatchCollectionDialog = false
+                            selectedBookIds = emptySet()
+                            scope.launch { snackbarHostState.showSnackbar(strings.batchMovedToShelfSnackbar(count, strings.colReading)) }
+                        },
+                        Triple(strings.colUnread, Icons.Rounded.BookmarkBorder) {
+                            val count = selectedBookIds.size
+                            viewModel.batchSetManualShelf(selectedBookIds, "UNREAD")
+                            viewModel.batchSetReadingProgress(selectedBookIds, 0)
+                            showBatchCollectionDialog = false
+                            selectedBookIds = emptySet()
+                            scope.launch { snackbarHostState.showSnackbar(strings.batchMovedToShelfSnackbar(count, strings.colUnread)) }
+                        },
+                        Triple(strings.colFavorites, Icons.Rounded.Favorite) {
+                            val count = selectedBookIds.size
+                            viewModel.batchSetFavorite(selectedBookIds, true)
+                            showBatchCollectionDialog = false
+                            selectedBookIds = emptySet()
+                            scope.launch { snackbarHostState.showSnackbar(strings.batchMovedToShelfSnackbar(count, strings.colFavorites)) }
+                        }
+                    )
+
+                    androidx.compose.foundation.layout.FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        builtInShelves.forEach { (shelfName, shelfIcon, onAction) ->
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                                onClick = onAction
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = shelfIcon,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = shelfName,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     Spacer(modifier = Modifier.height(12.dp))
+
+                    // 2. User Collections
+                    Text(
+                        text = strings.customCollectionsTitle,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
                     if (existingCollections.isNotEmpty()) {
                         androidx.compose.foundation.layout.FlowRow(
                             modifier = Modifier.fillMaxWidth(),

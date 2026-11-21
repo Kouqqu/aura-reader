@@ -707,7 +707,7 @@ fun BookGridCard(
                                 if (isSelectionMode) {
                                     onToggleSelect()
                                 } else {
-                                    onOpenProfile()
+                                    onClick()
                                 }
                             },
                             onLongClick = if (!canReorder) {
@@ -1088,6 +1088,11 @@ private fun BookGridInlineActionTray(
         )
 
         if (!isTrash) {
+            GridMenuRow(
+                icon = Icons.Rounded.Info,
+                text = strings.bookProfileTitle,
+                onClick = onOpenProfile
+            )
             GridMenuRow(
                 icon = Icons.Rounded.FolderOpen,
                 text = strings.addToCollection,

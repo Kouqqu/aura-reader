@@ -116,6 +116,41 @@ private val licensesList = listOf(
         licenseType = "Apache License 2.0",
         description = "Официальные библиотеки платформы Android, Material 3 и Jetpack.",
         details = "Copyright (C) The Android Open Source Project\n\nLicensed under the Apache License, Version 2.0."
+    ),
+    OpenSourceLicense(
+        title = "Coil (Coroutine Image Loader)",
+        author = "Colin White & Coil Contributors (https://coil-kt.github.io/coil)",
+        licenseType = "Apache License 2.0",
+        description = "Быстрая асинхронная загрузка и кэширование обложек книг.",
+        details = "Copyright 2023 Coil Contributors\n\nLicensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)."
+    ),
+    OpenSourceLicense(
+        title = "OkHttp",
+        author = "Square, Inc. (https://square.github.io/okhttp)",
+        licenseType = "Apache License 2.0",
+        description = "Эффективный HTTP-клиент для загрузки метаданных и обложек из сети.",
+        details = "Copyright 2019 Square, Inc.\n\nLicensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)."
+    ),
+    OpenSourceLicense(
+        title = "AndroidX Palette",
+        author = "The Android Open Source Project (Google LLC)",
+        licenseType = "Apache License 2.0",
+        description = "Извлечение доминирующих акцентных цветов из обложек книг для динамической подсветки.",
+        details = "Copyright (C) The Android Open Source Project\n\nLicensed under the Apache License, Version 2.0."
+    ),
+    OpenSourceLicense(
+        title = "TelemetryDeck SDK",
+        author = "TelemetryDeck GmbH (https://telemetrydeck.com)",
+        licenseType = "Apache License 2.0",
+        description = "Анонимная и приватная аналитика использования без сбора персональных данных.",
+        details = "Copyright 2024 TelemetryDeck GmbH\n\nLicensed under the Apache License, Version 2.0."
+    ),
+    OpenSourceLicense(
+        title = "Атмосферный процедурный звук",
+        author = "Aura Sound Synthesis & Creative Commons CC0",
+        licenseType = "CC0 1.0 Universal & MIT",
+        description = "Алгоритмический генератор зацикленных звуков окружения (дождь, камин, лес, прибой).",
+        details = "Released into the public domain under CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/) and MIT License."
     )
 )
 

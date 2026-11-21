@@ -910,6 +910,18 @@ class LibraryViewModel(
     fun batchTogglePrivate(bookIds: Set<String>, makePrivate: Boolean) =
         dispatchBookAction(BookAction.TogglePrivate(makePrivate), BookTarget.Multiple(bookIds))
 
+    fun batchSetManualShelf(bookIds: Set<String>, manualShelf: String?) {
+        viewModelScope.launch {
+            bookRepository.batchSetManualShelf(bookIds, manualShelf)
+        }
+    }
+
+    fun batchSetFavorite(bookIds: Set<String>, isFavorite: Boolean) {
+        viewModelScope.launch {
+            bookRepository.batchSetFavorite(bookIds, isFavorite)
+        }
+    }
+
     private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Idle)
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
