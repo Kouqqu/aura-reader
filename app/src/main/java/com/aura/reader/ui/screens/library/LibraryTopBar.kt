@@ -221,34 +221,37 @@ AnimatedContent(
                     if (isThemeDark && scrollAlpha > 0.005f) {
                         val cloudCenter = if (top != null && logo != null && top.isAttached && logo.isAttached) {
                             val logoPos = top.localPositionOf(logo, Offset(logo.size.width / 2f, logo.size.height / 2f))
-                            Offset(logoPos.x + 56.dp.toPx(), logoPos.y)
+                            Offset(logoPos.x + 50.dp.toPx(), logoPos.y)
                         } else {
-                            Offset(size.width * 0.38f, size.height * 0.60f)
+                            Offset(size.width * 0.38f, size.height * 0.55f)
                         }
 
-                        val baseRadiusPx = 150.dp.toPx()
+                        val baseRadiusPx = 70.dp.toPx()
                         val t = meshPhase
 
                         // Gentle, slow harmonic displacement (Simplex/Perlin noise-like organic wander)
-                        val x1 = cloudCenter.x + baseRadiusPx * (0.34f * sin(0.21f * t) + 0.15f * cos(0.42f * t) - 0.10f)
-                        val y1 = cloudCenter.y + baseRadiusPx * (0.26f * cos(0.27f * t) + 0.12f * sin(0.53f * t) - 0.06f)
-                        val r1 = baseRadiusPx * (1.10f + 0.14f * sin(0.33f * t))
-                        val a1 = (if (isThemeDark) 0.34f else 0.20f) * (1.0f + 0.12f * cos(0.24f * t)) * scrollAlpha
+                        // Displacements and radii are calibrated so the aura stays focused around the logo/title
+                        // and dissolves smoothly to 0% alpha before reaching the bottom edge of the top bar container,
+                        // eliminating any horizontal boundary clipping during pager transitions.
+                        val x1 = cloudCenter.x + baseRadiusPx * (0.28f * sin(0.21f * t) + 0.12f * cos(0.42f * t) - 0.08f)
+                        val y1 = cloudCenter.y + baseRadiusPx * (0.18f * cos(0.27f * t) + 0.08f * sin(0.53f * t) - 0.04f)
+                        val r1 = baseRadiusPx * (1.05f + 0.12f * sin(0.33f * t))
+                        val a1 = 0.34f * (1.0f + 0.12f * cos(0.24f * t)) * scrollAlpha
 
-                        val x2 = cloudCenter.x + baseRadiusPx * (0.38f * cos(0.19f * t + 1.4f) + 0.14f * sin(0.45f * t) + 0.08f)
-                        val y2 = cloudCenter.y + baseRadiusPx * (0.30f * sin(0.31f * t + 0.8f) - 0.12f * cos(0.59f * t) + 0.10f)
-                        val r2 = baseRadiusPx * (1.16f + 0.15f * cos(0.29f * t))
-                        val a2 = (if (isThemeDark) 0.32f else 0.19f) * (1.0f + 0.13f * sin(0.37f * t)) * scrollAlpha
+                        val x2 = cloudCenter.x + baseRadiusPx * (0.30f * cos(0.19f * t + 1.4f) + 0.12f * sin(0.45f * t) + 0.06f)
+                        val y2 = cloudCenter.y + baseRadiusPx * (0.20f * sin(0.31f * t + 0.8f) - 0.08f * cos(0.59f * t) + 0.06f)
+                        val r2 = baseRadiusPx * (1.08f + 0.12f * cos(0.29f * t))
+                        val a2 = 0.32f * (1.0f + 0.13f * sin(0.37f * t)) * scrollAlpha
 
-                        val x3 = cloudCenter.x + baseRadiusPx * (0.35f * sin(0.24f * t + 2.8f) - 0.14f * cos(0.39f * t) - 0.14f)
-                        val y3 = cloudCenter.y + baseRadiusPx * (0.34f * cos(0.22f * t + 2.1f) + 0.14f * sin(0.56f * t) + 0.06f)
-                        val r3 = baseRadiusPx * (1.22f + 0.16f * sin(0.26f * t))
-                        val a3 = (if (isThemeDark) 0.35f else 0.21f) * (1.0f + 0.12f * cos(0.31f * t)) * scrollAlpha
+                        val x3 = cloudCenter.x + baseRadiusPx * (0.28f * sin(0.24f * t + 2.8f) - 0.12f * cos(0.39f * t) - 0.10f)
+                        val y3 = cloudCenter.y + baseRadiusPx * (0.22f * cos(0.22f * t + 2.1f) + 0.09f * sin(0.56f * t) + 0.04f)
+                        val r3 = baseRadiusPx * (1.12f + 0.14f * sin(0.26f * t))
+                        val a3 = 0.35f * (1.0f + 0.12f * cos(0.31f * t)) * scrollAlpha
 
-                        val x4 = cloudCenter.x + baseRadiusPx * (0.39f * cos(0.27f * t + 4.2f) + 0.16f * sin(0.36f * t) + 0.16f)
-                        val y4 = cloudCenter.y + baseRadiusPx * (0.28f * sin(0.20f * t + 3.5f) + 0.12f * cos(0.49f * t) - 0.10f)
-                        val r4 = baseRadiusPx * (1.10f + 0.14f * cos(0.39f * t))
-                        val a4 = (if (isThemeDark) 0.30f else 0.18f) * (1.0f + 0.14f * sin(0.28f * t)) * scrollAlpha
+                        val x4 = cloudCenter.x + baseRadiusPx * (0.32f * cos(0.27f * t + 4.2f) + 0.13f * sin(0.36f * t) + 0.12f)
+                        val y4 = cloudCenter.y + baseRadiusPx * (0.19f * sin(0.20f * t + 3.5f) + 0.08f * cos(0.49f * t) - 0.06f)
+                        val r4 = baseRadiusPx * (1.05f + 0.12f * cos(0.39f * t))
+                        val a4 = 0.30f * (1.0f + 0.14f * sin(0.28f * t)) * scrollAlpha
 
                         val nodes = listOf(
                             Triple(Offset(x1, y1), r1, nodeColors[0] to a1),
@@ -257,17 +260,17 @@ AnimatedContent(
                             Triple(Offset(x4, y4), r4, nodeColors[3] to a4)
                         )
 
-                        val blend = if (isThemeDark) BlendMode.Screen else BlendMode.SrcOver
+                        val blend = BlendMode.Screen
 
                         for ((center, radius, colorAlpha) in nodes) {
                             val (color, alpha) = colorAlpha
                             drawCircle(
                                 brush = Brush.radialGradient(
                                     0.00f to color.copy(alpha = alpha),
-                                    0.28f to color.copy(alpha = alpha * 0.82f),
-                                    0.52f to color.copy(alpha = alpha * 0.50f),
-                                    0.74f to color.copy(alpha = alpha * 0.22f),
-                                    0.90f to color.copy(alpha = alpha * 0.06f),
+                                    0.30f to color.copy(alpha = alpha * 0.80f),
+                                    0.55f to color.copy(alpha = alpha * 0.45f),
+                                    0.75f to color.copy(alpha = alpha * 0.15f),
+                                    0.90f to color.copy(alpha = alpha * 0.03f),
                                     1.00f to Color.Transparent,
                                     center = center,
                                     radius = radius

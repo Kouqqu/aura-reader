@@ -591,8 +591,8 @@ fun LibraryScreen(
                         .fillMaxWidth()
                         .graphicsLayer {
                             val progress = libraryPageOffset
-                            alpha = (1f - progress * 1.35f).coerceIn(0f, 1f)
-                            translationX = -progress * size.width * 0.30f
+                            alpha = (1f - progress).coerceIn(0f, 1f)
+                            translationX = -progress * size.width * 0.35f
                         }
                 ) {
                     LibraryTopBar(

@@ -1389,15 +1389,25 @@ fun LiquidGlassMenuContainer(
     if (isGlass) {
         val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
 
-        // Premium elevated frosted glass:
-        // High opacity (~88-92%) so background items don't bleed through and make the menu look like thin cellophane.
-        // Haze 24.dp blur provides a luscious soft halo behind it, while deep shadow elevates it above all screen elements.
-        val menuFill = if (isDark) {
-            if (isAmoled) Color(0xEB0C0C0F) else Color(0xE818181E)
-        } else if (isSepia) {
-            Color(0xF0EDE5D6)
+        // Elevated frosted glass:
+        // Translucent obsidian in dark/amoled so 24dp Haze blur provides a luscious authentic frosted glass look,
+        // free of any matte bluish tint or opacity blockage.
+        val menuFill = if (hazeState != null) {
+            if (isDark) {
+                if (isAmoled) Color(0x750A0A0C) else Color(0x65141416)
+            } else if (isSepia) {
+                Color(0x80EDE5D6)
+            } else {
+                Color(0x85F8FAFC)
+            }
         } else {
-            Color(0xF2F8FAFC)
+            if (isDark) {
+                if (isAmoled) Color(0xFA0C0C0C) else Color(0xF5141416)
+            } else if (isSepia) {
+                Color(0xF5EDE5D6)
+            } else {
+                Color(0xF5F8FAFC)
+            }
         }
 
         val rimBrush = if (isDark) {
@@ -1466,7 +1476,13 @@ fun LiquidGlassMenuContainer(
         Card(
             shape = shape,
             colors = CardDefaults.cardColors(
-                containerColor = if (isSepia) Color(0xFFE6DDCF) else MaterialTheme.colorScheme.surfaceContainerHigh,
+                containerColor = if (isSepia) {
+                    Color(0xFFE6DDCF)
+                } else if (isDark) {
+                    Color(0xFF1E1E1E)
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                },
                 contentColor = MaterialTheme.colorScheme.onSurface
             ),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),

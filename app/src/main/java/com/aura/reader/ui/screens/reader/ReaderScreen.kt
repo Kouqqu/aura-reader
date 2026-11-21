@@ -48,6 +48,10 @@ import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.CollectionsBookmark
 import androidx.compose.material.icons.rounded.FormatSize
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.MusicNote
+import com.aura.reader.util.AmbientSoundPlayer
+import com.aura.reader.util.AmbientSoundType
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.CompositionLocalProvider
@@ -234,11 +238,19 @@ fun ReaderScreen(
     var showChaptersSheet by remember { mutableStateOf(false) }
     var showBookmarksQuotesSheet by remember { mutableStateOf(false) }
     var showReaderMenu by remember { mutableStateOf(false) }
+    var showAmbientSoundSheet by remember { mutableStateOf(false) }
+    val currentAmbientSound by AmbientSoundPlayer.currentSound.collectAsState()
     var isSearchActive by remember { mutableStateOf(false) }
     var selectedFootnote by remember { mutableStateOf<Pair<String, String>?>(null) }
     var quoteToSave by remember { mutableStateOf<String?>(null) }
     val strings = LocalAppStrings.current
     val context = LocalContext.current
+
+    DisposableEffect(Unit) {
+        onDispose {
+            AmbientSoundPlayer.stop()
+        }
+    }
     val view = LocalView.current
     val window = remember(view) { (view.context as? Activity)?.window }
 
@@ -678,6 +690,21 @@ fun ReaderScreen(
                             hazeState = readerHazeState
                         ) {
                             LiquidGlassMenuItem(
+                                text = strings.ambientSoundsTitle,
+                                leadingIcon = {
+                                    Icon(
+                                        if (currentAmbientSound != AmbientSoundType.OFF) Icons.Rounded.GraphicEq else Icons.Rounded.MusicNote,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                trailingText = if (currentAmbientSound != AmbientSoundType.OFF) currentAmbientSound.getTitle(strings) else null,
+                                onClick = {
+                                    showReaderMenu = false
+                                    showAmbientSoundSheet = true
+                                }
+                            )
+                            LiquidGlassMenuItem(
                                 text = strings.ttsListenAction,
                                 leadingIcon = {
                                     Icon(Icons.Rounded.Headphones, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -891,6 +918,15 @@ fun ReaderScreen(
                     onHapticFeedbackChange = { viewModel.setHapticFeedbackEnabled(it) },
                     onFontNameChange = { viewModel.setFontName(it) },
                     onResetReadingSpeed = { viewModel.resetReadingSpeed() }
+                )
+            }
+
+            if (showAmbientSoundSheet) {
+                AmbientSoundBottomSheet(
+                    onDismiss = { showAmbientSoundSheet = false },
+                    isGlass = isGlass,
+                    isDark = isThemeDark,
+                    isSepia = isSepiaTheme
                 )
             }
 

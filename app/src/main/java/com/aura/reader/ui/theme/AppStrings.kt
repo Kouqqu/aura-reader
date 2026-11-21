@@ -353,6 +353,16 @@ interface Strings {
     val ttsError: String
     val ttsLanguageNotSupported: String
 
+    // Ambient Sounds
+    val ambientSoundsTitle: String
+    val ambientSoundsSubtitle: String
+    val ambientSoundOff: String
+    val ambientSoundRain: String
+    val ambientSoundFire: String
+    val ambientSoundForest: String
+    val ambientSoundOcean: String
+    val ambientVolume: String
+
     // App Widget
     val widgetContinueReading: String
     val widgetNoBook: String
@@ -981,6 +991,14 @@ class RuStrings : Strings {
     override val ttsInitializing = "Инициализация синтезатора речи..."
     override val ttsError = "Синтезатор речи недоступен"
     override val ttsLanguageNotSupported = "Язык книги не поддерживается синтезатором"
+    override val ambientSoundsTitle = "Фоновые звуки"
+    override val ambientSoundsSubtitle = "Атмосферный звуковой фон для чтения"
+    override val ambientSoundOff = "Выключено"
+    override val ambientSoundRain = "Дождь"
+    override val ambientSoundFire = "Камин"
+    override val ambientSoundForest = "Лес"
+    override val ambientSoundOcean = "Волны"
+    override val ambientVolume = "Громкость звуков"
     override val widgetContinueReading = "Продолжить чтение"
     override val widgetNoBook = "Книги не открыты"
     override val widgetOpenApp = "Открыть Aura Reader"
@@ -1511,6 +1529,14 @@ class EnStrings : Strings {
     override val ttsInitializing = "Initializing speech engine..."
     override val ttsError = "Text-to-speech engine unavailable"
     override val ttsLanguageNotSupported = "Language not supported by speech engine"
+    override val ambientSoundsTitle = "Ambient sounds"
+    override val ambientSoundsSubtitle = "Atmospheric audio background for reading"
+    override val ambientSoundOff = "Off"
+    override val ambientSoundRain = "Rain"
+    override val ambientSoundFire = "Fireplace"
+    override val ambientSoundForest = "Forest"
+    override val ambientSoundOcean = "Ocean waves"
+    override val ambientVolume = "Ambient volume"
     override val widgetContinueReading = "Continue reading"
     override val widgetNoBook = "No books read yet"
     override val widgetOpenApp = "Open Aura Reader"
@@ -2059,6 +2085,14 @@ class UkStrings : Strings {
     override val ttsInitializing = "Ініціалізація синтезатора мовлення..."
     override val ttsError = "Синтезатор мовлення недоступний"
     override val ttsLanguageNotSupported = "Мова книги не підтримується синтезатором"
+    override val ambientSoundsTitle = "Фонові звуки"
+    override val ambientSoundsSubtitle = "Атмосферний звуковий фон для читання"
+    override val ambientSoundOff = "Вимкнено"
+    override val ambientSoundRain = "Дощ"
+    override val ambientSoundFire = "Камін"
+    override val ambientSoundForest = "Ліс"
+    override val ambientSoundOcean = "Хвилі"
+    override val ambientVolume = "Гучність звуків"
     override val widgetContinueReading = "Продовжити читання"
     override val widgetNoBook = "Книги не відкриті"
     override val widgetOpenApp = "Відкрити Aura Reader"
@@ -2526,6 +2560,14 @@ class BeStrings : Strings {
     override val ttsInitializing = "Ініцыялізацыя сінтэзатара маўлення..."
     override val ttsError = "Сінтэзатар маўлення недаступны"
     override val ttsLanguageNotSupported = "Мова кнігі не падтрымліваецца сінтэзатарам"
+    override val ambientSoundsTitle = "Фонавыя гукі"
+    override val ambientSoundsSubtitle = "Атмасферны гукавы фон для чытання"
+    override val ambientSoundOff = "Выключана"
+    override val ambientSoundRain = "Дождж"
+    override val ambientSoundFire = "Камін"
+    override val ambientSoundForest = "Лес"
+    override val ambientSoundOcean = "Хвалі"
+    override val ambientVolume = "Гучнасць гукаў"
     override val widgetContinueReading = "Працягнуць чытанне"
     override val widgetNoBook = "Кнігі не адкрыты"
     override val widgetOpenApp = "Адкрыць Aura Reader"
@@ -2974,6 +3016,14 @@ class PlStrings : Strings {
     override val ttsInitializing = "Inicjalizacja syntezatora mowy..."
     override val ttsError = "Syntezator mowy jest niedostępny"
     override val ttsLanguageNotSupported = "Język książki nie jest obsługiwany przez syntezator"
+    override val ambientSoundsTitle = "Dźwięki tła"
+    override val ambientSoundsSubtitle = "Nastrojowe tło dźwiękowe do czytania"
+    override val ambientSoundOff = "Wyłączone"
+    override val ambientSoundRain = "Deszcz"
+    override val ambientSoundFire = "Kominek"
+    override val ambientSoundForest = "Las"
+    override val ambientSoundOcean = "Fale morskie"
+    override val ambientVolume = "Głośność tła"
     override val widgetContinueReading = "Kontynuuj czytanie"
     override val widgetNoBook = "Brak otwartych książek"
     override val widgetOpenApp = "Otwórz Aura Reader"
@@ -3408,6 +3458,14 @@ class CsStrings : Strings {
     override val ttsInitializing = "Příprava syntézy řeči..."
     override val ttsError = "Chyba syntézy řeči"
     override val ttsLanguageNotSupported = "Jazyk textu není podporován převodníkem řeči"
+    override val ambientSoundsTitle = "Zvuky na pozadí"
+    override val ambientSoundsSubtitle = "Atmosférické zvukové pozadí pro čtení"
+    override val ambientSoundOff = "Vypnuto"
+    override val ambientSoundRain = "Déšť"
+    override val ambientSoundFire = "Krb"
+    override val ambientSoundForest = "Les"
+    override val ambientSoundOcean = "Vlny"
+    override val ambientVolume = "Hlasitost zvuků"
     override val widgetContinueReading = "Pokračovat ve čtení"
     override val widgetNoBook = "Žádná kniha k pokračování"
     override val widgetOpenApp = "Otevřít aplikaci"
@@ -3835,6 +3893,14 @@ class HeStrings : Strings {
     override val ttsInitializing = "מאתחל מנוע דיבור..."
     override val ttsError = "מנוע קריאה בקול אינו זמין"
     override val ttsLanguageNotSupported = "שפת הספר אינה נתמכת על ידי מנוע הקריאה"
+    override val ambientSoundsTitle = "צלילי רקע"
+    override val ambientSoundsSubtitle = "אווירה קולית לקריאה מהנה"
+    override val ambientSoundOff = "כבוי"
+    override val ambientSoundRain = "גשם"
+    override val ambientSoundFire = "אח"
+    override val ambientSoundForest = "יער"
+    override val ambientSoundOcean = "גלי ים"
+    override val ambientVolume = "עוצמת שמע"
     override val widgetContinueReading = "המשך לקרוא"
     override val widgetNoBook = "טרם נקראו ספרים"
     override val widgetOpenApp = "פתח את Aura Reader"
