@@ -2,7 +2,6 @@
   <img src="assets/banner.png" alt="Aura Reader" width="100%">
   <br><br>
 
-  [![Website](https://img.shields.io/badge/Website-kouqqu.github.io-8B5CF6?logo=googlechrome&logoColor=white)](https://kouqqu.github.io/aura-reader/)
   [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
   [![GitHub release](https://img.shields.io/github/v/release/Kouqqu/aura-reader?color=green)](https://github.com/Kouqqu/aura-reader/releases/latest)
   [![Platform](https://img.shields.io/badge/Platform-Android_8.0+-3DDC84.svg?logo=android&logoColor=white)](https://android.com)
