@@ -255,15 +255,58 @@ object BookMetadataSearchService {
         }
     }
 
-    private fun cleanAnnotationText(raw: String): String {
+    fun cleanAnnotationText(raw: String): String {
         return try {
             val doc = Jsoup.parse(raw)
-            val text = doc.text()
-            var cleaned = text.replace(Regex("""^НЕЗАКОННОЕ ПОТРЕБЛЕНИЕ НАРКОТИЧЕСКИХ СРЕДСТВ[^\.]*\.\s*""", RegexOption.IGNORE_CASE), "")
-            cleaned = cleaned.replace(Regex("""^Содержит нецензурную брань[^\.]*\.\s*""", RegexOption.IGNORE_CASE), "")
-            cleaned.trim()
+            // Replace paragraph breaks and line breaks with explicit newlines before extracting text
+            doc.select("p").prepend("\\n\\n")
+            doc.select("br").append("\\n")
+            val fullText = doc.text().replace("\\n", "\n")
+
+            val rawParagraphs = fullText.split(Regex("""\n{2,}"""))
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+
+            val cleanedParagraphs = mutableListOf<String>()
+
+            for (p in rawParagraphs) {
+                // If paragraph is entirely a known legal/service/marketing disclaimer, drop only this paragraph
+                if (isNoiseParagraph(p)) {
+                    continue
+                }
+
+                var cleanedP = p
+                // Strip known inline legal warning prefixes if present at the start of legitimate text
+                cleanedP = cleanedP.replace(Regex("""^НЕЗАКОННОЕ\s+ПОТРЕБЛЕНИЕ\s+НАРКОТИЧЕСКИХ\s+СРЕДСТВ[^\.]*\.\s*""", RegexOption.IGNORE_CASE), "")
+                cleanedP = cleanedP.replace(Regex("""^Содержит\s+нецензурную\s+брань[^\.]*\.\s*""", RegexOption.IGNORE_CASE), "")
+                cleanedP = cleanedP.replace(Regex("""^Возрастное\s+ограничение:\s*\d+\+\.?\s*""", RegexOption.IGNORE_CASE), "")
+                cleanedP = cleanedP.trim()
+
+                if (cleanedP.isNotBlank() && !isNoiseParagraph(cleanedP)) {
+                    cleanedParagraphs.add(cleanedP)
+                }
+            }
+
+            cleanedParagraphs.joinToString("\n\n").trim()
         } catch (e: Exception) {
             raw.replace(Regex("<[^>]*>"), " ").trim()
         }
+    }
+
+    private fun isNoiseParagraph(p: String): Boolean {
+        val lower = p.lowercase()
+        return lower.contains("администрация сайта литрес не несет ответственности") ||
+                lower.contains("могут иметься медицинские противопоказания") ||
+                (lower.contains("необходима консультация специалиста") && lower.length < 150) ||
+                lower.contains("в формате pdf a4 сохранен издательский макет") ||
+                lower.contains("изображения для книги и обложка были сгенерированы") ||
+                lower.contains("публикуется в авторской редакции с сохранением") ||
+                lower.contains("читайте в приложении литрес") ||
+                lower.contains("в нашей библиотеке вы можете скачать") ||
+                lower.contains("купить и скачать электронную книгу") ||
+                (lower.startsWith("возрастное ограничение:") && lower.length < 40) ||
+                (lower.startsWith("по промокоду") && lower.length < 80) ||
+                (lower.contains("незаконное потребление наркотических средств") && lower.length < 150) ||
+                (lower.contains("содержит нецензурную брань") && lower.length < 100)
     }
 }

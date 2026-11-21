@@ -42,6 +42,8 @@ import com.aura.reader.data.service.BookEnricher
 import com.aura.reader.ui.theme.AppLanguage
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 
 enum class LibrarySortOption {
     RECENT,
@@ -413,12 +415,44 @@ class LibraryViewModel(
     private val _customBookOrder = MutableStateFlow<List<String>>(emptyList())
     val customBookOrder: StateFlow<List<String>> = _customBookOrder.asStateFlow()
 
+    private val metadataFetchChannel = Channel<Book>(Channel.UNLIMITED)
+
     init {
         viewModelScope.launch {
             preferencesManager.customBookOrder.collect { savedOrder ->
                 if (_customBookOrder.value.isEmpty() && savedOrder.isNotEmpty()) {
                     _customBookOrder.value = savedOrder
                 }
+            }
+        }
+        startMetadataFetchWorker()
+    }
+
+    private fun startMetadataFetchWorker() {
+        viewModelScope.launch(Dispatchers.IO) {
+            for (book in metadataFetchChannel) {
+                try {
+                    val current = bookRepository.recentBooks.value.firstOrNull { it.id == book.id } ?: book
+                    if (current.description.isNullOrBlank() || current.genres.isEmpty()) {
+                        val meta = BookEnricher.fetchMetadata(current.title, current.author)
+                        if (meta != null && (!meta.description.isNullOrBlank() || meta.genres.isNotEmpty())) {
+                            val newDesc = if (current.description.isNullOrBlank()) meta.description else current.description
+                            val newGenres = if (current.genres.isEmpty()) meta.genres else current.genres
+                            val newSeries = if (current.series.isNullOrBlank()) meta.series else current.series
+                            val newSeriesNumber = current.seriesNumber ?: meta.seriesNumber
+                            bookRepository.updateBookMetadata(
+                                bookId = current.id,
+                                title = current.title,
+                                author = current.author,
+                                description = newDesc ?: "",
+                                genres = newGenres,
+                                series = newSeries,
+                                seriesNumber = newSeriesNumber
+                            )
+                        }
+                        delay(250)
+                    }
+                } catch (_: Exception) {}
             }
         }
     }
@@ -543,6 +577,42 @@ class LibraryViewModel(
             }
             withContext(Dispatchers.Main) {
                 onComplete(downloadedCount)
+            }
+        }
+    }
+
+    fun autoEnrichMissingMetadata(
+        books: List<Book>,
+        onComplete: (Int) -> Unit
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val candidates = books.filter { it.deletedAtTimestamp == null && (it.description.isNullOrBlank() || it.genres.isEmpty()) }
+            var enrichedCount = 0
+            for (book in candidates) {
+                try {
+                    val meta = BookEnricher.fetchMetadata(book.title, book.author)
+                    if (meta != null && (!meta.description.isNullOrBlank() || meta.genres.isNotEmpty())) {
+                        val current = bookRepository.recentBooks.value.firstOrNull { it.id == book.id } ?: book
+                        val newDesc = if (current.description.isNullOrBlank()) meta.description else current.description
+                        val newGenres = if (current.genres.isEmpty()) meta.genres else current.genres
+                        val newSeries = if (current.series.isNullOrBlank()) meta.series else current.series
+                        val newSeriesNumber = current.seriesNumber ?: meta.seriesNumber
+                        bookRepository.updateBookMetadata(
+                            bookId = current.id,
+                            title = current.title,
+                            author = current.author,
+                            description = newDesc ?: "",
+                            genres = newGenres,
+                            series = newSeries,
+                            seriesNumber = newSeriesNumber
+                        )
+                        enrichedCount++
+                    }
+                    delay(300)
+                } catch (_: Exception) {}
+            }
+            withContext(Dispatchers.Main) {
+                onComplete(enrichedCount)
             }
         }
     }
@@ -1014,24 +1084,7 @@ class LibraryViewModel(
     private fun tryAutoFetchMetadata(book: Book) {
         if (!autoFetchMetadataEnabled.value) return
         if (!book.description.isNullOrBlank() && book.genres.isNotEmpty()) return
-        viewModelScope.launch(Dispatchers.IO) {
-            val meta = BookEnricher.fetchMetadata(book.title, book.author) ?: return@launch
-            val newDesc = if (book.description.isNullOrBlank()) meta.description else book.description
-            val newGenres = if (book.genres.isEmpty()) meta.genres else book.genres
-            val newSeries = if (book.series.isNullOrBlank()) meta.series else book.series
-            val newSeriesNumber = book.seriesNumber ?: meta.seriesNumber
-            if (newDesc != book.description || newGenres != book.genres || newSeries != book.series || newSeriesNumber != book.seriesNumber) {
-                bookRepository.updateBookMetadata(
-                    bookId = book.id,
-                    title = book.title,
-                    author = book.author,
-                    description = newDesc ?: "",
-                    genres = newGenres,
-                    series = newSeries,
-                    seriesNumber = newSeriesNumber
-                )
-            }
-        }
+        metadataFetchChannel.trySend(book)
     }
 
     fun openBook(book: Book) {

@@ -90,4 +90,8 @@ object BookEnricher {
     fun cleanAuthor(author: String?): String {
         return CoverSearchService.cleanAuthorName(author.orEmpty())
     }
+
+    fun cleanAnnotation(raw: String): String {
+        return BookMetadataSearchService.cleanAnnotationText(raw)
+    }
 }

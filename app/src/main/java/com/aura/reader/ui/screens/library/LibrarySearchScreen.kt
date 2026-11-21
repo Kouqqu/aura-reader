@@ -3,10 +3,15 @@ package com.aura.reader.ui.screens.library
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.ui.platform.LocalDensity
 import androidx.activity.compose.BackHandler
+import com.aura.reader.data.model.GenreClassifier
+import com.aura.reader.data.model.MacroGenre
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -94,8 +99,12 @@ fun LibrarySearchScreen(
         MaterialTheme.colorScheme.background
     }
 
+    var selectedGenreFilter by rememberSaveable { mutableStateOf<String?>(null) }
+
     BackHandler {
-        if (searchQuery.isNotEmpty()) {
+        if (selectedGenreFilter != null) {
+            selectedGenreFilter = null
+        } else if (searchQuery.isNotEmpty()) {
             onSearchQueryChange("")
         } else {
             onBack()
@@ -103,29 +112,46 @@ fun LibrarySearchScreen(
     }
 
     val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    val collageSubdued = searchQuery.isNotBlank() || keyboardOpen
+    val trimmedQuery = searchQuery.trim()
+    val isFilteringOrSearching = trimmedQuery.isNotBlank() || selectedGenreFilter != null
+    val collageSubdued = isFilteringOrSearching || keyboardOpen
     val heroHeight by animateDpAsState(if (collageSubdued) 110.dp else 310.dp, tween(350), label = "searchHeroHeight")
     val titleInset by animateDpAsState(if (collageSubdued) 0.dp else 185.dp, tween(350), label = "searchTitleInset")
-    val trimmedQuery = searchQuery.trim()
-    val searchResults = remember(trimmedQuery, books) {
-        if (trimmedQuery.isBlank()) {
+
+    val searchResults = remember(trimmedQuery, selectedGenreFilter, books) {
+        if (!isFilteringOrSearching) {
             emptyList()
         } else {
             books.filter { book ->
-                book.title.contains(trimmedQuery, ignoreCase = true) ||
-                book.author.contains(trimmedQuery, ignoreCase = true) ||
-                (book.series?.contains(trimmedQuery, ignoreCase = true) == true) ||
-                book.format.name.contains(trimmedQuery, ignoreCase = true) ||
-                book.collections.any { it.contains(trimmedQuery, ignoreCase = true) } ||
-                book.genres.any { it.contains(trimmedQuery, ignoreCase = true) }
+                val matchesGenre = selectedGenreFilter == null || GenreClassifier.bookMatchesFilter(book, selectedGenreFilter!!)
+                val matchesQuery = if (trimmedQuery.isBlank()) {
+                    true
+                } else {
+                    book.title.contains(trimmedQuery, ignoreCase = true) ||
+                    book.author.contains(trimmedQuery, ignoreCase = true) ||
+                    (book.series?.contains(trimmedQuery, ignoreCase = true) == true) ||
+                    book.format.name.contains(trimmedQuery, ignoreCase = true) ||
+                    book.collections.any { it.contains(trimmedQuery, ignoreCase = true) } ||
+                    book.genres.any { it.contains(trimmedQuery, ignoreCase = true) }
+                }
+                matchesGenre && matchesQuery
             }
         }
     }
 
-    val availableGenres = remember(books) {
+    val presentMacroGenres = remember(books) {
+        books.flatMap { GenreClassifier.getMacroGenresForBook(it.genres) }.distinct()
+    }
+    val allMacroGenres = remember { MacroGenre.entries.toList() }
+    val displayMacroGenres = remember(presentMacroGenres, allMacroGenres) {
+        if (presentMacroGenres.isNotEmpty()) presentMacroGenres else allMacroGenres
+    }
+
+    val availableDetailedGenres = remember(books, displayMacroGenres) {
+        val macroTitles = displayMacroGenres.map { it.title.lowercase() }.toSet()
         books.flatMap { it.genres }
             .map { it.trim() }
-            .filter { it.isNotBlank() }
+            .filter { it.isNotBlank() && it.lowercase() !in macroTitles }
             .distinct()
             .sorted()
     }
@@ -229,14 +255,51 @@ fun LibrarySearchScreen(
                 }
             }
 
+            // Unified Filter Chips Strip (always visible, does not pollute search history)
+            if (displayMacroGenres.isNotEmpty() || availableDetailedGenres.isNotEmpty()) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 2.dp)
+                ) {
+                    items(displayMacroGenres) { macro ->
+                        val isSelected = selectedGenreFilter.equals(macro.title, ignoreCase = true)
+                        SearchGenreChip(
+                            title = macro.title,
+                            iconEmoji = macro.iconEmoji,
+                            isSelected = isSelected,
+                            isDark = isDark,
+                            onClick = {
+                                selectedGenreFilter = if (isSelected) null else macro.title
+                            }
+                        )
+                    }
+
+                    items(availableDetailedGenres) { detailedGenre ->
+                        val isSelected = selectedGenreFilter.equals(detailedGenre, ignoreCase = true)
+                        SearchGenreChip(
+                            title = detailedGenre,
+                            iconEmoji = null,
+                            isSelected = isSelected,
+                            isDark = isDark,
+                            onClick = {
+                                selectedGenreFilter = if (isSelected) null else detailedGenre
+                            }
+                        )
+                    }
+                }
+            }
+
             // Main Content Area
-            if (trimmedQuery.isBlank()) {
+            if (!isFilteringOrSearching) {
                 // Recent Search History
                 if (searchHistory.isNotEmpty()) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 20.dp, bottom = 8.dp, start = 4.dp, end = 4.dp),
+                            .padding(top = 16.dp, bottom = 8.dp, start = 4.dp, end = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -266,41 +329,6 @@ fun LibrarySearchScreen(
                                 isDark = isDark,
                                 onClick = { onSelectHistoryQuery(itemQuery) },
                                 onRemove = { onRemoveHistoryQuery(itemQuery) }
-                            )
-                        }
-                    }
-                }
-
-                // Available Genres Section
-                if (availableGenres.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 18.dp, bottom = 8.dp, start = 4.dp, end = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = strings.catGenres,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(horizontal = 2.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(availableGenres) { genre ->
-                            SearchGenreChip(
-                                genre = genre,
-                                isSelected = false,
-                                isDark = isDark,
-                                onClick = {
-                                    onSearchQueryChange(genre)
-                                    onSaveSearchQuery(genre)
-                                }
                             )
                         }
                     }
@@ -363,34 +391,6 @@ fun LibrarySearchScreen(
                     }
                 }
             } else {
-                // Quick genre filter strip
-                if (availableGenres.isNotEmpty()) {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 6.dp)
-                    ) {
-                        items(availableGenres) { genre ->
-                            val isSelected = trimmedQuery.equals(genre, ignoreCase = true)
-                            SearchGenreChip(
-                                genre = genre,
-                                isSelected = isSelected,
-                                isDark = isDark,
-                                onClick = {
-                                    if (isSelected) {
-                                        onSearchQueryChange("")
-                                    } else {
-                                        onSearchQueryChange(genre)
-                                        onSaveSearchQuery(genre)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-
                 // Search Results
                 if (searchResults.isEmpty()) {
                     Box(
@@ -431,8 +431,16 @@ fun LibrarySearchScreen(
 
                             Spacer(modifier = Modifier.height(18.dp))
 
+                            val emptyLabel = if (trimmedQuery.isNotBlank() && selectedGenreFilter != null) {
+                                strings.noSearchResultsFound("$trimmedQuery (${selectedGenreFilter})")
+                            } else if (trimmedQuery.isNotBlank()) {
+                                strings.noSearchResultsFound(trimmedQuery)
+                            } else {
+                                strings.noSearchResultsFound(selectedGenreFilter ?: "")
+                            }
+
                             Text(
-                                text = strings.noSearchResultsFound(trimmedQuery),
+                                text = emptyLabel,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center,
@@ -580,7 +588,8 @@ private fun SearchHistoryChip(
 
 @Composable
 private fun SearchGenreChip(
-    genre: String,
+    title: String,
+    iconEmoji: String? = null,
     isSelected: Boolean,
     isDark: Boolean,
     onClick: () -> Unit
@@ -612,15 +621,32 @@ private fun SearchGenreChip(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Category,
-                contentDescription = null,
-                tint = if (isSelected) contentColor else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(15.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
+            if (isSelected) {
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(15.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            } else if (!iconEmoji.isNullOrBlank()) {
+                Text(
+                    text = iconEmoji,
+                    fontSize = 13.sp,
+                    lineHeight = 15.sp
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            } else {
+                Icon(
+                    imageVector = Icons.Rounded.Category,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(15.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
             Text(
-                text = genre,
+                text = title,
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                 color = contentColor,

@@ -1502,6 +1502,26 @@ fun LibraryScreen(
                                     }
                                 )
                             }
+
+                            val booksWithoutMetadata = recentBooks.filter { it.deletedAtTimestamp == null && (it.description.isNullOrBlank() || it.genres.isEmpty()) }
+                            if (booksWithoutMetadata.isNotEmpty()) {
+                                if (booksWithoutCovers.isEmpty()) {
+                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                                }
+                                LiquidGlassMenuItem(
+                                    text = strings.downloadMissingMetadata,
+                                    leadingIcon = {
+                                        Icon(Icons.Rounded.AutoStories, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    },
+                                    onClick = {
+                                        showSortMenu = false
+                                        Toast.makeText(context, strings.downloadMissingMetadata + "...", Toast.LENGTH_SHORT).show()
+                                        viewModel.autoEnrichMissingMetadata(recentBooks) { count ->
+                                            Toast.makeText(context, strings.metadataDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }

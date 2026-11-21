@@ -35,4 +35,42 @@ class BookEnricherTest {
         val result = BookEnricher.enrich("   ", "Автор")
         assertNull(result)
     }
+
+    @Test
+    fun cleanAnnotationStripsLitresDisclaimerAndPreservesStory() {
+        val rawHtml = """
+            <p>В Москве 1930-х годов появляется Воланд со своей свитой.</p>
+            <p>Администрация сайта Литрес не несет ответственности за представленную информацию. Могут иметься медицинские противопоказания.</p>
+            <p>Мастер и Маргарита обретают вечный покой в ином мире.</p>
+        """.trimIndent()
+
+        val cleaned = BookEnricher.cleanAnnotation(rawHtml)
+        assertTrue(cleaned.contains("В Москве 1930-х годов появляется Воланд"))
+        assertTrue(cleaned.contains("Мастер и Маргарита обретают вечный покой"))
+        assertFalse(cleaned.contains("Администрация сайта Литрес"))
+        assertFalse(cleaned.contains("Могут иметься медицинские противопоказания"))
+    }
+
+    @Test
+    fun genreClassifierCategorizesDetailedGenresCorrectly() {
+        val genres = listOf("Зарубежные детективы", "Исторические романы")
+        val macros = com.aura.reader.data.model.GenreClassifier.getMacroGenresForBook(genres)
+        assertTrue(macros.contains(com.aura.reader.data.model.MacroGenre.DETECTIVE))
+
+        val dummyBook = com.aura.reader.data.model.Book(
+            id = "test_1",
+            title = "Приключения Шерлока Холмса",
+            author = "Артур Конан Дойл",
+            format = com.aura.reader.data.model.BookFormat.FB2,
+            uriString = "file:///dummy.fb2",
+            genres = listOf("Классический детектив")
+        )
+
+        // Matches macro category
+        assertTrue(com.aura.reader.data.model.GenreClassifier.bookMatchesFilter(dummyBook, "Детективы"))
+        // Matches exact substring
+        assertTrue(com.aura.reader.data.model.GenreClassifier.bookMatchesFilter(dummyBook, "Классический"))
+        // Does not match unrelated
+        assertFalse(com.aura.reader.data.model.GenreClassifier.bookMatchesFilter(dummyBook, "Фантастика"))
+    }
 }
