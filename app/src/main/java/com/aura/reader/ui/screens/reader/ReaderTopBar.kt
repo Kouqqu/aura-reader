@@ -107,15 +107,15 @@ fun BoxScope.ReaderTopBar(
     val strings = LocalAppStrings.current
     val context = LocalContext.current
 
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn() + slideInVertically { -it },
-            exit = fadeOut() + slideOutVertically { -it },
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 10.dp)
-        ) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + slideInVertically { -it },
+        exit = fadeOut() + slideOutVertically { -it },
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    ) {
             val topBarContent: @Composable () -> Unit = {
                 if (isSearchActive) {
                     Row(
