@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/banner_aura.png" alt="Aura Reader" width="100%">
+  <img src="assets/banner.png" alt="Aura Reader" width="100%">
   <br><br>
 
   [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
