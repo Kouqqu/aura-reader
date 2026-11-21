@@ -53,25 +53,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aura.reader.R
 import com.aura.reader.data.updater.UpdateInfo
-import com.aura.reader.ui.components.WavyProgressIndicator
 
 @Composable
 internal fun LibraryUpdateBanner(
     update: UpdateInfo,
     isGlass: Boolean,
     isThemeDark: Boolean,
-    installState: UpdateInstallState,
+    installState: UpdateInstallState = UpdateInstallState.Idle,
     onDownloadAndInstall: () -> Unit,
-    onInstallDownloaded: () -> Unit,
+    onInstallDownloaded: () -> Unit = {},
     onOpenUpdatePage: (String) -> Unit
 ) {
     val strings = LocalAppStrings.current
-    val isDownloading = installState is UpdateInstallState.Downloading
-    val progress = (installState as? UpdateInstallState.Downloading)?.progress
-    val isReady = installState is UpdateInstallState.Ready ||
-        installState is UpdateInstallState.PermissionRequired
-    val needsPermission = installState is UpdateInstallState.PermissionRequired
-    val failure = installState as? UpdateInstallState.Failed
 
     LiquidGlassCard(
         isGlass = isGlass,
@@ -100,38 +93,9 @@ internal fun LibraryUpdateBanner(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = when {
-                            isDownloading -> strings.downloadingUpdate
-                            needsPermission -> strings.installPermissionNeeded
-                            failure != null -> strings.updateDownloadFailed
-                            isReady -> strings.updateReadyToInstall
-                            else -> strings.updateBannerSubtitle
-                        },
+                        text = strings.updateBannerSubtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (failure != null || needsPermission) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                }
-            }
-
-            if (isDownloading) {
-                Spacer(modifier = Modifier.height(12.dp))
-                WavyProgressIndicator(
-                    progress = progress ?: 0f,
-                    modifier = Modifier.fillMaxWidth(),
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                )
-                if (progress != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "${(progress * 100).toInt()}%",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.align(Alignment.End)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -143,29 +107,15 @@ internal fun LibraryUpdateBanner(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
-                    onClick = if (isReady) onInstallDownloaded else onDownloadAndInstall,
-                    enabled = !isDownloading,
+                    onClick = onDownloadAndInstall,
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     ),
                     modifier = Modifier.weight(1f)
                 ) {
-                    if (isDownloading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
                     Text(
-                        when {
-                            isDownloading && progress != null -> "${(progress * 100).toInt()}%"
-                            isDownloading -> strings.downloading
-                            isReady -> strings.installUpdate
-                            else -> strings.updateAction
-                        },
+                        strings.updateAction,
                         maxLines = 1
                     )
                 }

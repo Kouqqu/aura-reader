@@ -16,11 +16,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -46,7 +46,6 @@ import androidx.compose.ui.res.painterResource
 import com.aura.reader.R
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.updater.UpdateInfo
-import com.aura.reader.ui.components.WavyProgressIndicator
 import com.aura.reader.ui.theme.LocalAppStrings
 
 @Composable
@@ -73,17 +72,10 @@ fun LibraryDialogs(
 ) {
     val strings = LocalAppStrings.current
 
-    // In-App Update Dialog
+    // Update Dialog
     updateInfo?.let { info ->
-        val isDownloading = updateInstallState is UpdateInstallState.Downloading
-        val progress = (updateInstallState as? UpdateInstallState.Downloading)?.progress
-        val isReady = updateInstallState is UpdateInstallState.Ready ||
-            updateInstallState is UpdateInstallState.PermissionRequired
-        val needsPermission = updateInstallState is UpdateInstallState.PermissionRequired
-        val failure = updateInstallState as? UpdateInstallState.Failed
-
         AlertDialog(
-            onDismissRequest = { if (!isDownloading) onDismissUpdate() },
+            onDismissRequest = { onDismissUpdate() },
             title = {
                 Text(
                     text = strings.updateAvailableTitle(info.latestVersion),
@@ -110,43 +102,6 @@ fun LibraryDialogs(
                         Text(strings.downloadFromGithub)
                     }
 
-                    if (isDownloading) {
-                        WavyProgressIndicator(
-                            progress = progress ?: 0f,
-                            modifier = Modifier.fillMaxWidth(),
-                            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = if (progress != null) {
-                                "${strings.downloadingUpdate} ${(progress * 100).toInt()}%"
-                            } else {
-                                strings.downloadingUpdate
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                    }
-
-                    if (needsPermission) {
-                        Text(
-                            text = strings.installPermissionNeeded,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                    }
-
-                    if (failure != null) {
-                        Text(
-                            text = strings.updateDownloadFailed,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                    }
-
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -162,38 +117,20 @@ fun LibraryDialogs(
                 }
             },
             confirmButton = {
-                when {
-                    isDownloading -> {
-                        Button(
-                            onClick = {},
-                            enabled = false,
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(strings.downloading)
-                        }
-                    }
-                    isReady -> {
-                        Button(
-                            onClick = onInstallDownloaded,
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Text(strings.installUpdate)
-                        }
-                    }
-                    else -> {
-                        Button(
-                            onClick = onDownloadAndInstall,
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Text(strings.downloadAndInstall)
-                        }
-                    }
+                Button(
+                    onClick = {
+                        onDownloadAndInstall()
+                        onDismissUpdate()
+                    },
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Download,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(strings.updateAction)
                 }
             },
             dismissButton = {

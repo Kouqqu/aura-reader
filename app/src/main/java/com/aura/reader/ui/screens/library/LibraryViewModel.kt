@@ -11,7 +11,6 @@ import androidx.lifecycle.viewModelScope
 import com.aura.reader.data.analytics.AnalyticsManager
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.repository.BookRepository
-import com.aura.reader.data.updater.ApkInstallResult
 import com.aura.reader.data.updater.AppUpdateManager
 import com.aura.reader.data.updater.UpdateInfo
 import kotlinx.coroutines.Dispatchers
@@ -985,41 +984,19 @@ class LibraryViewModel(
     }
 
     /**
-     * Downloads the release APK and opens the system installer in one tap.
-     * If Android still needs permission for installs from Aura Reader, the
-     * relevant settings screen opens and the same action can be repeated.
+     * Opens the direct APK download or GitHub release page in the system browser.
      */
     fun downloadAndInstallUpdate(context: Context) {
         val info = _updateInfo.value ?: return
-        if (_updateInstallState.value is UpdateInstallState.Downloading) return
-        _updateInstallState.value = UpdateInstallState.Downloading(null)
-        updateDownloadJob = viewModelScope.launch {
-            val appContext = context.applicationContext
-            AppUpdateManager.downloadApk(appContext, info) { progress ->
-                _updateInstallState.value = UpdateInstallState.Downloading(progress)
-            }.onSuccess { file ->
-                downloadedApk = file
-                _updateInstallState.value = UpdateInstallState.Ready
-                installDownloadedUpdate(appContext)
-            }.onFailure { error ->
-                _updateInstallState.value = UpdateInstallState.Failed(error.localizedMessage)
-            }
-            updateDownloadJob = null
-        }
+        openUpdatePage(context, info.apkUrl ?: info.releaseUrl)
+        dismissUpdateDialog()
     }
 
-    /** Re-opens the installer for an APK that has already been downloaded. */
+    /** Re-opens the browser download page. */
     fun installDownloadedUpdate(context: Context) {
-        val file = downloadedApk ?: return
-        when (AppUpdateManager.installApk(context.applicationContext, file)) {
-            ApkInstallResult.STARTED -> _updateInstallState.value = UpdateInstallState.Ready
-            ApkInstallResult.PERMISSION_REQUIRED -> {
-                _updateInstallState.value = UpdateInstallState.PermissionRequired
-            }
-            ApkInstallResult.FAILED -> {
-                _updateInstallState.value = UpdateInstallState.Failed(null)
-            }
-        }
+        val info = _updateInfo.value ?: return
+        openUpdatePage(context, info.apkUrl ?: info.releaseUrl)
+        dismissUpdateDialog()
     }
 
     fun resetUpdateInstallState() {
