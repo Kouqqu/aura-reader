@@ -1,5 +1,10 @@
 package com.aura.reader.ui.screens.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -127,8 +132,8 @@ internal fun SettingsThemeSection(
                     label = strings.themeDark,
                     icon = Icons.Rounded.DarkMode,
                     isSelected = currentTheme == ReaderThemeMode.DARK,
-                    previewBgColor = Color(0xFF1E2125),
-                    previewTextColor = Color(0xFFE2E2E6),
+                    previewBgColor = Color(0xFF121212),
+                    previewTextColor = Color(0xFFEDEDED),
                     getSheetCoordinates = { sheetCoordinates },
                     onClick = { origin -> onThemePicked(ReaderThemeMode.DARK, origin, darkColors) },
                     modifier = Modifier.weight(1f)
@@ -153,8 +158,8 @@ internal fun SettingsThemeSection(
                     label = strings.themeSystem,
                     icon = Icons.Rounded.BrightnessAuto,
                     isSelected = currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC,
-                    previewBgColor = if (sysDark) Color(0xFF252930) else Color(0xFFF0F3F6),
-                    previewTextColor = if (sysDark) Color(0xFFE2E2E6) else Color(0xFF1D1B20),
+                    previewBgColor = if (sysDark) Color(0xFF1E1E1E) else Color(0xFFF0F3F6),
+                    previewTextColor = if (sysDark) Color(0xFFEDEDED) else Color(0xFF1D1B20),
                     getSheetCoordinates = { sheetCoordinates },
                     onClick = { origin -> onThemePicked(ReaderThemeMode.SYSTEM_DYNAMIC, origin, if (sysDark) darkColors else lightColors) },
                     modifier = Modifier.weight(1.35f)
@@ -300,25 +305,32 @@ internal fun SettingsThemeSection(
         )
     }
 
-    Spacer(modifier = Modifier.height(18.dp))
-
-    SettingsHolidayStyleSection(
-        holidayOverride = holidayOverride,
-        seasonalEffectsEnabled = seasonalEffectsEnabled,
-        isGlass = isGlass,
-        isThemeDark = isThemeDark,
-        onHolidayStylePicked = { style ->
-            if (style == "OFF") {
-                onHolidayOverrideChange("OFF")
-                if (seasonalEffectsEnabled) onToggleSeasonalEffects(false)
-            } else if (style == "AUTO") {
-                onHolidayOverrideChange("AUTO")
-            } else {
-                onHolidayOverrideChange(style)
-                if (!seasonalEffectsEnabled) onToggleSeasonalEffects(true)
-            }
+    AnimatedVisibility(
+        visible = seasonalEffectsEnabled,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        Column {
+            Spacer(modifier = Modifier.height(18.dp))
+            SettingsHolidayStyleSection(
+                holidayOverride = holidayOverride,
+                seasonalEffectsEnabled = seasonalEffectsEnabled,
+                isGlass = isGlass,
+                isThemeDark = isThemeDark,
+                onHolidayStylePicked = { style ->
+                    if (style == "OFF") {
+                        onHolidayOverrideChange("OFF")
+                        if (seasonalEffectsEnabled) onToggleSeasonalEffects(false)
+                    } else if (style == "AUTO") {
+                        onHolidayOverrideChange("AUTO")
+                    } else {
+                        onHolidayOverrideChange(style)
+                        if (!seasonalEffectsEnabled) onToggleSeasonalEffects(true)
+                    }
+                }
+            )
         }
-    )
+    }
 
     Spacer(modifier = Modifier.height(20.dp))
     }

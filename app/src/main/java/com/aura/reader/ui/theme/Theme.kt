@@ -55,16 +55,21 @@ private val DarkColorScheme = darkColorScheme(
     onPrimaryContainer = md_theme_dark_onPrimaryContainer,
     secondary = md_theme_dark_secondary,
     onSecondary = md_theme_dark_onSecondary,
-    secondaryContainer = Color(0xFF333842),
-    onSecondaryContainer = Color(0xFFE2E5EE),
+    secondaryContainer = Color(0xFF262626),
+    onSecondaryContainer = Color(0xFFEDEDED),
     background = md_theme_dark_background,
     onBackground = md_theme_dark_onBackground,
     surface = md_theme_dark_surface,
     onSurface = md_theme_dark_onSurface,
     surfaceVariant = md_theme_dark_surfaceVariant,
     onSurfaceVariant = md_theme_dark_onSurfaceVariant,
-    surfaceContainer = androidx.compose.ui.graphics.Color(0xFF1E2125),
-    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF282C32)
+    surfaceContainerLowest = Color(0xFF0F0F0F),
+    surfaceContainerLow = Color(0xFF161616),
+    surfaceContainer = Color(0xFF1E1E1E),
+    surfaceContainerHigh = Color(0xFF252525),
+    surfaceContainerHighest = Color(0xFF2C2C2C),
+    outline = Color(0xFF383838),
+    outlineVariant = Color(0xFF242424)
 )
 
 private val SepiaColorScheme = lightColorScheme(
@@ -144,13 +149,13 @@ private fun ColorScheme.withAmoledReaderSurfaces(): ColorScheme = copy(
 private fun dynamicDarkAdjusted(context: Context): ColorScheme {
     val dyn = dynamicDarkColorScheme(context)
     return dyn.copy(
-        background = Color(0xFF121316),
-        surface = Color(0xFF121316),
-        surfaceContainerLowest = Color(0xFF0C0D0F),
-        surfaceContainerLow = Color(0xFF17181C),
-        surfaceContainer = Color(0xFF1C1D22),
-        surfaceContainerHigh = Color(0xFF23252B),
-        surfaceContainerHighest = Color(0xFF2B2D34)
+        background = Color(0xFF121212),
+        surface = Color(0xFF121212),
+        surfaceContainerLowest = Color(0xFF0F0F0F),
+        surfaceContainerLow = Color(0xFF161616),
+        surfaceContainer = Color(0xFF1E1E1E),
+        surfaceContainerHigh = Color(0xFF252525),
+        surfaceContainerHighest = Color(0xFF2C2C2C)
     )
 }
 

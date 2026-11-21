@@ -559,49 +559,19 @@ ExpressiveSettingsGroup {
         )
     }
     ExpressiveDivider()
-    Column(modifier = Modifier.padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f).padding(end = 12.dp)
-            ) {
-                SettingsIconBox(Icons.Rounded.Speed)
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = strings.readingSpeedSettingTitle,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = strings.resetReadingSpeedSubtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        OutlinedButton(
-            onClick = { onResetReadingSpeed() },
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
+    ExpressiveSettingsRow(
+        title = strings.readingSpeedSettingTitle,
+        subtitle = strings.resetReadingSpeedSubtitle,
+        icon = { SettingsIconBox(Icons.Rounded.Speed) },
+        onClick = onResetReadingSpeed,
+        trailing = {
             Icon(
-                imageVector = Icons.Rounded.Speed,
+                imageVector = Icons.Rounded.ChevronRight,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(strings.resetReadingSpeedTitle)
         }
-    }
+    )
     ExpressiveDivider()
     Column(modifier = Modifier.padding(16.dp)) {
         Row(
@@ -645,33 +615,39 @@ ExpressiveSettingsGroup {
                 )
             }
         }
-        if (appSettings.customOpdsEnabled) {
-            Spacer(modifier = Modifier.height(14.dp))
-            var urlText by remember(appSettings.customOpdsUrl) {
-                mutableStateOf(if (appSettings.customOpdsUrl == OpdsService.DEFAULT_BASE_URL || appSettings.customOpdsUrl.contains("flibusta", ignoreCase = true)) "" else appSettings.customOpdsUrl)
-            }
-            OutlinedTextField(
-                value = urlText,
-                onValueChange = {
-                    urlText = it
-                    onUpdateSettings { s -> s.copy(customOpdsUrl = it) }
-                },
-                placeholder = { Text("https://example.com/opds") },
-                label = { Text(strings.customOpdsUrl) },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                    if (urlText.isNotBlank()) {
-                        IconButton(onClick = {
-                            urlText = ""
-                            onUpdateSettings { s -> s.copy(customOpdsUrl = "") }
-                        }) {
-                            Icon(Icons.Rounded.Clear, contentDescription = strings.clear)
+        AnimatedVisibility(
+            visible = appSettings.customOpdsEnabled,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(14.dp))
+                var urlText by remember(appSettings.customOpdsUrl) {
+                    mutableStateOf(if (appSettings.customOpdsUrl == OpdsService.DEFAULT_BASE_URL || appSettings.customOpdsUrl.contains("flibusta", ignoreCase = true)) "" else appSettings.customOpdsUrl)
+                }
+                OutlinedTextField(
+                    value = urlText,
+                    onValueChange = {
+                        urlText = it
+                        onUpdateSettings { s -> s.copy(customOpdsUrl = it) }
+                    },
+                    placeholder = { Text("https://example.com/opds") },
+                    label = { Text(strings.customOpdsUrl) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        if (urlText.isNotBlank()) {
+                            IconButton(onClick = {
+                                urlText = ""
+                                onUpdateSettings { s -> s.copy(customOpdsUrl = "") }
+                            }) {
+                                Icon(Icons.Rounded.Clear, contentDescription = strings.clear)
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         }
     }
 }
