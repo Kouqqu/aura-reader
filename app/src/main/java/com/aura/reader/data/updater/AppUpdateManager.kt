@@ -239,8 +239,11 @@ object AppUpdateManager {
     }
 
     /** GitHub's predictable asset URL, for when the API was rate-limited. */
-    fun fallbackApkUrl(tag: String): String =
-        "$GITHUB_DOWNLOAD_BASE/${tag.trim()}/$APK_ASSET_NAME"
+    fun fallbackApkUrl(tag: String): String {
+        val cleanTag = tag.trim()
+        val assetName = if (cleanTag.isNotBlank()) "AuraReader-$cleanTag.apk" else "AuraReader.apk"
+        return "$GITHUB_DOWNLOAD_BASE/$cleanTag/$assetName"
+    }
 
     /** Opens the direct APK download link or the release page in the system browser. */
     fun openDownloadPage(context: Context, info: UpdateInfo) {

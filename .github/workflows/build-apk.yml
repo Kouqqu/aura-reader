@@ -104,16 +104,13 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           cp app/build/outputs/apk/release/*.apk "AuraReader-v${APP_VERSION}.apk"
-          cp "AuraReader-v${APP_VERSION}.apk" AuraReader.apk
 
       - name: Upload Release APK Artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: AuraReader-release-apk
-          path: |
-            AuraReader-v${{ env.APP_VERSION }}.apk
-            AuraReader.apk
+          path: AuraReader-v${{ env.APP_VERSION }}.apk
           if-no-files-found: error
 
       - name: Calculate APK SHA-256 and Submit to VirusTotal
@@ -156,9 +153,7 @@ jobs:
             - 🛡️ **Проверка на вирусы**: [Отчёт безопасности VirusTotal](https://www.virustotal.com/gui/file/${{ env.APK_SHA256 }})
 
             Политика конфиденциальности: [PRIVACY.md](https://github.com/Kouqqu/aura-reader/blob/main/PRIVACY.md)
-          files: |
-            AuraReader-v${{ env.APP_VERSION }}.apk
-            AuraReader.apk
+          files: AuraReader-v${{ env.APP_VERSION }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -195,8 +190,6 @@ jobs:
 
             Полный список технических изменений: [docs/upgrades.md](https://github.com/Kouqqu/aura-reader/blob/beta/docs/upgrades.md)
             Политика конфиденциальности: [PRIVACY.md](https://github.com/Kouqqu/aura-reader/blob/beta/PRIVACY.md)
-          files: |
-            AuraReader-v${{ env.APP_VERSION }}.apk
-            AuraReader.apk
+          files: AuraReader-v${{ env.APP_VERSION }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

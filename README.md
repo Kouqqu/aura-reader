@@ -1,12 +1,16 @@
-# Aura Reader
+<div align="center">
+  <img src="assets/banner_aura.png" alt="Aura Reader" width="100%">
+  <br><br>
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![GitHub release](https://img.shields.io/github/v/release/Kouqqu/aura-reader?color=green)](https://github.com/Kouqqu/aura-reader/releases/latest)
-[![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://android.com)
+  [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+  [![GitHub release](https://img.shields.io/github/v/release/Kouqqu/aura-reader?color=green)](https://github.com/Kouqqu/aura-reader/releases/latest)
+  [![Platform](https://img.shields.io/badge/Platform-Android_8.0+-3DDC84.svg?logo=android&logoColor=white)](https://android.com)
+  [![Kotlin](https://img.shields.io/badge/Kotlin-Jetpack_Compose-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+</div>
 
 ---
 
-## 🇬🇧 English
+<h2><img src="assets/flag_uk.svg" width="24" height="16" alt="English"> English</h2>
 
 A modern, fast, and elegant Android e-reader built with Jetpack Compose, Material 3, and Liquid Glass design.
 
@@ -33,17 +37,17 @@ Crafted for immersive and comfortable reading without ads or trackers.
 - **Backup & Restore**: Export and import your library, bookmarks, and reading progress locally.
 - **Privacy First**: No ads. Includes optional anonymous reader telemetry (TelemetryDeck) counting active launches without collecting personal data, with a direct opt-out toggle in Settings. See [PRIVACY.md](PRIVACY.md).
 - **Multilingual**: Fully localized into **7 languages**: 🇬🇧 English, 🇷🇺 Русский, 🇺🇦 Українська, 🇧🇾 Беларуская, 🇵🇱 Polski, 🇨🇿 Čeština, 🇮🇱 עברית.
-- **Auto-Updates**: In-app one-tap update checks and seamless installation.
+- **Updates**: In-app one-tap update checks with transparent direct browser downloads.
 
 ### 📥 How to Install:
-Head over to the [Releases](https://github.com/Kouqqu/aura-reader/releases/latest) section, download **`AuraReader.apk`**, and install it on your Android device. Subsequent updates can be installed seamlessly from within the app.
+Head over to the [Releases](https://github.com/Kouqqu/aura-reader/releases/latest) section, download the latest `AuraReader-v*.apk`, and install it on your Android device.
 
 ### ⚖️ License:
 This project is open-source under the terms of the [GNU General Public License v3.0](LICENSE).
 
 ---
 
-## 🇷🇺 Русский
+<h2><img src="assets/flag_ru.svg" width="24" height="16" alt="Русский"> Русский</h2>
 
 Современная, быстрая и плавная читалка для Android с дизайном Material 3 и Liquid Glass.
 
@@ -70,10 +74,10 @@ This project is open-source under the terms of the [GNU General Public License v
 - **Резервное копирование**: Экспорт и импорт библиотечной базы и закладок в один файл.
 - **Приватность**: Без рекламы и трекеров. Включает опциональную анонимную статистику (TelemetryDeck) для подсчёта активных читателей без сбора персональных данных, которую можно в любой момент выключить тумблером в Настройках.
 - **Мультиязычность**: Полная локализация на **7 языков**: 🇷🇺 Русский, 🇬🇧 English, 🇺🇦 Українська, 🇧🇾 Беларуская, 🇵🇱 Polski, 🇨🇿 Čeština, 🇮🇱 עברית.
-- **Автообновления**: Проверка и быстрая установка свежих версий прямо из приложения.
+- **Обновления**: Проверка обновлений в один клик с безопасной прямой загрузкой через системный браузер.
 
 ### 📥 Как установить:
-Зайдите в раздел [Releases](https://github.com/Kouqqu/aura-reader/releases/latest), скачайте файл **`AuraReader.apk`** и установите на телефон. Дальше приложение сможет обновляться прямо внутри.
+Зайдите в раздел [Releases](https://github.com/Kouqqu/aura-reader/releases/latest), скачайте свежий файл `AuraReader-v*.apk` и установите на телефон.
 
 ### ⚖️ Лицензия:
 Проект распространяется под свободной лицензией [GNU General Public License v3.0](LICENSE).
