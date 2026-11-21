@@ -486,38 +486,6 @@ ExpressiveSettingsGroup {
             }
         }
     )
-    if (onDownloadMissingCovers != null) {
-        ExpressiveDivider()
-        ExpressiveSettingsRow(
-            title = strings.downloadMissingCovers,
-            subtitle = strings.booksWithoutCoversCount(booksWithoutCoversCount),
-            icon = { SettingsIconBox(Icons.Rounded.Image) },
-            onClick = onDownloadMissingCovers,
-            trailing = {
-                Icon(
-                    imageVector = Icons.Rounded.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        )
-    }
-    if (onDownloadMissingMetadata != null) {
-        ExpressiveDivider()
-        ExpressiveSettingsRow(
-            title = strings.downloadMissingMetadata,
-            subtitle = strings.booksWithoutMetadataCount(booksWithoutMetadataCount),
-            icon = { SettingsIconBox(Icons.Rounded.AutoStories) },
-            onClick = onDownloadMissingMetadata,
-            trailing = {
-                Icon(
-                    imageVector = Icons.Rounded.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        )
-    }
     ExpressiveDivider()
     Column(modifier = Modifier.padding(16.dp)) {
         Row(

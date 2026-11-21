@@ -3,7 +3,8 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-11-21, release `2.3.0-beta.34` (`versionCode 199`).
+Last updated: 2026-11-21, release `2.3.0-beta.35` (`versionCode 200`).
+`2.3.0-beta.35` changed no dependencies: it lightens collapsible settings fold headers into sleek, thin capsules with micro-borders and bare rotating chevrons, removing bulky circle badges; eliminates manual batch download buttons from settings in favor of a clean background auto-fetch toggle.
 `2.3.0-beta.34` changed no dependencies: it resolves hardcoded cold bluish tints (`#1F2129`, `#1D212E`, `#283448`) in Liquid Glass settings surfaces, strictly binding them to theme tokens (`#121212` background, `#1E1E1E` cards); breaks monolithic settings groups into focused island cards (Catalog/OPDS and Reading/Maintenance).
 `2.3.0-beta.33` changed no dependencies: it calibrates the dark theme palette to match the neutral obsidian aesthetic (`#121212` background, `#1E1E1E` card surfaces) eliminating cold blueish/purple tints; declutters settings screens by streamlining the reading speed reset into a standard row, wrapping holiday atmosphere controls in `AnimatedVisibility(seasonalEffectsEnabled)` to collapse when disabled, and animating custom OPDS inputs.
 `2.3.0-beta.32` changed no dependencies: it removes the `REQUEST_INSTALL_PACKAGES` permission and internal APK downloader/installer routines to eliminate false positive Google Play Protect "malicious code" (dropper) warnings, delegating app updates directly and cleanly to the system browser; names release APK assets with the version tag (`AuraReader-v${APP_VERSION}.apk`); simplifies update dialogs and banners; and incorporates cache cleanup management.
