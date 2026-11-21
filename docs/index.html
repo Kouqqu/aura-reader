@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aura Reader — Читалка для Android</title>
-  <meta name="description" content="Aura Reader — открытый Android-ридер для чтения EPUB, FB2, PDF, с поддержкой OPDS, TTS и стилей Liquid Glass и Material 3.">
+  <meta name="description" content="Aura Reader — открытый Android-ридер для чтения EPUB, FB2, PDF с поддержкой OPDS, TTS и стилей Liquid Glass и Material 3.">
   <meta name="theme-color" content="#0B0A10">
 
   <!-- Open Graph -->
@@ -15,7 +15,14 @@
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="assets/logo_square.png">
-  <link rel="stylesheet" href="style.css">
+
+  <!-- Google Font: Inter (400, 500, 600) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Styles with cache-busting -->
+  <link rel="stylesheet" href="style.css?v=20261121_4">
 </head>
 <body>
   <!-- Navigation -->
@@ -43,8 +50,8 @@
   <main>
     <!-- Hero Section -->
     <section class="container hero">
-      <div class="hero-badge">
-        <span class="hero-badge-dot"></span>
+      <div class="hero-pill">
+        <span class="hero-pill-dot"></span>
         <span>Версия <span class="release-version-label">v2.3.0-beta.32</span> • Android 8.0+ • Open Source</span>
       </div>
 
@@ -56,15 +63,15 @@
       </p>
 
       <div class="hero-actions">
-        <a href="#" class="btn btn-primary btn-lg apk-download-link" data-with-version="true">
-          Скачать APK (v2.3.0-beta.32)
+        <a href="#download" class="btn btn-primary btn-lg apk-download-link">
+          Скачать APK
         </a>
         <a href="https://github.com/Kouqqu/aura-reader" class="btn btn-secondary btn-lg" target="_blank" rel="noopener">
           Исходный код на GitHub
         </a>
       </div>
 
-      <div class="hero-banner-wrap">
+      <div class="hero-banner-frame">
         <img src="assets/banner.png" alt="Интерфейс Aura Reader" class="hero-banner-img">
       </div>
     </section>
@@ -102,7 +109,7 @@
           </div>
 
           <div class="feature-card">
-            <h3 class="feature-title">Типографика и режимы чтения</h3>
+            <h3 class="feature-title">Типографика и режимы</h3>
             <p class="feature-desc">
               Импорт любых TTF/OTF шрифтов, настройка полей, межстрочного расстояния и абзацев. Режимы 3D-перелистывания, сдвига и вертикального скролла.
             </p>
@@ -111,14 +118,14 @@
           <div class="feature-card">
             <h3 class="feature-title">Фоновое аудио и TTS</h3>
             <p class="feature-desc">
-              Озвучка текста с помощью системного Text-to-Speech с пословной синхронизацией в ридере и контролем воспроизведения со шторки и экрана блокировки.
+              Озвучка текста через системный Text-to-Speech с пословной синхронизацией в ридере и контролем воспроизведения со шторки и экрана блокировки.
             </p>
           </div>
 
           <div class="feature-card">
             <h3 class="feature-title">Сетевые библиотеки OPDS</h3>
             <p class="feature-desc">
-              Встроенный клиент для подключения любых открытых и личных OPDS-каталогов (Standard Ebooks, Project Gutenberg, Feedbooks) с быстрой загрузкой в библиотеку.
+              Встроенный клиент для подключения любых открытых и личных OPDS-каталогов (Standard Ebooks, Project Gutenberg, Feedbooks) с загрузкой в один клик.
             </p>
           </div>
 
@@ -135,24 +142,23 @@
     <!-- Download Section -->
     <section id="download" class="section">
       <div class="container">
-        <div class="download-box">
-          <div class="download-info">
-            <h3>Установка приложения</h3>
-            <p>
-              Скачайте готовый APK-файл и подтвердите установку в системе Android. Приложение не требует сервисов Google Play.
-            </p>
-            <div class="download-meta">
-              <span>Версия: <strong class="release-version-label" style="color: var(--text-main);">v2.3.0-beta.32</strong></span>
-              <span>Размер: <strong class="release-size-label" style="color: var(--text-main);">~48 МБ</strong></span>
-              <span>Android: <strong>8.0+</strong></span>
-              <span>Архитектура: <strong>arm64-v8a, armeabi-v7a, x86_64</strong></span>
-            </div>
+        <div class="download-card">
+          <h2 class="download-title">Установка приложения</h2>
+          <p class="download-sub">
+            Скачайте готовый APK-файл и подтвердите установку в системе Android. Приложение не требует сервисов Google Play.
+          </p>
+
+          <div class="download-meta-wrap">
+            <div class="download-meta-pill">Версия: <strong class="release-version-label">v2.3.0-beta.32</strong></div>
+            <div class="download-meta-pill">Размер: <strong class="release-size-label">~48 МБ</strong></div>
+            <div class="download-meta-pill">Система: <strong>Android 8.0+</strong></div>
+            <div class="download-meta-pill">Архитектуры: <strong>arm64 / armv7 / x86</strong></div>
           </div>
 
-          <div class="download-actions">
+          <div class="download-buttons">
             <a href="#" class="btn btn-primary btn-lg apk-download-link">Скачать APK</a>
-            <a href="https://github.com/Kouqqu/aura-reader/releases" class="btn btn-secondary" target="_blank" rel="noopener">
-              История релизов
+            <a href="https://github.com/Kouqqu/aura-reader/releases" class="btn btn-secondary btn-lg" target="_blank" rel="noopener">
+              История релизов на GitHub
             </a>
           </div>
         </div>
@@ -162,14 +168,14 @@
     <!-- OPDS Section -->
     <section id="opds" class="section">
       <div class="container">
-        <div class="opds-box">
+        <div class="opds-card">
           <h2 class="section-title">Каталоги OPDS</h2>
           <p class="section-sub">
             Готовый список открытых электронных библиотек с легальными книгами на русском и английском языках.
           </p>
 
-          <div class="opds-link-wrap">
-            <span id="opds-url-input" class="opds-url-text">https://kouqqu.github.io/aura-reader/catalogs.json</span>
+          <div class="opds-bar">
+            <div id="opds-url-field" class="opds-field">https://kouqqu.github.io/aura-reader/catalogs.json</div>
             <button id="copy-opds-btn" class="btn btn-secondary" type="button">Скопировать</button>
             <a href="catalogs.json" class="btn btn-secondary" target="_blank" rel="noopener">Открыть JSON</a>
           </div>
@@ -189,10 +195,10 @@
 
         <div class="footer-badges">
           <a href="https://t.me/koukkuteka" target="_blank" rel="noopener" title="Telegram">
-            <img src="assets/badge_telegram.svg" alt="Telegram" height="24">
+            <img src="assets/badge_telegram.svg" alt="Telegram" height="28">
           </a>
           <a href="https://dalink.to/koukku" target="_blank" rel="noopener" title="Donate">
-            <img src="assets/badge_donate.svg" alt="Donate" height="24">
+            <img src="assets/badge_donate.svg" alt="Donate" height="28">
           </a>
         </div>
       </div>
@@ -208,6 +214,6 @@
     </div>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20261121_4"></script>
 </body>
 </html>
