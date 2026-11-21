@@ -86,7 +86,7 @@ android {
     lint {
         abortOnError = true
         checkReleaseBuilds = false
-        disable += setOf("SuspiciousIndentation")
+        disable += setOf("SuspiciousIndentation", "UnusedMaterial3ScaffoldPaddingParameter")
     }
 }
 

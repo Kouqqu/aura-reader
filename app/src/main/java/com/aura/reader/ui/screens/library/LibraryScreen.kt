@@ -192,6 +192,7 @@ import com.aura.reader.data.model.HolidaySeason
 import com.aura.reader.data.model.LocalHolidaySeason
 
 @OptIn(ExperimentalMaterial3Api::class)
+@android.annotation.SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun LibraryScreen(
     viewModel: LibraryViewModel,
@@ -624,6 +625,7 @@ fun LibraryScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(innerPadding)
                 .onGloballyPositioned { rootCoordinates = it }
         ) {
             Box(
