@@ -24,113 +24,60 @@ import kotlinx.coroutines.withContext
 /**
  * Intelligent cover selection for the search background collage.
  * Guarantees:
- * 1. If library has >= 12 books, ALL 12 collage slots get unique books (zero duplicates).
- * 2. If library has < 12 books, all available books are shown before repeating.
- * 3. Never allows vertical collisions (identical books directly above/below each other).
- * 4. Never allows adjacent horizontal collisions.
+ * 1. If library has >= 12 books, 12 collage slots stream through ALL books in the library
+ *    without any book repeating until all books have flown past.
+ * 2. If library has < 12 books, exactly that many slots are displayed so zero duplicate
+ *    books appear on screen simultaneously.
  */
 internal fun selectCollageCovers(books: List<Book>): List<Book> {
     val withCovers = books.filter { !it.coverBase64.isNullOrBlank() }
     if (withCovers.isEmpty()) return emptyList()
-
-    val totalSlots = 12
-    val slots = listOf(1, 2, 5, 10, 6, 9, 3, 7, 0, 4, 8, 11)
-    val L = withCovers.size
-    val shuffled = withCovers.shuffled()
-
-    // Rule 1: Plenty of books -> strictly 12 distinct covers
-    if (L >= totalSlots) {
-        val picked = shuffled.take(totalSlots)
-        return List(totalSlots) { picked[it] }
-    }
-
-    // Only one book
-    if (L == 1) {
-        return List(totalSlots) { shuffled[0] }
-    }
-
-    // Rule 2: Exhaustive pool before repeating
-    val pool = ArrayList<Book>(totalSlots)
-    while (pool.size < totalSlots) {
-        pool.addAll(shuffled)
-    }
-    val candidatePool = pool.take(totalSlots).toMutableList()
-
-    val cells = listOf(
-        0 to 0, 0 to 1, 0 to 2, 0 to 3,
-        1 to 0, 1 to 1, 1 to 2, 1 to 3,
-        2 to 0, 2 to 1, 2 to 2, 2 to 3
-    )
-
-    var bestGrid: Map<Pair<Int, Int>, Book>? = null
-    for (attempt in 0..120) {
-        val cand = candidatePool.shuffled().toMutableList()
-        val grid = mutableMapOf<Pair<Int, Int>, Book>()
-        var success = true
-        for ((r, c) in cells) {
-            val valid = cand.firstOrNull { book ->
-                val topMatch = r > 0 && grid[r - 1 to c]?.id == book.id
-                val leftMatch = c > 0 && grid[r to c - 1]?.id == book.id
-                val wrapLeftMatch = c == 3 && L >= 2 && grid[r to 0]?.id == book.id
-                val wrapTopMatch = r == 2 && L >= 3 && grid[0 to c]?.id == book.id
-                !topMatch && !leftMatch && !wrapLeftMatch && !wrapTopMatch
-            }
-            if (valid != null) {
-                grid[r to c] = valid
-                cand.remove(valid)
-            } else {
-                success = false
-                break
-            }
-        }
-        if (success) {
-            bestGrid = grid
-            break
-        }
-    }
-
-    val grid = bestGrid ?: run {
-        // Deterministic checkerboard fallback for extreme small L
-        val fallback = mutableMapOf<Pair<Int, Int>, Book>()
-        for ((r, c) in cells) {
-            fallback[r to c] = shuffled[(r + c) % L]
-        }
-        fallback
-    }
-
-    return List(totalSlots) { index ->
-        val slot = slots[index]
-        val r = slot / 4
-        val c = slot % 4
-        grid[r to c] ?: shuffled[index % L]
-    }
+    return withCovers.shuffled()
 }
 
 /** Decorative only: bounded decoding, no shared-element keys or touch targets. */
 @Composable
 fun SearchCoverCollage(books: List<Book>, subdued: Boolean, modifier: Modifier = Modifier) {
-    val covers = remember(books) { selectCollageCovers(books) }
-    var images by remember { mutableStateOf<List<ImageBitmap>>(emptyList()) }
-    LaunchedEffect(covers) {
-        images = withContext(Dispatchers.Default) {
-            val uniqueBitmaps = covers.distinctBy { it.id }.associate { book ->
-                book.id to CoverBitmapCache.getOrDecode("collage:${book.id}:${book.coverBase64.hashCode()}", book.coverBase64!!, 360, 540)
+    val availableBooks = remember(books) { selectCollageCovers(books) }
+    var loadedBitmaps by remember { mutableStateOf<Map<String, ImageBitmap>>(emptyMap()) }
+
+    LaunchedEffect(availableBooks) {
+        if (availableBooks.isEmpty()) {
+            loadedBitmaps = emptyMap()
+            return@LaunchedEffect
+        }
+        withContext(Dispatchers.Default) {
+            val loaded = mutableMapOf<String, ImageBitmap>()
+            val initial = availableBooks.take(16)
+            for (book in initial) {
+                val bmp = CoverBitmapCache.getOrDecode("collage:${book.id}:${book.coverBase64.hashCode()}", book.coverBase64!!, 360, 540)
+                if (bmp != null) loaded[book.id] = bmp
             }
-            covers.mapNotNull { book -> uniqueBitmaps[book.id] }
+            loadedBitmaps = loaded.toMap()
+
+            if (availableBooks.size > 16) {
+                for (book in availableBooks.drop(16)) {
+                    val bmp = CoverBitmapCache.getOrDecode("collage:${book.id}:${book.coverBase64.hashCode()}", book.coverBase64!!, 360, 540)
+                    if (bmp != null) loaded[book.id] = bmp
+                }
+                loadedBitmaps = loaded.toMap()
+            }
         }
     }
+
     val background = MaterialTheme.colorScheme.background
     val accent = MaterialTheme.colorScheme.primaryContainer
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
-    val active = lifecycle.isAtLeast(Lifecycle.State.STARTED) && !subdued && images.isNotEmpty()
+    val active = lifecycle.isAtLeast(Lifecycle.State.STARTED) && !subdued && loadedBitmaps.isNotEmpty()
     val motion = remember { Animatable(0f) }
     val opacity by animateFloatAsState(if (subdued) 0.16f else 1f, tween(350), label = "collageOpacity")
-    val palette = remember(images, accent) {
-        images.firstOrNull()?.let { image ->
+    val palette = remember(loadedBitmaps, accent) {
+        loadedBitmaps.values.firstOrNull()?.let { image ->
             val bitmap = image.asAndroidBitmap()
             Color(bitmap.getPixel(bitmap.width / 2, bitmap.height / 3))
         } ?: accent
     }
+
     BoxWithConstraints(modifier.fillMaxWidth().clipToBounds().testTag("searchCollage")
         .background(Brush.linearGradient(listOf(palette.copy(alpha = 0.3f), accent.copy(alpha = 0.25f), background)))
         .drawWithContent {
@@ -139,23 +86,38 @@ fun SearchCoverCollage(books: List<Book>, subdued: Boolean, modifier: Modifier =
         }) {
         val width = maxWidth.value
         val height = maxHeight.value
-        val count = images.size
-        val layout = remember(count, width, height) { coverCollageLayout(count, width, height, 0f) }
-        val movingLayout = remember(count, width, height) {
-            derivedStateOf { coverCollageLayout(count, width, height, motion.value) }
+        val slotCount = availableBooks.size.coerceAtMost(12)
+        val layout = remember(slotCount, width, height) { coverCollageLayout(slotCount, width, height, 0f) }
+        val movingLayout = remember(slotCount, width, height) {
+            derivedStateOf { coverCollageLayout(slotCount, width, height, motion.value) }
         }
+
         LaunchedEffect(active, layout.durationMillis) {
-            if (active) motion.animateTo(motion.value + 1f,
-                infiniteRepeatable(tween(layout.durationMillis, easing = LinearEasing)))
+            if (active) {
+                while (true) {
+                    motion.animateTo(
+                        targetValue = motion.value + 1f,
+                        animationSpec = tween(layout.durationMillis.coerceAtLeast(100), easing = LinearEasing)
+                    )
+                }
+            }
         }
-        images.forEachIndexed { index, bitmap ->
+
+        for (index in 0 until slotCount) {
+            val placement = movingLayout.value.positions.getOrNull(index) ?: continue
+            val bookIndex = (index + placement.cycle * slotCount).mod(availableBooks.size)
+            val book = availableBooks[bookIndex]
+            val bitmap = loadedBitmaps[book.id]
+                ?: loadedBitmaps[availableBooks[index % availableBooks.size].id]
+                ?: loadedBitmaps.values.firstOrNull()
+                ?: continue
+
             val coverWidth = layout.coverWidth.dp
             val coverHeight = coverWidth * (bitmap.height.toFloat() / bitmap.width).coerceIn(1.1f, 1.8f)
             Image(bitmap, contentDescription = null, contentScale = ContentScale.Fit,
                 modifier = Modifier.testTag("collageCover-" + index).size(coverWidth, coverHeight).graphicsLayer {
-                    val position = movingLayout.value.positions[index]
-                    translationX = position.x.dp.toPx() - coverWidth.toPx() / 2
-                    translationY = position.y.dp.toPx() - coverHeight.toPx() / 2
+                    translationX = placement.x.dp.toPx() - coverWidth.toPx() / 2
+                    translationY = placement.y.dp.toPx() - coverHeight.toPx() / 2
                     rotationZ = -23f
                     alpha = opacity
                     shape = RoundedCornerShape(14.dp)

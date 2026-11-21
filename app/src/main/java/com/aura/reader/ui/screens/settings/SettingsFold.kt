@@ -1,7 +1,11 @@
 package com.aura.reader.ui.screens.settings
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -50,7 +54,7 @@ internal fun SettingsFoldHeader(
 ) {
     val chevronRotation by animateFloatAsState(
         targetValue = if (expanded) 90f else 0f,
-        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
         label = "settingsFoldChevron"
     )
     val isDark = LocalIsThemeDark.current
@@ -112,10 +116,10 @@ internal fun SettingsFoldContent(
 ) {
     AnimatedVisibility(
         visible = expanded,
-        enter = expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-            fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
-        exit = shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-            fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec())
+        enter = expandVertically(tween(durationMillis = 350, easing = FastOutSlowInEasing)) +
+            fadeIn(tween(durationMillis = 300, easing = LinearOutSlowInEasing)),
+        exit = shrinkVertically(tween(durationMillis = 320, easing = FastOutSlowInEasing)) +
+            fadeOut(tween(durationMillis = 240, easing = FastOutLinearInEasing))
     ) {
         Column(
             modifier = Modifier

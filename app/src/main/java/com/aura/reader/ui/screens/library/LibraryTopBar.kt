@@ -101,6 +101,7 @@ internal fun LibraryTopBar(
     isSearchExpanded: Boolean,
     isGlass: Boolean,
     isThemeDark: Boolean,
+    isSepia: Boolean = false,
     searchQuery: String,
     libraryViewMode: String,
     scrollBehavior: TopAppBarScrollBehavior,
@@ -186,6 +187,22 @@ AnimatedContent(
                 Color(0xFF8A4DFF),
                 holidaySeason.primaryAccent.copy(alpha = 0.85f)
             )
+        } else if (isSepia) {
+            // Warm rich amber, terracotta, deep bronze, warm cinnamon for sepia parchment
+            listOf(
+                Color(0xFFB45309), // Warm rich amber
+                Color(0xFFC2410C), // Deep terracotta
+                Color(0xFF78350F), // Bronze chocolate
+                Color(0xFF9A3412)  // Cinnamon rust
+            )
+        } else if (!isThemeDark) {
+            // Deep, saturated, jewel-toned colors so the halo stands out clearly on light backgrounds
+            listOf(
+                Color(0xFFE65100), // Deep vivid amber-orange
+                Color(0xFFC2185B), // Deep vivid rose
+                Color(0xFF673AB7), // Deep royal purple
+                Color(0xFF00796B)  // Deep emerald teal
+            )
         } else {
             listOf(
                 Color(0xFFFFB74D), // 1. Warm Golden Amber
@@ -233,22 +250,22 @@ AnimatedContent(
                         val x1 = cloudCenter.x + baseRadiusPx * (0.34f * sin(0.21f * t) + 0.15f * cos(0.42f * t) - 0.10f)
                         val y1 = cloudCenter.y + baseRadiusPx * (0.26f * cos(0.27f * t) + 0.12f * sin(0.53f * t) - 0.06f)
                         val r1 = baseRadiusPx * (1.10f + 0.14f * sin(0.33f * t))
-                        val a1 = (if (isThemeDark) 0.34f else 0.14f) * (1.0f + 0.12f * cos(0.24f * t)) * scrollAlpha
+                        val a1 = (if (isThemeDark) 0.34f else 0.28f) * (1.0f + 0.12f * cos(0.24f * t)) * scrollAlpha
 
                         val x2 = cloudCenter.x + baseRadiusPx * (0.38f * cos(0.19f * t + 1.4f) + 0.14f * sin(0.45f * t) + 0.08f)
                         val y2 = cloudCenter.y + baseRadiusPx * (0.30f * sin(0.31f * t + 0.8f) - 0.12f * cos(0.59f * t) + 0.10f)
                         val r2 = baseRadiusPx * (1.16f + 0.15f * cos(0.29f * t))
-                        val a2 = (if (isThemeDark) 0.32f else 0.13f) * (1.0f + 0.13f * sin(0.37f * t)) * scrollAlpha
+                        val a2 = (if (isThemeDark) 0.32f else 0.26f) * (1.0f + 0.13f * sin(0.37f * t)) * scrollAlpha
 
                         val x3 = cloudCenter.x + baseRadiusPx * (0.35f * sin(0.24f * t + 2.8f) - 0.14f * cos(0.39f * t) - 0.14f)
                         val y3 = cloudCenter.y + baseRadiusPx * (0.34f * cos(0.22f * t + 2.1f) + 0.14f * sin(0.56f * t) + 0.06f)
                         val r3 = baseRadiusPx * (1.22f + 0.16f * sin(0.26f * t))
-                        val a3 = (if (isThemeDark) 0.35f else 0.15f) * (1.0f + 0.12f * cos(0.31f * t)) * scrollAlpha
+                        val a3 = (if (isThemeDark) 0.35f else 0.28f) * (1.0f + 0.12f * cos(0.31f * t)) * scrollAlpha
 
                         val x4 = cloudCenter.x + baseRadiusPx * (0.39f * cos(0.27f * t + 4.2f) + 0.16f * sin(0.36f * t) + 0.16f)
                         val y4 = cloudCenter.y + baseRadiusPx * (0.28f * sin(0.20f * t + 3.5f) + 0.12f * cos(0.49f * t) - 0.10f)
                         val r4 = baseRadiusPx * (1.10f + 0.14f * cos(0.39f * t))
-                        val a4 = (if (isThemeDark) 0.30f else 0.12f) * (1.0f + 0.14f * sin(0.28f * t)) * scrollAlpha
+                        val a4 = (if (isThemeDark) 0.30f else 0.25f) * (1.0f + 0.14f * sin(0.28f * t)) * scrollAlpha
 
                         val nodes = listOf(
                             Triple(Offset(x1, y1), r1, nodeColors[0] to a1),

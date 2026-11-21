@@ -115,7 +115,7 @@ fun BookProfileBottomSheet(
     isDark: Boolean = false
 ) {
     val strings = LocalAppStrings.current
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     var isEditMode by remember { mutableStateOf(false) }
 

@@ -17,9 +17,12 @@ import com.aura.reader.ui.screens.reader.ReaderViewModel
 import com.aura.reader.ui.theme.AuraReaderTheme
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.ui.theme.AppLanguage
 import com.aura.reader.ui.theme.LocalAppStrings
@@ -156,6 +159,12 @@ class MainActivity : ComponentActivity() {
                         currentLanguage = appLanguage,
                         holidaySeason = holidaySeason
                     ) {
+                        val windowBg = androidx.compose.material3.MaterialTheme.colorScheme.background.toArgb()
+                        val view = LocalView.current
+                        SideEffect {
+                            val window = (view.context as? android.app.Activity)?.window
+                            window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(windowBg))
+                        }
                         val navController = rememberNavController()
                         AuraNavGraph(
                             navController = navController,

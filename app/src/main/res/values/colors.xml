@@ -9,7 +9,7 @@
     <color name="ic_launcher_background">#1E1B4B</color>
 
     <!-- Splash / window background (system light theme) -->
-    <color name="splash_background">#1E1B4B</color>
+    <color name="splash_background">#FAF0E6</color>
 
     <!-- Widget Colors -->
     <color name="widget_bg">#1E1B2E</color>
