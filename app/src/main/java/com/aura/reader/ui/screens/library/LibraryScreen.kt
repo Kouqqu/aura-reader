@@ -1362,7 +1362,11 @@ fun LibraryScreen(
         }
 
         // --- In-Window Sort Menu Overlay (placed outside hazeSource to sample genuine blur) ---
-        if (showSortMenu) {
+        AnimatedVisibility(
+            visible = showSortMenu,
+            enter = fadeIn(tween(220, easing = FastOutSlowInEasing)),
+            exit = fadeOut(tween(180, easing = FastOutSlowInEasing))
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -1370,126 +1374,134 @@ fun LibraryScreen(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) { showSortMenu = false }
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                AnimatedVisibility(
-                    visible = showSortMenu,
-                    enter = fadeIn(tween(140)) + scaleIn(initialScale = 0.85f, transformOrigin = TransformOrigin(0.95f, 0.15f)),
-                    exit = fadeOut(tween(100)) + scaleOut(targetScale = 0.85f, transformOrigin = TransformOrigin(0.95f, 0.15f)),
+                Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 115.dp, end = 4.dp)
-                        .width(260.dp)
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    LiquidGlassMenuContainer(
-                        isGlass = isGlass,
-                        isDark = isThemeDark,
-                        isSepia = isSepiaTheme,
-                        hazeState = hazeState
+                    AnimatedVisibility(
+                        visible = showSortMenu,
+                        enter = fadeIn(tween(240, easing = FastOutSlowInEasing)) + scaleIn(
+                            initialScale = 0.80f,
+                            transformOrigin = TransformOrigin(0.95f, 0.05f),
+                            animationSpec = tween(240, easing = FastOutSlowInEasing)
+                        ),
+                        exit = fadeOut(tween(180, easing = FastOutSlowInEasing)) + scaleOut(
+                            targetScale = 0.82f,
+                            transformOrigin = TransformOrigin(0.95f, 0.05f),
+                            animationSpec = tween(180, easing = FastOutSlowInEasing)
+                        ),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 115.dp, end = 4.dp)
+                            .width(260.dp)
                     ) {
-                        val isRecent = librarySortOrder == LibrarySortOption.RECENT
-                        LiquidGlassMenuItem(
-                            text = strings.sortByRecent,
-                            leadingIcon = {
-                                Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = null, tint = if (isRecent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                            },
-                            trailingIcon = if (isRecent) {
-                                { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
-                            } else null,
-                            textColor = if (isRecent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                            fontWeight = if (isRecent) FontWeight.SemiBold else FontWeight.Normal,
-                            onClick = {
-                                viewModel.setLibrarySortOrder(LibrarySortOption.RECENT)
-                                showSortMenu = false
-                            }
-                        )
-                        val isTitle = librarySortOrder == LibrarySortOption.TITLE
-                        LiquidGlassMenuItem(
-                            text = strings.sortByTitle,
-                            leadingIcon = {
-                                Icon(Icons.Rounded.Title, contentDescription = null, tint = if (isTitle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                            },
-                            trailingIcon = if (isTitle) {
-                                { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
-                            } else null,
-                            textColor = if (isTitle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                            fontWeight = if (isTitle) FontWeight.SemiBold else FontWeight.Normal,
-                            onClick = {
-                                viewModel.setLibrarySortOrder(LibrarySortOption.TITLE)
-                                showSortMenu = false
-                            }
-                        )
-                        val isAuthor = librarySortOrder == LibrarySortOption.AUTHOR
-                        LiquidGlassMenuItem(
-                            text = strings.sortByAuthor,
-                            leadingIcon = {
-                                Icon(Icons.Rounded.Person, contentDescription = null, tint = if (isAuthor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                            },
-                            trailingIcon = if (isAuthor) {
-                                { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
-                            } else null,
-                            textColor = if (isAuthor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                            fontWeight = if (isAuthor) FontWeight.SemiBold else FontWeight.Normal,
-                            onClick = {
-                                viewModel.setLibrarySortOrder(LibrarySortOption.AUTHOR)
-                                showSortMenu = false
-                            }
-                        )
-                        val isSeries = librarySortOrder == LibrarySortOption.SERIES
-                        LiquidGlassMenuItem(
-                            text = strings.sortBySeries,
-                            leadingIcon = {
-                                Icon(Icons.Rounded.AutoStories, contentDescription = null, tint = if (isSeries) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                            },
-                            trailingIcon = if (isSeries) {
-                                { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
-                            } else null,
-                            textColor = if (isSeries) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                            fontWeight = if (isSeries) FontWeight.SemiBold else FontWeight.Normal,
-                            onClick = {
-                                viewModel.setLibrarySortOrder(LibrarySortOption.SERIES)
-                                showSortMenu = false
-                            }
-                        )
-                        val isCustom = librarySortOrder == LibrarySortOption.CUSTOM
-                        LiquidGlassMenuItem(
-                            text = strings.sortCustomOrder,
-                            leadingIcon = {
-                                Icon(Icons.Rounded.CollectionsBookmark, contentDescription = null, tint = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                            },
-                            trailingIcon = if (isCustom) {
-                                { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
-                            } else null,
-                            textColor = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                            fontWeight = if (isCustom) FontWeight.SemiBold else FontWeight.Normal,
-                            onClick = {
-                                viewModel.setLibrarySortOrder(LibrarySortOption.CUSTOM)
-                                showSortMenu = false
-                            }
-                        )
-
-                        val booksWithoutCovers = recentBooks.filter { it.coverBase64.isNullOrBlank() }
-                        if (booksWithoutCovers.isNotEmpty()) {
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                        LiquidGlassMenuContainer(
+                            isGlass = isGlass,
+                            isDark = isThemeDark,
+                            isSepia = isSepiaTheme,
+                            hazeState = hazeState
+                        ) {
+                            val isRecent = librarySortOrder == LibrarySortOption.RECENT
                             LiquidGlassMenuItem(
-                                text = strings.downloadMissingCovers,
+                                text = strings.sortByRecent,
                                 leadingIcon = {
-                                    Icon(Icons.Rounded.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = null, tint = if (isRecent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                                 },
+                                trailingIcon = if (isRecent) {
+                                    { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                                } else null,
+                                textColor = if (isRecent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (isRecent) FontWeight.SemiBold else FontWeight.Normal,
                                 onClick = {
+                                    viewModel.setLibrarySortOrder(LibrarySortOption.RECENT)
                                     showSortMenu = false
-                                    Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
-                                    viewModel.autoDownloadMissingCovers(recentBooks) { count ->
-                                        Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
-                                    }
                                 }
                             )
+                            val isTitle = librarySortOrder == LibrarySortOption.TITLE
+                            LiquidGlassMenuItem(
+                                text = strings.sortByTitle,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.Title, contentDescription = null, tint = if (isTitle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                },
+                                trailingIcon = if (isTitle) {
+                                    { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                                } else null,
+                                textColor = if (isTitle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (isTitle) FontWeight.SemiBold else FontWeight.Normal,
+                                onClick = {
+                                    viewModel.setLibrarySortOrder(LibrarySortOption.TITLE)
+                                    showSortMenu = false
+                                }
+                            )
+                            val isAuthor = librarySortOrder == LibrarySortOption.AUTHOR
+                            LiquidGlassMenuItem(
+                                text = strings.sortByAuthor,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.Person, contentDescription = null, tint = if (isAuthor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                },
+                                trailingIcon = if (isAuthor) {
+                                    { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                                } else null,
+                                textColor = if (isAuthor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (isAuthor) FontWeight.SemiBold else FontWeight.Normal,
+                                onClick = {
+                                    viewModel.setLibrarySortOrder(LibrarySortOption.AUTHOR)
+                                    showSortMenu = false
+                                }
+                            )
+                            val isSeries = librarySortOrder == LibrarySortOption.SERIES
+                            LiquidGlassMenuItem(
+                                text = strings.sortBySeries,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.AutoStories, contentDescription = null, tint = if (isSeries) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                },
+                                trailingIcon = if (isSeries) {
+                                    { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                                } else null,
+                                textColor = if (isSeries) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (isSeries) FontWeight.SemiBold else FontWeight.Normal,
+                                onClick = {
+                                    viewModel.setLibrarySortOrder(LibrarySortOption.SERIES)
+                                    showSortMenu = false
+                                }
+                            )
+                            val isCustom = librarySortOrder == LibrarySortOption.CUSTOM
+                            LiquidGlassMenuItem(
+                                text = strings.sortCustomOrder,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.CollectionsBookmark, contentDescription = null, tint = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                },
+                                trailingIcon = if (isCustom) {
+                                    { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                                } else null,
+                                textColor = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (isCustom) FontWeight.SemiBold else FontWeight.Normal,
+                                onClick = {
+                                    viewModel.setLibrarySortOrder(LibrarySortOption.CUSTOM)
+                                    showSortMenu = false
+                                }
+                            )
+
+                            val booksWithoutCovers = recentBooks.filter { it.coverBase64.isNullOrBlank() }
+                            if (booksWithoutCovers.isNotEmpty()) {
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                                LiquidGlassMenuItem(
+                                    text = strings.downloadMissingCovers,
+                                    leadingIcon = {
+                                        Icon(Icons.Rounded.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    },
+                                    onClick = {
+                                        showSortMenu = false
+                                        Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
+                                        viewModel.autoDownloadMissingCovers(recentBooks) { count ->
+                                            Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -1497,121 +1509,135 @@ fun LibraryScreen(
         }
 
         // --- In-Window Hero Card Menu Overlay (outside hazeSource to sample genuine blur) ---
-        if (showHeroMenu && currentHeroBook != null) {
-            val heroBook = currentHeroBook
+        val heroBook = currentHeroBook
+        if (heroBook != null) {
             val heroHasCover = !heroBook.coverBase64.isNullOrBlank()
             val heroIsPrivate = heroBook.id in privateBookIds
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { showHeroMenu = false }
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            AnimatedVisibility(
+                visible = showHeroMenu,
+                enter = fadeIn(tween(220, easing = FastOutSlowInEasing)),
+                exit = fadeOut(tween(180, easing = FastOutSlowInEasing))
             ) {
-                AnimatedVisibility(
-                    visible = showHeroMenu,
-                    enter = fadeIn(tween(140)) + scaleIn(initialScale = 0.85f, transformOrigin = TransformOrigin(0.95f, 0.15f)),
-                    exit = fadeOut(tween(100)) + scaleOut(targetScale = 0.85f, transformOrigin = TransformOrigin(0.95f, 0.15f)),
+                Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 130.dp, end = 8.dp)
-                        .width(260.dp)
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { showHeroMenu = false }
                 ) {
-                    LiquidGlassMenuContainer(
-                        isGlass = isGlass,
-                        isDark = isThemeDark,
-                        isSepia = isSepiaTheme,
-                        hazeState = hazeState
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        LiquidGlassMenuItem(
-                            text = strings.shareBookFile,
-                            leadingIcon = {
-                                Icon(Icons.Rounded.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            onClick = {
-                                showHeroMenu = false
-                                BookShareUtils.shareBookFile(context, heroBook)
-                            }
-                        )
-                        LiquidGlassMenuItem(
-                            text = if (heroHasCover) strings.changeCover else strings.downloadCover,
-                            leadingIcon = {
-                                Icon(if (heroHasCover) Icons.Rounded.Image else Icons.Rounded.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            onClick = {
-                                showHeroMenu = false
-                                bookForCoverChange = heroBook
-                            }
-                        )
-                        LiquidGlassMenuItem(
-                            text = strings.addToCollection,
-                            leadingIcon = {
-                                Icon(Icons.Rounded.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            onClick = {
-                                showHeroMenu = false
-                                bookForCollections = heroBook
-                            }
-                        )
-                        LiquidGlassMenuItem(
-                            text = if (heroIsPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate,
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = if (heroIsPrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
+                        AnimatedVisibility(
+                            visible = showHeroMenu,
+                            enter = fadeIn(tween(240, easing = FastOutSlowInEasing)) + scaleIn(
+                                initialScale = 0.80f,
+                                transformOrigin = TransformOrigin(0.95f, 0.05f),
+                                animationSpec = tween(240, easing = FastOutSlowInEasing)
+                            ),
+                            exit = fadeOut(tween(180, easing = FastOutSlowInEasing)) + scaleOut(
+                                targetScale = 0.82f,
+                                transformOrigin = TransformOrigin(0.95f, 0.05f),
+                                animationSpec = tween(180, easing = FastOutSlowInEasing)
+                            ),
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 130.dp, end = 8.dp)
+                                .width(260.dp)
+                        ) {
+                            LiquidGlassMenuContainer(
+                                isGlass = isGlass,
+                                isDark = isThemeDark,
+                                isSepia = isSepiaTheme,
+                                hazeState = hazeState
+                            ) {
+                                LiquidGlassMenuItem(
+                                    text = strings.shareBookFile,
+                                    leadingIcon = {
+                                        Icon(Icons.Rounded.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    },
+                                    onClick = {
+                                        showHeroMenu = false
+                                        BookShareUtils.shareBookFile(context, heroBook)
+                                    }
                                 )
-                            },
-                            onClick = {
-                                showHeroMenu = false
-                                handleTogglePrivate(heroBook)
-                            }
-                        )
-                        if (heroBook.progressPercent < 100) {
-                            LiquidGlassMenuItem(
-                                text = strings.markAsFinished,
-                                leadingIcon = {
-                                    Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                },
-                                onClick = {
-                                    showHeroMenu = false
-                                    viewModel.setBookReadingProgress(heroBook.id, 100)
+                                LiquidGlassMenuItem(
+                                    text = if (heroHasCover) strings.changeCover else strings.downloadCover,
+                                    leadingIcon = {
+                                        Icon(if (heroHasCover) Icons.Rounded.Image else Icons.Rounded.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    },
+                                    onClick = {
+                                        showHeroMenu = false
+                                        bookForCoverChange = heroBook
+                                    }
+                                )
+                                LiquidGlassMenuItem(
+                                    text = strings.addToCollection,
+                                    leadingIcon = {
+                                        Icon(Icons.Rounded.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    },
+                                    onClick = {
+                                        showHeroMenu = false
+                                        bookForCollections = heroBook
+                                    }
+                                )
+                                LiquidGlassMenuItem(
+                                    text = if (heroIsPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate,
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = if (heroIsPrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    onClick = {
+                                        showHeroMenu = false
+                                        handleTogglePrivate(heroBook)
+                                    }
+                                )
+                                if (heroBook.progressPercent < 100) {
+                                    LiquidGlassMenuItem(
+                                        text = strings.markAsFinished,
+                                        leadingIcon = {
+                                            Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        },
+                                        onClick = {
+                                            showHeroMenu = false
+                                            viewModel.setBookReadingProgress(heroBook.id, 100)
+                                        }
+                                    )
                                 }
-                            )
-                        }
-                        if (heroBook.progressPercent > 0) {
-                            LiquidGlassMenuItem(
-                                text = strings.resetProgress,
-                                leadingIcon = {
-                                    Icon(Icons.Rounded.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                },
-                                onClick = {
-                                    showHeroMenu = false
-                                    viewModel.setBookReadingProgress(heroBook.id, 0)
+                                if (heroBook.progressPercent > 0) {
+                                    LiquidGlassMenuItem(
+                                        text = strings.resetProgress,
+                                        leadingIcon = {
+                                            Icon(Icons.Rounded.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        },
+                                        onClick = {
+                                            showHeroMenu = false
+                                            viewModel.setBookReadingProgress(heroBook.id, 0)
+                                        }
+                                    )
                                 }
-                            )
-                        }
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
-                        LiquidGlassMenuItem(
-                            text = strings.delete,
-                            textColor = MaterialTheme.colorScheme.error,
-                            leadingIcon = {
-                                Icon(Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                            },
-                            onClick = {
-                                showHeroMenu = false
-                                bookToDelete = heroBook
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                                LiquidGlassMenuItem(
+                                    text = strings.delete,
+                                    textColor = MaterialTheme.colorScheme.error,
+                                    leadingIcon = {
+                                        Icon(Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                    },
+                                    onClick = {
+                                        showHeroMenu = false
+                                        bookToDelete = heroBook
+                                    }
+                                )
                             }
-                        )
+                        }
                     }
                 }
             }

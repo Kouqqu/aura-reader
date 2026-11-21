@@ -652,7 +652,11 @@ fun ReaderScreen(
         )
 
         // In-window overflow menu with real Haze blur sampling readerHazeState
-        if (showReaderMenu) {
+        AnimatedVisibility(
+            visible = showReaderMenu,
+            enter = fadeIn(tween(220, easing = FastOutSlowInEasing)),
+            exit = fadeOut(tween(180, easing = FastOutSlowInEasing))
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -660,74 +664,82 @@ fun ReaderScreen(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) { showReaderMenu = false }
-            )
-
-            BackHandler { showReaderMenu = false }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
-                AnimatedVisibility(
-                    visible = showReaderMenu,
-                    enter = fadeIn(tween(140)) + scaleIn(initialScale = 0.85f, transformOrigin = TransformOrigin(0.95f, 0f)),
-                    exit = fadeOut(tween(100)) + scaleOut(targetScale = 0.85f, transformOrigin = TransformOrigin(0.95f, 0f)),
+                BackHandler { showReaderMenu = false }
+
+                Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 58.dp, end = 2.dp)
-                        .width(250.dp)
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
-                    LiquidGlassMenuContainer(
-                        isGlass = isGlass,
-                        isDark = isThemeDark,
-                        isSepia = isSepiaTheme,
-                        hazeState = readerHazeState
+                    AnimatedVisibility(
+                        visible = showReaderMenu,
+                        enter = fadeIn(tween(240, easing = FastOutSlowInEasing)) + scaleIn(
+                            initialScale = 0.80f,
+                            transformOrigin = TransformOrigin(0.95f, 0f),
+                            animationSpec = tween(240, easing = FastOutSlowInEasing)
+                        ),
+                        exit = fadeOut(tween(180, easing = FastOutSlowInEasing)) + scaleOut(
+                            targetScale = 0.82f,
+                            transformOrigin = TransformOrigin(0.95f, 0f),
+                            animationSpec = tween(180, easing = FastOutSlowInEasing)
+                        ),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 58.dp, end = 2.dp)
+                            .width(250.dp)
                     ) {
-                        LiquidGlassMenuItem(
-                            text = strings.ttsListenAction,
-                            leadingIcon = {
-                                Icon(Icons.Rounded.Headphones, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            onClick = {
-                                showReaderMenu = false
-                                if (!ttsState.isServiceRunning) {
-                                    viewModel.startTts(context)
+                        LiquidGlassMenuContainer(
+                            isGlass = isGlass,
+                            isDark = isThemeDark,
+                            isSepia = isSepiaTheme,
+                            hazeState = readerHazeState
+                        ) {
+                            LiquidGlassMenuItem(
+                                text = strings.ttsListenAction,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.Headphones, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                onClick = {
+                                    showReaderMenu = false
+                                    if (!ttsState.isServiceRunning) {
+                                        viewModel.startTts(context)
+                                    }
+                                    showTtsSheet = true
                                 }
-                                showTtsSheet = true
-                            }
-                        )
-                        LiquidGlassMenuItem(
-                            text = strings.searchInBook,
-                            leadingIcon = {
-                                Icon(Icons.Rounded.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            onClick = {
-                                showReaderMenu = false
-                                isSearchActive = true
-                            }
-                        )
-                        LiquidGlassMenuItem(
-                            text = strings.bookmarksAndQuotes,
-                            leadingIcon = {
-                                Icon(Icons.Rounded.CollectionsBookmark, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            onClick = {
-                                showReaderMenu = false
-                                showBookmarksQuotesSheet = true
-                            }
-                        )
-                        LiquidGlassMenuItem(
-                            text = strings.fontAndTheme,
-                            leadingIcon = {
-                                Icon(Icons.Rounded.FormatSize, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            onClick = {
-                                showReaderMenu = false
-                                showSettingsSheet = true
-                            }
-                        )
+                            )
+                            LiquidGlassMenuItem(
+                                text = strings.searchInBook,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                onClick = {
+                                    showReaderMenu = false
+                                    isSearchActive = true
+                                }
+                            )
+                            LiquidGlassMenuItem(
+                                text = strings.bookmarksAndQuotes,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.CollectionsBookmark, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                onClick = {
+                                    showReaderMenu = false
+                                    showBookmarksQuotesSheet = true
+                                }
+                            )
+                            LiquidGlassMenuItem(
+                                text = strings.fontAndTheme,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.FormatSize, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                onClick = {
+                                    showReaderMenu = false
+                                    showSettingsSheet = true
+                                }
+                            )
+                        }
                     }
                 }
             }

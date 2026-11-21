@@ -1387,21 +1387,79 @@ fun LiquidGlassMenuContainer(
     content: @Composable ColumnScope.() -> Unit
 ) {
     if (isGlass) {
-        val tint = if (isSepia) Color(0x66FAF0E6) else null
-        LiquidGlassSurface(
-            shape = shape,
-            shadowElevation = 18.dp,
-            isDark = isDark,
-            tintColor = tint,
-            hazeState = hazeState,
+        val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
+
+        // Premium elevated frosted glass:
+        // High opacity (~88-92%) so background items don't bleed through and make the menu look like thin cellophane.
+        // Haze 24.dp blur provides a luscious soft halo behind it, while deep shadow elevates it above all screen elements.
+        val menuFill = if (isDark) {
+            if (isAmoled) Color(0xEB0C0C0F) else Color(0xE818181E)
+        } else if (isSepia) {
+            Color(0xF0EDE5D6)
+        } else {
+            Color(0xF2F8FAFC)
+        }
+
+        val rimBrush = if (isDark) {
+            Brush.verticalGradient(
+                listOf(
+                    Color.White.copy(alpha = 0.22f),
+                    Color.White.copy(alpha = 0.05f)
+                )
+            )
+        } else if (isSepia) {
+            Brush.verticalGradient(
+                listOf(
+                    Color.White.copy(alpha = 0.65f),
+                    Color(0xFFD4C8B5).copy(alpha = 0.45f)
+                )
+            )
+        } else {
+            Brush.verticalGradient(
+                listOf(
+                    Color.White.copy(alpha = 0.85f),
+                    Color.Black.copy(alpha = 0.07f)
+                )
+            )
+        }
+
+        val hazeModifier = if (hazeState != null) {
+            Modifier.clip(shape).hazeBlur(
+                input = HazeInput.Sources(hazeState),
+                style = HazeBlurStyle {
+                    blurRadius(24.dp)
+                    noiseFactor(0.015f)
+                }
+            )
+        } else Modifier
+
+        Box(
             modifier = modifier
+                .shadow(
+                    elevation = 20.dp,
+                    shape = shape,
+                    clip = false,
+                    ambientColor = Color.Black.copy(alpha = if (isDark) 0.40f else 0.10f),
+                    spotColor = Color.Black.copy(alpha = if (isDark) 0.60f else 0.18f)
+                )
+                .clip(shape)
+                .then(hazeModifier)
+                .background(menuFill)
+                .border(
+                    width = 0.85.dp,
+                    brush = rimBrush,
+                    shape = shape
+                )
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp)
-            ) {
-                content()
+            val defaultContentColor = if (isDark) Color(0xFFF6F7F9) else Color(0xFF191B1F)
+            CompositionLocalProvider(LocalContentColor provides defaultContentColor) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                ) {
+                    content()
+                }
             }
         }
     } else {
@@ -1412,7 +1470,7 @@ fun LiquidGlassMenuContainer(
                 contentColor = MaterialTheme.colorScheme.onSurface
             ),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
             modifier = modifier
         ) {
             Column(
