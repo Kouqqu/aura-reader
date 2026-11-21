@@ -426,6 +426,10 @@ class BookRepository(
                         f.delete()
                     }
                 }
+                val imagesDir = java.io.File(context.cacheDir, "book_images/$bookId")
+                if (imagesDir.exists()) {
+                    imagesDir.deleteRecursively()
+                }
             } catch (e: Exception) {}
         }
     }

@@ -44,6 +44,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Image
@@ -445,7 +446,9 @@ internal fun SettingsAdditionalFeaturesSection(
     onDownloadMissingCovers: (() -> Unit)? = null,
     onDownloadMissingMetadata: (() -> Unit)? = null,
     booksWithoutCoversCount: Int = 0,
-    booksWithoutMetadataCount: Int = 0
+    booksWithoutMetadataCount: Int = 0,
+    onClearCache: (() -> Unit)? = null,
+    cacheSizeString: String = "0 КБ"
 ) {
     val strings = LocalAppStrings.current
     var expanded by rememberSaveable { mutableStateOf(true) }
@@ -530,6 +533,22 @@ ExpressiveSettingsGroup {
             subtitle = strings.booksWithoutMetadataCount(booksWithoutMetadataCount),
             icon = { SettingsIconBox(Icons.Rounded.AutoStories) },
             onClick = onDownloadMissingMetadata,
+            trailing = {
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        )
+    }
+    if (onClearCache != null) {
+        ExpressiveDivider()
+        ExpressiveSettingsRow(
+            title = strings.clearAppCacheTitle,
+            subtitle = strings.clearAppCacheSubtitle(cacheSizeString),
+            icon = { SettingsIconBox(Icons.Rounded.DeleteOutline) },
+            onClick = onClearCache,
             trailing = {
                 Icon(
                     imageVector = Icons.Rounded.ChevronRight,

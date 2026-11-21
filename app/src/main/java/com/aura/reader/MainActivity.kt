@@ -28,6 +28,7 @@ import com.aura.reader.ui.theme.getStrings
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.aura.reader.data.analytics.AnalyticsManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -67,10 +68,17 @@ class MainActivity : ComponentActivity() {
         bookRepository = BookRepository(applicationContext, preferencesManager)
         // A previous in-app update has been installed by now, so the cached APK
         // it was built from is no longer needed and must not keep taking space.
-        com.aura.reader.data.updater.AppUpdateManager.cleanupDownloadedApks(applicationContext)
+        com.aura.reader.data.storage.AppStorageManager.cleanupTemporaryFiles(applicationContext)
         libraryViewModel = LibraryViewModel(bookRepository, preferencesManager)
         readerViewModel = ReaderViewModel(bookRepository, preferencesManager, applicationContext)
         opdsViewModel = com.aura.reader.ui.screens.opds.OpdsViewModel(bookRepository, preferencesManager)
+
+        // Background maintenance: purge orphaned book images and dead temporary files
+        lifecycleScope.launch(Dispatchers.IO) {
+            val books = bookRepository.recentBooks.first()
+            val activeIds = books.map { it.id }.toSet()
+            com.aura.reader.data.storage.AppStorageManager.cleanupTemporaryFiles(applicationContext, activeIds)
+        }
 
         // Track anonymous app metrics if enabled
         AnalyticsManager.trackAppLaunch(

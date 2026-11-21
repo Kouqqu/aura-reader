@@ -295,6 +295,8 @@ fun SettingsGeneralPage(
     onDownloadMissingMetadata: (() -> Unit)? = null,
     booksWithoutCoversCount: Int = 0,
     booksWithoutMetadataCount: Int = 0,
+    onClearCache: (() -> Unit)? = null,
+    cacheSizeString: String = "0 КБ",
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -340,7 +342,9 @@ fun SettingsGeneralPage(
                 onDownloadMissingCovers = onDownloadMissingCovers,
                 onDownloadMissingMetadata = onDownloadMissingMetadata,
                 booksWithoutCoversCount = booksWithoutCoversCount,
-                booksWithoutMetadataCount = booksWithoutMetadataCount
+                booksWithoutMetadataCount = booksWithoutMetadataCount,
+                onClearCache = onClearCache,
+                cacheSizeString = cacheSizeString
             )
 
             Spacer(modifier = Modifier.height(16.dp))

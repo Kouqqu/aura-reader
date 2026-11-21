@@ -381,18 +381,12 @@ object AppUpdateManager {
     }
 
     /**
-     * Deletes APKs left in the update cache. Called on every app start: once the
+     * Deletes APKs and temporary files left in cache. Called on every app start: once the
      * installer has replaced the app, the old download is dead weight.
      */
     fun cleanupDownloadedApks(context: Context) {
         try {
-            val directory = File(context.cacheDir, UPDATE_CACHE_DIR)
-            directory.listFiles()?.forEach { file ->
-                try {
-                    file.delete()
-                } catch (_: Exception) {
-                }
-            }
+            com.aura.reader.data.storage.AppStorageManager.cleanupTemporaryFiles(context)
         } catch (_: Exception) {
         }
     }

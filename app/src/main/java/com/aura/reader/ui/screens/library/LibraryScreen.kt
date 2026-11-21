@@ -1349,6 +1349,13 @@ fun LibraryScreen(
                         val booksWithoutMetadataCount = remember(recentBooks) {
                             recentBooks.count { it.deletedAtTimestamp == null && (it.description.isNullOrBlank() || it.genres.isEmpty()) }
                         }
+                        var cacheSizeString by remember {
+                            mutableStateOf(
+                                com.aura.reader.data.storage.AppStorageManager.formatSize(
+                                    com.aura.reader.data.storage.AppStorageManager.getCacheSizeBytes(context)
+                                )
+                            )
+                        }
                         SettingsGeneralPage(
                             appSettings = appSettings,
                             onUpdateSettings = { viewModel.updateAppSettings(it) },
@@ -1379,7 +1386,15 @@ fun LibraryScreen(
                                 }
                             },
                             booksWithoutCoversCount = booksWithoutCoversCount,
-                            booksWithoutMetadataCount = booksWithoutMetadataCount
+                            booksWithoutMetadataCount = booksWithoutMetadataCount,
+                            onClearCache = {
+                                com.aura.reader.data.storage.AppStorageManager.clearAllCache(context)
+                                cacheSizeString = com.aura.reader.data.storage.AppStorageManager.formatSize(
+                                    com.aura.reader.data.storage.AppStorageManager.getCacheSizeBytes(context)
+                                )
+                                Toast.makeText(context, strings.clearAppCacheSuccess, Toast.LENGTH_SHORT).show()
+                            },
+                            cacheSizeString = cacheSizeString
                         )
                     }
                     4 -> {

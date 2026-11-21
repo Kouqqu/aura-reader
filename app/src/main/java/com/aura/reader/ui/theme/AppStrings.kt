@@ -612,6 +612,9 @@ interface Strings {
     fun booksWithoutMetadataCount(count: Int): String = if (count > 0) "Книг без описания: $count" else "Все описания загружены"
     val autoFetchMetadataTitle: String get() = "Автозагрузка данных книги"
     val autoFetchMetadataDesc: String get() = "Автоматически находить жанры и описание в сети при добавлении книг"
+    val clearAppCacheTitle: String get() = "Очистить кэш приложения"
+    fun clearAppCacheSubtitle(size: String): String = "Занято кэшем: $size"
+    val clearAppCacheSuccess: String get() = "Кэш приложения успешно очищен"
     val viewCover: String get() = "Просмотр обложки"
 }
 
@@ -1641,6 +1644,9 @@ class EnStrings : Strings {
     override fun booksWithoutMetadataCount(count: Int) = if (count > 0) "Books without description: $count" else "All descriptions downloaded"
     override val autoFetchMetadataTitle = "Auto-fetch Book Metadata"
     override val autoFetchMetadataDesc = "Automatically fetch genres and synopsis online when adding books"
+    override val clearAppCacheTitle = "Clear App Cache"
+    override fun clearAppCacheSubtitle(size: String) = "Cache size: $size"
+    override val clearAppCacheSuccess = "App cache cleared successfully"
     override val viewCover = "View cover"
 }
 
@@ -2186,6 +2192,9 @@ class UkStrings : Strings {
     override fun booksWithoutMetadataCount(count: Int) = if (count > 0) "Книг без опису: $count" else "Всі описи завантажено"
     override val autoFetchMetadataTitle = "Автозавантаження даних книги"
     override val autoFetchMetadataDesc = "Автоматично шукати жанри та опис у мережі при додаванні книг"
+    override val clearAppCacheTitle = "Очистити кеш програми"
+    override fun clearAppCacheSubtitle(size: String) = "Зайнято кешем: $size"
+    override val clearAppCacheSuccess = "Кеш програми успішно очищено"
     override val viewCover = "Перегляд обкладинки"
 }
 
