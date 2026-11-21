@@ -579,7 +579,6 @@ fun LibraryScreen(
                     isSearchExpanded = isSearchExpanded,
                     isGlass = isGlass,
                     isThemeDark = isThemeDark,
-                    isSepia = isSepiaTheme,
                     searchQuery = searchQuery,
                     libraryViewMode = libraryViewMode,
                     scrollBehavior = scrollBehavior,

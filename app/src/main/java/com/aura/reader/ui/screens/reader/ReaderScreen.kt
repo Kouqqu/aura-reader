@@ -336,19 +336,6 @@ fun ReaderScreen(
         } catch (_: CancellationException) {}
     }
 
-    var readerPredictiveBackProgress by remember { mutableFloatStateOf(0f) }
-    PredictiveBackHandler(enabled = selectedQuoteCopyAction == null) { progress ->
-        try {
-            progress.collect { backEvent ->
-                readerPredictiveBackProgress = backEvent.progress
-            }
-            onNavigateBack()
-        } catch (_: CancellationException) {
-        } finally {
-            readerPredictiveBackProgress = 0f
-        }
-    }
-
     fun currentSelectionText(): String? {
         val fromState = selectedReaderText?.trim()
         if (!fromState.isNullOrBlank()) return fromState
@@ -424,12 +411,6 @@ fun ReaderScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer {
-                    if (readerPredictiveBackProgress > 0f) {
-                        translationX = readerPredictiveBackProgress * size.width
-                        alpha = 1f - (readerPredictiveBackProgress * 0.12f)
-                    }
-                }
                 .background(MaterialTheme.colorScheme.background)
         ) {
             // Stable Book Content Container (Never shifts or resizes on controls toggle)

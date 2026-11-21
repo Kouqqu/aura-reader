@@ -165,16 +165,12 @@ fun OpdsScreen(
     }
 
     var predictiveBackProgress by remember { mutableFloatStateOf(0f) }
-    PredictiveBackHandler(enabled = true) { progress ->
+    PredictiveBackHandler(enabled = canGoBack) { progress ->
         try {
             progress.collect { backEvent ->
                 predictiveBackProgress = backEvent.progress
             }
-            if (canGoBack) {
-                viewModel.navigateBack()
-            } else {
-                onNavigateBack()
-            }
+            viewModel.navigateBack()
         } catch (_: CancellationException) {
         } finally {
             predictiveBackProgress = 0f

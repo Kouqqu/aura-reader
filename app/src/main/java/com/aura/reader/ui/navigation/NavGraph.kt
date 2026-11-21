@@ -98,7 +98,23 @@ fun AuraNavGraph(
                     )
                 }
 
-                composable(NavRoutes.LIBRARY) {
+                composable(
+                    route = NavRoutes.LIBRARY,
+                    exitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Start,
+                            animationSpec = tween(280, easing = FastOutSlowInEasing),
+                            targetOffset = { -it / 3 }
+                        ) + fadeOut(animationSpec = tween(240))
+                    },
+                    popEnterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.End,
+                            animationSpec = tween(280, easing = FastOutSlowInEasing),
+                            initialOffset = { -it / 3 }
+                        ) + fadeIn(animationSpec = tween(240))
+                    }
+                ) {
                     CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
                         LibraryScreen(
                             viewModel = libraryViewModel,
@@ -135,7 +151,8 @@ fun AuraNavGraph(
                     popEnterTransition = {
                         slideIntoContainer(
                             AnimatedContentTransitionScope.SlideDirection.End,
-                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                            animationSpec = tween(280, easing = FastOutSlowInEasing),
+                            initialOffset = { -it / 3 }
                         ) + fadeIn(animationSpec = tween(240))
                     },
                     popExitTransition = {
@@ -172,7 +189,8 @@ fun AuraNavGraph(
                     popEnterTransition = {
                         slideIntoContainer(
                             AnimatedContentTransitionScope.SlideDirection.End,
-                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                            animationSpec = tween(280, easing = FastOutSlowInEasing),
+                            initialOffset = { -it / 3 }
                         ) + fadeIn(animationSpec = tween(240))
                     },
                     popExitTransition = {

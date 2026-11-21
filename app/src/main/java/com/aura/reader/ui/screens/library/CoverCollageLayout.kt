@@ -2,7 +2,7 @@ package com.aura.reader.ui.screens.library
 
 import kotlin.math.*
 
-internal data class CoverPlacement(val x: Float, val y: Float, val cycle: Int = 0)
+internal data class CoverPlacement(val x: Float, val y: Float)
 internal data class CoverLayout(val coverWidth: Float, val maxCoverHeight: Float, val durationMillis: Int, val positions: List<CoverPlacement>)
 
 /** Positions in dp. A rigid translation preserves the gaps between rotated books. */
@@ -27,10 +27,8 @@ internal fun coverCollageLayout(count: Int, width: Float, height: Float, phase: 
         val period = max(2 * exit + gap * 2, count * spacing).coerceAtLeast(1f)
         val stepSpacing = period / count
         return CoverLayout(coverWidth, coverHeight, (period / 7f * 1000).toInt(), List(count) { index ->
-            val rawT = index * stepSpacing + phase * period
-            val cycle = floor((rawT + period / 2f) / period).toInt()
-            val t = wrap(rawT, period)
-            CoverPlacement(width / 2 + t, height / 2 + slope * t, cycle)
+            val t = wrap(index * stepSpacing + phase * period, period)
+            CoverPlacement(width / 2 + t, height / 2 + slope * t)
         })
     }
     // An oversized grid in the books' rotated coordinate system. All cells
@@ -49,10 +47,8 @@ internal fun coverCollageLayout(count: Int, width: Float, height: Float, phase: 
     val speedX = c * periodU - s * periodV
     return CoverLayout(coverWidth, coverHeight, (speedX / 7f * 1000).toInt(), List(count.coerceAtMost(12)) { index ->
         val slot = slots[index % slots.size]
-        val rawU = (slot % 4 - 1.5f) * cellWidth + phase * periodU
-        val cycle = floor((rawU + periodU / 2f) / periodU).toInt()
-        val u = wrap(rawU, periodU)
+        val u = wrap((slot % 4 - 1.5f) * cellWidth + phase * periodU, periodU)
         val v = wrap((slot / 4 - 1f) * cellHeight + phase * periodV, periodV)
-        CoverPlacement(width / 2 + c * u - s * v, height / 2 + s * u + c * v, cycle)
+        CoverPlacement(width / 2 + c * u - s * v, height / 2 + s * u + c * v)
     })
 }
