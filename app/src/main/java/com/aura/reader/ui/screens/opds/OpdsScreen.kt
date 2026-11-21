@@ -165,12 +165,16 @@ fun OpdsScreen(
     }
 
     var predictiveBackProgress by remember { mutableFloatStateOf(0f) }
-    PredictiveBackHandler(enabled = canGoBack) { progress ->
+    PredictiveBackHandler(enabled = true) { progress ->
         try {
             progress.collect { backEvent ->
                 predictiveBackProgress = backEvent.progress
             }
-            viewModel.navigateBack()
+            if (canGoBack) {
+                viewModel.navigateBack()
+            } else {
+                onNavigateBack()
+            }
         } catch (_: CancellationException) {
         } finally {
             predictiveBackProgress = 0f
@@ -263,10 +267,8 @@ fun OpdsScreen(
         modifier = Modifier.graphicsLayer {
             if (predictiveBackProgress > 0f) {
                 val p = predictiveBackProgress
-                translationX = p * size.width * 0.12f
-                scaleX = 1f - (p * 0.05f)
-                scaleY = 1f - (p * 0.05f)
-                alpha = 1f - (p * 0.20f)
+                translationX = p * size.width
+                alpha = 1f - (p * 0.12f)
             }
         },
         topBar = {

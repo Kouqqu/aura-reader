@@ -251,6 +251,7 @@ fun LibraryScreen(
         ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
         ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
     }
+    val isSepiaTheme = readerSettings.appThemeMode == ReaderThemeMode.SEPIA
     val appSettings by viewModel.appSettings.collectAsState()
     val appLanguage by viewModel.appLanguage.collectAsState()
     val updateNotificationsEnabled by viewModel.updateNotificationsEnabled.collectAsState()
@@ -620,10 +621,13 @@ fun LibraryScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .hazeSource(hazeState)
+            modifier = Modifier.fillMaxSize()
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .hazeSource(hazeState)
+            ) {
             if (showAddBooksSheet) {
                 AddBooksBottomSheet(
                     onDismiss = { showAddBooksSheet = false },
@@ -854,11 +858,13 @@ fun LibraryScreen(
                                                     val buttonBg = if (isGlass) {
                                                         if (isThemeDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
                                                     } else {
-                                                        MaterialTheme.colorScheme.surfaceContainer
+                                                        MaterialTheme.colorScheme.surfaceContainerHigh
                                                     }
                                                     val buttonBorder = if (isGlass) {
                                                         BorderStroke(0.5.dp, if (isThemeDark) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.10f))
-                                                    } else null
+                                                    } else {
+                                                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.50f))
+                                                    }
 
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
@@ -1423,181 +1429,6 @@ fun LibraryScreen(
                                             CircularProgressIndicator()
                                         }
                                     }
-
-                                    // --- Multi-Select Floating Action Bar ---
-                                    AnimatedVisibility(
-                                        visible = isSelectionMode,
-                                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-                                        modifier = Modifier
-                                            .align(Alignment.BottomCenter)
-                                            .padding(bottom = 96.dp, start = 16.dp, end = 16.dp)
-                                            .fillMaxWidth()
-                                    ) {
-                                        MultiSelectBarContainer(
-                                            isGlass = isGlass,
-                                            isThemeDark = isThemeDark,
-                                            hazeState = hazeState,
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Column(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(horizontal = 12.dp, vertical = 10.dp)
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        IconButton(
-                                                            onClick = { selectedBookIds = emptySet() },
-                                                            modifier = Modifier.size(32.dp)
-                                                        ) {
-                                                            Icon(
-                                                                imageVector = Icons.Rounded.Close,
-                                                                contentDescription = strings.cancel,
-                                                                tint = MaterialTheme.colorScheme.onSurface,
-                                                                modifier = Modifier.size(20.dp)
-                                                            )
-                                                        }
-                                                        Spacer(modifier = Modifier.width(6.dp))
-                                                        Text(
-                                                            text = strings.selectedCount(selectedBookIds.size),
-                                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                                            color = MaterialTheme.colorScheme.onSurface
-                                                        )
-                                                    }
-
-                                                    val allDisplayedSelected = displayedRecentBooks.isNotEmpty() &&
-                                                        displayedRecentBooks.all { it.id in selectedBookIds }
-                                                    TextButton(
-                                                        onClick = {
-                                                            selectedBookIds = if (allDisplayedSelected) {
-                                                                emptySet()
-                                                            } else {
-                                                                displayedRecentBooks.map { it.id }.toSet()
-                                                            }
-                                                        },
-                                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                                                    ) {
-                                                        Text(
-                                                            text = if (allDisplayedSelected) strings.deselectAll else strings.selectAll,
-                                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
-                                                        )
-                                                    }
-                                                }
-
-                                                Spacer(modifier = Modifier.height(4.dp))
-
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.SpaceEvenly,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    val isTrashView = activeCollectionFilter.type == CollectionFilterType.TRASH
-
-                                                    if (isTrashView) {
-                                                        MultiSelectActionButton(
-                                                            icon = Icons.Rounded.Restore,
-                                                            label = strings.batchRestore,
-                                                            tint = MaterialTheme.colorScheme.primary,
-                                                            modifier = Modifier.weight(1f),
-                                                            onClick = {
-                                                                val count = selectedBookIds.size
-                                                                viewModel.batchRestoreFromTrash(selectedBookIds)
-                                                                selectedBookIds = emptySet()
-                                                                scope.launch {
-                                                                    snackbarHostState.showSnackbar(strings.restoredFromTrashSnackbar)
-                                                                }
-                                                            }
-                                                        )
-
-                                                        MultiSelectActionButton(
-                                                            icon = Icons.Rounded.DeleteForever,
-                                                            label = strings.batchDeletePermanently,
-                                                            tint = MaterialTheme.colorScheme.error,
-                                                            modifier = Modifier.weight(1f),
-                                                            onClick = {
-                                                                val toDelete = selectedBookIds
-                                                                viewModel.batchDeletePermanently(toDelete)
-                                                                selectedBookIds = emptySet()
-                                                                scope.launch {
-                                                                    snackbarHostState.showSnackbar(strings.deletePermanently)
-                                                                }
-                                                            }
-                                                        )
-                                                    } else {
-                                                        MultiSelectActionButton(
-                                                            icon = Icons.Rounded.FolderOpen,
-                                                            label = strings.batchAddToCollection,
-                                                            tint = MaterialTheme.colorScheme.primary,
-                                                            modifier = Modifier.weight(1f),
-                                                            onClick = { showBatchCollectionDialog = true }
-                                                        )
-
-                                                        val allArePrivate = selectedBookIds.isNotEmpty() && selectedBookIds.all { it in privateBookIds }
-                                                        MultiSelectActionButton(
-                                                            icon = if (allArePrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
-                                                            label = if (allArePrivate) strings.batchRemoveFromPrivate else strings.batchMakePrivate,
-                                                            tint = MaterialTheme.colorScheme.secondary,
-                                                            modifier = Modifier.weight(1f),
-                                                            onClick = {
-                                                                val count = selectedBookIds.size
-                                                                viewModel.batchTogglePrivate(selectedBookIds, !allArePrivate)
-                                                                selectedBookIds = emptySet()
-                                                                scope.launch {
-                                                                    val msg = if (allArePrivate) strings.batchUnprivateSnackbar(count) else strings.batchPrivateSnackbar(count)
-                                                                    snackbarHostState.showSnackbar(msg)
-                                                                }
-                                                            }
-                                                        )
-
-                                                        val allRead = selectedBookIds.isNotEmpty() && displayedRecentBooks.filter { it.id in selectedBookIds }.all { it.progressPercent >= 100 }
-                                                        MultiSelectActionButton(
-                                                            icon = if (allRead) Icons.Rounded.Refresh else Icons.Rounded.CheckCircle,
-                                                            label = if (allRead) strings.batchMarkUnread else strings.batchMarkRead,
-                                                            tint = MaterialTheme.colorScheme.tertiary,
-                                                            modifier = Modifier.weight(1f),
-                                                            onClick = {
-                                                                val count = selectedBookIds.size
-                                                                val newProgress = if (allRead) 0 else 100
-                                                                viewModel.batchSetReadingProgress(selectedBookIds, newProgress)
-                                                                selectedBookIds = emptySet()
-                                                                scope.launch {
-                                                                    snackbarHostState.showSnackbar(strings.batchMarkedReadSnackbar(count))
-                                                                }
-                                                            }
-                                                        )
-
-                                                        MultiSelectActionButton(
-                                                            icon = Icons.Rounded.Delete,
-                                                            label = strings.batchMoveToTrash,
-                                                            tint = MaterialTheme.colorScheme.error,
-                                                            modifier = Modifier.weight(1f),
-                                                            onClick = {
-                                                                val count = selectedBookIds.size
-                                                                val deletedIds = selectedBookIds
-                                                                viewModel.batchMoveToTrash(deletedIds)
-                                                                selectedBookIds = emptySet()
-                                                                scope.launch {
-                                                                    val res = snackbarHostState.showSnackbar(
-                                                                        message = strings.batchMovedToTrashSnackbar(count),
-                                                                        actionLabel = strings.undo,
-                                                                        duration = SnackbarDuration.Short
-                                                                    )
-                                                                    if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
-                                                                        viewModel.batchRestoreFromTrash(deletedIds)
-                                                                    }
-                                                                }
-                                                            }
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
                                 }
                     }
                     1 -> {
@@ -1683,6 +1514,183 @@ fun LibraryScreen(
                     }
                 }
             }
+        }
+
+        // --- Multi-Select Floating Action Bar (Placed outside hazeSource to sample genuine blur) ---
+        AnimatedVisibility(
+            visible = isSelectionMode,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 96.dp, start = 16.dp, end = 16.dp)
+                .fillMaxWidth()
+        ) {
+            MultiSelectBarContainer(
+                isGlass = isGlass,
+                isThemeDark = isThemeDark,
+                isSepia = isSepiaTheme,
+                hazeState = hazeState,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = { selectedBookIds = emptySet() },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = strings.cancel,
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = strings.selectedCount(selectedBookIds.size),
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        val allDisplayedSelected = filteredRecentBooks.isNotEmpty() &&
+                            filteredRecentBooks.all { it.id in selectedBookIds }
+                        TextButton(
+                            onClick = {
+                                selectedBookIds = if (allDisplayedSelected) {
+                                    emptySet()
+                                } else {
+                                    filteredRecentBooks.map { it.id }.toSet()
+                                }
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = if (allDisplayedSelected) strings.deselectAll else strings.selectAll,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val isTrashView = activeCollectionFilter.type == CollectionFilterType.TRASH
+
+                        if (isTrashView) {
+                            MultiSelectActionButton(
+                                icon = Icons.Rounded.Restore,
+                                label = strings.batchRestore,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val count = selectedBookIds.size
+                                    viewModel.batchRestoreFromTrash(selectedBookIds)
+                                    selectedBookIds = emptySet()
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(strings.restoredFromTrashSnackbar)
+                                    }
+                                }
+                            )
+
+                            MultiSelectActionButton(
+                                icon = Icons.Rounded.DeleteForever,
+                                label = strings.batchDeletePermanently,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val toDelete = selectedBookIds
+                                    viewModel.batchDeletePermanently(toDelete)
+                                    selectedBookIds = emptySet()
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(strings.deletePermanently)
+                                    }
+                                }
+                            )
+                        } else {
+                            MultiSelectActionButton(
+                                icon = Icons.Rounded.FolderOpen,
+                                label = strings.batchAddToCollection,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f),
+                                onClick = { showBatchCollectionDialog = true }
+                            )
+
+                            val allArePrivate = selectedBookIds.isNotEmpty() && selectedBookIds.all { it in privateBookIds }
+                            MultiSelectActionButton(
+                                icon = if (allArePrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                                label = if (allArePrivate) strings.batchRemoveFromPrivate else strings.batchMakePrivate,
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val count = selectedBookIds.size
+                                    viewModel.batchTogglePrivate(selectedBookIds, !allArePrivate)
+                                    selectedBookIds = emptySet()
+                                    scope.launch {
+                                        val msg = if (allArePrivate) strings.batchUnprivateSnackbar(count) else strings.batchPrivateSnackbar(count)
+                                        snackbarHostState.showSnackbar(msg)
+                                    }
+                                }
+                            )
+
+                            val allRead = selectedBookIds.isNotEmpty() && filteredRecentBooks.filter { it.id in selectedBookIds }.all { it.progressPercent >= 100 }
+                            MultiSelectActionButton(
+                                icon = if (allRead) Icons.Rounded.Refresh else Icons.Rounded.CheckCircle,
+                                label = if (allRead) strings.batchMarkUnread else strings.batchMarkRead,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val count = selectedBookIds.size
+                                    val newProgress = if (allRead) 0 else 100
+                                    viewModel.batchSetReadingProgress(selectedBookIds, newProgress)
+                                    selectedBookIds = emptySet()
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(strings.batchMarkedReadSnackbar(count))
+                                    }
+                                }
+                            )
+
+                            MultiSelectActionButton(
+                                icon = Icons.Rounded.Delete,
+                                label = strings.batchMoveToTrash,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val count = selectedBookIds.size
+                                    val deletedIds = selectedBookIds
+                                    viewModel.batchMoveToTrash(deletedIds)
+                                    selectedBookIds = emptySet()
+                                    scope.launch {
+                                        val res = snackbarHostState.showSnackbar(
+                                            message = strings.batchMovedToTrashSnackbar(count),
+                                            actionLabel = strings.undo,
+                                            duration = SnackbarDuration.Short
+                                        )
+                                        if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                                            viewModel.batchRestoreFromTrash(deletedIds)
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -2119,15 +2127,18 @@ private fun MultiSelectActionButton(
 private fun MultiSelectBarContainer(
     isGlass: Boolean,
     isThemeDark: Boolean,
+    isSepia: Boolean,
     hazeState: HazeState,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     if (isGlass) {
+        val tint = if (isSepia) Color(0x66FAF0E6) else null
         LiquidGlassSurface(
             shape = RoundedCornerShape(22.dp),
             shadowElevation = 10.dp,
             isDark = isThemeDark,
+            tintColor = tint,
             hazeState = hazeState,
             modifier = modifier,
             content = content
@@ -2136,9 +2147,10 @@ private fun MultiSelectBarContainer(
         Card(
             shape = RoundedCornerShape(22.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                containerColor = if (isSepia) Color(0xFFE6DDCF) else MaterialTheme.colorScheme.surfaceContainerHigh,
                 contentColor = MaterialTheme.colorScheme.onSurface
             ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
             modifier = modifier
         ) {

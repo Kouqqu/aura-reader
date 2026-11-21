@@ -132,7 +132,7 @@ fun AuraNavGraph(
                         slideOutOfContainer(
                             AnimatedContentTransitionScope.SlideDirection.End,
                             animationSpec = tween(280, easing = FastOutSlowInEasing)
-                        ) + fadeOut(animationSpec = tween(240))
+                        )
                     }
                 ) {
                     CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
@@ -169,7 +169,7 @@ fun AuraNavGraph(
                         slideOutOfContainer(
                             AnimatedContentTransitionScope.SlideDirection.End,
                             animationSpec = tween(280, easing = FastOutSlowInEasing)
-                        ) + fadeOut(animationSpec = tween(240))
+                        )
                     }
                 ) {
                     CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {

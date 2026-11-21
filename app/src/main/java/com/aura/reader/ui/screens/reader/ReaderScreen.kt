@@ -130,6 +130,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -138,6 +139,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -320,6 +322,19 @@ fun ReaderScreen(
         } catch (_: CancellationException) {}
     }
 
+    var readerPredictiveBackProgress by remember { mutableFloatStateOf(0f) }
+    PredictiveBackHandler(enabled = selectedQuoteCopyAction == null) { progress ->
+        try {
+            progress.collect { backEvent ->
+                readerPredictiveBackProgress = backEvent.progress
+            }
+            onNavigateBack()
+        } catch (_: CancellationException) {
+        } finally {
+            readerPredictiveBackProgress = 0f
+        }
+    }
+
     fun currentSelectionText(): String? {
         val fromState = selectedReaderText?.trim()
         if (!fromState.isNullOrBlank()) return fromState
@@ -395,6 +410,12 @@ fun ReaderScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer {
+                    if (readerPredictiveBackProgress > 0f) {
+                        translationX = readerPredictiveBackProgress * size.width
+                        alpha = 1f - (readerPredictiveBackProgress * 0.12f)
+                    }
+                }
                 .background(MaterialTheme.colorScheme.background)
         ) {
             // Stable Book Content Container (Never shifts or resizes on controls toggle)

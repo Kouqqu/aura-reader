@@ -27,12 +27,20 @@ private val LightColorScheme = lightColorScheme(
     onPrimaryContainer = md_theme_light_onPrimaryContainer,
     secondary = md_theme_light_secondary,
     onSecondary = md_theme_light_onSecondary,
+    secondaryContainer = Color(0xFFE2E4EC),
+    onSecondaryContainer = Color(0xFF161C24),
+    tertiary = Color(0xFF7D5260),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFFFD8E4),
+    onTertiaryContainer = Color(0xFF31111D),
     background = md_theme_light_background,
     onBackground = md_theme_light_onBackground,
     surface = md_theme_light_surface,
     onSurface = md_theme_light_onSurface,
     surfaceVariant = md_theme_light_surfaceVariant,
     onSurfaceVariant = md_theme_light_onSurfaceVariant,
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF7F7FA),
     surfaceContainer = Color(0xFFF1F1F5),
     surfaceContainerHigh = Color(0xFFE9E9EF),
     surfaceContainerHighest = Color(0xFFE2E2E8),
@@ -47,6 +55,8 @@ private val DarkColorScheme = darkColorScheme(
     onPrimaryContainer = md_theme_dark_onPrimaryContainer,
     secondary = md_theme_dark_secondary,
     onSecondary = md_theme_dark_onSecondary,
+    secondaryContainer = Color(0xFF333842),
+    onSecondaryContainer = Color(0xFFE2E5EE),
     background = md_theme_dark_background,
     onBackground = md_theme_dark_onBackground,
     surface = md_theme_dark_surface,
@@ -60,21 +70,29 @@ private val DarkColorScheme = darkColorScheme(
 private val SepiaColorScheme = lightColorScheme(
     primary = SepiaPrimary,
     onPrimary = SepiaOnPrimary,
-    primaryContainer = Color(0xFFE4D9C4),
-    onPrimaryContainer = SepiaText,
+    primaryContainer = Color(0xFFE2D6C4),
+    onPrimaryContainer = Color(0xFF2C1E12),
     secondary = SepiaSecondaryText,
     onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFE4DACB),
+    onSecondaryContainer = Color(0xFF2C1E12),
+    tertiary = Color(0xFF6B4E38),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFEADBCE),
+    onTertiaryContainer = Color(0xFF2C1E12),
     background = SepiaBackground,
     onBackground = SepiaText,
     surface = SepiaSurface,
     onSurface = SepiaText,
-    surfaceVariant = Color(0xFFE5DAC6),
+    surfaceVariant = Color(0xFFE6DDD0),
     onSurfaceVariant = SepiaSecondaryText,
-    surfaceContainer = Color(0xFFE8DFC8),
-    surfaceContainerHigh = Color(0xFFDFD5BD),
-    surfaceContainerHighest = Color(0xFFD6CBAD),
-    outline = Color(0xFF86725F),
-    outlineVariant = Color(0xFFC8BBA9)
+    surfaceContainerLowest = Color(0xFFFCF9F3),
+    surfaceContainerLow = Color(0xFFF2ECE0),
+    surfaceContainer = Color(0xFFECE4D6),
+    surfaceContainerHigh = Color(0xFFE6DDCF),
+    surfaceContainerHighest = Color(0xFFE0D6C6),
+    outline = Color(0xFF8C7E6C),
+    outlineVariant = Color(0xFFD4C8B5)
 )
 
 private val AmoledColorScheme = darkColorScheme(
@@ -177,19 +195,25 @@ fun AuraReaderTheme(
         primary = preset.lightPrimary,
         primaryContainer = preset.lightPrimaryContainer,
         onPrimaryContainer = preset.lightOnPrimaryContainer,
-        secondary = preset.lightSecondary
+        secondary = preset.lightSecondary,
+        secondaryContainer = preset.lightPrimaryContainer.copy(alpha = 0.45f),
+        onSecondaryContainer = preset.lightOnPrimaryContainer
     )
     val baseDark = DarkColorScheme.copy(
         primary = preset.darkPrimary,
         primaryContainer = preset.darkPrimaryContainer,
         onPrimaryContainer = preset.darkOnPrimaryContainer,
-        secondary = preset.darkSecondary
+        secondary = preset.darkSecondary,
+        secondaryContainer = preset.darkPrimaryContainer.copy(alpha = 0.45f),
+        onSecondaryContainer = preset.darkOnPrimaryContainer
     )
     val baseAmoled = AmoledColorScheme.copy(
         primary = preset.darkPrimary,
         primaryContainer = preset.darkPrimaryContainer,
         onPrimaryContainer = preset.darkOnPrimaryContainer,
-        secondary = preset.darkSecondary
+        secondary = preset.darkSecondary,
+        secondaryContainer = preset.darkPrimaryContainer.copy(alpha = 0.45f),
+        onSecondaryContainer = preset.darkOnPrimaryContainer
     )
     val baseSepia = SepiaColorScheme
 

@@ -1,4 +1,5 @@
 package com.aura.reader.ui.components
+import com.aura.reader.ui.theme.SepiaBackground
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -140,28 +141,42 @@ data class LiquidGlassMenuAppearance(
 @Composable
 fun liquidGlassMenuAppearance(
     isGlass: Boolean,
-    isDark: Boolean
+    isDark: Boolean,
+    isSepia: Boolean = MaterialTheme.colorScheme.background == SepiaBackground
 ): LiquidGlassMenuAppearance {
     if (!isGlass) {
         return LiquidGlassMenuAppearance(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+            containerColor = if (isSepia) Color(0xFFE6DDCF) else MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
             shadowElevation = 6.dp
         )
     }
 
-    val container = if (isDark) Color(0xD416161A) else Color(0xD8FAFBFD)
+    val container = if (isDark) {
+        Color(0xF418181C)
+    } else if (isSepia) {
+        Color(0xF6EDE5D6)
+    } else {
+        Color(0xF7F8FAFC)
+    }
     val rim = if (isDark) {
         Brush.verticalGradient(
             listOf(
-                Color.White.copy(alpha = 0.22f),
-                Color.White.copy(alpha = 0.04f)
+                Color.White.copy(alpha = 0.28f),
+                Color.White.copy(alpha = 0.08f)
+            )
+        )
+    } else if (isSepia) {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.65f),
+                Color(0xFFD4C8B5).copy(alpha = 0.45f)
             )
         )
     } else {
         Brush.verticalGradient(
             listOf(
-                Color.White.copy(alpha = 0.90f),
+                Color.White.copy(alpha = 0.85f),
                 Color.Black.copy(alpha = 0.06f)
             )
         )

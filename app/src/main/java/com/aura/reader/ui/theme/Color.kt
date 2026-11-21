@@ -31,7 +31,7 @@ val md_theme_dark_onSurfaceVariant = Color(0xFFCAC4D0)
 
 // Sepia Reading Palette (Warm paper with WCAG AAA high contrast)
 val SepiaBackground = Color(0xFFF6EFE2)
-val SepiaSurface = Color(0xFFECE4D5)
+val SepiaSurface = Color(0xFFEFE8DB)
 val SepiaText = Color(0xFF352516)
 val SepiaSecondaryText = Color(0xFF5A442E)
 val SepiaPrimary = Color(0xFF7A4815)
