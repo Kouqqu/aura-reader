@@ -72,10 +72,10 @@ This project is open-source and licensed under the [GNU General Public License v
 
 <div align="center">
   <a href="https://t.me/koukkuteka" target="_blank">
-    <img src="assets/badge_telegram.svg" alt="Telegram-канал" height="38">
+    <img src="assets/badge_telegram.svg" alt="Telegram" height="36">
   </a>
   &nbsp;&nbsp;
   <a href="https://dalink.to/koukku" target="_blank">
-    <img src="assets/badge_donate.svg" alt="Поддержать автора" height="38">
+    <img src="assets/badge_donate.svg" alt="Donate" height="36">
   </a>
 </div>
