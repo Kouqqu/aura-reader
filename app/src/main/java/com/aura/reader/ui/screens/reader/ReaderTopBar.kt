@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.DropdownMenu
 import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.ui.components.liquidGlassMenuAppearance
+import com.aura.reader.ui.components.PopupBlurBehind
 import androidx.compose.material3.DropdownMenuItem
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material.icons.rounded.Headphones
@@ -320,6 +321,7 @@ fun BoxScope.ReaderTopBar(
                                 border = readerMenuAppearance.border,
                                 shadowElevation = readerMenuAppearance.shadowElevation
                             ) {
+                                PopupBlurBehind(isGlass = isGlass)
                                 DropdownMenuItem(
                                     text = { Text(strings.ttsListenAction) },
                                     leadingIcon = {

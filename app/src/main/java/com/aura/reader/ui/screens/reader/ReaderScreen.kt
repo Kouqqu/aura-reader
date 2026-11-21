@@ -54,7 +54,8 @@ import androidx.compose.ui.platform.TextToolbar
 import androidx.compose.ui.platform.TextToolbarStatus
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.Font
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
+import kotlin.coroutines.cancellation.CancellationException
 import android.app.Activity
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -311,9 +312,12 @@ fun ReaderScreen(
         }
     }
 
-    BackHandler(enabled = selectedQuoteCopyAction != null) {
-        selectionResetKey++
-        customTextToolbar.hide()
+    PredictiveBackHandler(enabled = selectedQuoteCopyAction != null) { progress ->
+        try {
+            progress.collect { }
+            selectionResetKey++
+            customTextToolbar.hide()
+        } catch (_: CancellationException) {}
     }
 
     fun currentSelectionText(): String? {

@@ -394,7 +394,7 @@ class BookRepository(
                 name.endsWith(".cbz")
     }
 
-    suspend fun removeBook(bookId: String) = withLibraryLock {
+    private suspend fun removeBookInternal(bookId: String) {
         val currentList = _recentBooks.value.toMutableList()
         val bookToRemove = currentList.find { it.id == bookId }
         currentList.removeAll { it.id == bookId }
@@ -428,6 +428,10 @@ class BookRepository(
                 }
             } catch (e: Exception) {}
         }
+    }
+
+    suspend fun removeBook(bookId: String) = withLibraryLock {
+        removeBookInternal(bookId)
     }
 
     val bookmarks = preferencesManager.bookmarks
@@ -578,13 +582,13 @@ class BookRepository(
     }
 
     suspend fun deletePermanently(bookId: String) = withLibraryLock {
-        removeBook(bookId)
+        removeBookInternal(bookId)
     }
 
     suspend fun clearTrash() = withLibraryLock {
         val trashed = _recentBooks.value.filter { it.deletedAtTimestamp != null }
         for (b in trashed) {
-            removeBook(b.id)
+            removeBookInternal(b.id)
         }
     }
 
@@ -592,7 +596,7 @@ class BookRepository(
         val cutoff = System.currentTimeMillis() - (maxAgeDays * 24L * 60L * 60L * 1000L)
         val expired = _recentBooks.value.filter { it.deletedAtTimestamp != null && it.deletedAtTimestamp < cutoff }
         for (b in expired) {
-            removeBook(b.id)
+            removeBookInternal(b.id)
         }
     }
 
@@ -625,7 +629,7 @@ class BookRepository(
 
     suspend fun batchDeletePermanently(bookIds: Set<String>) = withLibraryLock {
         for (id in bookIds) {
-            removeBook(id)
+            removeBookInternal(id)
         }
     }
 

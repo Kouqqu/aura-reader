@@ -145,7 +145,33 @@ fun AuraNavGraph(
                     }
                 }
 
-                composable(NavRoutes.CATALOG) {
+                composable(
+                    route = NavRoutes.CATALOG,
+                    enterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Start,
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(240))
+                    },
+                    exitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Start,
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        ) + fadeOut(animationSpec = tween(240))
+                    },
+                    popEnterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.End,
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(240))
+                    },
+                    popExitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.End,
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        ) + fadeOut(animationSpec = tween(240))
+                    }
+                ) {
                     CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
                         OpdsScreen(
                             viewModel = opdsViewModel,

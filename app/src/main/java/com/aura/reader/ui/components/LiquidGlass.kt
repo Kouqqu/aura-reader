@@ -102,6 +102,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Context
+import android.os.Build
+import android.view.WindowManager
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalView
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.theme.LocalAppStrings
 import dev.chrisbanes.haze.HazeInput
@@ -123,9 +128,8 @@ val LocalMaterialYouEnabled = compositionLocalOf { false }
 /**
  * Shared appearance for dropdown menus.
  *
- * A real Haze blur is not available inside a Compose `Popup`, so the glass
- * variant uses a neutral, nearly opaque frosted fill and a light rim instead
- * of the old blue-tinted translucent rectangle.
+ * In Liquid Glass mode, the menu uses a translucent frosted fill and delicate specular rim,
+ * paired with [PopupBlurBehind] which blurs the window behind the popup on Android 12+.
  */
 data class LiquidGlassMenuAppearance(
     val containerColor: Color,
@@ -146,7 +150,7 @@ fun liquidGlassMenuAppearance(
         )
     }
 
-    val container = if (isDark) Color(0xF51A1A1D) else Color(0xF9FCFCFD)
+    val container = if (isDark) Color(0xD416161A) else Color(0xD8FAFBFD)
     val rim = if (isDark) {
         Brush.verticalGradient(
             listOf(
@@ -167,6 +171,32 @@ fun liquidGlassMenuAppearance(
         border = BorderStroke(0.85.dp, rim),
         shadowElevation = 16.dp
     )
+}
+
+/**
+ * Enables hardware window background blur behind Compose DropdownMenus / Popups
+ * on Android 12+ (API 31+). In Liquid Glass mode, this renders real frosted glass blur
+ * through the translucent menu surface.
+ */
+@Composable
+fun PopupBlurBehind(
+    isGlass: Boolean = true,
+    blurRadius: Int = 36
+) {
+    if (!isGlass || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+    val view = LocalView.current
+    LaunchedEffect(view) {
+        try {
+            val rootView = view.rootView
+            val params = rootView.layoutParams as? WindowManager.LayoutParams
+            if (params != null) {
+                params.flags = params.flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+                params.blurBehindRadius = blurRadius
+                val wm = view.context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+                wm?.updateViewLayout(rootView, params)
+            }
+        } catch (_: Throwable) {}
+    }
 }
 
 /**

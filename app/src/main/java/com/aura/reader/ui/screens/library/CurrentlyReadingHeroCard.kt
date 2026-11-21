@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.palette.graphics.Palette
 import com.aura.reader.data.model.Book
 import com.aura.reader.ui.components.liquidGlassMenuAppearance
+import com.aura.reader.ui.components.PopupBlurBehind
 import com.aura.reader.ui.theme.LocalAppStrings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -316,6 +317,7 @@ fun CurrentlyReadingHeroCard(
                                     border = heroMenuAppearance.border,
                                     shadowElevation = heroMenuAppearance.shadowElevation
                                 ) {
+                                    PopupBlurBehind(isGlass = isGlass)
                                     DropdownMenuItem(
                                         text = { Text(strings.shareBookFile) },
                                         leadingIcon = { Icon(Icons.Rounded.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },

@@ -351,14 +351,6 @@ private fun AndroidColorPresetsSection(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (materialYouEnabled) {
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = strings.materialYouToggle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
         }
 
         Spacer(modifier = Modifier.height(10.dp))

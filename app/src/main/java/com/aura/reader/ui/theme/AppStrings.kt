@@ -479,7 +479,7 @@ interface Strings {
     val onboardingSkip: String
     val onboardingNext: String
 
-    val androidColorPresetsTitle: String get() = "Цветовые решения Android"
+    val androidColorPresetsTitle: String get() = "Цветовые решения"
     val colorPresetPurple: String get() = "Лаванда"
     val colorPresetBlue: String get() = "Океан"
     val colorPresetTeal: String get() = "Бирюза"
@@ -664,7 +664,7 @@ class RuStrings : Strings {
     override val holidayStyleWinterHint = "9–15 января"
     override val holidayStyleValentineHint = "14 февраля"
     override val holidayStyleEasterHint = "Весной"
-    override val androidColorPresetsTitle = "Цветовые решения Android"
+    override val androidColorPresetsTitle = "Цветовые решения"
     override val colorPresetPurple = "Лаванда"
     override val colorPresetBlue = "Океан"
     override val colorPresetTeal = "Бирюза"
@@ -1148,7 +1148,7 @@ class EnStrings : Strings {
     override val holidayStyleWinterHint = "January 9–15"
     override val holidayStyleValentineHint = "February 14"
     override val holidayStyleEasterHint = "In spring"
-    override val androidColorPresetsTitle = "Android Color Presets"
+    override val androidColorPresetsTitle = "Color Presets"
     override val colorPresetPurple = "Lavender"
     override val colorPresetBlue = "Ocean"
     override val colorPresetTeal = "Teal"
@@ -1689,7 +1689,7 @@ class UkStrings : Strings {
     override val holidayStyleWinterHint = "9–15 січня"
     override val holidayStyleValentineHint = "14 лютого"
     override val holidayStyleEasterHint = "Навесні"
-    override val androidColorPresetsTitle = "Колірні рішення Android"
+    override val androidColorPresetsTitle = "Колірні рішення"
     override val colorPresetPurple = "Лаванда"
     override val colorPresetBlue = "Океан"
     override val colorPresetTeal = "Бірюза"

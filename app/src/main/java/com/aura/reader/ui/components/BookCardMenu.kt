@@ -84,6 +84,7 @@ fun BookCardMenu(
             popupPositionProvider = positionProvider,
             properties = MenuDefaults.DefaultMenuProperties
         ) {
+            PopupBlurBehind(isGlass = isGlass)
             Surface(
                 shape = shape,
                 color = appearance.containerColor,

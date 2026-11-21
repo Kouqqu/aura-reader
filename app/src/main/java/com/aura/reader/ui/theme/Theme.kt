@@ -33,8 +33,11 @@ private val LightColorScheme = lightColorScheme(
     onSurface = md_theme_light_onSurface,
     surfaceVariant = md_theme_light_surfaceVariant,
     onSurfaceVariant = md_theme_light_onSurfaceVariant,
-    surfaceContainer = androidx.compose.ui.graphics.Color(0xFFF3EDF7),
-    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFFECE6F0)
+    surfaceContainer = Color(0xFFF1F1F5),
+    surfaceContainerHigh = Color(0xFFE9E9EF),
+    surfaceContainerHighest = Color(0xFFE2E2E8),
+    outline = Color(0xFF74777F),
+    outlineVariant = Color(0xFFC4C6CF)
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -57,18 +60,21 @@ private val DarkColorScheme = darkColorScheme(
 private val SepiaColorScheme = lightColorScheme(
     primary = SepiaPrimary,
     onPrimary = SepiaOnPrimary,
-    primaryContainer = SepiaSurface,
+    primaryContainer = Color(0xFFE4D9C4),
     onPrimaryContainer = SepiaText,
     secondary = SepiaSecondaryText,
-    onSecondary = SepiaOnPrimary,
+    onSecondary = Color(0xFFFFFFFF),
     background = SepiaBackground,
     onBackground = SepiaText,
     surface = SepiaSurface,
     onSurface = SepiaText,
-    surfaceVariant = SepiaSurface,
+    surfaceVariant = Color(0xFFE5DAC6),
     onSurfaceVariant = SepiaSecondaryText,
-    surfaceContainer = androidx.compose.ui.graphics.Color(0xFFEBE3D3),
-    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFFE3DAC8)
+    surfaceContainer = Color(0xFFE8DFC8),
+    surfaceContainerHigh = Color(0xFFDFD5BD),
+    surfaceContainerHighest = Color(0xFFD6CBAD),
+    outline = Color(0xFF86725F),
+    outlineVariant = Color(0xFFC8BBA9)
 )
 
 private val AmoledColorScheme = darkColorScheme(
@@ -185,11 +191,7 @@ fun AuraReaderTheme(
         onPrimaryContainer = preset.darkOnPrimaryContainer,
         secondary = preset.darkSecondary
     )
-    val baseSepia = SepiaColorScheme.copy(
-        primary = preset.lightPrimary,
-        primaryContainer = preset.lightPrimaryContainer,
-        onPrimaryContainer = preset.lightOnPrimaryContainer
-    )
+    val baseSepia = SepiaColorScheme
 
     val colorScheme = when (themeMode) {
         ReaderThemeMode.LIGHT -> {
@@ -214,18 +216,7 @@ fun AuraReaderTheme(
             }
         }
         ReaderThemeMode.SEPIA -> {
-            if (hasDynamic) {
-                val dyn = dynamicLightColorScheme(context)
-                SepiaColorScheme.copy(
-                    primary = dyn.primary,
-                    onPrimary = dyn.onPrimary,
-                    primaryContainer = dyn.primaryContainer,
-                    onPrimaryContainer = dyn.onPrimaryContainer,
-                    secondary = dyn.secondary
-                )
-            } else {
-                baseSepia
-            }
+            baseSepia
         }
         ReaderThemeMode.SYSTEM_DYNAMIC -> {
             if (systemDark) {

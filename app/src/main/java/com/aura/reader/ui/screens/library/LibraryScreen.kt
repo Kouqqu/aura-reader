@@ -34,6 +34,7 @@ import com.aura.reader.ui.components.MorphingFloatingBottomBar
 import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.ui.components.LiquidGlassCard
 import com.aura.reader.ui.components.liquidGlassMenuAppearance
+import com.aura.reader.ui.components.PopupBlurBehind
 import com.aura.reader.ui.components.ParallaxCoverViewer
 import com.aura.reader.util.BookShareUtils
 import androidx.compose.foundation.pager.HorizontalPager
@@ -45,6 +46,11 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material3.HorizontalDivider
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
+import kotlin.coroutines.cancellation.CancellationException
+import com.aura.reader.ui.components.LiquidGlassSurface
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
@@ -132,6 +138,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -350,8 +357,11 @@ fun LibraryScreen(
     val isSelectionMode = selectedBookIds.isNotEmpty()
     var showBatchCollectionDialog by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = isSelectionMode) {
-        selectedBookIds = emptySet()
+    PredictiveBackHandler(enabled = isSelectionMode) { progress ->
+        try {
+            progress.collect { }
+            selectedBookIds = emptySet()
+        } catch (_: CancellationException) {}
     }
 
     val handleTogglePrivate: (Book) -> Unit = { book ->
@@ -902,6 +912,7 @@ fun LibraryScreen(
                                                                     border = sortMenuAppearance.border,
                                                                     shadowElevation = sortMenuAppearance.shadowElevation
                                                                 ) {
+                                                                    PopupBlurBehind(isGlass = isGlass)
                                                                     // 1. По недавним
                                                                     val isRecent = librarySortOrder == LibrarySortOption.RECENT
                                                                     DropdownMenuItem(
@@ -1068,25 +1079,21 @@ fun LibraryScreen(
                                                             }
                                                         }
 
-                                                        if (displayedRecentBooks.isNotEmpty()) {
+                                                        if (displayedRecentBooks.isNotEmpty() && librarySortOrder == LibrarySortOption.CUSTOM && !isSelectionMode) {
                                                             Surface(
                                                                 shape = CircleShape,
-                                                                color = if (isSelectionMode) MaterialTheme.colorScheme.primaryContainer else buttonBg,
+                                                                color = buttonBg,
                                                                 border = buttonBorder,
                                                                 onClick = {
-                                                                    if (isSelectionMode) {
-                                                                        selectedBookIds = emptySet()
-                                                                    } else {
-                                                                        selectedBookIds = setOf(displayedRecentBooks.first().id)
-                                                                    }
+                                                                    selectedBookIds = setOf(displayedRecentBooks.first().id)
                                                                 },
                                                                 modifier = Modifier.size(36.dp)
                                                             ) {
                                                                 Box(contentAlignment = Alignment.Center) {
                                                                     Icon(
-                                                                        imageVector = if (isSelectionMode) Icons.Rounded.Close else Icons.Rounded.Checklist,
+                                                                        imageVector = Icons.Rounded.Checklist,
                                                                         contentDescription = strings.selectBooks,
-                                                                        tint = if (isSelectionMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                                                        tint = MaterialTheme.colorScheme.onSurface,
                                                                         modifier = Modifier.size(18.dp)
                                                                     )
                                                                 }
@@ -1278,7 +1285,8 @@ fun LibraryScreen(
                                                                 scope.launch {
                                                                     val res = snackbarHostState.showSnackbar(
                                                                         message = strings.movedToTrashSnackbar,
-                                                                        actionLabel = strings.undo
+                                                                        actionLabel = strings.undo,
+                                                                        duration = SnackbarDuration.Short
                                                                     )
                                                                     if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                                                                         viewModel.restoreFromTrash(book.id)
@@ -1366,7 +1374,8 @@ fun LibraryScreen(
                                                                 scope.launch {
                                                                     val res = snackbarHostState.showSnackbar(
                                                                         message = strings.movedToTrashSnackbar,
-                                                                        actionLabel = strings.undo
+                                                                        actionLabel = strings.undo,
+                                                                        duration = SnackbarDuration.Short
                                                                     )
                                                                     if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                                                                         viewModel.restoreFromTrash(book.id)
@@ -1425,28 +1434,16 @@ fun LibraryScreen(
                                             .padding(bottom = 96.dp, start = 16.dp, end = 16.dp)
                                             .fillMaxWidth()
                                     ) {
-                                        Surface(
-                                            shape = RoundedCornerShape(22.dp),
-                                            color = if (isGlass) {
-                                                if (isThemeDark) Color(0xF218181C) else Color(0xF5FFFFFF)
-                                            } else {
-                                                MaterialTheme.colorScheme.surfaceContainerHigh
-                                            },
-                                            border = BorderStroke(
-                                                1.dp,
-                                                if (isGlass) {
-                                                    if (isThemeDark) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.10f)
-                                                } else {
-                                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-                                                }
-                                            ),
-                                            shadowElevation = 8.dp,
+                                        MultiSelectBarContainer(
+                                            isGlass = isGlass,
+                                            isThemeDark = isThemeDark,
+                                            hazeState = hazeState,
                                             modifier = Modifier.fillMaxWidth()
                                         ) {
                                             Column(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                                                    .padding(horizontal = 12.dp, vertical = 10.dp)
                                             ) {
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth(),
@@ -1506,6 +1503,7 @@ fun LibraryScreen(
                                                             icon = Icons.Rounded.Restore,
                                                             label = strings.batchRestore,
                                                             tint = MaterialTheme.colorScheme.primary,
+                                                            modifier = Modifier.weight(1f),
                                                             onClick = {
                                                                 val count = selectedBookIds.size
                                                                 viewModel.batchRestoreFromTrash(selectedBookIds)
@@ -1520,6 +1518,7 @@ fun LibraryScreen(
                                                             icon = Icons.Rounded.DeleteForever,
                                                             label = strings.batchDeletePermanently,
                                                             tint = MaterialTheme.colorScheme.error,
+                                                            modifier = Modifier.weight(1f),
                                                             onClick = {
                                                                 val toDelete = selectedBookIds
                                                                 viewModel.batchDeletePermanently(toDelete)
@@ -1534,6 +1533,7 @@ fun LibraryScreen(
                                                             icon = Icons.Rounded.FolderOpen,
                                                             label = strings.batchAddToCollection,
                                                             tint = MaterialTheme.colorScheme.primary,
+                                                            modifier = Modifier.weight(1f),
                                                             onClick = { showBatchCollectionDialog = true }
                                                         )
 
@@ -1542,6 +1542,7 @@ fun LibraryScreen(
                                                             icon = if (allArePrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
                                                             label = if (allArePrivate) strings.batchRemoveFromPrivate else strings.batchMakePrivate,
                                                             tint = MaterialTheme.colorScheme.secondary,
+                                                            modifier = Modifier.weight(1f),
                                                             onClick = {
                                                                 val count = selectedBookIds.size
                                                                 viewModel.batchTogglePrivate(selectedBookIds, !allArePrivate)
@@ -1558,6 +1559,7 @@ fun LibraryScreen(
                                                             icon = if (allRead) Icons.Rounded.Refresh else Icons.Rounded.CheckCircle,
                                                             label = if (allRead) strings.batchMarkUnread else strings.batchMarkRead,
                                                             tint = MaterialTheme.colorScheme.tertiary,
+                                                            modifier = Modifier.weight(1f),
                                                             onClick = {
                                                                 val count = selectedBookIds.size
                                                                 val newProgress = if (allRead) 0 else 100
@@ -1573,6 +1575,7 @@ fun LibraryScreen(
                                                             icon = Icons.Rounded.Delete,
                                                             label = strings.batchMoveToTrash,
                                                             tint = MaterialTheme.colorScheme.error,
+                                                            modifier = Modifier.weight(1f),
                                                             onClick = {
                                                                 val count = selectedBookIds.size
                                                                 val deletedIds = selectedBookIds
@@ -1581,7 +1584,8 @@ fun LibraryScreen(
                                                                 scope.launch {
                                                                     val res = snackbarHostState.showSnackbar(
                                                                         message = strings.batchMovedToTrashSnackbar(count),
-                                                                        actionLabel = strings.undo
+                                                                        actionLabel = strings.undo,
+                                                                        duration = SnackbarDuration.Short
                                                                     )
                                                                     if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                                                                         viewModel.batchRestoreFromTrash(deletedIds)
@@ -1620,7 +1624,8 @@ fun LibraryScreen(
                                 scope.launch {
                                     val res = snackbarHostState.showSnackbar(
                                         message = strings.movedToTrashSnackbar,
-                                        actionLabel = strings.undo
+                                        actionLabel = strings.undo,
+                                        duration = SnackbarDuration.Short
                                     )
                                     if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                                         viewModel.restoreFromTrash(book.id)
@@ -2083,14 +2088,15 @@ private fun MultiSelectActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     tint: Color,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .padding(horizontal = 2.dp, vertical = 6.dp)
     ) {
         Icon(
             imageVector = icon,
@@ -2106,6 +2112,38 @@ private fun MultiSelectActionButton(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+@Composable
+private fun MultiSelectBarContainer(
+    isGlass: Boolean,
+    isThemeDark: Boolean,
+    hazeState: HazeState,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    if (isGlass) {
+        LiquidGlassSurface(
+            shape = RoundedCornerShape(22.dp),
+            shadowElevation = 10.dp,
+            isDark = isThemeDark,
+            hazeState = hazeState,
+            modifier = modifier,
+            content = content
+        )
+    } else {
+        Card(
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+            modifier = modifier
+        ) {
+            content()
+        }
     }
 }
 
