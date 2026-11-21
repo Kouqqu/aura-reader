@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "updated_at": "2026-11-21",
+  "catalogs": [
+    {
+      "id": "standard-ebooks",
+      "name": "Standard Ebooks",
+      "description": "Классическая мировая литература в безупречном типографическом оформлении",
+      "url": "https://standardebooks.org/opds/all",
+      "badge": "EPUB",
+      "language": "en"
+    },
+    {
+      "id": "gutenberg",
+      "name": "Project Gutenberg",
+      "description": "Старейшая цифровая библиотека: более 70 000 бесплатных книг на десятках языков",
+      "url": "https://m.gutenberg.org/ebooks.opds/",
+      "badge": "Все форматы",
+      "language": "multilingual"
+    },
+    {
+      "id": "feedbooks",
+      "name": "Feedbooks Public Domain",
+      "description": "Общественное достояние, классические произведения и качественные электронные издания",
+      "url": "https://catalog.feedbooks.com/publicdomain/browse.atom",
+      "badge": "OPDS",
+      "language": "multilingual"
+    },
+    {
+      "id": "manybooks",
+      "name": "ManyBooks",
+      "description": "Более 50 000 бесплатных электронных книг для свободного скачивания",
+      "url": "http://manybooks.net/opds/index.php",
+      "badge": "OPDS",
+      "language": "en"
+    }
+  ]
+}
