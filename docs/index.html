@@ -3,359 +3,211 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aura Reader — Современный ридер для Android</title>
-  <meta name="description" content="Aura Reader — открытый Android-ридер с дизайном Liquid Glass и Material 3, поддержкой EPUB, FB2, PDF, OPDS каталогами и встроенным TTS.">
-  <meta name="theme-color" content="#0B0A12">
+  <title>Aura Reader — Читалка для Android</title>
+  <meta name="description" content="Aura Reader — открытый Android-ридер для чтения EPUB, FB2, PDF, с поддержкой OPDS, TTS и стилей Liquid Glass и Material 3.">
+  <meta name="theme-color" content="#0B0A10">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Aura Reader — Современный ридер для Android">
-  <meta property="og:description" content="Узнавайте новое. Наслаждайтесь чтением. Быстрый и красивый ридер с поддержкой всех популярных форматов и OPDS.">
+  <meta property="og:title" content="Aura Reader — Читалка для Android">
+  <meta property="og:description" content="Быстрая и лёгкая читалка для Android с поддержкой EPUB, FB2, PDF, OPDS-каталогов и фонового TTS.">
   <meta property="og:image" content="assets/banner.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="assets/logo_square.png">
-  <link rel="apple-touch-icon" href="assets/logo_square.png">
-
-  <!-- Styles -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Ambient background glow layers -->
-  <div class="bg-glow-container" aria-hidden="true">
-    <div class="bg-glow-1"></div>
-    <div class="bg-glow-2"></div>
-    <div class="bg-glow-3"></div>
-  </div>
-
   <!-- Navigation -->
   <header class="navbar">
-    <div class="container nav-wrapper">
+    <div class="container nav-wrap">
       <a href="#" class="nav-brand">
-        <img src="assets/logo_square.png" alt="Aura Reader Logo" class="nav-logo">
+        <img src="assets/logo_square.png" alt="Aura Logo" class="nav-logo">
         <span>Aura Reader</span>
       </a>
 
       <ul class="nav-links">
         <li><a href="#features" class="nav-link">Возможности</a></li>
-        <li><a href="#catalogs" class="nav-link">Каталоги OPDS</a></li>
         <li><a href="#download" class="nav-link">Скачать</a></li>
+        <li><a href="#opds" class="nav-link">Каталоги OPDS</a></li>
         <li><a href="privacy.html" class="nav-link">Приватность</a></li>
       </ul>
 
       <div class="nav-actions">
-        <a href="https://github.com/Kouqqu/aura-reader" class="btn btn-secondary" target="_blank" rel="noopener">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-          </svg>
-          GitHub
-        </a>
-        <a href="#download" class="btn btn-primary apk-download-btn">Скачать APK</a>
+        <a href="https://github.com/Kouqqu/aura-reader" class="btn btn-secondary" target="_blank" rel="noopener">GitHub</a>
+        <a href="#download" class="btn btn-primary apk-download-link">Скачать APK</a>
       </div>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="container hero">
-    <div class="hero-content">
-      <div class="hero-pill">
-        <span class="hero-pill-dot"></span>
-        <span class="hero-pill-text">Доступно последнее обновление</span>
+  <main>
+    <!-- Hero Section -->
+    <section class="container hero">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        <span>Версия <span class="release-version-label">v2.3.0-beta.32</span> • Android 8.0+ • Open Source</span>
       </div>
 
-      <h1 class="hero-title">
-        Узнавайте новое.<br>
-        <span class="gradient-text">Наслаждайтесь чтением.</span>
-      </h1>
+      <h1 class="hero-title">Aura Reader</h1>
 
-      <p class="hero-subtitle">
-        Быстрый, эстетичный и полностью открытый ридер для Android. 
-        Уникальный визуальный стиль Liquid Glass, поддержка сетевых библиотек OPDS и бережное сохранение ваших персональных данных.
+      <p class="hero-desc">
+        Быстрая читалка электронных книг для Android. Поддержка всех основных форматов, 
+        сетевые каталоги OPDS, фоновая озвучка TTS и оформление в стилях Liquid Glass и Material 3.
       </p>
 
       <div class="hero-actions">
-        <a href="#download" class="btn btn-primary btn-lg apk-download-btn">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          Скачать APK
+        <a href="#" class="btn btn-primary btn-lg apk-download-link" data-with-version="true">
+          Скачать APK (v2.3.0-beta.32)
         </a>
-
         <a href="https://github.com/Kouqqu/aura-reader" class="btn btn-secondary btn-lg" target="_blank" rel="noopener">
-          Исходный код
+          Исходный код на GitHub
         </a>
       </div>
 
-      <div class="hero-meta-grid">
-        <div class="hero-meta-item">
-          <svg class="hero-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
-          <span>Без рекламы и слежки</span>
-        </div>
-
-        <div class="hero-meta-item">
-          <svg class="hero-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="16 18 22 12 16 6"/>
-            <polyline points="8 6 2 12 8 18"/>
-          </svg>
-          <span>Open Source (GPL-3.0)</span>
-        </div>
-
-        <div class="hero-meta-item">
-          <svg class="hero-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-          </svg>
-          <span>10+ книжных форматов</span>
-        </div>
+      <div class="hero-banner-wrap">
+        <img src="assets/banner.png" alt="Интерфейс Aura Reader" class="hero-banner-img">
       </div>
-    </div>
+    </section>
 
-    <!-- 3D Interactive Stage -->
-    <div class="hero-visual">
-      <div class="interactive-book-stage" title="Подвигайте курсором для 3D-эффекта">
-        <img src="assets/banner.png" alt="Aura Reader 3D Preview" class="interactive-book-banner">
-        <div class="interactive-glare"></div>
-        <div class="book-hint-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 16v-4"/>
-            <path d="M12 8h.01"/>
-          </svg>
-          3D Parallax
+    <!-- Features Section -->
+    <section id="features" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2 class="section-title">Возможности</h2>
+          <p class="section-sub">Практичный функционал для ежедневного чтения без лишнего визуального шума.</p>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- Features Bento Grid -->
-  <section id="features" class="section">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Архитектура комфорта</span>
-        <h2 class="section-title">Все, за что любят ридер</h2>
-        <p class="section-subtitle">Создан читателями для читателей. Максимальное погружение в сюжет без лишнего визуального шума.</p>
-      </div>
-
-      <div class="bento-grid">
-        <!-- Card 1: Style Switcher (Span 8) -->
-        <div class="bento-card bento-card-8">
-          <div>
-            <div class="card-icon-box">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="5"/>
-                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-              </svg>
+        <div class="features-grid">
+          <div class="feature-card">
+            <h3 class="feature-title">Форматы и архивы</h3>
+            <p class="feature-desc">
+              Прямое открытие книг без промежуточных конвертаций. Извлечение архивов и поддержка комиксов.
+            </p>
+            <div class="feature-tags">
+              <span class="feature-tag">EPUB</span>
+              <span class="feature-tag">FB2</span>
+              <span class="feature-tag">FB2.ZIP</span>
+              <span class="feature-tag">PDF</span>
+              <span class="feature-tag">TXT</span>
+              <span class="feature-tag">CBZ</span>
+              <span class="feature-tag">CBR</span>
             </div>
-            <h3 class="card-title">Два стиля оформления: Liquid Glass & Material 3</h3>
-            <p class="card-desc">
-              Переключайтесь между невесомым матовым акриловым стеклом Liquid Glass и классическим лаконичным Material 3 в один тап. Полная поддержка ночной темы и адаптивных акцентных палитр.
+          </div>
+
+          <div class="feature-card">
+            <h3 class="feature-title">Два стиля оформления</h3>
+            <p class="feature-desc">
+              Переключение между полупрозрачным матовым стеклом Liquid Glass (блюр Haze) и строгим классическим Material 3 с палитрами Material You.
             </p>
           </div>
 
-          <div class="style-switch-box">
-            <div class="style-switch-nav">
-              <button class="style-tab-btn active" data-style="liquid">Liquid Glass (Фирменный)</button>
-              <button class="style-tab-btn" data-style="material">Material 3 (Строгий)</button>
-            </div>
-            <div class="style-preview-frame preview-liquid">
-              <div class="dock-pill-demo">
-                <span class="dock-pill-text">Liquid Glass • Невесомый матовый интерфейс</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 2: Formats (Span 4) -->
-        <div class="bento-card bento-card-4">
-          <div>
-            <div class="card-icon-box cyan">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-              </svg>
-            </div>
-            <h3 class="card-title">Любые форматы</h3>
-            <p class="card-desc">Открывайте книги, архивы и комиксы мгновенно без промежуточных конвертаций.</p>
-          </div>
-
-          <div class="format-tags-list">
-            <span class="format-tag highlight">EPUB</span>
-            <span class="format-tag highlight">FB2 / FB2.ZIP</span>
-            <span class="format-tag highlight">PDF</span>
-            <span class="format-tag">TXT</span>
-            <span class="format-tag">CBZ</span>
-            <span class="format-tag">CBR</span>
-            <span class="format-tag">ZIP</span>
-            <span class="format-tag">HTML</span>
-          </div>
-        </div>
-
-        <!-- Card 3: TTS Simulator (Span 4) -->
-        <div class="bento-card bento-card-4">
-          <div>
-            <div class="card-icon-box pink">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-              </svg>
-            </div>
-            <h3 class="card-title">Живая озвучка (TTS)</h3>
-            <p class="card-desc">Слушайте книги в фоновом режиме с синхронным выделением каждого слова на экране.</p>
-          </div>
-
-          <div class="tts-demo-box">
-            <div class="tts-text-sample">
-              <span class="tts-word tts-highlight">Слова</span>
-              <span class="tts-word">звучат</span>
-              <span class="tts-word">плавно,</span>
-              <span class="tts-word">пока</span>
-              <span class="tts-word">строки</span>
-              <span class="tts-word">оживают</span>
-              <span class="tts-word">в</span>
-              <span class="tts-word">ритме</span>
-              <span class="tts-word">чтения.</span>
-            </div>
-            <div class="tts-controls">
-              <button class="tts-btn-play" title="Слушать демо" aria-label="Слушать">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"/>
-                </svg>
-              </button>
-              <span class="tts-speed-badge">1.15x • Русский</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 4: OPDS Catalogs (Span 8) -->
-        <div id="catalogs" class="bento-card bento-card-8">
-          <div>
-            <div class="card-icon-box amber">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="2" y1="12" x2="22" y2="12"></line>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-              </svg>
-            </div>
-            <h3 class="card-title">Сетевые OPDS-каталоги</h3>
-            <p class="card-desc">
-              Подключайте тысячи бесплатных книг из Standard Ebooks, Project Gutenberg, ManyBooks и Feedbooks прямо в приложении. Загрузка в один тап в вашу личную библиотеку.
+          <div class="feature-card">
+            <h3 class="feature-title">Типографика и режимы чтения</h3>
+            <p class="feature-desc">
+              Импорт любых TTF/OTF шрифтов, настройка полей, межстрочного расстояния и абзацев. Режимы 3D-перелистывания, сдвига и вертикального скролла.
             </p>
           </div>
 
-          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 14px;">
-            <a href="catalogs.json" class="btn btn-secondary" target="_blank" rel="noopener">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
-              </svg>
-              Открыть список каталогов JSON
+          <div class="feature-card">
+            <h3 class="feature-title">Фоновое аудио и TTS</h3>
+            <p class="feature-desc">
+              Озвучка текста с помощью системного Text-to-Speech с пословной синхронизацией в ридере и контролем воспроизведения со шторки и экрана блокировки.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <h3 class="feature-title">Сетевые библиотеки OPDS</h3>
+            <p class="feature-desc">
+              Встроенный клиент для подключения любых открытых и личных OPDS-каталогов (Standard Ebooks, Project Gutenberg, Feedbooks) с быстрой загрузкой в библиотеку.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <h3 class="feature-title">Локальность и приватность</h3>
+            <p class="feature-desc">
+              Все файлы книг, заметки, цитаты и статистика хранятся исключительно на вашем устройстве. Никакой встроенной рекламы, аккаунтов и трекеров.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="section">
+      <div class="container">
+        <div class="download-box">
+          <div class="download-info">
+            <h3>Установка приложения</h3>
+            <p>
+              Скачайте готовый APK-файл и подтвердите установку в системе Android. Приложение не требует сервисов Google Play.
+            </p>
+            <div class="download-meta">
+              <span>Версия: <strong class="release-version-label" style="color: var(--text-main);">v2.3.0-beta.32</strong></span>
+              <span>Размер: <strong class="release-size-label" style="color: var(--text-main);">~48 МБ</strong></span>
+              <span>Android: <strong>8.0+</strong></span>
+              <span>Архитектура: <strong>arm64-v8a, armeabi-v7a, x86_64</strong></span>
+            </div>
+          </div>
+
+          <div class="download-actions">
+            <a href="#" class="btn btn-primary btn-lg apk-download-link">Скачать APK</a>
+            <a href="https://github.com/Kouqqu/aura-reader/releases" class="btn btn-secondary" target="_blank" rel="noopener">
+              История релизов
             </a>
-            <button class="btn btn-secondary opds-copy-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              Скопировать ссылку для ридера
-            </button>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Download Callout Section -->
-  <section id="download" class="container download-section">
-    <div class="download-card">
-      <div class="download-card-glow"></div>
-      <h2 class="download-card-title">Готовы погрузиться в чтение?</h2>
-      <p class="download-card-sub">
-        Установите последнюю версию Aura Reader прямо сейчас. Чистый открытый код, быстрая работа и никакой навязчивой рекламы.
-      </p>
+    <!-- OPDS Section -->
+    <section id="opds" class="section">
+      <div class="container">
+        <div class="opds-box">
+          <h2 class="section-title">Каталоги OPDS</h2>
+          <p class="section-sub">
+            Готовый список открытых электронных библиотек с легальными книгами на русском и английском языках.
+          </p>
 
-      <div class="download-actions-wrap">
-        <a href="#" class="btn btn-primary btn-lg apk-download-btn">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          Скачать AuraReader.apk
-        </a>
-
-        <a href="https://github.com/Kouqqu/aura-reader/releases" class="btn btn-secondary btn-lg" target="_blank" rel="noopener">
-          Все релизы на GitHub
-        </a>
-      </div>
-
-      <div>
-        <span class="release-version-tag">Текущий релиз: v2.3.0-beta.32 • ~48 МБ</span>
-      </div>
-
-      <div class="download-steps">
-        <div class="step-item">
-          <div class="step-num">1</div>
-          <div>
-            <div class="step-title">Скачайте файл</div>
-            <div class="step-desc">Загрузите актуальный установочный пакет APK на ваш Android-смартфон.</div>
-          </div>
-        </div>
-
-        <div class="step-item">
-          <div class="step-num">2</div>
-          <div>
-            <div class="step-title">Подтвердите установку</div>
-            <div class="step-desc">Разрешите установку из вашего браузера или файлового менеджера.</div>
-          </div>
-        </div>
-
-        <div class="step-item">
-          <div class="step-num">3</div>
-          <div>
-            <div class="step-title">Читайте с удовольствием</div>
-            <div class="step-desc">Открывайте любимые книги или подключите каталоги в пару касаний.</div>
+          <div class="opds-link-wrap">
+            <span id="opds-url-input" class="opds-url-text">https://kouqqu.github.io/aura-reader/catalogs.json</span>
+            <button id="copy-opds-btn" class="btn btn-secondary" type="button">Скопировать</button>
+            <a href="catalogs.json" class="btn btn-secondary" target="_blank" rel="noopener">Открыть JSON</a>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </main>
 
   <!-- Footer -->
   <footer class="footer">
     <div class="container">
       <div class="footer-top">
         <div class="footer-brand">
-          <img src="assets/logo_square.png" alt="Aura Logo" width="28" height="28" style="border-radius: 6px;">
+          <img src="assets/logo_square.png" alt="Aura Logo" width="24" height="24" style="border-radius: 4px;">
           <span>Aura Reader</span>
         </div>
 
         <div class="footer-badges">
-          <a href="https://t.me/koukkuteka" target="_blank" rel="noopener" title="Telegram-сообщество">
-            <img src="assets/badge_telegram.svg" alt="Telegram" height="28">
+          <a href="https://t.me/koukkuteka" target="_blank" rel="noopener" title="Telegram">
+            <img src="assets/badge_telegram.svg" alt="Telegram" height="24">
           </a>
-          <a href="https://dalink.to/koukku" target="_blank" rel="noopener" title="Поддержать разработку">
-            <img src="assets/badge_donate.svg" alt="Donate" height="28">
+          <a href="https://dalink.to/koukku" target="_blank" rel="noopener" title="Donate">
+            <img src="assets/badge_donate.svg" alt="Donate" height="24">
           </a>
         </div>
       </div>
 
       <div class="footer-bottom">
-        <p>© 2026 Aura Reader. Лицензия GPL-3.0. Полная свобода для чтения.</p>
+        <span>© 2026 Aura Reader. Лицензия GPL-3.0.</span>
         <div class="footer-nav">
-          <a href="#features">Возможности</a>
-          <a href="catalogs.json" target="_blank" rel="noopener">OPDS Каталоги</a>
-          <a href="privacy.html">Приватность</a>
+          <a href="privacy.html">Конфиденциальность</a>
           <a href="https://github.com/Kouqqu/aura-reader" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/Kouqqu/aura-reader/releases" target="_blank" rel="noopener">Релизы</a>
         </div>
       </div>
     </div>
   </footer>
 
-  <!-- Scripts -->
   <script src="app.js"></script>
 </body>
 </html>
