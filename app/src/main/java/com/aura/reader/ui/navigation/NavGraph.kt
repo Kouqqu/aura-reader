@@ -84,6 +84,19 @@ fun AuraNavGraph(
                         AnimatedContentTransitionScope.SlideDirection.End,
                         animationSpec = tween(300, easing = FastOutSlowInEasing)
                     )
+                },
+                predictivePopEnterTransition = { _ ->
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        animationSpec = tween(300, easing = FastOutSlowInEasing),
+                        initialOffset = { -it / 3 }
+                    ) + fadeIn(animationSpec = tween(240))
+                },
+                predictivePopExitTransition = { _ ->
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        animationSpec = tween(300, easing = FastOutSlowInEasing)
+                    )
                 }
             ) {
                 composable(NavRoutes.ONBOARDING) {

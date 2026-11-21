@@ -218,7 +218,7 @@ AnimatedContent(
                     val collapsedFraction = scrollBehavior.state.collapsedFraction
                     val scrollAlpha = (1f - collapsedFraction / 0.35f).coerceIn(0f, 1f)
 
-                    if (scrollAlpha > 0.005f) {
+                    if (isThemeDark && scrollAlpha > 0.005f) {
                         val cloudCenter = if (top != null && logo != null && top.isAttached && logo.isAttached) {
                             val logoPos = top.localPositionOf(logo, Offset(logo.size.width / 2f, logo.size.height / 2f))
                             Offset(logoPos.x + 56.dp.toPx(), logoPos.y)

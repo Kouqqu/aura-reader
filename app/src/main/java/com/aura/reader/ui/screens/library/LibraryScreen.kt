@@ -29,6 +29,7 @@ import androidx.compose.material3.FabPosition
 import com.aura.reader.ui.components.LiquidGlassMenuContainer
 import com.aura.reader.ui.components.LiquidGlassMenuItem
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -155,6 +156,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -570,31 +572,50 @@ fun LibraryScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = mainScreenBg,
         topBar = {
-            androidx.compose.animation.AnimatedVisibility(
-                visible = pagerState.currentPage == 0,
-                enter = fadeIn(animationSpec = tween(220)),
-                exit = fadeOut(animationSpec = tween(160))
-            ) {
-                LibraryTopBar(
-                    isSearchExpanded = isSearchExpanded,
-                    isGlass = isGlass,
-                    isThemeDark = isThemeDark,
-                    searchQuery = searchQuery,
-                    libraryViewMode = libraryViewMode,
-                    scrollBehavior = scrollBehavior,
-                    onSearchExpandedChange = { isSearchExpanded = it },
-                    onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                    onToggleViewMode = { viewModel.toggleLibraryViewMode() },
-                    onOpenSettings = {
-                        smoothScrollToPage(2)
-                    },
-                    onHolidayBadgeClick = { origin ->
-                        holidayBurstKey = System.currentTimeMillis()
-                        holidayBurstOrigin = origin
-                        triggerThemeHaptic(context)
-                        com.aura.reader.util.HolidaySoundPlayer.playHolidaySound(context, holidaySeason)
+            val libraryPageOffset by remember(pagerState) {
+                derivedStateOf {
+                    val page = pagerState.currentPage
+                    val offset = pagerState.currentPageOffsetFraction
+                    if (page == 0) {
+                        offset.coerceIn(0f, 1f)
+                    } else if (page == 1 && offset < 0f) {
+                        (1f + offset).coerceIn(0f, 1f)
+                    } else {
+                        1f
                     }
-                )
+                }
+            }
+            if (libraryPageOffset < 0.999f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            val progress = libraryPageOffset
+                            alpha = (1f - progress * 1.35f).coerceIn(0f, 1f)
+                            translationX = -progress * size.width * 0.30f
+                        }
+                ) {
+                    LibraryTopBar(
+                        isSearchExpanded = isSearchExpanded,
+                        isGlass = isGlass,
+                        isThemeDark = isThemeDark,
+                        searchQuery = searchQuery,
+                        libraryViewMode = libraryViewMode,
+                        scrollBehavior = scrollBehavior,
+                        onSearchExpandedChange = { isSearchExpanded = it },
+                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                        onToggleViewMode = { viewModel.toggleLibraryViewMode() },
+                        onOpenSettings = {
+                            smoothScrollToPage(2)
+                        },
+                        onHolidayBadgeClick = { origin ->
+                            holidayBurstKey = System.currentTimeMillis()
+                            holidayBurstOrigin = origin
+                            triggerThemeHaptic(context)
+                            com.aura.reader.util.HolidaySoundPlayer.playHolidaySound(context, holidaySeason)
+                        }
+                    )
+                }
             }
         },
         floatingActionButton = {
