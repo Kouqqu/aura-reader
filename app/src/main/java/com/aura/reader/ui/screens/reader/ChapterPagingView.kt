@@ -257,8 +257,6 @@ fun ChapterPagingView(
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     }
                     onNextChapter()
-                } else if (!hasNext && settled == totalPagerSpreads - 1) {
-                    onBookFinished()
                 }
             }
         }
@@ -278,8 +276,7 @@ fun ChapterPagingView(
 
                 val currentBlock = pages.getOrNull(activePageIdx)?.firstOrNull()?.first ?: 0
                 val textOffset = pages.getOrNull(activePageIdx)?.firstOrNull()?.second?.sourceTextOffset ?: 0
-                onUpdateProgress(currentBlock, blocks.size.coerceAtLeast(1), textOffset, 0,
-                    !hasNext && activePageIdx + (if (isTwoColumn) 1 else 0) >= pages.lastIndex)
+                onUpdateProgress(currentBlock, blocks.size.coerceAtLeast(1), textOffset, 0, false)
             }
         }
 

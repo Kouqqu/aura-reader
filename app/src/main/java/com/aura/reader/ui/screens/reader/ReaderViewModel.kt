@@ -250,7 +250,7 @@ class ReaderViewModel(
     private var pendingProgressSave: kotlinx.coroutines.Job? = null
 
     fun updateScrollProgress(scrollItemIndex: Int, totalItems: Int, textOffset: Int = 0, pixelOffset: Int = 0, atEnd: Boolean = false) {
-        isAtBookEnd = atEnd
+        isAtBookEnd = atEnd && scrollItemIndex >= totalItems - 1
         _savedScrollOffset.value = scrollItemIndex
         _savedTextOffset.value = textOffset
         _savedPixelOffset.value = pixelOffset
@@ -261,14 +261,18 @@ class ReaderViewModel(
         }
     }
 
+    fun requestScrollToBlock(blockIndex: Int) {
+        _targetScrollOffset.value = blockIndex
+    }
+
     fun saveCurrentProgress() {
         val book = currentBook.value ?: return
         val chapterIdx = _currentChapterIndex.value
         val block = _savedScrollOffset.value
         val text = _savedTextOffset.value
         val pixel = _savedPixelOffset.value
-        val percent = if (isAtBookEnd || (book.progressPercent == 100 && book.currentChapterIndex == chapterIdx &&
-            book.currentScrollOffset == block && book.currentBlockTextOffset == text && book.currentScrollPixelOffset == pixel)) 100
+        val isActuallyAtEnd = isAtBookEnd && chapterIdx >= book.chapters.size - 1
+        val percent = if (isActuallyAtEnd) 100
             else com.aura.reader.data.model.ReadingPosition.percent(book, chapterIdx, block, text)
         viewModelScope.launch {
             // Do not persist a position captured for a different book after navigation.

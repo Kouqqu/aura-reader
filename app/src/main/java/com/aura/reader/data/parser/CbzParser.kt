@@ -176,22 +176,21 @@ object CbzParser {
                 )
             }
         } else {
-            val blocks = sortedImages.mapIndexed { index, (_, file) ->
-                FormattedBlock(
-                    type = BlockType.IMAGE,
-                    text = file.absolutePath,
-                    subText = "${index + 1} / $totalPages"
-                )
-            }
-            listOf(
+            sortedImages.mapIndexed { index, (_, file) ->
                 Chapter(
                     id = UUID.randomUUID().toString(),
-                    title = cleanTitle,
+                    title = "Страница ${index + 1}",
                     content = "",
-                    blocks = blocks,
-                    order = 0
+                    blocks = listOf(
+                        FormattedBlock(
+                            type = BlockType.IMAGE,
+                            text = file.absolutePath,
+                            subText = "Страница ${index + 1} из $totalPages"
+                        )
+                    ),
+                    order = index
                 )
-            )
+            }
         }
 
         return Book(

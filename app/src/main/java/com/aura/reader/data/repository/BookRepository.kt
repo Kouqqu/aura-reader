@@ -160,16 +160,15 @@ class BookRepository(
         }
         val existingInMemory = _currentBook.value
         if (existingInMemory != null && existingInMemory.id == bookToOpen.id && existingInMemory.chapters.isNotEmpty()) {
-            val isSingleChapterPdf = existingInMemory.format == BookFormat.PDF && existingInMemory.chapters.size == 1
-            val resolvedChapter = if (isSingleChapterPdf) 0 else bookToOpen.currentChapterIndex
-            val resolvedOffset = if (isSingleChapterPdf && bookToOpen.currentChapterIndex > 0 && bookToOpen.currentScrollOffset == 0) {
-                bookToOpen.currentChapterIndex
-            } else {
+            val totalChapters = existingInMemory.chapters.size
+            val resolvedChapter = if (bookToOpen.currentChapterIndex == 0 && bookToOpen.currentScrollOffset > 0 && bookToOpen.currentScrollOffset < totalChapters) {
                 bookToOpen.currentScrollOffset
+            } else {
+                bookToOpen.currentChapterIndex.coerceIn(0, (totalChapters - 1).coerceAtLeast(0))
             }
             val updated = existingInMemory.copy(
                 currentChapterIndex = resolvedChapter,
-                currentScrollOffset = resolvedOffset,
+                currentScrollOffset = bookToOpen.currentScrollOffset,
                 currentBlockTextOffset = bookToOpen.currentBlockTextOffset,
                 currentScrollPixelOffset = bookToOpen.currentScrollPixelOffset,
                 progressPercent = bookToOpen.progressPercent,
@@ -190,12 +189,11 @@ class BookRepository(
 
         val result = ingestionPipeline.ingest(inputStream, uri, fileName, bookToOpen)
         result.onSuccess { book ->
-            val isSingleChapterPdf = book.format == BookFormat.PDF && book.chapters.size == 1
-            val resolvedChapter = if (isSingleChapterPdf) 0 else bookToOpen.currentChapterIndex
-            val resolvedOffset = if (isSingleChapterPdf && bookToOpen.currentChapterIndex > 0 && bookToOpen.currentScrollOffset == 0) {
-                bookToOpen.currentChapterIndex
-            } else {
+            val totalChapters = book.chapters.size
+            val resolvedChapter = if (bookToOpen.currentChapterIndex == 0 && bookToOpen.currentScrollOffset > 0 && bookToOpen.currentScrollOffset < totalChapters) {
                 bookToOpen.currentScrollOffset
+            } else {
+                bookToOpen.currentChapterIndex.coerceIn(0, (totalChapters - 1).coerceAtLeast(0))
             }
             val resolved = book.copy(
                 id = bookToOpen.id,
@@ -204,7 +202,7 @@ class BookRepository(
                 series = bookToOpen.series ?: book.series,
                 seriesNumber = bookToOpen.seriesNumber ?: book.seriesNumber,
                 currentChapterIndex = resolvedChapter,
-                currentScrollOffset = resolvedOffset,
+                currentScrollOffset = bookToOpen.currentScrollOffset,
                 currentBlockTextOffset = bookToOpen.currentBlockTextOffset,
                 currentScrollPixelOffset = bookToOpen.currentScrollPixelOffset,
                 progressPercent = bookToOpen.progressPercent,

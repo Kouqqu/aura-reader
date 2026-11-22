@@ -8,8 +8,10 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import java.io.File
 
-/** Disk cache for pages actually requested by the reader, bounded to twelve JPEGs. */
+/** Disk cache for pages actually requested by the reader, bounded to [maxCachedPages] JPEGs. */
 object PdfPageCache {
+    var maxCachedPages: Int = 200
+
     fun pageUri(source: File, page: Int): String = Uri.Builder().scheme("aura-pdf").path("page")
         .appendQueryParameter("source", source.absolutePath).appendQueryParameter("page", page.toString()).build().toString()
 
@@ -23,7 +25,7 @@ object PdfPageCache {
         val key = java.util.UUID.nameUUIDFromBytes((source.absolutePath + ":" + source.length() + ":" + source.lastModified() + ":" + index).toByteArray())
         val cache = File(context.cacheDir, "pdf_pages").apply { mkdirs() }
         val target = File(cache, key.toString() + ".jpg")
-        if (!target.exists()) {
+        if (!target.exists() || target.length() == 0L) {
             ParcelFileDescriptor.open(source, ParcelFileDescriptor.MODE_READ_ONLY).use { descriptor ->
                 PdfRenderer(descriptor).use { renderer ->
                     require(index in 0 until renderer.pageCount)
@@ -40,7 +42,7 @@ object PdfPageCache {
         }
         target.setLastModified(System.currentTimeMillis())
         cache.listFiles()?.filter { it.extension == "jpg" && it != target }
-            ?.sortedByDescending { it.lastModified() }?.drop(11)?.forEach { it.delete() }
+            ?.sortedByDescending { it.lastModified() }?.drop(maxCachedPages)?.forEach { it.delete() }
         return target
     }
 

@@ -113,11 +113,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.isActive
+import com.aura.reader.ui.components.jellyOverscroll
+import com.aura.reader.data.model.BlockType
+import com.aura.reader.data.model.PageTurnAnimation
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Bookmark
@@ -441,126 +453,137 @@ fun ReaderScreen(
                     .background(MaterialTheme.colorScheme.background)
             ) {
                 if (chapters.isNotEmpty()) {
+                    val isSinglePageChapters = remember(chapters) {
+                        chapters.isNotEmpty() && chapters.all { it.blocks.size == 1 && it.blocks[0].type == BlockType.IMAGE }
+                    }
+
                     if (settings.pagingMode && currentChapter != null) {
-                        // --- Paging Mode (Листание страниц) ---
-                        androidx.compose.runtime.key(book?.id, currentChapterIndex) {
-                            ChapterPagingView(
-                                chapter = currentChapter,
-                                chapterIndex = currentChapterIndex,
-                                initialBlockIndex = savedOffset,
-                                initialTextOffset = savedTextOffset,
-                                overallProgress = book?.progressPercent,
-                                totalChapters = chapters.size,
-                                prevChapter = chapters.getOrNull(currentChapterIndex - 1),
-                                nextChapter = chapters.getOrNull(currentChapterIndex + 1),
-                                settings = settings,
-                                resolvedFontFamily = resolvedFontFamily,
-                                searchQuery = searchQuery,
-                                footnotes = footnotes,
-                                quotes = currentChapterQuotes,
-                                userWpm = userWpm,
-                                selectionResetKey = selectionResetKey,
-                                onPageTurn = { words -> viewModel.onPageOrSectionTurn(words) },
-                                targetBlockIndex = targetScrollOffset,
-                                targetPage = requestPagingPage,
-                                onConsumeTargetBlock = { viewModel.consumeTargetScrollOffset() },
-                                onConsumeTargetPage = { requestPagingPage = null },
-                                onToggleControls = { showControls = !showControls },
-                                onPrevChapter = { viewModel.prevChapter(startAtEnd = true) },
-                                onNextChapter = { viewModel.nextChapter() },
-                                onFootnoteClick = { ref, content ->
-                                    if (content.startsWith("nav:")) {
-                                        val parts = content.removePrefix("nav:").split(":")
-                                        val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
-                                        val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
-                                        viewModel.navigateToPositionWithReturn(ch, blk)
-                                    } else {
-                                        selectedFootnote = ref to content
-                                    }
-                                },
-                                onBottomProgressModeChange = { viewModel.updateBottomProgressMode(it) },
-                                onSaveQuote = { quoteToSave = it },
-                                onPageChange = { page, total ->
-                                    currentPagingPage = page
-                                    totalPagingPages = total
-                                },
-                                onUpdateProgress = { blockIdx, totalBlocks, textOffset, pixelOffset, atEnd ->
-                                    viewModel.updateScrollProgress(blockIdx, totalBlocks, textOffset, pixelOffset, atEnd)
-                                },
-                                onBookFinished = {
-                                    celebrationTriggerKey = System.currentTimeMillis()
-                                    triggerThemeHaptic(context)
-                                    if (nextBookInSeries != null) {
-                                        showNextInSeriesDialog = true
-                                    }
-                                },
-                                ttsState = ttsState,
-                                isTtsHighlightActive = isTtsHighlightActive,
-                                onSelectionTextChange = { text ->
-                                    if (text.isNotEmpty()) selectedReaderText = text
-                                }
+                        if (isSinglePageChapters) {
+                            // Dedicated seamless Graphic / Comic / PDF Paging Mode (0 transition spread)
+                            val pagerState = rememberPagerState(
+                                initialPage = currentChapterIndex.coerceIn(0, (chapters.size - 1).coerceAtLeast(0)),
+                                pageCount = { chapters.size }
                             )
-                        }
-                    } else {
-                        // --- Continuous Mode (Непрерывная лента со свайпом глав) ---
-                        val pagerState = rememberPagerState(
-                            initialPage = currentChapterIndex.coerceIn(0, chapters.size - 1),
-                            pageCount = { chapters.size }
-                        )
 
-                        LaunchedEffect(pagerState.currentPage) {
-                            if (pagerState.currentPage != currentChapterIndex) {
-                                viewModel.setChapter(pagerState.currentPage)
+                            LaunchedEffect(pagerState.currentPage) {
+                                if (pagerState.currentPage != currentChapterIndex) {
+                                    viewModel.setChapter(pagerState.currentPage)
+                                    val atEnd = pagerState.currentPage >= chapters.size - 1
+                                    viewModel.updateScrollProgress(pagerState.currentPage, chapters.size, 0, 0, atEnd)
+                                }
+                                currentPagingPage = pagerState.currentPage
+                                totalPagingPages = chapters.size
                             }
-                        }
 
-                        LaunchedEffect(currentChapterIndex) {
-                            if (pagerState.currentPage != currentChapterIndex && currentChapterIndex in chapters.indices) {
-                                pagerState.animateScrollToPage(currentChapterIndex)
+                            LaunchedEffect(currentChapterIndex) {
+                                if (pagerState.currentPage != currentChapterIndex && currentChapterIndex in chapters.indices) {
+                                    if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+                                        pagerState.scrollToPage(currentChapterIndex)
+                                    } else {
+                                        pagerState.animateScrollToPage(currentChapterIndex)
+                                    }
+                                    currentPagingPage = currentChapterIndex
+                                    totalPagingPages = chapters.size
+                                }
                             }
-                        }
 
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier.fillMaxSize()
-                        ) { pageIndex ->
-                            val chapter = chapters.getOrNull(pageIndex)
-                            if (chapter != null) {
-                                ChapterContentView(
-                                    chapter = chapter,
-                                    isCurrentChapter = pageIndex == currentChapterIndex,
-                                    initialScrollOffset = if (pageIndex == currentChapterIndex) savedOffset else 0,
-                                    initialPixelOffset = if (pageIndex == currentChapterIndex) savedPixelOffset else 0,
-                                    targetScrollOffset = if (pageIndex == currentChapterIndex) targetScrollOffset else null,
-                                    onConsumeTargetScrollOffset = { viewModel.consumeTargetScrollOffset() },
+                            LaunchedEffect(requestPagingPage) {
+                                if (requestPagingPage != null) {
+                                    val target = requestPagingPage!!.coerceIn(0, chapters.size - 1)
+                                    pagerState.scrollToPage(target)
+                                    requestPagingPage = null
+                                }
+                            }
+
+                            val haptic = LocalHapticFeedback.current
+                            var lastHapticOffset by remember { mutableFloatStateOf(pagerState.currentPage.toFloat()) }
+                            LaunchedEffect(pagerState.isScrollInProgress, pagerState.currentPageOffsetFraction) {
+                                if (pagerState.isScrollInProgress) {
+                                    val currentOffset = pagerState.currentPage + pagerState.currentPageOffsetFraction
+                                    val delta = kotlin.math.abs(currentOffset - lastHapticOffset)
+                                    if (delta >= 0.12f) {
+                                        if (settings.hapticFeedbackEnabled) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        }
+                                        lastHapticOffset = currentOffset
+                                    }
+                                } else {
+                                    lastHapticOffset = pagerState.currentPage.toFloat()
+                                }
+                            }
+
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier.fillMaxSize()
+                            ) { pageIdx ->
+                                val ch = chapters.getOrNull(pageIdx)
+                                if (ch != null && ch.blocks.isNotEmpty()) {
+                                    RenderBlock(
+                                        block = ch.blocks[0],
+                                        settings = settings,
+                                        resolvedFontFamily = resolvedFontFamily,
+                                        searchQuery = searchQuery,
+                                        footnotes = footnotes,
+                                        quotes = emptyList(),
+                                        onFootnoteClick = { _, _ -> },
+                                        onToggleControls = { showControls = !showControls },
+                                        onSaveQuote = { quoteToSave = it },
+                                        onPrevPage = if (pageIdx > 0) {
+                                            { coroutineScope.launch { pagerState.animateScrollToPage(pageIdx - 1) } }
+                                        } else null,
+                                        onNextPage = if (pageIdx < chapters.size - 1) {
+                                            { coroutineScope.launch { pagerState.animateScrollToPage(pageIdx + 1) } }
+                                        } else null,
+                                        isGraphicPage = true,
+                                        isInScrollMode = false
+                                    )
+                                }
+                            }
+                        } else {
+                            // --- Paging Mode (Листание страниц) ---
+                            androidx.compose.runtime.key(book?.id, currentChapterIndex) {
+                                ChapterPagingView(
+                                    chapter = currentChapter,
+                                    chapterIndex = currentChapterIndex,
+                                    initialBlockIndex = savedOffset,
+                                    initialTextOffset = savedTextOffset,
+                                    overallProgress = book?.progressPercent,
+                                    totalChapters = chapters.size,
+                                    prevChapter = chapters.getOrNull(currentChapterIndex - 1),
+                                    nextChapter = chapters.getOrNull(currentChapterIndex + 1),
                                     settings = settings,
                                     resolvedFontFamily = resolvedFontFamily,
-                                    pageIndex = pageIndex,
-                                    chaptersCount = chapters.size,
                                     searchQuery = searchQuery,
                                     footnotes = footnotes,
+                                    quotes = currentChapterQuotes,
+                                    userWpm = userWpm,
                                     selectionResetKey = selectionResetKey,
+                                    onPageTurn = { words -> viewModel.onPageOrSectionTurn(words) },
+                                    targetBlockIndex = targetScrollOffset,
+                                    targetPage = requestPagingPage,
+                                    onConsumeTargetBlock = { viewModel.consumeTargetScrollOffset() },
+                                    onConsumeTargetPage = { requestPagingPage = null },
                                     onToggleControls = { showControls = !showControls },
+                                    onPrevChapter = { viewModel.prevChapter(startAtEnd = true) },
+                                    onNextChapter = { viewModel.nextChapter() },
                                     onFootnoteClick = { ref, content ->
-                                    if (content.startsWith("nav:")) {
-                                        val parts = content.removePrefix("nav:").split(":")
-                                        val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
-                                        val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
-                                        viewModel.navigateToPositionWithReturn(ch, blk)
-                                    } else {
-                                        selectedFootnote = ref to content
-                                    }
-                                },
-                                    onSaveQuote = { quoteToSave = it },
-                                    onPrevChapter = {
-                                        if (pageIndex > 0) {
-                                            coroutineScope.launch { pagerState.animateScrollToPage(pageIndex - 1) }
+                                        if (content.startsWith("nav:")) {
+                                            val parts = content.removePrefix("nav:").split(":")
+                                            val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                                            val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                            viewModel.navigateToPositionWithReturn(ch, blk)
+                                        } else {
+                                            selectedFootnote = ref to content
                                         }
                                     },
-                                    onNextChapter = {
-                                        if (pageIndex < chapters.size - 1) {
-                                            coroutineScope.launch { pagerState.animateScrollToPage(pageIndex + 1) }
-                                        }
+                                    onBottomProgressModeChange = { viewModel.updateBottomProgressMode(it) },
+                                    onSaveQuote = { quoteToSave = it },
+                                    onPageChange = { page, total ->
+                                        currentPagingPage = page
+                                        totalPagingPages = total
+                                    },
+                                    onUpdateProgress = { blockIdx, totalBlocks, textOffset, pixelOffset, atEnd ->
+                                        viewModel.updateScrollProgress(blockIdx, totalBlocks, textOffset, pixelOffset, atEnd)
                                     },
                                     onBookFinished = {
                                         celebrationTriggerKey = System.currentTimeMillis()
@@ -569,21 +592,187 @@ fun ReaderScreen(
                                             showNextInSeriesDialog = true
                                         }
                                     },
-                                    onUpdateProgress = { firstVisible, totalItems, textOffset, pixelOffset, atEnd ->
-                                        if (pageIndex == currentChapterIndex) {
-                                            viewModel.updateScrollProgress(firstVisible, totalItems, textOffset, pixelOffset, atEnd)
-                                        }
-                                    },
-                                    nextBookInSeries = nextBookInSeries,
-                                    onOpenNextBook = { viewModel.openNextBookInSeries(it) },
                                     ttsState = ttsState,
                                     isTtsHighlightActive = isTtsHighlightActive,
-                                    isAutoScrolling = isAutoScrolling && !settings.pagingMode,
-                                    autoScrollSpeedMultiplier = autoScrollSpeedMultiplier,
                                     onSelectionTextChange = { text ->
                                         if (text.isNotEmpty()) selectedReaderText = text
                                     }
                                 )
+                            }
+                        }
+                    } else {
+                        if (isSinglePageChapters) {
+                            // Dedicated seamless Graphic / Comic / PDF Continuous Ribbon (Свиток)
+                            val listState = rememberLazyListState(
+                                initialFirstVisibleItemIndex = currentChapterIndex.coerceIn(0, (chapters.size - 1).coerceAtLeast(0))
+                            )
+
+                            LaunchedEffect(currentChapterIndex) {
+                                if (listState.firstVisibleItemIndex != currentChapterIndex && currentChapterIndex in chapters.indices && !listState.isScrollInProgress) {
+                                    listState.scrollToItem(currentChapterIndex)
+                                }
+                            }
+
+                            LaunchedEffect(targetScrollOffset) {
+                                if (targetScrollOffset != null) {
+                                    val target = targetScrollOffset!!.coerceIn(0, chapters.size - 1)
+                                    listState.animateScrollToItem(target)
+                                    viewModel.consumeTargetScrollOffset()
+                                }
+                            }
+
+                            LaunchedEffect(listState) {
+                                snapshotFlow { listState.firstVisibleItemIndex }
+                                    .collect { visibleIndex ->
+                                        if (visibleIndex in chapters.indices && visibleIndex != currentChapterIndex) {
+                                            viewModel.setChapter(visibleIndex)
+                                            val atEnd = visibleIndex >= chapters.size - 1 && !listState.canScrollForward
+                                            viewModel.updateScrollProgress(visibleIndex, chapters.size, 0, 0, atEnd)
+                                        }
+                                    }
+                            }
+
+                            val statusBarTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+                            val cutoutTopInset = WindowInsets.displayCutout.asPaddingValues().calculateTopPadding()
+                            val topPaddingDp = maxOf(statusBarTopInset, cutoutTopInset, 42.dp) + 6.dp
+
+                            val density = LocalDensity.current
+                            LaunchedEffect(isAutoScrolling, autoScrollSpeedMultiplier) {
+                                if (isAutoScrolling) {
+                                    val baseSpeed = 48f * autoScrollSpeedMultiplier
+                                    val speedPx = with(density) { baseSpeed.dp.toPx() }
+                                    var lastTime = 0L
+                                    while (isActive && isAutoScrolling) {
+                                        withFrameNanos { now ->
+                                            if (lastTime != 0L) {
+                                                val dt = (now - lastTime) / 1_000_000_000f
+                                                val deltaPx = speedPx * dt
+                                                listState.dispatchRawDelta(deltaPx)
+                                            }
+                                            lastTime = now
+                                        }
+                                    }
+                                }
+                            }
+
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .jellyOverscroll()
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                        showControls = !showControls
+                                    },
+                                contentPadding = PaddingValues(
+                                    start = 0.dp,
+                                    end = 0.dp,
+                                    top = topPaddingDp,
+                                    bottom = 80.dp
+                                )
+                            ) {
+                                itemsIndexed(chapters) { index, ch ->
+                                    RenderBlock(
+                                        block = ch.blocks[0],
+                                        settings = settings,
+                                        resolvedFontFamily = resolvedFontFamily,
+                                        searchQuery = searchQuery,
+                                        footnotes = footnotes,
+                                        quotes = emptyList(),
+                                        onFootnoteClick = { _, _ -> },
+                                        onToggleControls = { showControls = !showControls },
+                                        onSaveQuote = { quoteToSave = it },
+                                        isGraphicPage = true,
+                                        isInScrollMode = true
+                                    )
+                                }
+                            }
+                        } else {
+                            // --- Continuous Mode (Непрерывная лента со свайпом глав) ---
+                            val pagerState = rememberPagerState(
+                                initialPage = currentChapterIndex.coerceIn(0, chapters.size - 1),
+                                pageCount = { chapters.size }
+                            )
+
+                            LaunchedEffect(pagerState.currentPage) {
+                                if (pagerState.currentPage != currentChapterIndex) {
+                                    viewModel.setChapter(pagerState.currentPage)
+                                }
+                            }
+
+                            LaunchedEffect(currentChapterIndex) {
+                                if (pagerState.currentPage != currentChapterIndex && currentChapterIndex in chapters.indices) {
+                                    pagerState.animateScrollToPage(currentChapterIndex)
+                                }
+                            }
+
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier.fillMaxSize()
+                            ) { pageIndex ->
+                                val chapter = chapters.getOrNull(pageIndex)
+                                if (chapter != null) {
+                                    ChapterContentView(
+                                        chapter = chapter,
+                                        isCurrentChapter = pageIndex == currentChapterIndex,
+                                        initialScrollOffset = if (pageIndex == currentChapterIndex) savedOffset else 0,
+                                        initialPixelOffset = if (pageIndex == currentChapterIndex) savedPixelOffset else 0,
+                                        targetScrollOffset = if (pageIndex == currentChapterIndex) targetScrollOffset else null,
+                                        onConsumeTargetScrollOffset = { viewModel.consumeTargetScrollOffset() },
+                                        settings = settings,
+                                        resolvedFontFamily = resolvedFontFamily,
+                                        pageIndex = pageIndex,
+                                        chaptersCount = chapters.size,
+                                        searchQuery = searchQuery,
+                                        footnotes = footnotes,
+                                        selectionResetKey = selectionResetKey,
+                                        onToggleControls = { showControls = !showControls },
+                                        onFootnoteClick = { ref, content ->
+                                        if (content.startsWith("nav:")) {
+                                            val parts = content.removePrefix("nav:").split(":")
+                                            val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                                            val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                            viewModel.navigateToPositionWithReturn(ch, blk)
+                                        } else {
+                                            selectedFootnote = ref to content
+                                        }
+                                    },
+                                        onSaveQuote = { quoteToSave = it },
+                                        onPrevChapter = {
+                                            if (pageIndex > 0) {
+                                                coroutineScope.launch { pagerState.animateScrollToPage(pageIndex - 1) }
+                                            }
+                                        },
+                                        onNextChapter = {
+                                            if (pageIndex < chapters.size - 1) {
+                                                coroutineScope.launch { pagerState.animateScrollToPage(pageIndex + 1) }
+                                            }
+                                        },
+                                        onBookFinished = {
+                                            celebrationTriggerKey = System.currentTimeMillis()
+                                            triggerThemeHaptic(context)
+                                            if (nextBookInSeries != null) {
+                                                showNextInSeriesDialog = true
+                                            }
+                                        },
+                                        onUpdateProgress = { firstVisible, totalItems, textOffset, pixelOffset, atEnd ->
+                                            if (pageIndex == currentChapterIndex) {
+                                                viewModel.updateScrollProgress(firstVisible, totalItems, textOffset, pixelOffset, atEnd)
+                                            }
+                                        },
+                                        nextBookInSeries = nextBookInSeries,
+                                        onOpenNextBook = { viewModel.openNextBookInSeries(it) },
+                                        ttsState = ttsState,
+                                        isTtsHighlightActive = isTtsHighlightActive,
+                                        isAutoScrolling = isAutoScrolling && !settings.pagingMode,
+                                        autoScrollSpeedMultiplier = autoScrollSpeedMultiplier,
+                                        onSelectionTextChange = { text ->
+                                            if (text.isNotEmpty()) selectedReaderText = text
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

@@ -18,14 +18,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -264,10 +267,11 @@ fun RenderBlock(
         }
         BlockType.IMAGE -> {
             val context = LocalContext.current
+            var renderTrigger by remember(block.text) { mutableIntStateOf(0) }
             var imageModel by remember(block.text) {
                 mutableStateOf<Any?>(if (block.text.startsWith("aura-pdf:")) null else File(block.text))
             }
-            LaunchedEffect(block.text) {
+            LaunchedEffect(block.text, renderTrigger) {
                 if (block.text.startsWith("aura-pdf:")) {
                     imageModel = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                         try { com.aura.reader.data.parser.PdfPageCache.render(context, block.text) }
@@ -388,23 +392,45 @@ fun RenderBlock(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(imageModel)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = block.subText,
-                        contentScale = if (isInScrollMode) ContentScale.FillWidth else ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .then(if (isGraphicPage && !isInScrollMode) Modifier.fillMaxHeight() else Modifier)
-                            .graphicsLayer {
-                                scaleX = animScale
-                                scaleY = animScale
-                                translationX = animOffset.x
-                                translationY = animOffset.y
-                            }
-                    )
+                    if (imageModel == null && block.text.startsWith("aura-pdf:")) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(if (isInScrollMode) 450.dp else 600.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(32.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            )
+                        }
+                    } else {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(imageModel)
+                                .crossfade(true)
+                                .listener(
+                                    onError = { _, _ ->
+                                        if (block.text.startsWith("aura-pdf:")) {
+                                            renderTrigger++
+                                        }
+                                    }
+                                )
+                                .build(),
+                            contentDescription = block.subText,
+                            contentScale = if (isInScrollMode) ContentScale.FillWidth else ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .then(if (isGraphicPage && !isInScrollMode) Modifier.fillMaxHeight() else Modifier)
+                                .graphicsLayer {
+                                    scaleX = animScale
+                                    scaleY = animScale
+                                    translationX = animOffset.x
+                                    translationY = animOffset.y
+                                }
+                        )
+                    }
                 }
             } else {
                 val isSystemDark = isSystemInDarkTheme()

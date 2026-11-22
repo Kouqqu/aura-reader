@@ -25,11 +25,19 @@ object PdfParser {
                     } finally { thumb.recycle() }
                 }
                 val cleanTitle = fileName.substringBeforeLast(".")
-                val blocks = (0 until count).map { index ->
-                    FormattedBlock(
-                        type = BlockType.IMAGE,
-                        text = PdfPageCache.pageUri(persistentSource, index),
-                        subText = "Страница " + (index + 1) + " из " + count
+                val chapters = (0 until count).map { index ->
+                    Chapter(
+                        id = "pdf_page_$index",
+                        title = "Страница ${index + 1}",
+                        content = "",
+                        blocks = listOf(
+                            FormattedBlock(
+                                type = BlockType.IMAGE,
+                                text = PdfPageCache.pageUri(persistentSource, index),
+                                subText = "Страница ${index + 1} из $count"
+                            )
+                        ),
+                        order = index
                     )
                 }
                 return Book(
@@ -38,15 +46,7 @@ object PdfParser {
                     coverBase64 = cover,
                     format = BookFormat.PDF,
                     uriString = uriString,
-                    chapters = listOf(
-                        Chapter(
-                            id = "pdf_chapter_0",
-                            title = cleanTitle,
-                            content = "",
-                            blocks = blocks,
-                            order = 0
-                        )
-                    )
+                    chapters = chapters
                 )
             }
         }

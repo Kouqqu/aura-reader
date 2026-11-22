@@ -3,6 +3,15 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
+Last updated: 2026-11-22, release `2.3.0-beta.45` (`versionCode 210`).
+`2.3.0-beta.45` changed no dependencies:
+- Fixed PDF & comic architecture across both continuous scroll and paging modes: Reunified PDF, CBZ, and CBT page modeling to maintain clean page-level chapters (`"Страница N"`), fixing the table of contents (which previously showed raw file hashes) and the bottom bar slider (which was previously locked at 0 / disabled).
+- True continuous vertical scroll tape for graphic books (свиток): Added dedicated `LazyColumn` ribbon view for PDF, CBZ, and CBT graphic books in continuous scroll mode, allowing smooth, uninterrupted vertical scrolling through all pages without stops or "Next chapter" buttons.
+- Direct horizontal page flips in paging mode: Added dedicated seamless `HorizontalPager` for PDF, CBZ, and CBT in paging mode with zero intermediate chapter transition spreads, fluid 1:1 finger tracking, edge taps, and double-tap / pinch zoom.
+- Bounded PDF disk page cache & auto-recovery: Expanded `PdfPageCache` retention from 11 to 200 pages so previously read pages never vanish from disk when scrolling back, and added automatic re-render recovery on Coil image errors with a subtle loading spinner.
+- Eliminated premature book completion & progress jumping: Fixed `ChapterContentView` and `ChapterPagingView` premature `onBookFinished()` triggers during initial layout passes and last-page viewing, restoring smooth, accurate reading progress percentages (0% to 100%).
+- Reliable reading position persistence: Removed conflicting single-chapter offset hacks in `BookRepository` and `ReaderViewModel`, ensuring books always reopen at the exact saved page.
+
 Last updated: 2026-11-22, release `2.3.0-beta.44` (`versionCode 209`).
 `2.3.0-beta.44` changed no dependencies:
 - Clean Reader Settings sheet: Removed Material You theme toggle from book reader settings, keeping book styling strictly dedicated to typography and reading preferences (`ReaderSettingsBottomSheet.kt`).

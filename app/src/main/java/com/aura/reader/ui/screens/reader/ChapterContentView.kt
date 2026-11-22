@@ -132,15 +132,20 @@ fun ChapterContentView(
         }
 
         LaunchedEffect(listState, chapter.id) {
-            snapshotFlow { Triple(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset,
-                listState.layoutInfo.totalItemsCount > 0 && !listState.canScrollForward) }
-                .collect { (index, pixel, atEnd) ->
-                    if (blocks.isNotEmpty()) {
-                        val isLast = atEnd && pageIndex == chaptersCount - 1
-                        onUpdateProgress(index, blocks.size, 0, pixel, isLast)
-                        if (isLast) onBookFinished()
+            snapshotFlow {
+                val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                val isAtLastBlock = lastVisible >= blocks.size - 1
+                val reachedEnd = isAtLastBlock && !listState.canScrollForward
+                Triple(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset, reachedEnd)
+            }.collect { (index, pixel, atEnd) ->
+                if (blocks.isNotEmpty()) {
+                    val isLast = atEnd && pageIndex == chaptersCount - 1
+                    onUpdateProgress(index, blocks.size, 0, pixel, isLast)
+                    if (isLast && listState.isScrollInProgress && blocks.size > 1) {
+                        onBookFinished()
                     }
                 }
+            }
         }
 
         LaunchedEffect(targetScrollOffset) {
