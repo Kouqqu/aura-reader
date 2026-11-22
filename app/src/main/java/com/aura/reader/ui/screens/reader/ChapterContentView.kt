@@ -220,7 +220,9 @@ fun ChapterContentView(
                         onFootnoteClick = onFootnoteClick,
                         onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                         onToggleControls = onToggleControls,
-                        onSaveQuote = onSaveQuote
+                        onSaveQuote = onSaveQuote,
+                        isGraphicPage = isComicOrManga,
+                        isInScrollMode = true
                     )
                 }
 

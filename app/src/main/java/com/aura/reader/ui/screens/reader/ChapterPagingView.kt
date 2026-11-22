@@ -347,27 +347,15 @@ fun ChapterPagingView(
         }
 
         val instantSwipeModifier = if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
-            Modifier.pointerInput(pagerState.currentPage, totalPagerSpreads, settings.mangaModeRtl) {
+            Modifier.pointerInput(pagerState.currentPage, totalPagerSpreads) {
                 detectHorizontalDragGestures { _, dragAmount ->
                     if (dragAmount < -25f) {
-                        if (settings.mangaModeRtl) {
-                            if (pagerState.currentPage > 0) {
-                                coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
-                            }
-                        } else {
-                            if (pagerState.currentPage < totalPagerSpreads - 1) {
-                                coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
-                            }
+                        if (pagerState.currentPage < totalPagerSpreads - 1) {
+                            coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
                         }
                     } else if (dragAmount > 25f) {
-                        if (settings.mangaModeRtl) {
-                            if (pagerState.currentPage < totalPagerSpreads - 1) {
-                                coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
-                            }
-                        } else {
-                            if (pagerState.currentPage > 0) {
-                                coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
-                            }
+                        if (pagerState.currentPage > 0) {
+                            coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
                         }
                     }
                 }
@@ -383,18 +371,24 @@ fun ChapterPagingView(
                 }
             }
         }
+        val onPrevPageAction: () -> Unit = {
+            if (pagerState.currentPage > 0) {
+                flipPage(pagerState.currentPage - 1)
+            }
+        }
+        val onNextPageAction: () -> Unit = {
+            if (pagerState.currentPage < totalPagerSpreads - 1) {
+                flipPage(pagerState.currentPage + 1)
+            }
+        }
 
-        val layoutDirection = if (settings.mangaModeRtl) androidx.compose.ui.unit.LayoutDirection.Rtl else androidx.compose.ui.unit.LayoutDirection.Ltr
-        androidx.compose.runtime.CompositionLocalProvider(
-            androidx.compose.ui.platform.LocalLayoutDirection provides layoutDirection
-        ) {
-            HorizontalPager(
-                state = pagerState,
-                userScrollEnabled = settings.pageAnimation != PageTurnAnimation.INSTANT,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(instantSwipeModifier)
-            ) { spreadIdx ->
+        HorizontalPager(
+            state = pagerState,
+            userScrollEnabled = settings.pageAnimation != PageTurnAnimation.INSTANT,
+            modifier = Modifier
+                .fillMaxSize()
+                .then(instantSwipeModifier)
+        ) { spreadIdx ->
             // Вычисляем, насколько страница сдвинута от центра (от -1.0 до 1.0)
             val pageOffset = ((pagerState.currentPage - spreadIdx) + pagerState.currentPageOffsetFraction)
             val animModifier = when (settings.pageAnimation) {
@@ -453,30 +447,13 @@ fun ChapterPagingView(
                     .fillMaxSize()
                     .then(animModifier)
                     .background(MaterialTheme.colorScheme.background)
-                    .pointerInput(pagerState.currentPage, totalPagerSpreads, settings.mangaModeRtl) {
+                    .pointerInput(pagerState.currentPage, totalPagerSpreads) {
                         detectTapGestures { offset ->
                             val edgeThreshold = 72.dp.toPx()
-                            val isRtl = settings.mangaModeRtl
                             if (offset.x < edgeThreshold) {
-                                if (isRtl) {
-                                    if (pagerState.currentPage < totalPagerSpreads - 1) {
-                                        flipPage(pagerState.currentPage + 1)
-                                    }
-                                } else {
-                                    if (pagerState.currentPage > 0) {
-                                        flipPage(pagerState.currentPage - 1)
-                                    }
-                                }
+                                onPrevPageAction()
                             } else if (offset.x > size.width - edgeThreshold) {
-                                if (isRtl) {
-                                    if (pagerState.currentPage > 0) {
-                                        flipPage(pagerState.currentPage - 1)
-                                    }
-                                } else {
-                                    if (pagerState.currentPage < totalPagerSpreads - 1) {
-                                        flipPage(pagerState.currentPage + 1)
-                                    }
-                                }
+                                onNextPageAction()
                             } else {
                                 onToggleControls()
                             }
@@ -554,7 +531,11 @@ fun ChapterPagingView(
                                                 onFootnoteClick = onFootnoteClick,
                                                 onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                                 onToggleControls = onToggleControls,
-                                                onSaveQuote = onSaveQuote
+                                                onSaveQuote = onSaveQuote,
+                                                onPrevPage = onPrevPageAction,
+                                                onNextPage = onNextPageAction,
+                                                isGraphicPage = false,
+                                                isInScrollMode = false
                                             )
                                         }
                                     }
@@ -592,7 +573,11 @@ fun ChapterPagingView(
                                                 onFootnoteClick = onFootnoteClick,
                                                 onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                                 onToggleControls = onToggleControls,
-                                                onSaveQuote = onSaveQuote
+                                                onSaveQuote = onSaveQuote,
+                                                onPrevPage = onPrevPageAction,
+                                                onNextPage = onNextPageAction,
+                                                isGraphicPage = false,
+                                                isInScrollMode = false
                                             )
                                         }
                                     }
@@ -630,7 +615,11 @@ fun ChapterPagingView(
                                             onFootnoteClick = onFootnoteClick,
                                             onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                             onToggleControls = onToggleControls,
-                                            onSaveQuote = onSaveQuote
+                                            onSaveQuote = onSaveQuote,
+                                            onPrevPage = onPrevPageAction,
+                                            onNextPage = onNextPageAction,
+                                            isGraphicPage = isSingleImagePage,
+                                            isInScrollMode = false
                                         )
                                     }
                                 }
@@ -753,7 +742,6 @@ fun ChapterPagingView(
             }
         }
     }
-}
 }
 
 // ------------------------------------------------------------------------------------------------

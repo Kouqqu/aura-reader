@@ -3,7 +3,11 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-11-22, release `2.3.0-beta.42` (`versionCode 207`).
+Last updated: 2026-11-22, release `2.3.0-beta.43` (`versionCode 208`).
+`2.3.0-beta.43` changed no dependencies:
+- Clean comic & manga page swipe gesture pipeline: Replaced unconditional gesture consumption on comic/manga images with unconsumed single-finger gesture passthrough when unzoomed (`zoomScale <= 1.05f`), allowing horizontal swipe across the entire image to turn pages naturally via `HorizontalPager` and instant swipe handlers without interference from zooming; added two-finger pinch zoom, bounded 1-finger and 2-finger panning while zoomed in, and left/right 72dp edge tap page navigation on comic images (`ReaderBlocks.kt`, `ChapterPagingView.kt`, `ChapterContentView.kt`).
+- Removed confusing Manga RTL mode from settings: Removed the Japanese Right-to-Left manga toggle from the reader settings bottom sheet and restored standard LTR page flipping across the reader, while retaining backward compatibility in the settings/backup schema (`ReaderSettingsBottomSheet.kt`, `ChapterPagingView.kt`).
+- Proportionate holiday greetings typography: Scaled holiday greeting font size down from large headline (`24.sp`) to clean secondary text (`14.sp`, `bodyMedium` with `FontWeight.Medium`), preventing long holiday strings ("Со светлым Рождеством Христовым!", "Счастливого Нового года!") from being truncated with ellipsis on mobile screens (`LibraryTopBar.kt`).
 `2.3.0-beta.42` changed no dependencies:
 - Frosted glass blur in scroll mode: Fixed interface blur parity with paging mode by rendering a solid `MaterialTheme.colorScheme.background` within the `hazeSource` capture hierarchy in `ReaderScreen.kt` and `ChapterContentView.kt`, and eliminating conflicting child `hazeSource` registrations on `LazyColumn` so `readerHazeState` captures an opaque, solid backdrop with crisp text at 120 FPS across both paging and continuous scroll modes.
 - Search screen edge-to-edge layout: Removed outer `statusBarsPadding()` from the search container and moved it to the inner content column, enabling `SearchCoverCollage` to extend edge-to-edge behind the translucent status bar and positioning the "Поиск" title and search bar immediately beneath the status bar, harmonizing with the rest of the application (`LibrarySearchScreen.kt`).

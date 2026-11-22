@@ -361,16 +361,13 @@ AnimatedContent(
                     }
                     Text(
                         text = greeting,
-                        // The greeting is a second headline, not a caption: it reads as
-                        // part of the header next to the name, one step down the scale (24 sp).
-                        // It starts under the app name, not under the logo, so the two
-                        // lines share one left edge.
+                        // The greeting reads as a clean secondary subtitle under the app name
                         modifier = Modifier.padding(start = logoBoxSize + titleSpacing),
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontSize = 24.sp,
-                            letterSpacing = if (isHoliday) 0.2.sp else 0.sp
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 14.sp,
+                            letterSpacing = 0.1.sp
                         ),
-                        fontWeight = if (isHoliday) FontWeight.SemiBold else FontWeight.Normal,
+                        fontWeight = if (isHoliday) FontWeight.Medium else FontWeight.Normal,
                         color = if (isHoliday) {
                             holidaySeason.primaryAccent
                         } else {

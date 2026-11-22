@@ -749,48 +749,6 @@ fun ReaderSettingsBottomSheet(
                             border = chipBorder
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = cardBg,
-                        border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onMangaModeRtlChange(!settings.mangaModeRtl) }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                                Text(
-                                    text = strings.mangaModeRtlTitle,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = itemTitleColor
-                                )
-                                Text(
-                                    text = strings.mangaModeRtlDesc,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = itemSubtitleColor
-                                )
-                            }
-                            if (isGlass) {
-                                LiquidGlassSwitch(
-                                    checked = settings.mangaModeRtl,
-                                    onCheckedChange = onMangaModeRtlChange
-                                )
-                            } else {
-                                Switch(
-                                    checked = settings.mangaModeRtl,
-                                    onCheckedChange = onMangaModeRtlChange
-                                )
-                            }
-                        }
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

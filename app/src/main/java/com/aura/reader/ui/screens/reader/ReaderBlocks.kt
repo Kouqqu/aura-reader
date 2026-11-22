@@ -56,11 +56,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateOffsetAsState
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 
 // ------------------------------------------------------------------------------------------------
 // BIONIC READING HELPER
@@ -113,7 +120,11 @@ fun RenderBlock(
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onNavigateToChapter: ((chapterIndex: Int, blockIndex: Int) -> Unit)? = null,
     onToggleControls: () -> Unit,
-    onSaveQuote: (String) -> Unit
+    onSaveQuote: (String) -> Unit,
+    onPrevPage: (() -> Unit)? = null,
+    onNextPage: (() -> Unit)? = null,
+    isGraphicPage: Boolean = false,
+    isInScrollMode: Boolean = false
 ) {
     val isBionic = remember(settings.fontName) {
         settings.fontName.equals("Bionic", ignoreCase = true) ||
@@ -265,7 +276,18 @@ fun RenderBlock(
                     }
                 }
             }
-            val isComicOrPdf = block.subText?.contains(" / ") == true || block.subText?.startsWith("Страница ") == true
+            val isComicOrPdf = isGraphicPage ||
+                    block.text.startsWith("aura-pdf:") ||
+                    block.text.startsWith("aurapdf://") ||
+                    block.text.contains("cbz_", ignoreCase = true) ||
+                    block.text.contains("cbr_", ignoreCase = true) ||
+                    block.text.contains("cbt_", ignoreCase = true) ||
+                    block.subText?.contains("comic", ignoreCase = true) == true ||
+                    block.subText?.contains("pdf", ignoreCase = true) == true ||
+                    block.subText?.contains("image_page", ignoreCase = true) == true ||
+                    block.subText?.contains(" / ") == true ||
+                    block.subText?.startsWith("Страница ") == true
+
             if (isComicOrPdf) {
                 var zoomScale by remember { mutableFloatStateOf(1f) }
                 var zoomOffset by remember { mutableStateOf(Offset.Zero) }
@@ -275,25 +297,10 @@ fun RenderBlock(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 2.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .pointerInput(Unit) {
-                            detectTransformGestures { _, pan, zoom, _ ->
-                                val newScale = (zoomScale * zoom).coerceIn(1f, 4f)
-                                zoomScale = newScale
-                                if (newScale > 1f) {
-                                    val maxX = (size.width * (newScale - 1f)) / 2f
-                                    val maxY = (size.height * (newScale - 1f)) / 2f
-                                    zoomOffset = Offset(
-                                        x = (zoomOffset.x + pan.x).coerceIn(-maxX, maxX),
-                                        y = (zoomOffset.y + pan.y).coerceIn(-maxY, maxY)
-                                    )
-                                } else {
-                                    zoomOffset = Offset.Zero
-                                }
-                            }
-                        }
-                        .pointerInput(Unit) {
+                        .then(if (isGraphicPage && !isInScrollMode) Modifier.fillMaxHeight() else Modifier)
+                        .padding(vertical = if (isGraphicPage) 0.dp else 2.dp)
+                        .clip(RoundedCornerShape(if (isGraphicPage) 0.dp else 2.dp))
+                        .pointerInput(onPrevPage, onNextPage, onToggleControls) {
                             detectTapGestures(
                                 onDoubleTap = { tapOffset ->
                                     if (zoomScale > 1.05f) {
@@ -311,15 +318,73 @@ fun RenderBlock(
                                         )
                                     }
                                 },
-                                onTap = {
+                                onTap = { tapOffset ->
                                     if (zoomScale > 1.05f) {
                                         zoomScale = 1f
                                         zoomOffset = Offset.Zero
                                     } else {
-                                        onToggleControls()
+                                        val edgeThreshold = 72.dp.toPx()
+                                        if (tapOffset.x < edgeThreshold && onPrevPage != null) {
+                                            onPrevPage()
+                                        } else if (tapOffset.x > size.width - edgeThreshold && onNextPage != null) {
+                                            onNextPage()
+                                        } else {
+                                            onToggleControls()
+                                        }
                                     }
                                 }
                             )
+                        }
+                        .pointerInput(Unit) {
+                            awaitEachGesture {
+                                awaitFirstDown(requireUnconsumed = false)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    val pressedPointers = event.changes.filter { it.pressed }
+                                    val pointerCount = pressedPointers.size
+
+                                    if (zoomScale > 1.05f) {
+                                        val pan = event.calculatePan()
+                                        val zoom = event.calculateZoom()
+                                        val newScale = (zoomScale * zoom).coerceIn(1f, 4f)
+                                        zoomScale = newScale
+                                        if (newScale > 1.05f) {
+                                            val maxX = (size.width * (newScale - 1f)) / 2f
+                                            val maxY = (size.height * (newScale - 1f)) / 2f
+                                            zoomOffset = Offset(
+                                                x = (zoomOffset.x + pan.x).coerceIn(-maxX, maxX),
+                                                y = (zoomOffset.y + pan.y).coerceIn(-maxY, maxY)
+                                            )
+                                        } else {
+                                            zoomScale = 1f
+                                            zoomOffset = Offset.Zero
+                                        }
+                                        event.changes.forEach {
+                                            if (it.positionChanged()) it.consume()
+                                        }
+                                    } else {
+                                        if (pointerCount >= 2) {
+                                            val zoom = event.calculateZoom()
+                                            if (kotlin.math.abs(zoom - 1f) > 0.01f) {
+                                                val newScale = (zoomScale * zoom).coerceIn(1f, 4f)
+                                                zoomScale = newScale
+                                                if (newScale > 1.05f) {
+                                                    val pan = event.calculatePan()
+                                                    val maxX = (size.width * (newScale - 1f)) / 2f
+                                                    val maxY = (size.height * (newScale - 1f)) / 2f
+                                                    zoomOffset = Offset(
+                                                        x = (zoomOffset.x + pan.x).coerceIn(-maxX, maxX),
+                                                        y = (zoomOffset.y + pan.y).coerceIn(-maxY, maxY)
+                                                    )
+                                                }
+                                                event.changes.forEach {
+                                                    if (it.positionChanged()) it.consume()
+                                                }
+                                            }
+                                        }
+                                    }
+                                } while (event.changes.any { it.pressed })
+                            }
                         },
                     contentAlignment = Alignment.Center
                 ) {
@@ -329,9 +394,10 @@ fun RenderBlock(
                             .crossfade(true)
                             .build(),
                         contentDescription = block.subText,
-                        contentScale = ContentScale.FillWidth,
+                        contentScale = if (isInScrollMode) ContentScale.FillWidth else ContentScale.Fit,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .then(if (isGraphicPage && !isInScrollMode) Modifier.fillMaxHeight() else Modifier)
                             .graphicsLayer {
                                 scaleX = animScale
                                 scaleY = animScale
