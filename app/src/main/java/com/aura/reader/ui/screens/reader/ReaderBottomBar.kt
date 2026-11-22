@@ -46,7 +46,9 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.aura.reader.data.model.BlockType
 import androidx.compose.ui.Alignment
@@ -232,23 +234,33 @@ fun BoxScope.ReaderBottomBar(
                                              )
                                          }
 
+                                         var localPageSliderValue by remember(effectiveCurrentPage) { mutableFloatStateOf(effectiveCurrentPage.toFloat()) }
+                                         var isDraggingPageSlider by remember { mutableStateOf(false) }
+
                                          Slider(
-                                             value = effectiveCurrentPage.toFloat().coerceIn(0f, (effectiveTotalPages - 1).coerceAtLeast(0).toFloat()),
+                                             value = if (isDraggingPageSlider) localPageSliderValue else effectiveCurrentPage.toFloat().coerceIn(0f, (effectiveTotalPages - 1).coerceAtLeast(1).toFloat()),
                                              onValueChange = { newVal ->
-                                                 val step = newVal.toInt()
+                                                 isDraggingPageSlider = true
+                                                 localPageSliderValue = newVal
+                                                 val step = kotlin.math.round(newVal).toInt().coerceIn(0, (effectiveTotalPages - 1).coerceAtLeast(0))
                                                  if (step != lastPageSliderStep) {
                                                      lastPageSliderStep = step
                                                      if (settings.hapticFeedbackEnabled) {
                                                          performSliderTick(context, haptic)
                                                      }
+                                                     onRequestPage(step)
                                                  }
+                                             },
+                                             onValueChangeFinished = {
+                                                 isDraggingPageSlider = false
+                                                 val finalStep = kotlin.math.round(localPageSliderValue).toInt().coerceIn(0, (effectiveTotalPages - 1).coerceAtLeast(0))
                                                  if (isSinglePageChapters) {
-                                                     viewModel.setChapter(step)
+                                                     viewModel.setChapter(finalStep)
                                                  }
-                                                 onRequestPage(step)
+                                                 onRequestPage(finalStep)
                                              },
                                              valueRange = 0f..(effectiveTotalPages - 1).coerceAtLeast(1).toFloat(),
-                                             steps = (effectiveTotalPages - 2).coerceAtLeast(0),
+                                             steps = 0,
                                              modifier = Modifier.weight(1f),
                                              colors = SliderDefaults.colors(
                                                  thumbColor = MaterialTheme.colorScheme.primary,
@@ -382,23 +394,35 @@ fun BoxScope.ReaderBottomBar(
                                              )
                                         }
 
+                                        var localChapterSliderValue by remember(currentChapterIndex) { mutableFloatStateOf(currentChapterIndex.toFloat()) }
+                                        var isDraggingChapterSlider by remember { mutableStateOf(false) }
+
                                         Slider(
-                                            value = currentChapterIndex.toFloat(),
+                                            value = if (isDraggingChapterSlider) localChapterSliderValue else currentChapterIndex.toFloat().coerceIn(0f, (chapters.size - 1).coerceAtLeast(1).toFloat()),
                                             onValueChange = { newVal ->
-                                                val step = newVal.toInt()
+                                                isDraggingChapterSlider = true
+                                                localChapterSliderValue = newVal
+                                                val step = kotlin.math.round(newVal).toInt().coerceIn(chapters.indices)
                                                 if (step != lastChapterSliderStep) {
                                                     lastChapterSliderStep = step
                                                     if (settings.hapticFeedbackEnabled) {
                                                         performSliderTick(context, haptic)
                                                     }
+                                                    if (isSinglePageChapters) {
+                                                        viewModel.requestScrollToBlock(step)
+                                                    }
                                                 }
-                                                viewModel.setChapter(step)
+                                            },
+                                            onValueChangeFinished = {
+                                                isDraggingChapterSlider = false
+                                                val finalStep = kotlin.math.round(localChapterSliderValue).toInt().coerceIn(chapters.indices)
+                                                viewModel.setChapter(finalStep)
                                                 if (isSinglePageChapters) {
-                                                    viewModel.requestScrollToBlock(step)
+                                                    viewModel.requestScrollToBlock(finalStep)
                                                 }
                                             },
                                             valueRange = 0f..(chapters.size - 1).coerceAtLeast(1).toFloat(),
-                                            steps = (chapters.size - 2).coerceAtLeast(0),
+                                            steps = 0,
                                             modifier = Modifier.weight(1f),
                                             colors = SliderDefaults.colors(
                                                 thumbColor = MaterialTheme.colorScheme.primary,

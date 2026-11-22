@@ -186,7 +186,11 @@ class ReaderViewModel(
         val book = currentBook.value ?: return
         if (index in book.chapters.indices) {
             val chapterChanged = _currentChapterIndex.value != index
-            isAtBookEnd = false
+            if (index < book.chapters.size - 1) {
+                isAtBookEnd = false
+            } else {
+                isAtBookEnd = true
+            }
             _currentChapterIndex.value = index
             _savedScrollOffset.value = offset
             _savedTextOffset.value = textOffset
@@ -252,17 +256,23 @@ class ReaderViewModel(
         }
     }
 
-    private var isAtBookEnd = false
+    var isAtBookEnd: Boolean = false
+        internal set
     private var pendingProgressSave: kotlinx.coroutines.Job? = null
 
     fun updateScrollProgress(scrollItemIndex: Int, totalItems: Int, textOffset: Int = 0, pixelOffset: Int = 0, atEnd: Boolean = false) {
-        isAtBookEnd = atEnd && scrollItemIndex >= totalItems - 1
+        val reachedEnd = atEnd || (totalItems > 0 && scrollItemIndex >= totalItems - 1)
+        if (reachedEnd) {
+            isAtBookEnd = true
+        } else if (scrollItemIndex < totalItems - 1) {
+            isAtBookEnd = false
+        }
         _savedScrollOffset.value = scrollItemIndex
         _savedTextOffset.value = textOffset
         _savedPixelOffset.value = pixelOffset
         pendingProgressSave?.cancel()
         pendingProgressSave = viewModelScope.launch {
-            kotlinx.coroutines.delay(300)
+            kotlinx.coroutines.delay(200)
             saveCurrentProgress()
         }
     }
@@ -277,7 +287,7 @@ class ReaderViewModel(
         val block = _savedScrollOffset.value
         val text = _savedTextOffset.value
         val pixel = _savedPixelOffset.value
-        val isActuallyAtEnd = isAtBookEnd && chapterIdx >= book.chapters.size - 1
+        val isActuallyAtEnd = isAtBookEnd && (chapterIdx >= book.chapters.size - 1 || book.chapters.size <= 1)
         val percent = if (isActuallyAtEnd) 100
             else com.aura.reader.data.model.ReadingPosition.percent(book, chapterIdx, block, text)
         viewModelScope.launch {

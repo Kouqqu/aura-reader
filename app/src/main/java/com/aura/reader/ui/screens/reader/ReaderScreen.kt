@@ -487,11 +487,7 @@ fun ReaderScreen(
                                 if (req != null) {
                                     val target = req.coerceIn(0, chapters.size - 1)
                                     if (target != pagerState.currentPage) {
-                                        if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
-                                            pagerState.scrollToPage(target)
-                                        } else {
-                                            pagerState.animateScrollToPage(target)
-                                        }
+                                        pagerState.scrollToPage(target)
                                     }
                                     requestPagingPage = null
                                 }
@@ -608,85 +604,107 @@ fun ReaderScreen(
                     } else {
                         if (isSinglePageChapters) {
                             // Dedicated seamless Graphic / Comic / PDF Continuous Ribbon (Свиток)
-                            val listState = rememberLazyListState(
-                                initialFirstVisibleItemIndex = currentChapterIndex.coerceIn(0, (chapters.size - 1).coerceAtLeast(0))
-                            )
-
-                            LaunchedEffect(targetScrollOffset) {
-                                if (targetScrollOffset != null) {
-                                    val target = targetScrollOffset!!.coerceIn(0, chapters.size - 1)
-                                    listState.animateScrollToItem(target)
-                                    viewModel.consumeTargetScrollOffset()
-                                }
-                            }
-
-                            LaunchedEffect(listState) {
-                                snapshotFlow { listState.firstVisibleItemIndex }
-                                    .collect { visibleIndex ->
-                                        if (!isScreenActive) return@collect
-                                        if (visibleIndex in chapters.indices && visibleIndex != currentChapterIndex) {
-                                            viewModel.setChapter(visibleIndex)
-                                            val atEnd = visibleIndex >= chapters.size - 1 && !listState.canScrollForward
-                                            viewModel.updateScrollProgress(visibleIndex, chapters.size, 0, 0, atEnd)
-                                        }
-                                    }
-                            }
-
-                            val statusBarTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-                            val cutoutTopInset = WindowInsets.displayCutout.asPaddingValues().calculateTopPadding()
-                            val topPaddingDp = maxOf(statusBarTopInset, cutoutTopInset, 42.dp) + 6.dp
-
-                            val density = LocalDensity.current
-                            LaunchedEffect(isAutoScrolling, autoScrollSpeedMultiplier) {
-                                if (isAutoScrolling) {
-                                    val baseSpeed = 48f * autoScrollSpeedMultiplier
-                                    val speedPx = with(density) { baseSpeed.dp.toPx() }
-                                    var lastTime = 0L
-                                    while (isActive && isAutoScrolling) {
-                                        withFrameNanos { now ->
-                                            if (lastTime != 0L) {
-                                                val dt = (now - lastTime) / 1_000_000_000f
-                                                val deltaPx = speedPx * dt
-                                                listState.dispatchRawDelta(deltaPx)
-                                            }
-                                            lastTime = now
-                                        }
-                                    }
-                                }
-                            }
-
-                            LazyColumn(
-                                state = listState,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .jellyOverscroll()
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) {
-                                        showControls = !showControls
-                                    },
-                                contentPadding = PaddingValues(
-                                    start = 0.dp,
-                                    end = 0.dp,
-                                    top = topPaddingDp,
-                                    bottom = 80.dp
+                            androidx.compose.runtime.key(book?.id) {
+                                val initialPageIndex = currentChapterIndex.coerceIn(0, (chapters.size - 1).coerceAtLeast(0))
+                                val listState = rememberLazyListState(
+                                    initialFirstVisibleItemIndex = initialPageIndex
                                 )
-                            ) {
-                                itemsIndexed(chapters) { index, ch ->
-                                    RenderBlock(
-                                        block = ch.blocks[0],
-                                        settings = settings,
-                                        resolvedFontFamily = resolvedFontFamily,
-                                        searchQuery = searchQuery,
-                                        footnotes = footnotes,
-                                        quotes = emptyList(),
-                                        onFootnoteClick = { _, _ -> },
-                                        onToggleControls = { showControls = !showControls },
-                                        onSaveQuote = { quoteToSave = it },
-                                        isGraphicPage = true,
-                                        isInScrollMode = true
+
+                                LaunchedEffect(targetScrollOffset) {
+                                    val target = targetScrollOffset
+                                    if (target != null) {
+                                        val bounded = target.coerceIn(0, chapters.size - 1)
+                                        listState.scrollToItem(bounded)
+                                        viewModel.consumeTargetScrollOffset()
+                                    }
+                                }
+
+                                LaunchedEffect(listState) {
+                                    snapshotFlow {
+                                        Triple(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset, listState.canScrollForward)
+                                    }.collect { (_, _, canScrollForward) ->
+                                        if (!isScreenActive) return@collect
+                                        if (chapters.isEmpty()) return@collect
+
+                                        val layout = listState.layoutInfo
+                                        val visibleItems = layout.visibleItemsInfo
+                                        if (visibleItems.isEmpty()) return@collect
+
+                                        val atEnd = !canScrollForward
+                                        val activeIndex = if (atEnd) {
+                                            chapters.lastIndex
+                                        } else {
+                                            val vHeight = layout.viewportEndOffset - layout.viewportStartOffset
+                                            val vCenter = layout.viewportStartOffset + vHeight / 2
+                                            val centerItem = visibleItems.firstOrNull { item ->
+                                                item.offset <= vCenter && (item.offset + item.size) >= vCenter
+                                            }
+                                            centerItem?.index ?: listState.firstVisibleItemIndex
+                                        }.coerceIn(chapters.indices)
+
+                                        if (activeIndex != currentChapterIndex || (atEnd && !viewModel.isAtBookEnd)) {
+                                            viewModel.setChapter(activeIndex)
+                                            viewModel.updateScrollProgress(activeIndex, chapters.size, 0, 0, atEnd)
+                                        }
+                                    }
+                                }
+
+                                val statusBarTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+                                val cutoutTopInset = WindowInsets.displayCutout.asPaddingValues().calculateTopPadding()
+                                val topPaddingDp = maxOf(statusBarTopInset, cutoutTopInset, 42.dp) + 6.dp
+
+                                val density = LocalDensity.current
+                                LaunchedEffect(isAutoScrolling, autoScrollSpeedMultiplier) {
+                                    if (isAutoScrolling) {
+                                        val baseSpeed = 48f * autoScrollSpeedMultiplier
+                                        val speedPx = with(density) { baseSpeed.dp.toPx() }
+                                        var lastTime = 0L
+                                        while (isActive && isAutoScrolling) {
+                                            withFrameNanos { now ->
+                                                if (lastTime != 0L) {
+                                                    val dt = (now - lastTime) / 1_000_000_000f
+                                                    val deltaPx = speedPx * dt
+                                                    listState.dispatchRawDelta(deltaPx)
+                                                }
+                                                lastTime = now
+                                            }
+                                        }
+                                    }
+                                }
+
+                                LazyColumn(
+                                    state = listState,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .jellyOverscroll()
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) {
+                                            showControls = !showControls
+                                        },
+                                    contentPadding = PaddingValues(
+                                        start = 0.dp,
+                                        end = 0.dp,
+                                        top = topPaddingDp,
+                                        bottom = 80.dp
                                     )
+                                ) {
+                                    itemsIndexed(chapters) { index, ch ->
+                                        RenderBlock(
+                                            block = ch.blocks[0],
+                                            settings = settings,
+                                            resolvedFontFamily = resolvedFontFamily,
+                                            searchQuery = searchQuery,
+                                            footnotes = footnotes,
+                                            quotes = emptyList(),
+                                            onFootnoteClick = { _, _ -> },
+                                            onToggleControls = { showControls = !showControls },
+                                            onSaveQuote = { quoteToSave = it },
+                                            isGraphicPage = true,
+                                            isInScrollMode = true
+                                        )
+                                    }
                                 }
                             }
                         } else {
