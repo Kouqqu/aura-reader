@@ -292,6 +292,7 @@ fun ReaderScreen(
     DisposableEffect(Unit) {
         onDispose {
             AmbientSoundPlayer.stop()
+            com.aura.reader.util.GraphicPageDimensionsCache.clear()
         }
     }
     val view = LocalView.current

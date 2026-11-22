@@ -130,20 +130,13 @@ fun OnboardingScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
+                    Image(
+                        painter = painterResource(R.drawable.ic_aura_logo_squircle),
+                        contentDescription = null,
                         modifier = Modifier
                             .size(36.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.MenuBook,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                    )
                     Spacer(modifier = Modifier.width(10.dp))
                     val marcellusFamily = remember { FontFamily(androidx.compose.ui.text.font.Font(R.font.marcellus_regular)) }
                     Text(
@@ -241,95 +234,81 @@ fun OnboardingScreen(
                     }
                 }
 
-                // Action Pill Button (Next -> Start Reading)
+                // Action Pill Button (Next button on slides 0, 1, 2; on last slide button is in the center of the slide)
                 val isLastPage = pagerState.currentPage == totalSlides - 1
-                if (isGlass) {
-                    Surface(
-                        onClick = {
-                            if (isLastPage) {
-                                finishOnboarding()
-                            } else {
+                if (!isLastPage) {
+                    if (isGlass) {
+                        Surface(
+                            onClick = {
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                }
-                            }
-                        },
-                        shape = RoundedCornerShape(28.dp),
-                        color = if (isDark) Color(0x28FFFFFF) else Color(0xF2FFFFFF),
-                        border = null,
-                        shadowElevation = if (isDark) 0.dp else 4.dp,
-                        modifier = Modifier
-                            .height(54.dp)
-                            .expressiveClickable {
-                                if (isLastPage) {
-                                    finishOnboarding()
-                                } else {
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                    }
-                                }
-                            }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 24.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = if (isLastPage) strings.onboardingStartReading else strings.onboardingNext,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (isDark) Color.White else Color(0xFF191B1F)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                imageVector = if (isLastPage) Icons.Rounded.Check else Icons.AutoMirrored.Rounded.ArrowForward,
-                                contentDescription = null,
-                                tint = if (isDark) Color.White else Color(0xFF191B1F),
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                } else {
-                    Button(
-                        onClick = {
-                            if (isLastPage) {
-                                finishOnboarding()
-                            } else {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                }
-                            }
-                        },
-                        shape = RoundedCornerShape(28.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        modifier = Modifier
-                            .height(54.dp)
-                            .expressiveClickable {
-                                if (isLastPage) {
-                                    finishOnboarding()
-                                } else {
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                    }
                                 }
                             },
-                        contentPadding = PaddingValues(horizontal = 24.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = if (isLastPage) strings.onboardingStartReading else strings.onboardingNext,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                imageVector = if (isLastPage) Icons.Rounded.Check else Icons.AutoMirrored.Rounded.ArrowForward,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            shape = RoundedCornerShape(28.dp),
+                            color = if (isDark) Color(0x28FFFFFF) else Color(0xF2FFFFFF),
+                            border = null,
+                            shadowElevation = if (isDark) 0.dp else 4.dp,
+                            modifier = Modifier
+                                .height(54.dp)
+                                .expressiveClickable {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                    }
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 24.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = strings.onboardingNext,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isDark) Color.White else Color(0xFF191B1F)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                                    contentDescription = null,
+                                    tint = if (isDark) Color.White else Color(0xFF191B1F),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    } else {
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                }
+                            },
+                            shape = RoundedCornerShape(28.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            modifier = Modifier
+                                .height(54.dp)
+                                .expressiveClickable {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                    }
+                                },
+                            contentPadding = PaddingValues(horizontal = 24.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = strings.onboardingNext,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }

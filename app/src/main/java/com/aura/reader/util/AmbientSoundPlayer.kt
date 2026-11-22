@@ -1,12 +1,16 @@
 package com.aura.reader.util
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.MediaPlayer
+import android.os.Build
 import androidx.annotation.RawRes
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.Forest
 import androidx.compose.material.icons.rounded.LocalFireDepartment
-import androidx.compose.material.icons.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material.icons.rounded.Waves
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -21,7 +25,7 @@ enum class AmbientSoundType(
     @RawRes val soundRes: Int?,
     val icon: ImageVector
 ) {
-    OFF("off", null, Icons.Rounded.VolumeOff),
+    OFF("off", null, Icons.AutoMirrored.Rounded.VolumeOff),
     RAIN("rain", R.raw.ambient_rain, Icons.Rounded.WaterDrop),
     FIREPLACE("fireplace", R.raw.ambient_fire, Icons.Rounded.LocalFireDepartment),
     FOREST("forest", R.raw.ambient_forest, Icons.Rounded.Forest),
@@ -48,6 +52,38 @@ object AmbientSoundPlayer {
     private val _volume = MutableStateFlow(0.70f)
     val volume: StateFlow<Float> = _volume.asStateFlow()
 
+    private var audioManager: AudioManager? = null
+    private var audioFocusRequest: AudioFocusRequest? = null
+    private var wasPlayingBeforeFocusLoss = false
+
+    private val focusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                if (mediaPlayer?.isPlaying == true) {
+                    wasPlayingBeforeFocusLoss = true
+                    pause()
+                }
+            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                val duckVol = (_volume.value * 0.3f).coerceAtLeast(0.1f)
+                try {
+                    mediaPlayer?.setVolume(duckVol, duckVol)
+                } catch (_: Exception) {}
+            }
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                val v = _volume.value
+                try {
+                    mediaPlayer?.setVolume(v, v)
+                } catch (_: Exception) {}
+                if (wasPlayingBeforeFocusLoss) {
+                    wasPlayingBeforeFocusLoss = false
+                    resume()
+                }
+            }
+        }
+    }
+
     fun setSound(context: Context, sound: AmbientSoundType) {
         if (_currentSound.value == sound && sound != AmbientSoundType.OFF) return
         stop()
@@ -55,7 +91,32 @@ object AmbientSoundPlayer {
         if (sound == AmbientSoundType.OFF || sound.soundRes == null) return
 
         try {
-            val mp = MediaPlayer.create(context.applicationContext, sound.soundRes) ?: return
+            val appContext = context.applicationContext
+            val am = appContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+            audioManager = am
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build()
+                    )
+                    .setOnAudioFocusChangeListener(focusChangeListener)
+                    .build()
+                audioFocusRequest = req
+                am?.requestAudioFocus(req)
+            } else {
+                @Suppress("DEPRECATION")
+                am?.requestAudioFocus(
+                    focusChangeListener,
+                    AudioManager.STREAM_MUSIC,
+                    AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
+                )
+            }
+
+            val mp = MediaPlayer.create(appContext, sound.soundRes) ?: return
             mp.isLooping = true
             val v = _volume.value
             mp.setVolume(v, v)
@@ -102,6 +163,17 @@ object AmbientSoundPlayer {
             }
         } catch (_: Exception) {}
         mediaPlayer = null
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                audioFocusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
+                audioFocusRequest = null
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager?.abandonAudioFocus(focusChangeListener)
+            }
+        } catch (_: Exception) {}
+
         _currentSound.value = AmbientSoundType.OFF
     }
 }

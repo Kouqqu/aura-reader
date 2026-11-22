@@ -3,6 +3,22 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
+Last updated: 2026-11-23, release `2.3.0-beta.56` (`versionCode 221`).
+`2.3.0-beta.56` added `androidx.biometric:biometric:1.2.0-alpha05`:
+- Biometric authentication for Private Folder: Added biometric unlock support (`BiometricHelper.kt`, `PrivateFolderDialogs.kt`, `LibraryViewModel.kt`) enabling fingerprint and face unlock when accessing the private folder, with `MainActivity` extending `FragmentActivity`.
+- Onboarding refinement: Replaced generic book icon in the onboarding header with the official squircle app logo (`36.dp`) and removed redundant bottom button on the 4th slide, retaining only the centered `[ Начать читать ]` button (`OnboardingScreen.kt`).
+- Reading position return for saved words: Ensured `navigateToSavedWord` sets the return navigation point unconditionally so the floating "Вернуться" banner appears reliably when returning from vocabulary lookups (`ReaderViewModel.kt`).
+- Security & backup audit fixes:
+  - Upgraded private folder password hashing to cryptographically salted SHA-256 (`SecureRandom` 16-byte salt with format `salt$hash` and automatic migration for legacy hashes) in `PreferencesManager.kt`.
+  - Excluded private books, their files, and associated bookmarks/quotes/words from `.aurabackup` archives in `BackupManager.kt`.
+  - Added XML backup rules (`data_extraction_rules.xml`, `backup_rules.xml`) and network security config (`network_security_config.xml`) in `AndroidManifest.xml`.
+  - Switched anonymous analytics default to opt-in (`false`) in `AppSettings.kt` and `PreferencesManager.kt`.
+- Performance & audio fixes:
+  - Added `AudioManager` audio focus handling and ducking to `AmbientSoundPlayer.kt` to avoid playing through calls or other apps.
+  - Bounded `GraphicPageDimensionsCache.kt` to 500-entry LRU and hooked cache clearing into `ReaderScreen.kt` teardown.
+  - Routed `.azw3` / `.azw` to `MobiParser`, guarded `.cbr` against RAR archives with a clear notification, and streamed CBZ ingestion to eliminate heap OOM spikes in `BookIngestionPipeline.kt`.
+  - Consolidated duplicate `init` blocks in `LibraryViewModel.kt`.
+
 Last updated: 2026-11-23, release `2.3.0-beta.55` (`versionCode 220`).
 `2.3.0-beta.55` changed no dependencies:
 - Onboarding redesign: Redesigned the 4-slide introductory guide (`OnboardingScreen.kt`) to accurately showcase Aura Reader features:

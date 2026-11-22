@@ -15,8 +15,8 @@ android {
         applicationId = "com.aura.reader"
         minSdk = 26
         targetSdk = 36
-        versionCode = 220
-        versionName = "2.3.0-beta.55"
+        versionCode = 221
+        versionName = "2.3.0-beta.56"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -120,6 +120,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.androidx.documentfile)
     implementation("androidx.palette:palette-ktx:1.0.0")
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("com.telemetrydeck:kotlin-sdk:6.3.0")
 
     debugImplementation(libs.androidx.compose.ui.tooling)

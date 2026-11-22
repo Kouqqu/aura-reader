@@ -369,6 +369,12 @@ class LibraryViewModel(
         }
     }
 
+    fun unlockPrivateFolderBiometric(onSuccess: () -> Unit) {
+        _isPrivateFolderUnlocked.value = true
+        _activeCollectionFilter.value = ActiveCollectionFilter(CollectionFilterType.PRIVATE_FOLDER)
+        onSuccess()
+    }
+
     fun setPrivateFolderPassword(password: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             preferencesManager.setPrivateFolderPassword(password)
@@ -425,6 +431,15 @@ class LibraryViewModel(
             }
         }
         startMetadataFetchWorker()
+        viewModelScope.launch {
+            bookRepository.loadRecentBooks()
+        }
+        scanDeviceForBooks()
+        viewModelScope.launch {
+            if (preferencesManager.updateNotificationsEnabled.first()) {
+                checkForUpdates(manual = false)
+            }
+        }
     }
 
     private fun startMetadataFetchWorker() {
@@ -943,19 +958,6 @@ class LibraryViewModel(
 
     private val _foundDeviceFiles = MutableStateFlow<List<File>>(emptyList())
     val foundDeviceFiles: StateFlow<List<File>> = _foundDeviceFiles.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            bookRepository.loadRecentBooks()
-        }
-        // Scan for books and check updates if notifications are enabled
-        scanDeviceForBooks()
-        viewModelScope.launch {
-            if (preferencesManager.updateNotificationsEnabled.first()) {
-                checkForUpdates(manual = false)
-            }
-        }
-    }
 
     private var updateDismissedThisSession: Boolean = false
 

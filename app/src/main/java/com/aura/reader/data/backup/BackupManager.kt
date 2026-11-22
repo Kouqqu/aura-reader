@@ -50,13 +50,31 @@ class BackupManager(
                 val customOpdsEnabled = preferencesManager.customOpdsEnabled.first()
                 val userAverageWpm = preferencesManager.userAverageWpm.first()
                 val seasonalEffectsEnabled = preferencesManager.seasonalEffectsEnabled.first()
+                val privateBookIds = preferencesManager.privateBookIds.first()
+
+                val filteredRecentBooksJson = run {
+                    if (recentBooksJson.isBlank() || privateBookIds.isEmpty()) recentBooksJson
+                    else {
+                        try {
+                            val arr = JSONArray(recentBooksJson)
+                            val filtered = JSONArray()
+                            for (i in 0 until arr.length()) {
+                                val obj = arr.getJSONObject(i)
+                                if (obj.optString("id") !in privateBookIds) {
+                                    filtered.put(obj)
+                                }
+                            }
+                            filtered.toString()
+                        } catch (_: Exception) { recentBooksJson }
+                    }
+                }
 
                 val manifest = JSONObject().apply {
                     put("version", 2)
                     put("createdAt", System.currentTimeMillis())
                     put("createdAtFormatted", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()))
 
-                    put("recentBooksJson", recentBooksJson)
+                    put("recentBooksJson", filteredRecentBooksJson)
 
                     val userCollectionsArr = JSONArray()
                     for (col in userCollections) userCollectionsArr.put(col)
@@ -64,6 +82,7 @@ class BackupManager(
 
                     val bookmarksArr = JSONArray()
                     for (bm in bookmarksJson) {
+                        if (bm.bookId in privateBookIds) continue
                         bookmarksArr.put(JSONObject().apply {
                             put("id", bm.id)
                             put("bookId", bm.bookId)
@@ -78,6 +97,7 @@ class BackupManager(
 
                     val quotesArr = JSONArray()
                     for (q in quotesJson) {
+                        if (q.bookId in privateBookIds) continue
                         quotesArr.put(JSONObject().apply {
                             put("id", q.id)
                             put("bookId", q.bookId)
@@ -93,6 +113,7 @@ class BackupManager(
                     val savedWordsJson = preferencesManager.savedWords.first()
                     val savedWordsArr = JSONArray()
                     for (w in savedWordsJson) {
+                        if (w.bookId in privateBookIds) continue
                         savedWordsArr.put(JSONObject().apply {
                             put("id", w.id)
                             put("bookId", w.bookId)
@@ -142,7 +163,6 @@ class BackupManager(
                         put("customOpdsEnabled", customOpdsEnabled)
                         put("userAverageWpm", userAverageWpm.toDouble())
                         put("seasonalEffectsEnabled", seasonalEffectsEnabled)
-                        put("mangaModeRtl", readerSettings.mangaModeRtl)
                         put("eInkModeEnabled", preferencesManager.appSettings.first().eInkModeEnabled)
                     })
                 }
@@ -153,13 +173,15 @@ class BackupManager(
                 zipOut.write(manifest.toString(2).toByteArray(Charsets.UTF_8))
                 zipOut.closeEntry()
 
-                // 2. Archive saved books
+                // 2. Archive saved books (excluding private books)
                 val savedBooksDir = File(context.filesDir, "saved_books")
                 var bookFilesCount = 0
                 if (savedBooksDir.exists()) {
                     val files = savedBooksDir.listFiles() ?: emptyArray()
                     for (file in files) {
                         if (file.isFile && file.length() > 0) {
+                            val bookId = file.name.substringBefore("_")
+                            if (bookId in privateBookIds) continue
                             val bookEntry = ZipEntry("books/${file.name}")
                             zipOut.putNextEntry(bookEntry)
                             FileInputStream(file).use { fis ->

@@ -2106,6 +2106,14 @@ fun LibraryScreen(
                         privateFolderError = strings.privateFolderWrongPassword
                     }
                 )
+            },
+            onBiometricUnlock = {
+                viewModel.unlockPrivateFolderBiometric(
+                    onSuccess = {
+                        showUnlockPrivatePasswordDialog = false
+                        privateFolderError = null
+                    }
+                )
             }
         )
     }

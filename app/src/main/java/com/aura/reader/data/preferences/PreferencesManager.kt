@@ -306,7 +306,7 @@ class PreferencesManager(private val context: Context) {
     }
 
     val anonymousAnalyticsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[ANONYMOUS_ANALYTICS_KEY] ?: true
+        prefs[ANONYMOUS_ANALYTICS_KEY] ?: false
     }
 
     suspend fun setAnonymousAnalyticsEnabled(enabled: Boolean) {
@@ -445,7 +445,7 @@ class PreferencesManager(private val context: Context) {
             glassClarity = prefs[GLASS_CLARITY_KEY] ?: 0.85f,
             appFont = prefs[APP_FONT_KEY] ?: "GOOGLE_SANS",
             updateNotificationsEnabled = prefs[UPDATE_NOTIFICATIONS_KEY] ?: true,
-            anonymousAnalyticsEnabled = prefs[ANONYMOUS_ANALYTICS_KEY] ?: true,
+            anonymousAnalyticsEnabled = prefs[ANONYMOUS_ANALYTICS_KEY] ?: false,
             readingStatsEnabled = prefs[READING_STATS_ENABLED_KEY] ?: true,
             materialYouEnabled = prefs[MATERIAL_YOU_ENABLED_KEY] ?: false,
             colorPreset = prefs[COLOR_PRESET_KEY] ?: "PURPLE",
@@ -1375,23 +1375,47 @@ class PreferencesManager(private val context: Context) {
         }
     }
 
-    private fun hashPrivatePassword(password: String): String {
+    private fun hashLegacy(password: String): String {
         val digest = java.security.MessageDigest.getInstance("SHA-256")
         val bytes = digest.digest(password.toByteArray(Charsets.UTF_8))
         return bytes.joinToString("") { "%02x".format(it) }
     }
 
+    private fun hashWithSalt(password: String, saltHex: String): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val combined = "$saltHex:$password".toByteArray(Charsets.UTF_8)
+        val hashHex = digest.digest(combined).joinToString("") { "%02x".format(it) }
+        return "$saltHex\$$hashHex"
+    }
+
     suspend fun setPrivateFolderPassword(password: String) {
-        val hash = hashPrivatePassword(password)
+        val saltBytes = ByteArray(16)
+        java.security.SecureRandom().nextBytes(saltBytes)
+        val saltHex = saltBytes.joinToString("") { "%02x".format(it) }
+        val saltedHash = hashWithSalt(password, saltHex)
         context.dataStore.edit { prefs ->
-            prefs[PRIVATE_FOLDER_PASSWORD_HASH_KEY] = hash
+            prefs[PRIVATE_FOLDER_PASSWORD_HASH_KEY] = saltedHash
         }
     }
 
     suspend fun verifyPrivateFolderPassword(password: String): Boolean {
         val currentHash = context.dataStore.data.first()[PRIVATE_FOLDER_PASSWORD_HASH_KEY] ?: ""
         if (currentHash.isEmpty()) return false
-        return hashPrivatePassword(password) == currentHash
+        return if (currentHash.contains("$")) {
+            val parts = currentHash.split("$", limit = 2)
+            val saltHex = parts[0]
+            val expectedHash = parts[1]
+            val calculated = hashWithSalt(password, saltHex).substringAfter("$")
+            calculated == expectedHash
+        } else {
+            // Backward-compatible check with automatic salted upgrade
+            if (hashLegacy(password) == currentHash) {
+                setPrivateFolderPassword(password)
+                true
+            } else {
+                false
+            }
+        }
     }
 
     suspend fun addBooksToPrivateFolder(bookIds: Collection<String>) {

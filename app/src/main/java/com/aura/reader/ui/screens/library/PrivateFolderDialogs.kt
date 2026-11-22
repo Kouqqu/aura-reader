@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
@@ -40,6 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -55,8 +58,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
 import com.aura.reader.data.model.Book
 import com.aura.reader.ui.theme.LocalAppStrings
+import com.aura.reader.util.BiometricHelper
 
 @Composable
 internal fun SetupPrivatePasswordDialog(
@@ -181,11 +186,33 @@ internal fun SetupPrivatePasswordDialog(
 internal fun UnlockPrivateFolderDialog(
     errorMessage: String? = null,
     onDismiss: () -> Unit,
-    onUnlock: (String) -> Unit
+    onUnlock: (String) -> Unit,
+    onBiometricUnlock: (() -> Unit)? = null
 ) {
     val strings = LocalAppStrings.current
+    val context = LocalContext.current
+    val activity = context as? FragmentActivity
+    val isBiometricAvailable = remember(context) { BiometricHelper.isBiometricAvailable(context) }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    val triggerBiometric = {
+        if (activity != null && isBiometricAvailable && onBiometricUnlock != null) {
+            BiometricHelper.promptBiometric(
+                activity = activity,
+                title = strings.privateFolderUnlockTitle,
+                subtitle = strings.privateFolderUnlockDesc,
+                negativeButtonText = strings.cancel,
+                onSuccess = { onBiometricUnlock() }
+            )
+        }
+    }
+
+    LaunchedEffect(isBiometricAvailable) {
+        if (isBiometricAvailable && onBiometricUnlock != null) {
+            triggerBiometric()
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -233,11 +260,22 @@ internal fun UnlockPrivateFolderDialog(
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                contentDescription = null
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (isBiometricAvailable && onBiometricUnlock != null) {
+                                IconButton(onClick = triggerBiometric) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Fingerprint,
+                                        contentDescription = "Биометрия",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                                    contentDescription = null
+                                )
+                            }
                         }
                     },
                     isError = errorMessage != null,

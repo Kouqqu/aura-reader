@@ -1500,3 +1500,23 @@ Verified with `testDebugUnitTest assembleDebug` (exit code 0).
 - **Reading Swipe Hints (`ReaderScreen.kt`, `AppStrings.kt`):**
   - Updated reader tap zones hint overlay and localized strings across all languages to inform users that swiping also turns pages («(или свайп вправо)» / «(или свайп влево)»).
 
+## 2.3.0-beta.56 (versionCode 221) — Biometrics, Security & Privacy Audit, Pipeline & Player Hardening
+- **Biometric Unlock (`BiometricHelper.kt`, `PrivateFolderDialogs.kt`, `LibraryViewModel.kt`):**
+  - Added fingerprint / face biometric authentication for the private folder with fallback to password; `MainActivity` migrated to `FragmentActivity`.
+- **Onboarding Polish (`OnboardingScreen.kt`):**
+  - Display squircle application logo at 36dp in top bar instead of generic book icon.
+  - Removed duplicate bottom button on the 4th slide, keeping only the centered `[ Начать читать ]` button.
+- **Vocabulary Navigation Return (`ReaderViewModel.kt`):**
+  - Set `_navReturnPoint` unconditionally on `navigateToSavedWord` and `navigateToQuote` so the return button pill reliably displays upon teleporting to saved words.
+- **Security & Backup Audit (`PreferencesManager.kt`, `BackupManager.kt`, `AndroidManifest.xml`):**
+  - Upgraded private folder password hashing to cryptographically salted SHA-256 (`salt$hash`) with backward-compatible auto-migration.
+  - Stripped private books, files, quotes, bookmarks, and words from `.aurabackup` archives.
+  - Added `data_extraction_rules.xml`, `backup_rules.xml`, and `network_security_config.xml`.
+  - Changed default anonymous analytics toggle to opt-in (`false`).
+- **Player & Ingestion Hardening (`AmbientSoundPlayer.kt`, `GraphicPageDimensionsCache.kt`, `BookIngestionPipeline.kt`, `LibraryViewModel.kt`):**
+  - Managed AudioFocus with ducking and loss pausing for ambient sounds.
+  - Bound graphic dimensions cache to 500-entry LRU with cleanup on reader disposal.
+  - Handled `.azw3` via `MobiParser`, checked RAR headers for `.cbr` with user-friendly error message, and streamed CBZ ingestion.
+  - Consolidated dual `init` blocks in `LibraryViewModel`.
+
+

@@ -15,7 +15,7 @@ data class AppSettings(
     val glassClarity: Float = 0.85f,
     val appFont: String = "GOOGLE_SANS",
     val updateNotificationsEnabled: Boolean = true,
-    val anonymousAnalyticsEnabled: Boolean = true,
+    val anonymousAnalyticsEnabled: Boolean = false,
     val readingStatsEnabled: Boolean = true,
     val materialYouEnabled: Boolean = false,
     val colorPreset: String = "PURPLE",

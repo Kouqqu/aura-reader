@@ -48,9 +48,21 @@ class BookIngestionPipeline(
             if (fileName.endsWith(".epub", ignoreCase = true)) {
                 return parseStagedBook(buffered, uri, fileName, savedBook, BookFormat.EPUB)
             }
-            val bytes = buffered.use { it.readBoundedBytes(128L * 1024 * 1024) }
+            if (fileName.endsWith(".cbz", ignoreCase = true)) {
+                return parseStagedBook(buffered, uri, fileName, savedBook, BookFormat.CBZ)
+            }
+            val bytes = buffered.use { it.readBoundedBytes(32L * 1024 * 1024) }
             if (bytes.isEmpty()) {
                 return Result.failure(Exception("Файл книги пуст"))
+            }
+
+            val isRar = bytes.size >= 4 &&
+                    bytes[0] == 0x52.toByte() &&
+                    bytes[1] == 0x61.toByte() &&
+                    bytes[2] == 0x72.toByte() &&
+                    bytes[3] == 0x21.toByte()
+            if (isRar || (fileName.endsWith(".cbr", ignoreCase = true) && !isRar && (bytes.size < 4 || bytes[0] != 0x50.toByte()))) {
+                return Result.failure(Exception("Формат CBR на базе архивов RAR не поддерживается. Пожалуйста, используйте комиксы в формате CBZ (ZIP) или PDF."))
             }
 
             val isZip = bytes.size >= 4 &&
@@ -84,7 +96,7 @@ class BookIngestionPipeline(
                 fileName.endsWith(".cbz", ignoreCase = true) || fileName.endsWith(".cbr", ignoreCase = true) -> {
                     CbzParser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                 }
-                fileName.endsWith(".mobi", ignoreCase = true) || (bytes.size >= 68 && bytes[60] == 'B'.code.toByte() && bytes[61] == 'O'.code.toByte() && bytes[62] == 'O'.code.toByte() && bytes[63] == 'K'.code.toByte()) -> {
+                fileName.endsWith(".mobi", ignoreCase = true) || fileName.endsWith(".azw3", ignoreCase = true) || fileName.endsWith(".azw", ignoreCase = true) || (bytes.size >= 68 && bytes[60] == 'B'.code.toByte() && bytes[61] == 'O'.code.toByte() && bytes[62] == 'O'.code.toByte() && bytes[63] == 'K'.code.toByte()) -> {
                     MobiParser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName)
                 }
                 isZip -> {
@@ -258,11 +270,16 @@ class BookIngestionPipeline(
             val id = savedBook?.id ?: UUID.nameUUIDFromBytes((uri.toString() + "_" + format.name).toByteArray()).toString()
             val safeName = fileName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
             val destination = File(File(context.filesDir, "saved_books").apply { mkdirs() }, "${id}_$safeName")
-            val parsed = if (format == BookFormat.PDF) {
-                PdfParser.parse(staged, destination, uri.toString(), fileName)
-            } else {
-                val imagesDir = File(context.cacheDir, "book_images/$id").apply { mkdirs() }
-                EpubParser.parseFile(staged, uri.toString(), fileName, imagesDir)
+            val parsed = when (format) {
+                BookFormat.PDF -> PdfParser.parse(staged, destination, uri.toString(), fileName)
+                BookFormat.CBZ -> {
+                    val imagesDir = File(context.cacheDir, "book_images/$id").apply { mkdirs() }
+                    CbzParser.parse(staged.inputStream(), uri.toString(), fileName, imagesDir)
+                }
+                else -> {
+                    val imagesDir = File(context.cacheDir, "book_images/$id").apply { mkdirs() }
+                    EpubParser.parseFile(staged, uri.toString(), fileName, imagesDir)
+                }
             }
             try {
                 Files.move(

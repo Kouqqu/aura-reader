@@ -581,12 +581,15 @@ class ReaderViewModel(
             } ?: -1
             if (found >= 0) found else 0
         }
-        val chapterTitle = book.chapters.getOrNull(quote.chapterIndex)?.title ?: "Глава ${quote.chapterIndex + 1}"
-        navigateToPositionWithReturn(
-            targetChapter = quote.chapterIndex,
-            targetBlock = targetBlock,
-            title = chapterTitle
+        val curCh = _currentChapterIndex.value
+        val curBlk = _savedScrollOffset.value
+        val curTitle = book.chapters.getOrNull(curCh)?.title ?: "Глава ${curCh + 1}"
+        _navReturnPoint.value = NavReturnPoint(
+            chapterIndex = curCh,
+            blockIndex = curBlk,
+            chapterTitle = curTitle
         )
+        jumpToPosition(quote.chapterIndex, targetBlock)
     }
 
     fun returnToPreviousPosition() {
@@ -675,12 +678,15 @@ class ReaderViewModel(
                 if (foundWord >= 0) foundWord else 0
             }
         } else 0
-        val chapterTitle = chapter?.title ?: "Глава ${targetChapter + 1}"
-        navigateToPositionWithReturn(
-            targetChapter = targetChapter,
-            targetBlock = targetBlock,
-            title = chapterTitle
+        val curCh = _currentChapterIndex.value
+        val curBlk = _savedScrollOffset.value
+        val curTitle = book.chapters.getOrNull(curCh)?.title ?: "Глава ${curCh + 1}"
+        _navReturnPoint.value = NavReturnPoint(
+            chapterIndex = curCh,
+            blockIndex = curBlk,
+            chapterTitle = curTitle
         )
+        jumpToPosition(targetChapter, targetBlock)
         _highlightedWord.value = word
         viewModelScope.launch {
             kotlinx.coroutines.delay(2500)
