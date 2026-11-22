@@ -20,6 +20,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Info
@@ -159,10 +161,12 @@ fun DictionaryDialog(
     isLoading: Boolean,
     definition: WordDefinition?,
     errorMessage: String?,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onSaveWord: ((word: String, definition: String) -> Unit)? = null
 ) {
     val clipboardManager = LocalClipboardManager.current
     val strings = LocalAppStrings.current
+    var isSaved by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -280,19 +284,44 @@ fun DictionaryDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (definition != null) {
-                        TextButton(
-                            onClick = {
-                                clipboardManager.setText(AnnotatedString("${definition.title}: ${definition.extract}"))
-                            },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
-                        ) {
-                            Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = strings.copyAction,
-                                maxLines = 1,
-                                softWrap = false
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString("${definition.title}: ${definition.extract}"))
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = strings.copyAction,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                            if (onSaveWord != null) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                TextButton(
+                                    onClick = {
+                                        onSaveWord(definition.word, "${definition.title}: ${definition.extract}")
+                                        isSaved = true
+                                    },
+                                    enabled = !isSaved,
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(
+                                        if (isSaved) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (isSaved) strings.wordInDictionary else strings.addToDictionary,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
                         }
                     } else {
                         Spacer(modifier = Modifier.weight(1f))
@@ -326,10 +355,12 @@ fun TranslationDialog(
     targetLanguage: String,
     onSourceLanguageChange: (String) -> Unit,
     onTargetLanguageChange: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onSaveWord: ((word: String, definition: String) -> Unit)? = null
 ) {
     val clipboardManager = LocalClipboardManager.current
     val strings = LocalAppStrings.current
+    var isSaved by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -473,19 +504,44 @@ fun TranslationDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (translatedText != null) {
-                        TextButton(
-                            onClick = {
-                                clipboardManager.setText(AnnotatedString(translatedText))
-                            },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
-                        ) {
-                            Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = strings.copyAction,
-                                maxLines = 1,
-                                softWrap = false
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString(translatedText))
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = strings.copyAction,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                            if (onSaveWord != null && originalText.length <= 60) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                TextButton(
+                                    onClick = {
+                                        onSaveWord(originalText.trim(), translatedText)
+                                        isSaved = true
+                                    },
+                                    enabled = !isSaved,
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(
+                                        if (isSaved) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (isSaved) strings.wordInDictionary else strings.addToDictionary,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
                         }
                     } else {
                         Spacer(modifier = Modifier.weight(1f))

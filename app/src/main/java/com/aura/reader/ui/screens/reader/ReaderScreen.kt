@@ -229,6 +229,7 @@ fun ReaderScreen(
     // Bookmarks and Quotes
     val bookmarks by viewModel.bookmarks.collectAsState()
     val quotes by viewModel.quotes.collectAsState()
+    val savedWords by viewModel.savedWords.collectAsState()
     val navReturnPoint by viewModel.navReturnPoint.collectAsState()
     val userWpm by viewModel.userAverageWpm.collectAsState()
     val ttsState by com.aura.reader.service.BookTtsService.ttsState.collectAsState()
@@ -1276,7 +1277,9 @@ fun ReaderScreen(
                     },
                     onDeleteBookmark = { viewModel.removeBookmark(it) },
                     onAddQuote = { viewModel.addQuote(it, 0xFFFFF59DL) },
-                    onDeleteQuote = { viewModel.removeQuote(it) }
+                    onDeleteQuote = { viewModel.removeQuote(it) },
+                    savedWords = savedWords,
+                    onDeleteSavedWord = { viewModel.removeSavedWord(it) }
                 )
             }
 
@@ -1426,7 +1429,10 @@ fun ReaderScreen(
                     isLoading = dictionaryLoading,
                     definition = dictionaryDefinition,
                     errorMessage = dictionaryError,
-                    onDismiss = { dictionaryWord = null }
+                    onDismiss = { dictionaryWord = null },
+                    onSaveWord = { w, def ->
+                        viewModel.saveWord(w, def, currentSelectionText() ?: "")
+                    }
                 )
             }
 
@@ -1446,7 +1452,10 @@ fun ReaderScreen(
                         translationTargetLang = code
                         runTranslation(text, translationSourceLang, code)
                     },
-                    onDismiss = { translationText = null }
+                    onDismiss = { translationText = null },
+                    onSaveWord = { w, def ->
+                        viewModel.saveWord(w, def, currentSelectionText() ?: "")
+                    }
                 )
             }
 

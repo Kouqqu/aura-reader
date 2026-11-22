@@ -114,6 +114,8 @@ class PreferencesManager(private val context: Context) {
         val READER_TAP_ZONES_HINT_SHOWN_KEY = booleanPreferencesKey("reader_tap_zones_hint_shown")
         val AUTO_FETCH_METADATA_KEY = booleanPreferencesKey("auto_fetch_metadata")
         val BOOK_PAGING_MODES_KEY = stringPreferencesKey("book_paging_modes_json")
+        val SAVED_WORDS_KEY = stringPreferencesKey("saved_words_json")
+        val EINK_MODE_ENABLED_KEY = booleanPreferencesKey("eink_mode_enabled")
     }
 
     val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -454,7 +456,8 @@ class PreferencesManager(private val context: Context) {
             developerModeEnabled = prefs[DEVELOPER_MODE_KEY] ?: false,
             updateChannel = prefs[UPDATE_CHANNEL_KEY] ?: "RELEASE",
             autoFetchMetadataEnabled = prefs[AUTO_FETCH_METADATA_KEY] ?: true,
-            libraryViewMode = prefs[LIBRARY_VIEW_MODE_KEY] ?: "LIST"
+            libraryViewMode = prefs[LIBRARY_VIEW_MODE_KEY] ?: "LIST",
+            eInkModeEnabled = prefs[EINK_MODE_ENABLED_KEY] ?: false
         )
     }
 
@@ -480,6 +483,7 @@ class PreferencesManager(private val context: Context) {
             prefs[UPDATE_CHANNEL_KEY] = updated.updateChannel
             prefs[AUTO_FETCH_METADATA_KEY] = updated.autoFetchMetadataEnabled
             prefs[LIBRARY_VIEW_MODE_KEY] = updated.libraryViewMode
+            prefs[EINK_MODE_ENABLED_KEY] = updated.eInkModeEnabled
         }
     }
 
@@ -903,6 +907,67 @@ class PreferencesManager(private val context: Context) {
         }
     }
 
+    // --- Saved Words Management ---
+    val savedWords: Flow<List<com.aura.reader.data.model.SavedWord>> = context.dataStore.data.map { prefs ->
+        val json = prefs[SAVED_WORDS_KEY] ?: "[]"
+        try {
+            val arr = JSONArray(json)
+            val list = mutableListOf<com.aura.reader.data.model.SavedWord>()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                list.add(
+                    com.aura.reader.data.model.SavedWord(
+                        id = o.getString("id"),
+                        bookId = o.optString("bookId"),
+                        bookTitle = o.optString("bookTitle"),
+                        word = o.getString("word"),
+                        definition = o.getString("definition"),
+                        contextText = o.optString("contextText"),
+                        chapterIndex = o.optInt("chapterIndex", 0),
+                        timestamp = o.optLong("timestamp", System.currentTimeMillis())
+                    )
+                )
+            }
+            list
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun addSavedWord(word: com.aura.reader.data.model.SavedWord) {
+        context.dataStore.edit { prefs ->
+            val json = prefs[SAVED_WORDS_KEY] ?: "[]"
+            val arr = try { JSONArray(json) } catch (_: Exception) { JSONArray() }
+            val o = JSONObject().apply {
+                put("id", word.id)
+                put("bookId", word.bookId)
+                put("bookTitle", word.bookTitle)
+                put("word", word.word)
+                put("definition", word.definition)
+                put("contextText", word.contextText)
+                put("chapterIndex", word.chapterIndex)
+                put("timestamp", word.timestamp)
+            }
+            arr.put(o)
+            prefs[SAVED_WORDS_KEY] = arr.toString()
+        }
+    }
+
+    suspend fun removeSavedWord(id: String) {
+        context.dataStore.edit { prefs ->
+            val json = prefs[SAVED_WORDS_KEY] ?: "[]"
+            val arr = try { JSONArray(json) } catch (_: Exception) { JSONArray() }
+            val newArr = JSONArray()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                if (o.getString("id") != id) {
+                    newArr.put(o)
+                }
+            }
+            prefs[SAVED_WORDS_KEY] = newArr.toString()
+        }
+    }
+
     // --- Recent Books ---
     val recentBooksJson: Flow<String?> = context.dataStore.data.map { prefs ->
         prefs[RECENT_BOOKS_KEY]
@@ -933,6 +998,7 @@ class PreferencesManager(private val context: Context) {
             prefs[RECENT_BOOKS_KEY] = merge(prefs[RECENT_BOOKS_KEY], JSONArray(manifest.getString("recentBooksJson")))
             manifest.optJSONArray("bookmarks")?.let { prefs[BOOKMARKS_KEY] = merge(prefs[BOOKMARKS_KEY], it) }
             manifest.optJSONArray("quotes")?.let { prefs[QUOTES_KEY] = merge(prefs[QUOTES_KEY], it) }
+            manifest.optJSONArray("savedWords")?.let { prefs[SAVED_WORDS_KEY] = merge(prefs[SAVED_WORDS_KEY], it) }
             manifest.optJSONArray("userCollections")?.let { incoming ->
                 val names = linkedSetOf<String>()
                 val old = JSONArray(prefs[USER_COLLECTIONS_KEY] ?: "[]")
@@ -983,6 +1049,7 @@ class PreferencesManager(private val context: Context) {
                 if (settings.has("userAverageWpm")) prefs[AVERAGE_WPM_KEY] = settings.getDouble("userAverageWpm").toFloat()
                 if (settings.has("seasonalEffectsEnabled")) prefs[SEASONAL_EFFECTS_ENABLED_KEY] = settings.getBoolean("seasonalEffectsEnabled")
                 if (settings.has("mangaModeRtl")) prefs[MANGA_MODE_RTL_KEY] = settings.getBoolean("mangaModeRtl")
+                if (settings.has("eInkModeEnabled")) prefs[EINK_MODE_ENABLED_KEY] = settings.getBoolean("eInkModeEnabled")
                 if (manifest.has("bookPagingModes")) prefs[BOOK_PAGING_MODES_KEY] = manifest.getJSONObject("bookPagingModes").toString()
             }
         }

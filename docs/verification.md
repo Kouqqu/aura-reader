@@ -1333,6 +1333,40 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed
 
 Verified with `testDebugUnitTest assembleDebug` (exit code 0).
 
+## 2.3.0-beta.46 (versionCode 211) — Graphic Rendering Stability & Reading Position Fix
+- Optimized PDF and comic page rendering lifecycle in `ChapterContentView.kt` and `ChapterPagingView.kt`.
+- Eliminated spontaneous rewind and exit progress reset when closing graphic books.
+
+## 2.3.0-beta.47 (versionCode 212) — Instant Slider Navigation & 100% Ribbon Completion
+- Fixed live bottom slider responsiveness during dragging across continuous scroll ribbon and paged graphic modes.
+- Ensured 100% reading progress correctly maps to the final page without jumping backwards.
+
+## 2.3.0-beta.48 (versionCode 213) — Dimension Pre-reservation & Layout Shift Elimination
+- Added `GraphicPageDimensionsCache` to pre-reserve comic page dimensions, eliminating 0dp layout jumps during rapid scroll.
+- Decoupled slider drag state from underlying pager transitions for responsive seek bar interaction.
+
+## 2.3.0-beta.49 (versionCode 214) — Native PdfRenderer Teardown & Cache Hygiene
+- Enforced native `PdfRenderer` and bitmap resource disposal on reader pause/stop (`onDispose`), resolving native memory leaks during large PDF reading sessions.
+- Added automated disk cache hygiene routines for temporary rendered pages.
+
+## 2.3.0-beta.50 (versionCode 215) — 120Hz Enforcement, In-App Crash Log, E-Ink Mode & Personal Vocabulary
+- **120 Hz Display Refresh Enforcement (`HighRefresh.kt`, `MainActivity.kt`):**
+  - Added `HighRefresh.apply(window, isEInk)` enforcing the display's maximum supported refresh rate mode via `preferredDisplayModeId`.
+  - Prevents OEM 60 Hz throttling, ensuring consistent 120 FPS animations across modern devices. Automatically disabled when E-Ink mode is active.
+- **In-App Crash Log (`CrashLog.kt`, `CrashLogDialog.kt`, `SettingsInfoSections.kt`):**
+  - Added global uncaught exception handler in `MainActivity` persisting the last 10 crashes with full stack traces in `filesDir/crashes/`.
+  - Added public "Журнал сбоев" section in Settings -> "О приложении", allowing users to inspect error traces, copy comprehensive diagnostic reports (device model, Android version, app build, memory stats) to clipboard, and clear logs.
+- **E-Ink Display Mode (`EInkDetector.kt`, `Theme.kt`, `SettingsThemeSection.kt`, `SettingsPages.kt`):**
+  - Added hardware brand auto-detection for popular e-paper devices (Onyx Boox, PocketBook, Meebook, etc.) and explicit toggle in Interface settings.
+  - Switches to a high-contrast pure black-and-white color palette, disables GPU frosted glass blur (`Haze`), disables high refresh rate, and suppresses decorative animations to maximize battery life and text readability on e-paper.
+- **Personal Vocabulary / «Мой словарик» (`Book.kt`, `PreferencesManager.kt`, `BookRepository.kt`, `ReaderViewModel.kt`, `BookmarksAndQuotesBottomSheet.kt`, `ReaderDialogs.kt`):**
+  - Added "В словарик" quick-save button to dictionary definition (`DictionaryDialog`) and translation (`TranslationDialog`) popups, capturing the word, definition/translation, and sentence context.
+  - Added dedicated 3rd tab in the reader bookmarks/quotes bottom sheet to view, search, copy, and delete saved words.
+  - Integrated into `.aurabackup` v2 schema for backup and restore.
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+
 ## 2.3.0-beta.18 (versionCode 183) — True Hardware Frosted Glass Blur, Ethereal Reader Aura Bars & Header Contrast Unification
 
 - **True Hardware Frosted Glass Blur (`LiquidGlass.kt`, `MorphingBottomDock.kt`):**
@@ -1348,6 +1382,40 @@ Verified with `testDebugUnitTest assembleDebug` (exit code 0).
   - The streak badge inside the banner now nests harmoniously with balanced font scale and soft amber glow (`#FFFF9500`).
 
 Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+## 2.3.0-beta.46 (versionCode 211) — Graphic Rendering Stability & Reading Position Fix
+- Optimized PDF and comic page rendering lifecycle in `ChapterContentView.kt` and `ChapterPagingView.kt`.
+- Eliminated spontaneous rewind and exit progress reset when closing graphic books.
+
+## 2.3.0-beta.47 (versionCode 212) — Instant Slider Navigation & 100% Ribbon Completion
+- Fixed live bottom slider responsiveness during dragging across continuous scroll ribbon and paged graphic modes.
+- Ensured 100% reading progress correctly maps to the final page without jumping backwards.
+
+## 2.3.0-beta.48 (versionCode 213) — Dimension Pre-reservation & Layout Shift Elimination
+- Added `GraphicPageDimensionsCache` to pre-reserve comic page dimensions, eliminating 0dp layout jumps during rapid scroll.
+- Decoupled slider drag state from underlying pager transitions for responsive seek bar interaction.
+
+## 2.3.0-beta.49 (versionCode 214) — Native PdfRenderer Teardown & Cache Hygiene
+- Enforced native `PdfRenderer` and bitmap resource disposal on reader pause/stop (`onDispose`), resolving native memory leaks during large PDF reading sessions.
+- Added automated disk cache hygiene routines for temporary rendered pages.
+
+## 2.3.0-beta.50 (versionCode 215) — 120Hz Enforcement, In-App Crash Log, E-Ink Mode & Personal Vocabulary
+- **120 Hz Display Refresh Enforcement (`HighRefresh.kt`, `MainActivity.kt`):**
+  - Added `HighRefresh.apply(window, isEInk)` enforcing the display's maximum supported refresh rate mode via `preferredDisplayModeId`.
+  - Prevents OEM 60 Hz throttling, ensuring consistent 120 FPS animations across modern devices. Automatically disabled when E-Ink mode is active.
+- **In-App Crash Log (`CrashLog.kt`, `CrashLogDialog.kt`, `SettingsInfoSections.kt`):**
+  - Added global uncaught exception handler in `MainActivity` persisting the last 10 crashes with full stack traces in `filesDir/crashes/`.
+  - Added public "Журнал сбоев" section in Settings -> "О приложении", allowing users to inspect error traces, copy comprehensive diagnostic reports (device model, Android version, app build, memory stats) to clipboard, and clear logs.
+- **E-Ink Display Mode (`EInkDetector.kt`, `Theme.kt`, `SettingsThemeSection.kt`, `SettingsPages.kt`):**
+  - Added hardware brand auto-detection for popular e-paper devices (Onyx Boox, PocketBook, Meebook, etc.) and explicit toggle in Interface settings.
+  - Switches to a high-contrast pure black-and-white color palette, disables GPU frosted glass blur (`Haze`), disables high refresh rate, and suppresses decorative animations to maximize battery life and text readability on e-paper.
+- **Personal Vocabulary / «Мой словарик» (`Book.kt`, `PreferencesManager.kt`, `BookRepository.kt`, `ReaderViewModel.kt`, `BookmarksAndQuotesBottomSheet.kt`, `ReaderDialogs.kt`):**
+  - Added "В словарик" quick-save button to dictionary definition (`DictionaryDialog`) and translation (`TranslationDialog`) popups, capturing the word, definition/translation, and sentence context.
+  - Added dedicated 3rd tab in the reader bookmarks/quotes bottom sheet to view, search, copy, and delete saved words.
+  - Integrated into `.aurabackup` v2 schema for backup and restore.
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
 
 
 

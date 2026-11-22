@@ -26,5 +26,6 @@ data class AppSettings(
     val developerModeEnabled: Boolean = false,
     val updateChannel: String = "RELEASE",
     val autoFetchMetadataEnabled: Boolean = true,
-    val libraryViewMode: String = "LIST"
+    val libraryViewMode: String = "LIST",
+    val eInkModeEnabled: Boolean = false
 )

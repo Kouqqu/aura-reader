@@ -179,6 +179,8 @@ fun SettingsInterfacePage(
                     onToggleSeasonalEffects = { v -> onUpdateSettings { it.copy(seasonalEffectsEnabled = v) } },
                     holidayOverride = appSettings.holidayOverride,
                     onHolidayOverrideChange = { h -> onUpdateSettings { it.copy(holidayOverride = h) } },
+                    eInkModeEnabled = appSettings.eInkModeEnabled,
+                    onToggleEInkMode = { v -> onUpdateSettings { it.copy(eInkModeEnabled = v) } },
                     onOpenReaderThemeSettings = onOpenReaderThemeSettings,
                     onThemePicked = { mode, origin, colors ->
                         burstOrigin = origin

@@ -459,6 +459,10 @@ class BookRepository(
     suspend fun addQuote(quote: com.aura.reader.data.model.Quote) = preferencesManager.addQuote(quote)
     suspend fun removeQuote(id: String) = preferencesManager.removeQuote(id)
 
+    val savedWords = preferencesManager.savedWords
+    suspend fun addSavedWord(word: com.aura.reader.data.model.SavedWord) = preferencesManager.addSavedWord(word)
+    suspend fun removeSavedWord(id: String) = preferencesManager.removeSavedWord(id)
+
     val todayReadingMinutes = preferencesManager.todayReadingMinutes
     val readingStatsData = preferencesManager.readingStatsData
     suspend fun addReadingSeconds(seconds: Long) = preferencesManager.addReadingSeconds(seconds)

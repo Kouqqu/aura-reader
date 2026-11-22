@@ -90,6 +90,22 @@ class BackupManager(
                     }
                     put("quotes", quotesArr)
 
+                    val savedWordsJson = preferencesManager.savedWords.first()
+                    val savedWordsArr = JSONArray()
+                    for (w in savedWordsJson) {
+                        savedWordsArr.put(JSONObject().apply {
+                            put("id", w.id)
+                            put("bookId", w.bookId)
+                            put("bookTitle", w.bookTitle)
+                            put("word", w.word)
+                            put("definition", w.definition)
+                            put("contextText", w.contextText)
+                            put("chapterIndex", w.chapterIndex)
+                            put("timestamp", w.timestamp)
+                        })
+                    }
+                    put("savedWords", savedWordsArr)
+
                     put("readingStats", try { JSONObject(readingStatsJson) } catch (_: Exception) { JSONObject() })
                     put("bookPagingModes", try { JSONObject(preferencesManager.bookPagingModesJson.first() ?: "{}") } catch (_: Exception) { JSONObject() })
 
@@ -127,6 +143,7 @@ class BackupManager(
                         put("userAverageWpm", userAverageWpm.toDouble())
                         put("seasonalEffectsEnabled", seasonalEffectsEnabled)
                         put("mangaModeRtl", readerSettings.mangaModeRtl)
+                        put("eInkModeEnabled", preferencesManager.appSettings.first().eInkModeEnabled)
                     })
                 }
 

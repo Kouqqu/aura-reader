@@ -497,6 +497,9 @@ class ReaderViewModel(
     val quotes = bookRepository.quotes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val savedWords = bookRepository.savedWords
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun toggleBookmark(previewText: String) {
         val book = currentBook.value ?: return
         val chapterIdx = _currentChapterIndex.value
@@ -630,6 +633,29 @@ class ReaderViewModel(
     fun removeQuote(id: String) {
         viewModelScope.launch {
             bookRepository.removeQuote(id)
+        }
+    }
+
+    fun saveWord(word: String, definition: String, contextText: String = "") {
+        val book = currentBook.value
+        val currentChIdx = _currentChapterIndex.value
+        viewModelScope.launch {
+            bookRepository.addSavedWord(
+                com.aura.reader.data.model.SavedWord(
+                    bookId = book?.id ?: "",
+                    bookTitle = book?.title ?: "",
+                    word = word.trim(),
+                    definition = definition.trim(),
+                    contextText = contextText.trim(),
+                    chapterIndex = currentChIdx
+                )
+            )
+        }
+    }
+
+    fun removeSavedWord(id: String) {
+        viewModelScope.launch {
+            bookRepository.removeSavedWord(id)
         }
     }
 

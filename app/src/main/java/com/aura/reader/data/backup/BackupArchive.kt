@@ -192,6 +192,16 @@ internal class BackupArchive private constructor(
                     }
                 }
             }
+            if (manifest.has("savedWords")) {
+                val words = manifest.optJSONArray("savedWords") ?: JSONArray()
+                val wordIds = mutableSetOf<String>()
+                for (i in 0 until words.length()) {
+                    val item = words.getJSONObject(i)
+                    require(item.getString("id").isNotBlank() && wordIds.add(item.getString("id")))
+                    item.getString("word")
+                    item.getString("definition")
+                }
+            }
             if (manifest.has("settings")) {
                 val settings = manifest.getJSONObject("settings")
                 for ((key, range) in listOf("fontSize" to 8.0..96.0, "lineHeight" to 0.5..4.0)) {

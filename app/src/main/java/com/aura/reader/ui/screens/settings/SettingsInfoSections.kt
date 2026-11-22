@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Favorite
@@ -98,6 +99,7 @@ internal fun SettingsAboutSection(
     val strings = LocalAppStrings.current
     val context = LocalContext.current
     var showLicensesDialog by remember { mutableStateOf(false) }
+    var showCrashLogDialog by remember { mutableStateOf(false) }
 
     ExpressiveSettingsGroup {
         ExpressiveSettingsRow(
@@ -193,10 +195,32 @@ internal fun SettingsAboutSection(
                 Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         )
+        ExpressiveDivider()
+        ExpressiveSettingsRow(
+            title = strings.crashLogTitle,
+            subtitle = strings.crashLogSubtitle,
+            icon = {
+                SettingsIconBox(
+                    icon = Icons.Rounded.BugReport,
+                    tint = MaterialTheme.colorScheme.error,
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+                )
+            },
+            onClick = {
+                showCrashLogDialog = true
+            },
+            trailing = {
+                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        )
     }
 
     if (showLicensesDialog) {
         LicensesDialog(onDismiss = { showLicensesDialog = false })
+    }
+
+    if (showCrashLogDialog) {
+        CrashLogDialog(onDismiss = { showCrashLogDialog = false })
     }
 
     Spacer(modifier = Modifier.height(24.dp))

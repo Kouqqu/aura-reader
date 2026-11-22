@@ -101,6 +101,18 @@ data class Quote(
     val blockIndex: Int = -1
 )
 
+@Immutable
+data class SavedWord(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val bookId: String,
+    val bookTitle: String = "",
+    val word: String,
+    val definition: String,
+    val contextText: String = "",
+    val chapterIndex: Int = 0,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
 val Book.isReadingStarted: Boolean
     get() = when (manualShelf) {
         "READING" -> true

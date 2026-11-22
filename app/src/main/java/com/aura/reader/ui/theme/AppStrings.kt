@@ -641,6 +641,31 @@ interface Strings {
     val shelvesTitle: String get() = "Встроенные полки"
     val customCollectionsTitle: String get() = "Мои коллекции"
     fun batchMovedToShelfSnackbar(count: Int, shelf: String): String = "Перемещено на полку «$shelf»: $count"
+
+    // --- Crash Log ---
+    val crashLogTitle: String get() = "Журнал сбоев"
+    val crashLogSubtitle: String get() = "Просмотр и экспорт отчётов об ошибках"
+    val crashLogEmpty: String get() = "Сбоев не зафиксировано. Приложение работает стабильно!"
+    val crashLogCopyReport: String get() = "Скопировать отчёт"
+    val crashLogReportCopied: String get() = "Отчёт о сбоях скопирован в буфер обмена"
+    val crashLogClear: String get() = "Очистить"
+    val crashLogCleared: String get() = "Журнал сбоев очищен"
+
+    // --- E-Ink Mode ---
+    val eInkModeTitle: String get() = "Режим E-Ink"
+    val eInkModeSubtitle: String get() = "Высококонтрастная палитра и отключение размытия для экранов на электронных чернилах"
+
+    // --- Saved Words (Vocabulary) ---
+    val savedWordsTabTitle: String get() = "Словарь"
+    val addToDictionary: String get() = "В словарик"
+    val wordInDictionary: String get() = "В словарике"
+    val wordSavedToDictionary: String get() = "Слово сохранено в словарик"
+    val savedWordsEmpty: String get() = "В словарике пока нет слов. Выделяйте незнакомые слова во время чтения!"
+    val savedWordsEmptySubtitle: String get() = "Выделите слово в тексте и нажмите «В словарик» в окне словаря или перевода"
+    val deleteWord: String get() = "Удалить слово"
+    val savedWordDeleted: String get() = "Слово удалено из словарика"
+    val copyWordDefinition: String get() = "Скопировать значение"
+    val wordCopied: String get() = "Значение скопировано"
 }
 
 class RuStrings : Strings {
@@ -1735,6 +1760,31 @@ class EnStrings : Strings {
     override val shelvesTitle: String = "Built-in shelves"
     override val customCollectionsTitle: String = "My collections"
     override fun batchMovedToShelfSnackbar(count: Int, shelf: String): String = "Moved to shelf \"$shelf\": $count"
+
+    // --- Crash Log ---
+    override val crashLogTitle: String = "Crash Log"
+    override val crashLogSubtitle: String = "View and export error reports"
+    override val crashLogEmpty: String = "No crashes recorded. The app is running smoothly!"
+    override val crashLogCopyReport: String = "Copy report"
+    override val crashLogReportCopied: String = "Crash report copied to clipboard"
+    override val crashLogClear: String = "Clear"
+    override val crashLogCleared: String = "Crash log cleared"
+
+    // --- E-Ink Mode ---
+    override val eInkModeTitle: String = "E-Ink Mode"
+    override val eInkModeSubtitle: String = "High-contrast monochrome palette and disabled blur effects for e-paper displays"
+
+    // --- Saved Words (Vocabulary) ---
+    override val savedWordsTabTitle: String = "Vocabulary"
+    override val addToDictionary: String = "Save word"
+    override val wordInDictionary: String = "Saved"
+    override val wordSavedToDictionary: String = "Word saved to vocabulary"
+    override val savedWordsEmpty: String = "Your vocabulary is empty. Save unfamiliar words while reading!"
+    override val savedWordsEmptySubtitle: String = "Select a word while reading and tap \"Save word\" in the dictionary or translator"
+    override val deleteWord: String = "Delete word"
+    override val savedWordDeleted: String = "Word removed from vocabulary"
+    override val copyWordDefinition: String = "Copy definition"
+    override val wordCopied: String = "Definition copied"
 }
 
 class UkStrings : Strings {

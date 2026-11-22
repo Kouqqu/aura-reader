@@ -3,6 +3,29 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
+Last updated: 2026-11-22, release `2.3.0-beta.50` (`versionCode 215`).
+`2.3.0-beta.50` changed no dependencies:
+- 120 Hz display refresh enforcement: Added `HighRefresh.apply(window, isEInk)` to lock the display refresh rate to the device's highest supported mode (`preferredDisplayModeId`), bypassing vendor-specific 60 Hz throttling for butter-smooth 120 FPS scrolling and animations (`HighRefresh.kt`, `MainActivity.kt`). Automatically disabled on E-Ink displays.
+- In-app Crash Log: Installed global uncaught exception logger in `MainActivity` writing up to 10 rotating crash traces to `filesDir/crashes/` (`CrashLog.kt`). Added an accessible "Журнал сбоев" entry under "О приложении" in settings with `CrashLogDialog.kt`, providing clear stack trace inspection, one-tap system diagnostic report copying, and log clearance.
+- E-Ink Mode: Added dedicated hardware detection (`EInkDetector.kt`) and toggle in Interface settings (`appSettings.eInkModeEnabled`). When active, enforces pure black-and-white high-contrast palette in `AuraReaderTheme`, disables Haze frosted glass blur, suppresses high refresh rate, and turns off decorative UI animations.
+- Personal Vocabulary («Мой словарик»): Added "В словарик" quick-save button directly inside dictionary lookup (`DictionaryDialog`) and translation (`TranslationDialog`) popups with automatic context sentence capture (`SavedWord`, `BookRepository.kt`, `PreferencesManager.kt`). Added a dedicated 3rd tab in the bookmarks and quotes bottom sheet (`BookmarksAndQuotesBottomSheet.kt`) with word definitions, search, copy, and deletion actions. Fully serialized into `.aurabackup` v2 schema (`BackupManager.kt`, `BackupArchive.kt`).
+
+Last updated: 2026-11-22, release `2.3.0-beta.49` (`versionCode 214`).
+`2.3.0-beta.49` changed no dependencies:
+- Enforce native `PdfRenderer` and bitmap resource teardown on reader pause/stop (`onDispose`), eliminating native memory leaks during extensive PDF reading sessions. Added automated cache cleanup routines for temporary rendered pages.
+
+Last updated: 2026-11-22, release `2.3.0-beta.48` (`versionCode 213`).
+`2.3.0-beta.48` changed no dependencies:
+- Pre-reserve comic page dimensions with `GraphicPageDimensionsCache`, eliminating 0dp layout shifts during fast scrolling and lazy loading. Decoupled slider drag state from underlying pager transitions to ensure butter-smooth seek bar interaction.
+
+Last updated: 2026-11-22, release `2.3.0-beta.47` (`versionCode 212`).
+`2.3.0-beta.47` changed no dependencies:
+- Instant slider navigation, 100% ribbon completion, stable slider dragging without jumps. Fixed bottom bar slider responsiveness during live dragging in both continuous scroll ribbon mode and paged mode. Ensured 100% completion correctly maps to the last graphic page.
+
+Last updated: 2026-11-22, release `2.3.0-beta.46` (`versionCode 211`).
+`2.3.0-beta.46` changed no dependencies:
+- Optimize PDF and comic rendering, eliminate spontaneous rewind and exit progress reset. Fixed page rendering lifecycle in `ChapterContentView` and `ChapterPagingView` to prevent unintended scroll jumping and position loss when exiting or reloading large graphic documents.
+
 Last updated: 2026-11-22, release `2.3.0-beta.45` (`versionCode 210`).
 `2.3.0-beta.45` changed no dependencies:
 - Fixed PDF & comic architecture across both continuous scroll and paging modes: Reunified PDF, CBZ, and CBT page modeling to maintain clean page-level chapters (`"Страница N"`), fixing the table of contents (which previously showed raw file hashes) and the bottom bar slider (which was previously locked at 0 / disabled).

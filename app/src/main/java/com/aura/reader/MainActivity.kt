@@ -47,6 +47,9 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Install crash log handler before any other code runs
+        com.aura.reader.util.CrashLog.install(applicationContext)
+
         // Takes over the system starting window; must run before super.onCreate().
         val splashScreen = installSplashScreen()
 
@@ -142,6 +145,9 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
+            val appSettings by preferencesManager.appSettings.collectAsState(
+                initial = com.aura.reader.data.model.AppSettings()
+            )
             val completed = hasCompletedOnboarding
             if (completed != null) {
                 CompositionLocalProvider(
@@ -157,13 +163,17 @@ class MainActivity : ComponentActivity() {
                         colorPreset = colorPreset,
                         appFont = appFont,
                         currentLanguage = appLanguage,
-                        holidaySeason = holidaySeason
+                        holidaySeason = holidaySeason,
+                        eInkMode = appSettings.eInkModeEnabled
                     ) {
                         val windowBg = androidx.compose.material3.MaterialTheme.colorScheme.background.toArgb()
                         val view = LocalView.current
                         SideEffect {
                             val window = (view.context as? android.app.Activity)?.window
-                            window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(windowBg))
+                            if (window != null) {
+                                window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(windowBg))
+                                com.aura.reader.util.HighRefresh.apply(window, isEInk = appSettings.eInkModeEnabled)
+                            }
                         }
                         val navController = rememberNavController()
                         AuraNavGraph(
