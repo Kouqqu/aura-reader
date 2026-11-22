@@ -398,7 +398,8 @@ fun SettingsBottomSheet(
                     .verticalScroll(settingsScrollState)
             ) {
                 // Header
-                val isGlass = appSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
+                val isEInk = appSettings.eInkModeEnabled
+                val isGlass = if (isEInk) false else appSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -428,19 +429,20 @@ fun SettingsBottomSheet(
                 Spacer(modifier = Modifier.height(16.dp))
 
             val sysDark = isSystemInDarkTheme()
-            val isThemeDark = when (appSettings.themeMode) {
+            val isThemeDark = if (isEInk) false else when (appSettings.themeMode) {
                 ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
                 ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
                 ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
             }
-            val isSepia = appSettings.themeMode == ReaderThemeMode.SEPIA
-            SettingsDesignStyleSection(
-                appDesignStyle = appSettings.appDesignStyle,
-                isThemeDark = isThemeDark,
-                onAppDesignStyleChange = { s -> onUpdateSettings { it.copy(appDesignStyle = s) } }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
+            val isSepia = if (isEInk) false else appSettings.themeMode == ReaderThemeMode.SEPIA
+            if (!isEInk) {
+                SettingsDesignStyleSection(
+                    appDesignStyle = appSettings.appDesignStyle,
+                    isThemeDark = isThemeDark,
+                    onAppDesignStyleChange = { s -> onUpdateSettings { it.copy(appDesignStyle = s) } }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             SettingsThemeSection(
                 currentTheme = appSettings.themeMode,
@@ -545,15 +547,16 @@ fun SettingsBottomSheet(
         }
     }
 
-    val isGlass = appSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isEInk = appSettings.eInkModeEnabled
+    val isGlass = if (isEInk) false else appSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
     val sysDark = isSystemInDarkTheme()
-    val isThemeDark = when (appSettings.themeMode) {
+    val isThemeDark = if (isEInk) false else when (appSettings.themeMode) {
         ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
         ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
         ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
     }
-    val isSepia = appSettings.themeMode == ReaderThemeMode.SEPIA
-    val isAmoled = appSettings.themeMode == ReaderThemeMode.AMOLED
+    val isSepia = if (isEInk) false else appSettings.themeMode == ReaderThemeMode.SEPIA
+    val isAmoled = if (isEInk) false else appSettings.themeMode == ReaderThemeMode.AMOLED
 
     CompositionLocalProvider(
         LocalIsLiquidGlass provides isGlass,

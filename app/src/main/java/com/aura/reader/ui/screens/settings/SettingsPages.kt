@@ -60,6 +60,7 @@ import com.aura.reader.ui.components.jellyOverscroll
 import com.aura.reader.ui.screens.library.UpdateCheckState
 import com.aura.reader.ui.theme.AppLanguage
 import com.aura.reader.ui.theme.LocalAppStrings
+import com.aura.reader.ui.theme.LocalEInkMode
 
 @Composable
 internal fun SettingsPageHeader(
@@ -112,15 +113,16 @@ fun SettingsInterfacePage(
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
-    val isGlass = appSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isEInk = appSettings.eInkModeEnabled
+    val isGlass = if (isEInk) false else appSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
     val sysDark = isSystemInDarkTheme()
-    val isThemeDark = when (appSettings.themeMode) {
+    val isThemeDark = if (isEInk) false else when (appSettings.themeMode) {
         ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
         ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
         ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
     }
-    val isSepia = appSettings.themeMode == ReaderThemeMode.SEPIA
-    val isAmoled = appSettings.themeMode == ReaderThemeMode.AMOLED
+    val isSepia = if (isEInk) false else appSettings.themeMode == ReaderThemeMode.SEPIA
+    val isAmoled = if (isEInk) false else appSettings.themeMode == ReaderThemeMode.AMOLED
 
     var showLanguageDialog by remember { mutableStateOf(false) }
     var sheetCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
@@ -307,7 +309,8 @@ fun SettingsGeneralPage(
 ) {
     val context = LocalContext.current
     val strings = LocalAppStrings.current
-    val isGlass = appSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isEInk = appSettings.eInkModeEnabled
+    val isGlass = if (isEInk) false else appSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
     val currentAppVersion: String = remember(context) {
         runCatching {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
@@ -323,7 +326,7 @@ fun SettingsGeneralPage(
 
     CompositionLocalProvider(
         LocalIsLiquidGlass provides isGlass,
-        LocalIsThemeDark provides isSystemInDarkTheme()
+        LocalIsThemeDark provides (if (isEInk) false else isSystemInDarkTheme())
     ) {
         Column(
             modifier = modifier
@@ -542,11 +545,12 @@ fun SettingsAboutPage(
     modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
-    val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isEInk = LocalEInkMode.current
+    val isGlass = if (isEInk) false else appDesignStyle == AppDesignStyle.LIQUID_GLASS
 
     CompositionLocalProvider(
         LocalIsLiquidGlass provides isGlass,
-        LocalIsThemeDark provides isSystemInDarkTheme()
+        LocalIsThemeDark provides (if (isEInk) false else isSystemInDarkTheme())
     ) {
         Column(
             modifier = modifier

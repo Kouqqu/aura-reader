@@ -3,6 +3,11 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
+Last updated: 2026-11-22, release `2.3.0-beta.54` (`versionCode 219`).
+`2.3.0-beta.54` changed no dependencies:
+- Settings UI dynamic color correction for E-Ink: Fixed black-on-black text contrast in Interface, General, and About settings pages by properly scoping `LocalIsLiquidGlass`, `LocalIsThemeDark`, and `LocalIsAmoled` when E-Ink mode is active (`SettingsPages.kt`, `SettingsBottomSheet.kt`). Cards now render in clean, high-contrast Material 3 light surfaces (`surfaceContainer`) with crisp dark text.
+- E-Ink Mode description polish: Simplified subtitle and active description to «Специально для электронных книг» across Russian and English localizations (`AppStrings.kt`, `SettingsThemeSection.kt`).
+
 Last updated: 2026-11-22, release `2.3.0-beta.53` (`versionCode 218`).
 `2.3.0-beta.53` changed no dependencies:
 - Non-destructive E-Ink state persistence: Decoupled E-Ink toggle from underlying user preferences (`SettingsPages.kt`). Toggling E-Ink mode preserves previously saved `appDesignStyle` (e.g. Liquid Glass) and `themeMode` (e.g. Dark/AMOLED/Sepia) in DataStore, applying high-contrast Material monochrome dynamically without overwriting user choices, and seamlessly restoring original appearance when E-Ink is disabled (`MainActivity.kt`, `LibraryScreen.kt`).

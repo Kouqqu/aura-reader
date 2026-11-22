@@ -1479,3 +1479,13 @@ Verified with `testDebugUnitTest assembleDebug` (exit code 0).
   - Removed top layout offset in `LibrarySearchScreen.kt` in E-Ink mode to avoid empty space from disabled cover collage.
 - **Vocabulary Navigation & Highlight (`ReaderViewModel.kt`, `BookmarksAndQuotesBottomSheet.kt`, `ReaderScreen.kt`):**
   - Tapping a saved vocabulary word card teleports the reader to the exact chapter and block in the book, dismisses the sheet, and temporarily highlights the word for 2.5 seconds using dynamic query matching.
+
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+## 2.3.0-beta.54 (versionCode 219) — Settings Color Scoping in E-Ink & Description Polish
+- **Settings Color Scoping (`SettingsPages.kt`, `SettingsBottomSheet.kt`):**
+  - Ensured `LocalIsLiquidGlass`, `LocalIsThemeDark`, `LocalIsSepia`, and `LocalIsAmoled` evaluate to `false` when `eInkModeEnabled` is active.
+  - Resolved black-on-black text bug in `SettingsInterfacePage`, `SettingsGeneralPage`, `SettingsAboutPage`, and `SettingsBottomSheet`, restoring clean high-contrast light Material 3 container cards and black typography.
+- **E-Ink Mode Description (`AppStrings.kt`, `SettingsThemeSection.kt`):**
+  - Updated `eInkModeSubtitle` and `eInkModeActiveDesc` to concise «Специально для электронных книг» («Specifically for e-book readers»).
