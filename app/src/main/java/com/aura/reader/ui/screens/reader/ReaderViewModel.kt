@@ -404,6 +404,7 @@ class ReaderViewModel(
             readingStartTime = 0L
         }
         saveCurrentProgress()
+        com.aura.reader.data.parser.PdfPageCache.closeRenderer()
     }
 
     // --- In-Book Search ---

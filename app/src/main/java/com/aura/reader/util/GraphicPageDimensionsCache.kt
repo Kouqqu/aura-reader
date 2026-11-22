@@ -18,6 +18,10 @@ object GraphicPageDimensionsCache {
         }
     }
 
+    fun clear() {
+        ratioCache.clear()
+    }
+
     fun getOrReadAspectRatio(pathOrUri: String): Float {
         ratioCache[pathOrUri]?.let { return it }
 
