@@ -300,14 +300,15 @@ fun ReaderSettingsBottomSheet(
                     modifier = Modifier.padding(bottom = 20.dp)
                 )
 
-                // --- Theme Mode ---
-                Text(
-                    text = strings.themeModeTitle,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = sectionTitleColor
-                )
-                Spacer(modifier = Modifier.height(10.dp))
+                if (!isEInk) {
+                    // --- Theme Mode ---
+                    Text(
+                        text = strings.themeModeTitle,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = sectionTitleColor
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -379,6 +380,7 @@ fun ReaderSettingsBottomSheet(
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
+            }
 
                 // --- Font Size ---
                 Row(
@@ -716,49 +718,51 @@ fun ReaderSettingsBottomSheet(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- Haptic Feedback ---
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = cardBg,
-                    border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onHapticFeedbackChange(!settings.hapticFeedbackEnabled) }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                if (!isEInk) {
+                    // --- Haptic Feedback ---
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = cardBg,
+                        border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text(
-                                text = strings.hapticFeedbackTitle,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = itemTitleColor
-                            )
-                            Text(
-                                text = strings.hapticFeedbackSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = itemSubtitleColor
-                            )
-                        }
-                        if (isGlass) {
-                            LiquidGlassSwitch(
-                                checked = settings.hapticFeedbackEnabled,
-                                onCheckedChange = onHapticFeedbackChange
-                            )
-                        } else {
-                            Switch(
-                                checked = settings.hapticFeedbackEnabled,
-                                onCheckedChange = onHapticFeedbackChange
-                            )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onHapticFeedbackChange(!settings.hapticFeedbackEnabled) }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                Text(
+                                    text = strings.hapticFeedbackTitle,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = itemTitleColor
+                                )
+                                Text(
+                                    text = strings.hapticFeedbackSubtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = itemSubtitleColor
+                                )
+                            }
+                            if (isGlass) {
+                                LiquidGlassSwitch(
+                                    checked = settings.hapticFeedbackEnabled,
+                                    onCheckedChange = onHapticFeedbackChange
+                                )
+                            } else {
+                                Switch(
+                                    checked = settings.hapticFeedbackEnabled,
+                                    onCheckedChange = onHapticFeedbackChange
+                                )
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
                 // --- Auto Hyphenation ---
                 Surface(

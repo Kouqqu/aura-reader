@@ -264,12 +264,20 @@ class BookIngestionPipeline(
                 val imagesDir = File(context.cacheDir, "book_images/$id").apply { mkdirs() }
                 EpubParser.parseFile(staged, uri.toString(), fileName, imagesDir)
             }
-            Files.move(
-                staged.toPath(),
-                destination.toPath(),
-                StandardCopyOption.REPLACE_EXISTING,
-                StandardCopyOption.ATOMIC_MOVE
-            )
+            try {
+                Files.move(
+                    staged.toPath(),
+                    destination.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE
+                )
+            } catch (e: java.nio.file.AtomicMoveNotSupportedException) {
+                Files.move(
+                    staged.toPath(),
+                    destination.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING
+                )
+            }
             return Result.success(
                 parsed.copy(
                     id = id,

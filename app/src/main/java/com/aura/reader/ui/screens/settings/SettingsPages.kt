@@ -186,7 +186,8 @@ fun SettingsInterfacePage(
                         onUpdateSettings {
                             it.copy(
                                 eInkModeEnabled = v,
-                                appDesignStyle = if (v) AppDesignStyle.MATERIAL else it.appDesignStyle
+                                appDesignStyle = if (v) AppDesignStyle.MATERIAL else it.appDesignStyle,
+                                themeMode = if (v) ReaderThemeMode.LIGHT else it.themeMode
                             )
                         }
                     },

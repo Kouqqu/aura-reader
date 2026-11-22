@@ -26,6 +26,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.runtime.snapshotFlow
 import com.aura.reader.ui.theme.LocalAppStrings
+import com.aura.reader.ui.theme.LocalEInkMode
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material.icons.rounded.SkipNext
 import kotlin.math.roundToInt
@@ -225,19 +226,18 @@ fun ChapterPagingView(
                 }
             }
         }
+        val isEInk = LocalEInkMode.current
         val haptic = LocalHapticFeedback.current
         var lastHapticSpread by remember { mutableIntStateOf(-1) }
         var lastHapticOffset by remember { mutableFloatStateOf(pagerState.currentPage.toFloat()) }
 
         // Continuous finger-following haptics during page flip
-        LaunchedEffect(pagerState.isScrollInProgress, pagerState.currentPageOffsetFraction) {
-            if (pagerState.isScrollInProgress) {
+        LaunchedEffect(pagerState.isScrollInProgress, pagerState.currentPageOffsetFraction, isEInk) {
+            if (!isEInk && settings.hapticFeedbackEnabled && pagerState.isScrollInProgress) {
                 val currentOffset = pagerState.currentPage + pagerState.currentPageOffsetFraction
                 val delta = kotlin.math.abs(currentOffset - lastHapticOffset)
                 if (delta >= 0.12f) {
-                    if (settings.hapticFeedbackEnabled) {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    }
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     lastHapticOffset = currentOffset
                 }
             } else {
@@ -343,25 +343,58 @@ fun ChapterPagingView(
             }
         }
 
-        val instantSwipeModifier = if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+        val instantSwipeModifier = if (settings.pageAnimation == PageTurnAnimation.INSTANT || isEInk) {
             Modifier.pointerInput(pagerState.currentPage, totalPagerSpreads) {
-                detectHorizontalDragGestures { _, dragAmount ->
-                    if (dragAmount < -25f) {
-                        if (pagerState.currentPage < totalPagerSpreads - 1) {
-                            coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
+                var totalDrag = 0f
+                var triggered = false
+                detectHorizontalDragGestures(
+                    onDragStart = {
+                        totalDrag = 0f
+                        triggered = false
+                    },
+                    onDragEnd = {
+                        if (!triggered) {
+                            val threshold = 35f
+                            if (totalDrag < -threshold) {
+                                if (pagerState.currentPage < totalPagerSpreads - 1) {
+                                    coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
+                                }
+                            } else if (totalDrag > threshold) {
+                                if (pagerState.currentPage > 0) {
+                                    coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
+                                }
+                            }
                         }
-                    } else if (dragAmount > 25f) {
-                        if (pagerState.currentPage > 0) {
-                            coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
+                    },
+                    onDragCancel = {
+                        totalDrag = 0f
+                        triggered = false
+                    },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        totalDrag += dragAmount
+                        val immediateThreshold = 80f
+                        if (!triggered) {
+                            if (totalDrag < -immediateThreshold) {
+                                triggered = true
+                                if (pagerState.currentPage < totalPagerSpreads - 1) {
+                                    coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
+                                }
+                            } else if (totalDrag > immediateThreshold) {
+                                triggered = true
+                                if (pagerState.currentPage > 0) {
+                                    coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
+                                }
+                            }
                         }
                     }
-                }
+                )
             }
         } else Modifier
 
         val flipPage: (Int) -> Unit = { target ->
             coroutineScope.launch {
-                if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+                if (settings.pageAnimation == PageTurnAnimation.INSTANT || isEInk) {
                     pagerState.scrollToPage(target)
                 } else {
                     pagerState.animateScrollToPage(target)
@@ -381,7 +414,7 @@ fun ChapterPagingView(
 
         HorizontalPager(
             state = pagerState,
-            userScrollEnabled = settings.pageAnimation != PageTurnAnimation.INSTANT,
+            userScrollEnabled = !isEInk && settings.pageAnimation != PageTurnAnimation.INSTANT,
             modifier = Modifier
                 .fillMaxSize()
                 .then(instantSwipeModifier)

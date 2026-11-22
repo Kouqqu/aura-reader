@@ -1331,25 +1331,7 @@ Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed
 - **Refined Action Chips in Liquid Glass (`BookCards.kt`):**
   - Enhanced inline action chips (`BookActionChip`) with delicate specular borders (`0.08f` white alpha / `0.06f` dark alpha) in Liquid Glass mode.
 
-## 2.3.0-beta.51 (versionCode 216) — E-Ink Mode Refinement, UI Cleanup & Accurate Book Context Sentence
-- **E-Ink Mode Deep Refactoring (`SettingsPages.kt`, `SettingsThemeSection.kt`, `ReaderSettingsBottomSheet.kt`, `ReaderScreen.kt`, `ExpressiveModifiers.kt`, `LibraryScreen.kt`):**
-  - Turning on E-Ink mode automatically selects Material 3 design style and hides design style options from settings.
-  - Hides theme switcher pills, Material You dynamic colors toggle, Android color preset swatches, and seasonal effects while active.
-  - Locks book reader to paging mode with instant page turns (`PageTurnAnimation.INSTANT`), suppressing reading mode and page animation options.
-  - Suppresses all spring bounce physics (`expressiveBounce`), elastic overscroll (`jellyOverscroll`), and horizontal pager animation transitions across the library and reader.
-- **Crash Log Dialog (`CrashLogDialog.kt`):**
-  - Eliminated duplicate "Сбоев не зафиксировано" text in dialog header when empty, keeping it centered in the dialog body.
-  - Added installation idempotency guard to `CrashLog.install()`.
-- **Dictionary & Translation UI Polish (`ReaderDialogs.kt`):**
-  - Removed redundant overflowing bottom "Закрыть" button from `DictionaryDialog` and `TranslationDialog` (closing is handled via header `X` and dismiss).
-- **Accurate Book Context Sentence Extraction (`ReaderScreen.kt`):**
-  - Fixed context sentence capturing in `ReaderScreen.kt`: instead of falling back to system clipboard text after selection reset, searches the active book chapter blocks to extract the authentic surrounding sentence.
-- **Vocabulary Tab Polish (`BookmarksAndQuotesBottomSheet.kt`, `PreferencesManager.kt`):**
-  - Cleaned up empty state in vocabulary tab by removing redundant subtitle.
-  - Prevented duplicate word entries for the same book in `PreferencesManager.addSavedWord()`.
-
 Verified with `testDebugUnitTest assembleDebug` (exit code 0).
-
 
 ## 2.3.0-beta.46 (versionCode 211) — Graphic Rendering Stability & Reading Position Fix
 - Optimized PDF and comic page rendering lifecycle in `ChapterContentView.kt` and `ChapterPagingView.kt`.
@@ -1382,25 +1364,7 @@ Verified with `testDebugUnitTest assembleDebug` (exit code 0).
   - Added dedicated 3rd tab in the reader bookmarks/quotes bottom sheet to view, search, copy, and delete saved words.
   - Integrated into `.aurabackup` v2 schema for backup and restore.
 
-## 2.3.0-beta.51 (versionCode 216) — E-Ink Mode Refinement, UI Cleanup & Accurate Book Context Sentence
-- **E-Ink Mode Deep Refactoring (`SettingsPages.kt`, `SettingsThemeSection.kt`, `ReaderSettingsBottomSheet.kt`, `ReaderScreen.kt`, `ExpressiveModifiers.kt`, `LibraryScreen.kt`):**
-  - Turning on E-Ink mode automatically selects Material 3 design style and hides design style options from settings.
-  - Hides theme switcher pills, Material You dynamic colors toggle, Android color preset swatches, and seasonal effects while active.
-  - Locks book reader to paging mode with instant page turns (`PageTurnAnimation.INSTANT`), suppressing reading mode and page animation options.
-  - Suppresses all spring bounce physics (`expressiveBounce`), elastic overscroll (`jellyOverscroll`), and horizontal pager animation transitions across the library and reader.
-- **Crash Log Dialog (`CrashLogDialog.kt`):**
-  - Eliminated duplicate "Сбоев не зафиксировано" text in dialog header when empty, keeping it centered in the dialog body.
-  - Added installation idempotency guard to `CrashLog.install()`.
-- **Dictionary & Translation UI Polish (`ReaderDialogs.kt`):**
-  - Removed redundant overflowing bottom "Закрыть" button from `DictionaryDialog` and `TranslationDialog` (closing is handled via header `X` and dismiss).
-- **Accurate Book Context Sentence Extraction (`ReaderScreen.kt`):**
-  - Fixed context sentence capturing in `ReaderScreen.kt`: instead of falling back to system clipboard text after selection reset, searches the active book chapter blocks to extract the authentic surrounding sentence.
-- **Vocabulary Tab Polish (`BookmarksAndQuotesBottomSheet.kt`, `PreferencesManager.kt`):**
-  - Cleaned up empty state in vocabulary tab by removing redundant subtitle.
-  - Prevented duplicate word entries for the same book in `PreferencesManager.addSavedWord()`.
-
 Verified with `testDebugUnitTest assembleDebug` (exit code 0).
-
 
 
 ## 2.3.0-beta.18 (versionCode 183) — True Hardware Frosted Glass Blur, Ethereal Reader Aura Bars & Header Contrast Unification
@@ -1417,25 +1381,7 @@ Verified with `testDebugUnitTest assembleDebug` (exit code 0).
   - Unified `LibraryReadingStatsBanner` with the exact same frosted glass material tokens as the chips: `Color.White.copy(alpha = 0.06f)` fill in dark (`0.04f` in light), identical `0.6.dp` specular border (`Color.White.copy(0.08f)`), and matching `18.dp` squircle radius.
   - The streak badge inside the banner now nests harmoniously with balanced font scale and soft amber glow (`#FFFF9500`).
 
-## 2.3.0-beta.51 (versionCode 216) — E-Ink Mode Refinement, UI Cleanup & Accurate Book Context Sentence
-- **E-Ink Mode Deep Refactoring (`SettingsPages.kt`, `SettingsThemeSection.kt`, `ReaderSettingsBottomSheet.kt`, `ReaderScreen.kt`, `ExpressiveModifiers.kt`, `LibraryScreen.kt`):**
-  - Turning on E-Ink mode automatically selects Material 3 design style and hides design style options from settings.
-  - Hides theme switcher pills, Material You dynamic colors toggle, Android color preset swatches, and seasonal effects while active.
-  - Locks book reader to paging mode with instant page turns (`PageTurnAnimation.INSTANT`), suppressing reading mode and page animation options.
-  - Suppresses all spring bounce physics (`expressiveBounce`), elastic overscroll (`jellyOverscroll`), and horizontal pager animation transitions across the library and reader.
-- **Crash Log Dialog (`CrashLogDialog.kt`):**
-  - Eliminated duplicate "Сбоев не зафиксировано" text in dialog header when empty, keeping it centered in the dialog body.
-  - Added installation idempotency guard to `CrashLog.install()`.
-- **Dictionary & Translation UI Polish (`ReaderDialogs.kt`):**
-  - Removed redundant overflowing bottom "Закрыть" button from `DictionaryDialog` and `TranslationDialog` (closing is handled via header `X` and dismiss).
-- **Accurate Book Context Sentence Extraction (`ReaderScreen.kt`):**
-  - Fixed context sentence capturing in `ReaderScreen.kt`: instead of falling back to system clipboard text after selection reset, searches the active book chapter blocks to extract the authentic surrounding sentence.
-- **Vocabulary Tab Polish (`BookmarksAndQuotesBottomSheet.kt`, `PreferencesManager.kt`):**
-  - Cleaned up empty state in vocabulary tab by removing redundant subtitle.
-  - Prevented duplicate word entries for the same book in `PreferencesManager.addSavedWord()`.
-
 Verified with `testDebugUnitTest assembleDebug` (exit code 0).
-
 
 ## 2.3.0-beta.46 (versionCode 211) — Graphic Rendering Stability & Reading Position Fix
 - Optimized PDF and comic page rendering lifecycle in `ChapterContentView.kt` and `ChapterPagingView.kt`.
@@ -1468,6 +1414,13 @@ Verified with `testDebugUnitTest assembleDebug` (exit code 0).
   - Added dedicated 3rd tab in the reader bookmarks/quotes bottom sheet to view, search, copy, and delete saved words.
   - Integrated into `.aurabackup` v2 schema for backup and restore.
 
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+
+
+
+
+
 ## 2.3.0-beta.51 (versionCode 216) — E-Ink Mode Refinement, UI Cleanup & Accurate Book Context Sentence
 - **E-Ink Mode Deep Refactoring (`SettingsPages.kt`, `SettingsThemeSection.kt`, `ReaderSettingsBottomSheet.kt`, `ReaderScreen.kt`, `ExpressiveModifiers.kt`, `LibraryScreen.kt`):**
   - Turning on E-Ink mode automatically selects Material 3 design style and hides design style options from settings.
@@ -1487,8 +1440,25 @@ Verified with `testDebugUnitTest assembleDebug` (exit code 0).
 
 Verified with `testDebugUnitTest assembleDebug` (exit code 0).
 
+## 2.3.0-beta.52 (versionCode 217) — E-Ink Pure White Theme, Instant Swipe & Parser Resilience
+- **E-Ink Mode Deep Monochromatic Refinement (`Theme.kt`, `SettingsPages.kt`, `ReaderScreen.kt`, `ReaderSettingsBottomSheet.kt`):**
+  - Toggling E-Ink automatically enforces pure white theme (`ReaderThemeMode.LIGHT`) across the entire application and reader.
+  - Stripped theme selector and vibration controls from reader settings when E-Ink is active.
+  - Locked all UI color tokens to pure monochrome high-contrast black/white (surfaces, cards, buttons, sliders, badges) and configured custom black text selection handles.
+- **Instant E-Ink Page Swipe (`ChapterPagingView.kt`):**
+  - Replaced per-event micro-drag handler with full swipe-gesture threshold tracking in `PageTurnAnimation.INSTANT` and E-Ink mode, preventing ghosting and flipping pages instantaneously upon completion.
+  - Suppressed finger-following haptics in E-Ink.
+- **Search Screen E-Ink Static Mode (`LibrarySearchScreen.kt`):**
+  - Disabled animated cover collage (`SearchCoverCollage`) in E-Ink mode to eliminate screen redraw churn.
+- **EPUB Parser Resilience (`EpubParser.kt`):**
+  - Replaced strict `require` on duplicate ZIP entries with non-fatal warning logger.
+  - Implemented case-insensitive, normalized path resolver `findEntry` for `META-INF/container.xml`, OPF package, NCX, and chapter files.
+- **FB2 ZIP Handling & Encoding Fallback (`Fb2Parser.kt`):**
+  - Added entry discovery validation in `.fb2.zip` preventing unexpected EOF crashes.
+  - Implemented XML prologue and byte-level charset detector with automatic fallback to Windows-1251 for legacy Russian FB2 files.
+- **Filesystem Move Fallback (`BookIngestionPipeline.kt`):**
+  - Handled `AtomicMoveNotSupportedException` in `Files.move` with fallback to `REPLACE_EXISTING`.
+- **Dependency Matrix Alignment (`docs/upgrades.md`):**
+  - Corrected legacy documentation table to accurately state Haze 2.1.0, Navigation Compose 2.10.2, and Jsoup 1.24.1.
 
-
-
-
-
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).

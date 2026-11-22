@@ -355,43 +355,39 @@ fun AuraReaderTheme(
     }
 
     val effectiveColorScheme = if (eInkMode) {
-        if (themeMode == ReaderThemeMode.DARK || themeMode == ReaderThemeMode.AMOLED || (themeMode == ReaderThemeMode.SYSTEM_DYNAMIC && systemDark)) {
-            DarkColorScheme.copy(
-                background = Color.Black,
-                surface = Color.Black,
-                surfaceContainer = Color(0xFF141414),
-                surfaceContainerHigh = Color(0xFF1E1E1E),
-                surfaceContainerLowest = Color.Black,
-                onBackground = Color.White,
-                onSurface = Color.White,
-                onSurfaceVariant = Color(0xFFE0E0E0),
-                primary = Color.White,
-                onPrimary = Color.Black,
-                primaryContainer = Color(0xFF2C2C2C),
-                onPrimaryContainer = Color.White,
-                secondary = Color(0xFFCCCCCC),
-                onSecondary = Color.Black,
-                outline = Color(0xFF888888)
-            )
-        } else {
-            LightColorScheme.copy(
-                background = Color.White,
-                surface = Color.White,
-                surfaceContainer = Color(0xFFF7F7F7),
-                surfaceContainerHigh = Color(0xFFEEEEEE),
-                surfaceContainerLowest = Color.White,
-                onBackground = Color.Black,
-                onSurface = Color.Black,
-                onSurfaceVariant = Color(0xFF222222),
-                primary = Color.Black,
-                onPrimary = Color.White,
-                primaryContainer = Color(0xFFE0E0E0),
-                onPrimaryContainer = Color.Black,
-                secondary = Color(0xFF444444),
-                onSecondary = Color.White,
-                outline = Color(0xFF888888)
-            )
-        }
+        LightColorScheme.copy(
+            background = Color.White,
+            surface = Color.White,
+            surfaceContainer = Color(0xFFF7F7F7),
+            surfaceContainerHigh = Color(0xFFEEEEEE),
+            surfaceContainerHighest = Color(0xFFE0E0E0),
+            surfaceContainerLow = Color(0xFFFAFAFA),
+            surfaceContainerLowest = Color.White,
+            surfaceVariant = Color(0xFFEBEBEB),
+            onBackground = Color.Black,
+            onSurface = Color.Black,
+            onSurfaceVariant = Color(0xFF222222),
+            primary = Color.Black,
+            onPrimary = Color.White,
+            primaryContainer = Color(0xFFE0E0E0),
+            onPrimaryContainer = Color.Black,
+            secondary = Color(0xFF333333),
+            onSecondary = Color.White,
+            secondaryContainer = Color(0xFFEBEBEB),
+            onSecondaryContainer = Color.Black,
+            tertiary = Color(0xFF333333),
+            onTertiary = Color.White,
+            tertiaryContainer = Color(0xFFEBEBEB),
+            onTertiaryContainer = Color.Black,
+            error = Color.Black,
+            onError = Color.White,
+            errorContainer = Color(0xFFE0E0E0),
+            onErrorContainer = Color.Black,
+            outline = Color(0xFF666666),
+            outlineVariant = Color(0xFFCCCCCC),
+            scrim = Color.Black,
+            surfaceTint = Color.Black
+        )
     } else {
         festiveColorScheme
     }
@@ -402,6 +398,12 @@ fun AuraReaderTheme(
         content = {
             androidx.compose.runtime.CompositionLocalProvider(
                 LocalEInkMode provides eInkMode,
+                androidx.compose.foundation.text.selection.LocalTextSelectionColors provides (
+                    if (eInkMode) androidx.compose.foundation.text.selection.TextSelectionColors(
+                        handleColor = Color.Black,
+                        backgroundColor = Color(0xFFCCCCCC)
+                    ) else androidx.compose.foundation.text.selection.LocalTextSelectionColors.current
+                ),
                 content = content
             )
         }

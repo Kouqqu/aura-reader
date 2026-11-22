@@ -217,7 +217,9 @@ fun ReaderScreen(
         if (isEInk) {
             rawSettings.copy(
                 pagingMode = true,
-                pageAnimation = PageTurnAnimation.INSTANT
+                pageAnimation = PageTurnAnimation.INSTANT,
+                themeMode = com.aura.reader.data.model.ReaderThemeMode.LIGHT,
+                hapticFeedbackEnabled = false
             )
         } else {
             rawSettings

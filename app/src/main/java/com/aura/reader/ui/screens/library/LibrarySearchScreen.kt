@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.activity.compose.BackHandler
 import com.aura.reader.data.model.GenreClassifier
 import com.aura.reader.data.model.MacroGenre
+import com.aura.reader.ui.theme.LocalEInkMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -179,12 +180,16 @@ fun LibrarySearchScreen(
         }
     }
 
+    val isEInk = LocalEInkMode.current
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(screenBg)
     ) {
-        SearchCoverCollage(books, subdued = collageSubdued, modifier = Modifier.height(heroHeight))
+        if (!isEInk) {
+            SearchCoverCollage(books, subdued = collageSubdued, modifier = Modifier.height(heroHeight))
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()

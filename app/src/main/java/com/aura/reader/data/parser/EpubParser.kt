@@ -48,9 +48,21 @@ object EpubParser {
                     totalSize += entry.size
                     require(totalSize <= 512L * 1024 * 1024) { "EPUB exceeds expanded size limit" }
                     val name = entry.name.replace('\\', '/')
-                    require(files.put(name, entry) == null) { "Duplicate EPUB entry" }
+                    if (files.containsKey(name)) {
+                        android.util.Log.w("EpubParser", "Duplicate EPUB entry '$name' ignored")
+                    } else {
+                        files[name] = entry
+                    }
                 }
             }
+            fun findEntry(path: String?): ZipEntry? {
+                if (path == null) return null
+                val normalized = path.replace('\\', '/').trimStart('/')
+                return files[normalized]
+                    ?: files[path]
+                    ?: files.entries.firstOrNull { it.key.equals(normalized, ignoreCase = true) || it.key.equals(path, ignoreCase = true) }?.value
+            }
+
             fun readEntry(entry: ZipEntry?): ByteArray? = entry?.let {
                 zip.getInputStream(it).use { input -> input.readBoundedBytes(32L * 1024 * 1024) }
             }
@@ -76,7 +88,7 @@ object EpubParser {
             }
 
             // 1. Locate rootfile from META-INF/container.xml
-            val containerBytes = readEntry(files["META-INF/container.xml"])
+            val containerBytes = readEntry(findEntry("META-INF/container.xml"))
                 ?: throw IllegalArgumentException("Неверный EPUB формат: отсутствует META-INF/container.xml")
 
             val docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
@@ -87,7 +99,7 @@ object EpubParser {
             val opfPath = rootfileElement.getAttribute("full-path")
             val opfDir = if (opfPath.contains("/")) opfPath.substringBeforeLast("/") else ""
 
-            val opfBytes = readEntry(files[opfPath])
+            val opfBytes = readEntry(findEntry(opfPath))
                 ?: throw IllegalArgumentException("Не найден OPF файл по пути: $opfPath")
 
             // 2. Parse OPF package
@@ -166,7 +178,7 @@ object EpubParser {
             val tocTitles = mutableMapOf<String, String>()
             if (ncxHref != null) {
                 val resolvedNcxPath = resolvePath(opfDir, ncxHref)
-                val ncxBytes = readEntry(files[resolvedNcxPath])
+                val ncxBytes = readEntry(findEntry(resolvedNcxPath))
                 if (ncxBytes != null) {
                     try {
                         val ncxDoc = docBuilder.parse(ByteArrayInputStream(ncxBytes))
@@ -206,8 +218,9 @@ object EpubParser {
             // Resolve cover image to base64
             var coverBase64: String? = null
             val resolvedCoverPath = coverHref?.let { resolvePath(opfDir, it) }
-            if (resolvedCoverPath != null && files.containsKey(resolvedCoverPath)) {
-                val coverBytes = readEntry(files[resolvedCoverPath])
+            val coverEntry = findEntry(resolvedCoverPath)
+            if (coverEntry != null) {
+                val coverBytes = readEntry(coverEntry)
                 if (coverBytes != null && coverBytes.isNotEmpty()) {
                     coverBase64 = Base64.encodeToString(coverBytes, Base64.NO_WRAP)
                 }
@@ -255,7 +268,7 @@ object EpubParser {
 
             for (chHref in chapterHrefs) {
                 val resolvedChPath = resolvePath(opfDir, chHref)
-                val chBytes = readEntry(files[resolvedChPath]) ?: continue
+                val chBytes = readEntry(findEntry(resolvedChPath)) ?: continue
 
                 val htmlString = String(chBytes, Charsets.UTF_8)
                 val jsoupDoc = Jsoup.parse(htmlString)

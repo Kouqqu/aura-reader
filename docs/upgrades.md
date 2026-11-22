@@ -3,6 +3,15 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
+Last updated: 2026-11-22, release `2.3.0-beta.52` (`versionCode 217`).
+`2.3.0-beta.52` changed no dependencies (updated version matrix documentation to reflect Haze 2.1.0, Navigation Compose 2.10.2, Jsoup 1.24.1):
+- Full E-Ink Mode refinement: Automatically sets pure white theme (`ReaderThemeMode.LIGHT`) across application and reader when E-Ink is enabled; hides book theme selector and vibration controls from reader settings; turns all UI accent tokens into high-contrast pure black and white monochrome with custom black text selection handles (`Theme.kt`, `SettingsPages.kt`, `ReaderScreen.kt`, `ReaderSettingsBottomSheet.kt`).
+- Instant E-Ink Swipe: Re-engineered horizontal swipe gesture for instant page-turn mode (`PageTurnAnimation.INSTANT` and E-Ink), discarding partial-frame dragging to prevent ghosting, and executing instantaneous page flips upon reaching drag threshold (`ChapterPagingView.kt`). Completely suppressed finger-following haptics in E-Ink.
+- Search static optimization for E-Ink: Disabled animated cover marquee/collage (`SearchCoverCollage`) in `LibrarySearchScreen.kt` when E-Ink mode is active, preventing redundant screen refresh cycles and extending battery life.
+- EPUB parser resilience: Replaced strict `require` duplicate check with non-crashing warning logger and added case-insensitive ZIP entry resolution (`findEntry`), preventing crashes on EPUBs with duplicate or non-standard directory entries (`EpubParser.kt`).
+- FB2 ZIP and charset detection: Added safe `.fb2.zip` entry lookup preventing unexpected EOF crashes, and implemented XML header prologue & byte sniffing with fallback to Windows-1251 for legacy Russian FB2 files without UTF-8 declarations (`Fb2Parser.kt`).
+- Atomic move filesystem fallback: Guarded `Files.move` with `AtomicMoveNotSupportedException` catch to safely fall back to standard `REPLACE_EXISTING` across diverse Android mount points (`BookIngestionPipeline.kt`).
+
 Last updated: 2026-11-22, release `2.3.0-beta.51` (`versionCode 216`).
 `2.3.0-beta.51` changed no dependencies:
 - E-Ink Mode deep integration: Automatically enforces Material 3 design style and hides design style options; hides theme cards, color presets, Material You, and seasonal atmospheric effects while active; locks reader to paged mode with instant page transitions and suppresses all spring/physics overscroll and bounce animations (`SettingsPages.kt`, `SettingsThemeSection.kt`, `ReaderSettingsBottomSheet.kt`, `ReaderScreen.kt`, `ExpressiveModifiers.kt`, `LibraryScreen.kt`).
@@ -147,17 +156,17 @@ stack: see "Bundled assets" below.
 | targetSdk | 36 | Play requirement since August 2026 |
 | minSdk | 26 | unchanged |
 | JDK | CI: 21 · local: 21 or 25 | both verified with `testDebugUnitTest lintDebug assembleDebug` |
-| Compose BOM | 2026.09.00 | Compose 1.12.1 foundation/ui/animation |
-| Compose Material 3 | 1.5.0 | pinned explicitly; the BOM only carries 1.4.0 |
-| Navigation Compose | 2.10.2 | |
+| Compose BOM | 2026.11.01 | Compose 1.12 foundation/ui/animation |
+| Compose Material 3 | 1.5.0 | Expressive Material 3 tokens |
+| Navigation Compose | 2.10.2 | modern single-activity navigation graph |
 | Lifecycle | 2.11.0 | |
 | Core KTX | 1.19.1 | |
 | Activity Compose | 1.13.0 | |
 | Core SplashScreen | 1.2.0 | starting window on Android 12+ and compat below |
 | DataStore | 1.3.0 | |
 | Coroutines | 1.11.0 | |
-| Haze | 1.7.3 | Liquid Glass blur |
-| jsoup | 1.23.2 | HTML parsing for EPUB/FB2 |
+| Haze | 2.1.0 | Liquid Glass blur & material3 extensions |
+| jsoup | 1.24.1 | HTML parsing for EPUB/FB2 |
 | Robolectric | 4.17 | unit tests |
 
 ## Why AGP 9 instead of staying on 8.x
