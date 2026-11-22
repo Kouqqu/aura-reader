@@ -48,6 +48,24 @@ object PdfPageCache {
     }
 
     @Synchronized
+    fun getPageAspectRatio(uri: String): Float? {
+        val model = Uri.parse(uri)
+        if (model.scheme != "aura-pdf") return null
+        val sourceParam = model.getQueryParameter("source") ?: return null
+        val pageParam = model.getQueryParameter("page") ?: return null
+        val source = File(sourceParam)
+        val index = pageParam.toIntOrNull() ?: return null
+        return try {
+            val renderer = getRenderer(source)
+            if (index in 0 until renderer.pageCount) {
+                renderer.openPage(index).use { page ->
+                    if (page.width > 0 && page.height > 0) page.width.toFloat() / page.height.toFloat() else null
+                }
+            } else null
+        } catch (_: Exception) { null }
+    }
+
+    @Synchronized
     fun closeRenderer() {
         try { activeRenderer?.close() } catch (_: Exception) {}
         try { activeDescriptor?.close() } catch (_: Exception) {}

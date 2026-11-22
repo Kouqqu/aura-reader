@@ -234,8 +234,14 @@ fun BoxScope.ReaderBottomBar(
                                              )
                                          }
 
-                                         var localPageSliderValue by remember(effectiveCurrentPage) { mutableFloatStateOf(effectiveCurrentPage.toFloat()) }
+                                         var localPageSliderValue by remember { mutableFloatStateOf(effectiveCurrentPage.toFloat()) }
                                          var isDraggingPageSlider by remember { mutableStateOf(false) }
+
+                                         androidx.compose.runtime.LaunchedEffect(effectiveCurrentPage) {
+                                             if (!isDraggingPageSlider) {
+                                                 localPageSliderValue = effectiveCurrentPage.toFloat()
+                                             }
+                                         }
 
                                          Slider(
                                              value = if (isDraggingPageSlider) localPageSliderValue else effectiveCurrentPage.toFloat().coerceIn(0f, (effectiveTotalPages - 1).coerceAtLeast(1).toFloat()),
@@ -248,7 +254,6 @@ fun BoxScope.ReaderBottomBar(
                                                      if (settings.hapticFeedbackEnabled) {
                                                          performSliderTick(context, haptic)
                                                      }
-                                                     onRequestPage(step)
                                                  }
                                              },
                                              onValueChangeFinished = {
@@ -308,6 +313,25 @@ fun BoxScope.ReaderBottomBar(
                                     )
                                 } else {
                                     // --- Continuous Mode: Chapter Slider ---
+                                    var localChapterSliderValue by remember { mutableFloatStateOf(currentChapterIndex.toFloat()) }
+                                    var isDraggingChapterSlider by remember { mutableStateOf(false) }
+
+                                    androidx.compose.runtime.LaunchedEffect(currentChapterIndex) {
+                                        if (!isDraggingChapterSlider) {
+                                            localChapterSliderValue = currentChapterIndex.toFloat()
+                                        }
+                                    }
+
+                                    val displayChapterIndex = if (isDraggingChapterSlider) kotlin.math.round(localChapterSliderValue).toInt().coerceIn(chapters.indices) else currentChapterIndex
+                                    val displayChapter = chapters.getOrNull(displayChapterIndex)
+                                    val realChapterTitle = displayChapter?.title?.takeIf { it.isNotBlank() }
+                                        ?: "${strings.chapter} ${displayChapterIndex + 1}"
+                                    val displayPercent = if (isDraggingChapterSlider && isSinglePageChapters && chapters.isNotEmpty()) {
+                                        if (displayChapterIndex >= chapters.size - 1) 100 else ((displayChapterIndex.toDouble() / chapters.size) * 100).toInt()
+                                    } else {
+                                        bookProgressPercent
+                                    }
+
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -328,8 +352,6 @@ fun BoxScope.ReaderBottomBar(
                                                 tint = MaterialTheme.colorScheme.primary
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            val realChapterTitle = currentChapter?.title?.takeIf { it.isNotBlank() }
-                                                ?: "${strings.chapter} ${currentChapterIndex + 1}"
                                             Text(
                                                 text = realChapterTitle,
                                                 style = MaterialTheme.typography.labelMedium,
@@ -340,7 +362,7 @@ fun BoxScope.ReaderBottomBar(
                                                 modifier = Modifier.weight(1f, fill = false)
                                             )
                                             Text(
-                                                text = " (${currentChapterIndex + 1}/${chapters.size})",
+                                                text = " (${displayChapterIndex + 1}/${chapters.size})",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.60f) else Color.Black.copy(alpha = 0.55f)) else MaterialTheme.colorScheme.onSurfaceVariant,
                                                 maxLines = 1
@@ -354,9 +376,8 @@ fun BoxScope.ReaderBottomBar(
                                             )
                                         }
 
-                                        val progress = bookProgressPercent
                                         Text(
-                                            text = "$progress%",
+                                            text = "$displayPercent%",
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary,
@@ -394,9 +415,6 @@ fun BoxScope.ReaderBottomBar(
                                              )
                                         }
 
-                                        var localChapterSliderValue by remember(currentChapterIndex) { mutableFloatStateOf(currentChapterIndex.toFloat()) }
-                                        var isDraggingChapterSlider by remember { mutableStateOf(false) }
-
                                         Slider(
                                             value = if (isDraggingChapterSlider) localChapterSliderValue else currentChapterIndex.toFloat().coerceIn(0f, (chapters.size - 1).coerceAtLeast(1).toFloat()),
                                             onValueChange = { newVal ->
@@ -407,9 +425,6 @@ fun BoxScope.ReaderBottomBar(
                                                     lastChapterSliderStep = step
                                                     if (settings.hapticFeedbackEnabled) {
                                                         performSliderTick(context, haptic)
-                                                    }
-                                                    if (isSinglePageChapters) {
-                                                        viewModel.requestScrollToBlock(step)
                                                     }
                                                 }
                                             },

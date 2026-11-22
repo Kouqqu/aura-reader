@@ -13,6 +13,7 @@ import androidx.compose.ui.text.style.LineBreak
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -303,11 +304,20 @@ fun RenderBlock(
                 var zoomOffset by remember { mutableStateOf(Offset.Zero) }
                 val animScale by animateFloatAsState(zoomScale, label = "comicZoomScale")
                 val animOffset by animateOffsetAsState(zoomOffset, label = "comicZoomOffset")
+                val pageRatio = remember(block.text) {
+                    com.aura.reader.util.GraphicPageDimensionsCache.getOrReadAspectRatio(block.text)
+                }
 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .then(if (isGraphicPage && !isInScrollMode) Modifier.fillMaxHeight() else Modifier)
+                        .then(
+                            if (isGraphicPage) {
+                                if (isInScrollMode) Modifier.aspectRatio(pageRatio) else Modifier.fillMaxHeight()
+                            } else {
+                                Modifier
+                            }
+                        )
                         .padding(vertical = if (isGraphicPage) 0.dp else 2.dp)
                         .clip(RoundedCornerShape(if (isGraphicPage) 0.dp else 2.dp))
                         .pointerInput(onPrevPage, onNextPage, onToggleControls) {
@@ -402,7 +412,7 @@ fun RenderBlock(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(if (isInScrollMode) 450.dp else 600.dp),
+                                .then(if (isInScrollMode) Modifier.aspectRatio(pageRatio) else Modifier.fillMaxHeight()),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(
@@ -417,6 +427,13 @@ fun RenderBlock(
                                 .data(imageModel)
                                 .crossfade(true)
                                 .listener(
+                                    onSuccess = { _, result ->
+                                        val w = result.drawable.intrinsicWidth
+                                        val h = result.drawable.intrinsicHeight
+                                        if (w > 0 && h > 0) {
+                                            com.aura.reader.util.GraphicPageDimensionsCache.setAspectRatio(block.text, w.toFloat() / h.toFloat())
+                                        }
+                                    },
                                     onError = { _, _ ->
                                         if (block.text.startsWith("aura-pdf:")) {
                                             renderTrigger++

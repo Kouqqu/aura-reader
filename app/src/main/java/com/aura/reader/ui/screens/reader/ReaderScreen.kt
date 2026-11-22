@@ -690,7 +690,7 @@ fun ReaderScreen(
                                         bottom = 80.dp
                                     )
                                 ) {
-                                    itemsIndexed(chapters) { index, ch ->
+                                    itemsIndexed(chapters, key = { _, ch -> ch.id }) { index, ch ->
                                         RenderBlock(
                                             block = ch.blocks[0],
                                             settings = settings,
