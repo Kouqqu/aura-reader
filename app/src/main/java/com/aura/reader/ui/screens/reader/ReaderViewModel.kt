@@ -172,7 +172,13 @@ class ReaderViewModel(
         _savedPixelOffset.value = book.currentScrollPixelOffset
         bookRepository.prepareBook(book)
         viewModelScope.launch {
-            bookRepository.openBook(book)
+            val result = bookRepository.openBook(book)
+            result.onSuccess { opened ->
+                _currentChapterIndex.value = opened.currentChapterIndex
+                _savedScrollOffset.value = opened.currentScrollOffset
+                _savedTextOffset.value = opened.currentBlockTextOffset
+                _savedPixelOffset.value = opened.currentScrollPixelOffset
+            }
         }
     }
 
@@ -732,6 +738,11 @@ class ReaderViewModel(
         viewModelScope.launch {
             preferencesManager.resetAverageWpm()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        com.aura.reader.data.parser.PdfPageCache.closeRenderer()
     }
 }
 

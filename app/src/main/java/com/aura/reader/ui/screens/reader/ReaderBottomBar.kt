@@ -359,7 +359,15 @@ fun BoxScope.ReaderBottomBar(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         IconButton(
-                                            onClick = { viewModel.prevChapter() },
+                                            onClick = {
+                                                if (isSinglePageChapters) {
+                                                    val target = (currentChapterIndex - 1).coerceAtLeast(0)
+                                                    viewModel.setChapter(target)
+                                                    viewModel.requestScrollToBlock(target)
+                                                } else {
+                                                    viewModel.prevChapter()
+                                                }
+                                            },
                                             enabled = currentChapterIndex > 0,
                                             modifier = Modifier.size(36.dp)
                                         ) {
@@ -385,6 +393,9 @@ fun BoxScope.ReaderBottomBar(
                                                     }
                                                 }
                                                 viewModel.setChapter(step)
+                                                if (isSinglePageChapters) {
+                                                    viewModel.requestScrollToBlock(step)
+                                                }
                                             },
                                             valueRange = 0f..(chapters.size - 1).coerceAtLeast(1).toFloat(),
                                             steps = (chapters.size - 2).coerceAtLeast(0),
@@ -396,7 +407,15 @@ fun BoxScope.ReaderBottomBar(
                                         )
 
                                         IconButton(
-                                            onClick = { viewModel.nextChapter() },
+                                            onClick = {
+                                                if (isSinglePageChapters) {
+                                                    val target = (currentChapterIndex + 1).coerceAtMost(chapters.size - 1)
+                                                    viewModel.setChapter(target)
+                                                    viewModel.requestScrollToBlock(target)
+                                                } else {
+                                                    viewModel.nextChapter()
+                                                }
+                                            },
                                             enabled = currentChapterIndex < chapters.size - 1,
                                             modifier = Modifier.size(36.dp)
                                         ) {

@@ -447,6 +447,7 @@ class BookRepository(
     }
 
     suspend fun removeBook(bookId: String) = withLibraryLock {
+        com.aura.reader.data.parser.PdfPageCache.closeRenderer()
         removeBookInternal(bookId)
     }
 

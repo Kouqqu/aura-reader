@@ -268,11 +268,17 @@ fun RenderBlock(
         BlockType.IMAGE -> {
             val context = LocalContext.current
             var renderTrigger by remember(block.text) { mutableIntStateOf(0) }
-            var imageModel by remember(block.text) {
-                mutableStateOf<Any?>(if (block.text.startsWith("aura-pdf:")) null else File(block.text))
+            var imageModel by remember(block.text, renderTrigger) {
+                mutableStateOf<Any?>(
+                    if (block.text.startsWith("aura-pdf:")) {
+                        com.aura.reader.data.parser.PdfPageCache.getCachedFile(context, block.text)
+                    } else {
+                        File(block.text)
+                    }
+                )
             }
             LaunchedEffect(block.text, renderTrigger) {
-                if (block.text.startsWith("aura-pdf:")) {
+                if (block.text.startsWith("aura-pdf:") && imageModel == null) {
                     imageModel = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                         try { com.aura.reader.data.parser.PdfPageCache.render(context, block.text) }
                         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }

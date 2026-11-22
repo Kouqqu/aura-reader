@@ -198,10 +198,13 @@ fun ReaderScreen(
     viewModel: ReaderViewModel,
     onNavigateBack: () -> Unit
 ) {
+    var isScreenActive by remember { mutableStateOf(true) }
     // Active reading timer tracker
     DisposableEffect(Unit) {
+        isScreenActive = true
         viewModel.onResumeReading()
         onDispose {
+            isScreenActive = false
             viewModel.onPauseReading()
         }
     }
@@ -465,32 +468,31 @@ fun ReaderScreen(
                                 pageCount = { chapters.size }
                             )
 
-                            LaunchedEffect(pagerState.currentPage) {
-                                if (pagerState.currentPage != currentChapterIndex) {
-                                    viewModel.setChapter(pagerState.currentPage)
-                                    val atEnd = pagerState.currentPage >= chapters.size - 1
-                                    viewModel.updateScrollProgress(pagerState.currentPage, chapters.size, 0, 0, atEnd)
-                                }
-                                currentPagingPage = pagerState.currentPage
-                                totalPagingPages = chapters.size
-                            }
-
-                            LaunchedEffect(currentChapterIndex) {
-                                if (pagerState.currentPage != currentChapterIndex && currentChapterIndex in chapters.indices) {
-                                    if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
-                                        pagerState.scrollToPage(currentChapterIndex)
-                                    } else {
-                                        pagerState.animateScrollToPage(currentChapterIndex)
+                            LaunchedEffect(pagerState) {
+                                snapshotFlow { pagerState.settledPage }
+                                    .collect { page ->
+                                        if (!isScreenActive) return@collect
+                                        if (page in chapters.indices && page != currentChapterIndex) {
+                                            viewModel.setChapter(page)
+                                            val atEnd = page >= chapters.size - 1
+                                            viewModel.updateScrollProgress(page, chapters.size, 0, 0, atEnd)
+                                        }
+                                        currentPagingPage = page
+                                        totalPagingPages = chapters.size
                                     }
-                                    currentPagingPage = currentChapterIndex
-                                    totalPagingPages = chapters.size
-                                }
                             }
 
                             LaunchedEffect(requestPagingPage) {
-                                if (requestPagingPage != null) {
-                                    val target = requestPagingPage!!.coerceIn(0, chapters.size - 1)
-                                    pagerState.scrollToPage(target)
+                                val req = requestPagingPage
+                                if (req != null) {
+                                    val target = req.coerceIn(0, chapters.size - 1)
+                                    if (target != pagerState.currentPage) {
+                                        if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+                                            pagerState.scrollToPage(target)
+                                        } else {
+                                            pagerState.animateScrollToPage(target)
+                                        }
+                                    }
                                     requestPagingPage = null
                                 }
                             }
@@ -514,6 +516,7 @@ fun ReaderScreen(
 
                             HorizontalPager(
                                 state = pagerState,
+                                beyondViewportPageCount = 1,
                                 modifier = Modifier.fillMaxSize()
                             ) { pageIdx ->
                                 val ch = chapters.getOrNull(pageIdx)
@@ -583,7 +586,9 @@ fun ReaderScreen(
                                         totalPagingPages = total
                                     },
                                     onUpdateProgress = { blockIdx, totalBlocks, textOffset, pixelOffset, atEnd ->
-                                        viewModel.updateScrollProgress(blockIdx, totalBlocks, textOffset, pixelOffset, atEnd)
+                                        if (isScreenActive) {
+                                            viewModel.updateScrollProgress(blockIdx, totalBlocks, textOffset, pixelOffset, atEnd)
+                                        }
                                     },
                                     onBookFinished = {
                                         celebrationTriggerKey = System.currentTimeMillis()
@@ -607,12 +612,6 @@ fun ReaderScreen(
                                 initialFirstVisibleItemIndex = currentChapterIndex.coerceIn(0, (chapters.size - 1).coerceAtLeast(0))
                             )
 
-                            LaunchedEffect(currentChapterIndex) {
-                                if (listState.firstVisibleItemIndex != currentChapterIndex && currentChapterIndex in chapters.indices && !listState.isScrollInProgress) {
-                                    listState.scrollToItem(currentChapterIndex)
-                                }
-                            }
-
                             LaunchedEffect(targetScrollOffset) {
                                 if (targetScrollOffset != null) {
                                     val target = targetScrollOffset!!.coerceIn(0, chapters.size - 1)
@@ -624,6 +623,7 @@ fun ReaderScreen(
                             LaunchedEffect(listState) {
                                 snapshotFlow { listState.firstVisibleItemIndex }
                                     .collect { visibleIndex ->
+                                        if (!isScreenActive) return@collect
                                         if (visibleIndex in chapters.indices && visibleIndex != currentChapterIndex) {
                                             viewModel.setChapter(visibleIndex)
                                             val atEnd = visibleIndex >= chapters.size - 1 && !listState.canScrollForward
@@ -696,13 +696,18 @@ fun ReaderScreen(
                                 pageCount = { chapters.size }
                             )
 
-                            LaunchedEffect(pagerState.currentPage) {
-                                if (pagerState.currentPage != currentChapterIndex) {
-                                    viewModel.setChapter(pagerState.currentPage)
-                                }
+                            LaunchedEffect(pagerState) {
+                                snapshotFlow { pagerState.settledPage }
+                                    .collect { page ->
+                                        if (!isScreenActive) return@collect
+                                        if (page in chapters.indices && page != currentChapterIndex) {
+                                            viewModel.setChapter(page)
+                                        }
+                                    }
                             }
 
                             LaunchedEffect(currentChapterIndex) {
+                                if (!isScreenActive) return@LaunchedEffect
                                 if (pagerState.currentPage != currentChapterIndex && currentChapterIndex in chapters.indices) {
                                     pagerState.animateScrollToPage(currentChapterIndex)
                                 }
@@ -758,7 +763,7 @@ fun ReaderScreen(
                                             }
                                         },
                                         onUpdateProgress = { firstVisible, totalItems, textOffset, pixelOffset, atEnd ->
-                                            if (pageIndex == currentChapterIndex) {
+                                            if (isScreenActive && pageIndex == currentChapterIndex) {
                                                 viewModel.updateScrollProgress(firstVisible, totalItems, textOffset, pixelOffset, atEnd)
                                             }
                                         },
@@ -1229,7 +1234,11 @@ fun ReaderScreen(
                 ChaptersBottomSheet(
                     chapters = chapters,
                     currentChapterIndex = currentChapterIndex,
-                    onChapterSelected = { viewModel.setChapter(it) },
+                    onChapterSelected = { selected ->
+                        viewModel.setChapter(selected)
+                        requestPagingPage = selected
+                        viewModel.requestScrollToBlock(selected)
+                    },
                     onDismiss = { showChaptersSheet = false }
                 )
             }

@@ -12,8 +12,49 @@ import java.io.File
 object PdfPageCache {
     var maxCachedPages: Int = 200
 
+    private var activeSourcePath: String? = null
+    private var activeDescriptor: ParcelFileDescriptor? = null
+    private var activeRenderer: PdfRenderer? = null
+
     fun pageUri(source: File, page: Int): String = Uri.Builder().scheme("aura-pdf").path("page")
         .appendQueryParameter("source", source.absolutePath).appendQueryParameter("page", page.toString()).build().toString()
+
+    fun getCachedFile(context: Context, uri: String): File? {
+        val model = Uri.parse(uri)
+        if (model.scheme != "aura-pdf") return null
+        val sourceParam = model.getQueryParameter("source") ?: return null
+        val pageParam = model.getQueryParameter("page") ?: return null
+        val source = File(sourceParam)
+        val index = pageParam.toIntOrNull() ?: return null
+        val key = java.util.UUID.nameUUIDFromBytes((source.absolutePath + ":" + source.length() + ":" + source.lastModified() + ":" + index).toByteArray())
+        val cache = File(context.cacheDir, "pdf_pages")
+        val target = File(cache, key.toString() + ".jpg")
+        return if (target.exists() && target.length() > 0L) target else null
+    }
+
+    @Synchronized
+    private fun getRenderer(source: File): PdfRenderer {
+        val path = source.canonicalPath
+        if (activeSourcePath == path && activeRenderer != null) {
+            return activeRenderer!!
+        }
+        closeRenderer()
+        val desc = ParcelFileDescriptor.open(source, ParcelFileDescriptor.MODE_READ_ONLY)
+        val rend = PdfRenderer(desc)
+        activeSourcePath = path
+        activeDescriptor = desc
+        activeRenderer = rend
+        return rend
+    }
+
+    @Synchronized
+    fun closeRenderer() {
+        try { activeRenderer?.close() } catch (_: Exception) {}
+        try { activeDescriptor?.close() } catch (_: Exception) {}
+        activeRenderer = null
+        activeDescriptor = null
+        activeSourcePath = null
+    }
 
     @Synchronized
     fun render(context: Context, uri: String): File {
@@ -26,23 +67,32 @@ object PdfPageCache {
         val cache = File(context.cacheDir, "pdf_pages").apply { mkdirs() }
         val target = File(cache, key.toString() + ".jpg")
         if (!target.exists() || target.length() == 0L) {
-            ParcelFileDescriptor.open(source, ParcelFileDescriptor.MODE_READ_ONLY).use { descriptor ->
-                PdfRenderer(descriptor).use { renderer ->
-                    require(index in 0 until renderer.pageCount)
-                    renderer.openPage(index).use { page ->
-                        val bitmap = bitmap(page, 1080)
-                        val pending = File(cache, target.name + ".tmp")
-                        try {
-                            pending.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it) }
-                            check(pending.renameTo(target)) { "Cannot cache PDF page" }
-                        } finally { bitmap.recycle(); pending.delete() }
-                    }
+            val renderer = try {
+                getRenderer(source)
+            } catch (e: Exception) {
+                closeRenderer()
+                getRenderer(source)
+            }
+            require(index in 0 until renderer.pageCount)
+            renderer.openPage(index).use { page ->
+                val bitmap = bitmap(page, 1080)
+                val pending = File(cache, target.name + ".tmp")
+                try {
+                    pending.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it) }
+                    check(pending.renameTo(target)) { "Cannot cache PDF page" }
+                } finally {
+                    bitmap.recycle()
+                    pending.delete()
                 }
+            }
+            val files = cache.listFiles()?.filter { it.extension == "jpg" }
+            if (files != null && files.size > maxCachedPages) {
+                files.sortedByDescending { it.lastModified() }
+                    .drop(maxCachedPages)
+                    .forEach { it.delete() }
             }
         }
         target.setLastModified(System.currentTimeMillis())
-        cache.listFiles()?.filter { it.extension == "jpg" && it != target }
-            ?.sortedByDescending { it.lastModified() }?.drop(maxCachedPages)?.forEach { it.delete() }
         return target
     }
 
