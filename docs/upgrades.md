@@ -3,6 +3,18 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
+Last updated: 2026-11-23, release `2.3.0` (`versionCode 223`).
+`2.3.0` stable release:
+- Major update combining all features from `2.3.0-beta.1` through `2.3.0-beta.57`:
+  - Private folder with salted SHA-256 password and biometric (fingerprint/face) unlock.
+  - Book profiles with online metadata/cover fetching and gallery cover replacement.
+  - Personal vocabulary («Мой словарик») with contextual navigation and return button.
+  - Ambient background sounds (waves, rain, fire, forest) with audio focus management.
+  - Dedicated high-contrast monochrome E-Ink mode with non-destructive settings preservation.
+  - Configurable backup scopes (full with books vs lightweight settings & data).
+  - Extended formats (AZW3, CBZ, CBT, Markdown, HTML) and resilient memory streaming.
+  - Redesigned visual onboarding guide and responsive reading gestures.
+
 Last updated: 2026-11-23, release `2.3.0-beta.57` (`versionCode 222`).
 `2.3.0-beta.57` changed no dependencies:
 - CI Lint Fix: Resolved `FullBackupContent` error in `data_extraction_rules.xml` by cleaning up `<device-transfer>` rules so Android Lint validation succeeds cleanly during `./gradlew testDebugUnitTest lintDebug`.
