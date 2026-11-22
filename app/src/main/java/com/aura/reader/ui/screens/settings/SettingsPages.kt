@@ -183,13 +183,7 @@ fun SettingsInterfacePage(
                     onHolidayOverrideChange = { h -> onUpdateSettings { it.copy(holidayOverride = h) } },
                     eInkModeEnabled = appSettings.eInkModeEnabled,
                     onToggleEInkMode = { v ->
-                        onUpdateSettings {
-                            it.copy(
-                                eInkModeEnabled = v,
-                                appDesignStyle = if (v) AppDesignStyle.MATERIAL else it.appDesignStyle,
-                                themeMode = if (v) ReaderThemeMode.LIGHT else it.themeMode
-                            )
-                        }
+                        onUpdateSettings { it.copy(eInkModeEnabled = v) }
                     },
                     onOpenReaderThemeSettings = onOpenReaderThemeSettings,
                     onThemePicked = { mode, origin, colors ->

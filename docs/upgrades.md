@@ -3,6 +3,13 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
+Last updated: 2026-11-22, release `2.3.0-beta.53` (`versionCode 218`).
+`2.3.0-beta.53` changed no dependencies:
+- Non-destructive E-Ink state persistence: Decoupled E-Ink toggle from underlying user preferences (`SettingsPages.kt`). Toggling E-Ink mode preserves previously saved `appDesignStyle` (e.g. Liquid Glass) and `themeMode` (e.g. Dark/AMOLED/Sepia) in DataStore, applying high-contrast Material monochrome dynamically without overwriting user choices, and seamlessly restoring original appearance when E-Ink is disabled (`MainActivity.kt`, `LibraryScreen.kt`).
+- Pure Monochrome Reader Settings in E-Ink: Fixed `LocalEInkMode` propagation in `ReaderScreen.kt`. Strictly hide Theme Mode picker, Reading Mode switch, Page Turn Animation row, Two-Column Spread row, Haptic Feedback switch, and Light Image Background toggle in E-Ink mode. Enforced pure monochrome Black/White styling on sliders, font size labels, chips, and dropdown pickers with zero blue accent bleeds (`ReaderSettingsBottomSheet.kt`).
+- Instant Library Screen Swipes: Configured `HorizontalPager` with `libraryInstantSwipe` gesture detector and `userScrollEnabled = !isReorderMode && !isEInk` in `LibraryScreen.kt`, replacing continuous animated screen dragging between Library and Search with instant page flips on E-Ink. Removed empty search cover marquee offset in `LibrarySearchScreen.kt`.
+- Vocabulary Word Teleportation & Highlight: Tapping any saved word in the "Словарь" tab (`BookmarksAndQuotesBottomSheet.kt`) teleports the reader directly to the word's chapter and block in the book, closes the sheet, and highlights the word for 2.5 seconds using dynamic query matching before cleanly fading (`ReaderViewModel.kt`, `ReaderScreen.kt`).
+
 Last updated: 2026-11-22, release `2.3.0-beta.52` (`versionCode 217`).
 `2.3.0-beta.52` changed no dependencies (updated version matrix documentation to reflect Haze 2.1.0, Navigation Compose 2.10.2, Jsoup 1.24.1):
 - Full E-Ink Mode refinement: Automatically sets pure white theme (`ReaderThemeMode.LIGHT`) across application and reader when E-Ink is enabled; hides book theme selector and vibration controls from reader settings; turns all UI accent tokens into high-contrast pure black and white monochrome with custom black text selection handles (`Theme.kt`, `SettingsPages.kt`, `ReaderScreen.kt`, `ReaderSettingsBottomSheet.kt`).

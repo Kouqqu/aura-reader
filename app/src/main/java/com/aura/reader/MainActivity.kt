@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import com.aura.reader.data.model.ReaderSettings
+import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.ui.theme.AppLanguage
 import com.aura.reader.ui.theme.LocalAppStrings
 import com.aura.reader.ui.theme.getStrings
@@ -158,8 +159,8 @@ class MainActivity : ComponentActivity() {
                     com.aura.reader.ui.theme.LocalColorPreset provides colorPreset
                 ) {
                     AuraReaderTheme(
-                        themeMode = settings.appThemeMode,
-                        materialYou = materialYouEnabled,
+                        themeMode = if (appSettings.eInkModeEnabled) ReaderThemeMode.LIGHT else settings.appThemeMode,
+                        materialYou = if (appSettings.eInkModeEnabled) false else materialYouEnabled,
                         colorPreset = colorPreset,
                         appFont = appFont,
                         currentLanguage = appLanguage,

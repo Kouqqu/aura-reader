@@ -653,6 +653,43 @@ class ReaderViewModel(
         }
     }
 
+    private val _highlightedWord = MutableStateFlow<String?>(null)
+    val highlightedWord: StateFlow<String?> = _highlightedWord.asStateFlow()
+
+    fun navigateToSavedWord(savedWord: com.aura.reader.data.model.SavedWord) {
+        val book = currentBook.value ?: return
+        val targetChapter = savedWord.chapterIndex.coerceIn(0, (book.chapters.size - 1).coerceAtLeast(0))
+        val chapter = book.chapters.getOrNull(targetChapter)
+        val word = savedWord.word.trim()
+        val context = savedWord.contextText.trim()
+        val targetBlock = if (chapter != null) {
+            val foundContext = if (context.isNotBlank()) {
+                chapter.blocks.indexOfFirst {
+                    it.text.contains(context) || (context.length > 20 && it.text.contains(context.take(30)))
+                }
+            } else -1
+            if (foundContext >= 0) {
+                foundContext
+            } else {
+                val foundWord = chapter.blocks.indexOfFirst { it.text.contains(word, ignoreCase = true) }
+                if (foundWord >= 0) foundWord else 0
+            }
+        } else 0
+        val chapterTitle = chapter?.title ?: "Глава ${targetChapter + 1}"
+        navigateToPositionWithReturn(
+            targetChapter = targetChapter,
+            targetBlock = targetBlock,
+            title = chapterTitle
+        )
+        _highlightedWord.value = word
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(2500)
+            if (_highlightedWord.value == word) {
+                _highlightedWord.value = null
+            }
+        }
+    }
+
     fun removeSavedWord(id: String) {
         viewModelScope.launch {
             bookRepository.removeSavedWord(id)

@@ -1462,3 +1462,20 @@ Verified with `testDebugUnitTest assembleDebug` (exit code 0).
   - Corrected legacy documentation table to accurately state Haze 2.1.0, Navigation Compose 2.10.2, and Jsoup 1.24.1.
 
 Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+## 2.3.0-beta.53 (versionCode 218) — Non-destructive E-Ink Settings, Instant Library Swipes & Vocabulary Teleportation
+- **Non-destructive E-Ink State Persistence (`SettingsPages.kt`, `MainActivity.kt`, `LibraryScreen.kt`):**
+  - Toggling E-Ink mode no longer destructively mutates the user's saved `appDesignStyle` (e.g. Liquid Glass) or `themeMode` (e.g. Dark/AMOLED/Sepia) in DataStore.
+  - Dynamically enforces high-contrast Material 3 and white background while E-Ink is active, and immediately restores original preferences upon turning E-Ink off.
+- **Pure Monochrome Reader Settings Sheet (`ReaderSettingsBottomSheet.kt`, `ReaderScreen.kt`):**
+  - Passed `eInkMode = isEInk` to `AuraReaderTheme` in `ReaderScreen.kt`, ensuring `LocalEInkMode` properly reaches nested sheets.
+  - Strictly concealed Theme Mode options, Reading Mode (scroll/paged), Page Turn Animation, Two-Column Spread, Haptic Feedback, and Light Image Background toggles when E-Ink is active.
+  - Enforced pure high-contrast monochrome tokens across sliders, chips, font size labels, and dropdown controls (no blue accents).
+- **Instant Swipes in Library & Search (`LibraryScreen.kt`, `LibrarySearchScreen.kt`):**
+  - Attached `libraryInstantSwipe` gesture detector and disabled continuous scroll drag (`userScrollEnabled = !isReorderMode && !isEInk`) on `HorizontalPager` in `LibraryScreen.kt`, resulting in instant page switches without screen ghosting.
+  - Removed top layout offset in `LibrarySearchScreen.kt` in E-Ink mode to avoid empty space from disabled cover collage.
+- **Vocabulary Navigation & Highlight (`ReaderViewModel.kt`, `BookmarksAndQuotesBottomSheet.kt`, `ReaderScreen.kt`):**
+  - Tapping a saved vocabulary word card teleports the reader to the exact chapter and block in the book, dismisses the sheet, and temporarily highlights the word for 2.5 seconds using dynamic query matching.

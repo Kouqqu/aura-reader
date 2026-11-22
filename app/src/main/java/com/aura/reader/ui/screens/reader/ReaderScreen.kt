@@ -219,7 +219,8 @@ fun ReaderScreen(
                 pagingMode = true,
                 pageAnimation = PageTurnAnimation.INSTANT,
                 themeMode = com.aura.reader.data.model.ReaderThemeMode.LIGHT,
-                hapticFeedbackEnabled = false
+                hapticFeedbackEnabled = false,
+                appDesignStyle = com.aura.reader.data.model.AppDesignStyle.MATERIAL
             )
         } else {
             rawSettings
@@ -236,6 +237,10 @@ fun ReaderScreen(
 
     // Search state
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val highlightedWord by viewModel.highlightedWord.collectAsState()
+    val effectiveSearchQuery = remember(searchQuery, highlightedWord) {
+        if (!highlightedWord.isNullOrBlank()) highlightedWord!! else searchQuery
+    }
     val searchResults by viewModel.searchResults.collectAsState()
     val currentSearchIndex by viewModel.currentSearchIndex.collectAsState()
     val targetScrollOffset by viewModel.targetScrollOffset.collectAsState()
@@ -247,7 +252,7 @@ fun ReaderScreen(
     val navReturnPoint by viewModel.navReturnPoint.collectAsState()
     val userWpm by viewModel.userAverageWpm.collectAsState()
     val ttsState by com.aura.reader.service.BookTtsService.ttsState.collectAsState()
-    val isGlass = settings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isGlass = if (isEInk) false else settings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
     val isThemeDark = when (settings.themeMode) {
         ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
         ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
@@ -445,7 +450,8 @@ fun ReaderScreen(
         themeMode = settings.themeMode,
         materialYou = materialYouEnabled,
         colorPreset = colorPreset,
-        readerMode = true
+        readerMode = true,
+        eInkMode = isEInk
     ) {
       @Suppress("DEPRECATION")
       CompositionLocalProvider(LocalTextToolbar provides customTextToolbar, LocalClipboardManager provides interceptedClipboardManager) {
@@ -560,7 +566,7 @@ fun ReaderScreen(
                                         block = ch.blocks[0],
                                         settings = settings,
                                         resolvedFontFamily = resolvedFontFamily,
-                                        searchQuery = searchQuery,
+                                        searchQuery = effectiveSearchQuery,
                                         footnotes = footnotes,
                                         quotes = emptyList(),
                                         onFootnoteClick = { _, _ -> },
@@ -591,7 +597,7 @@ fun ReaderScreen(
                                     nextChapter = chapters.getOrNull(currentChapterIndex + 1),
                                     settings = settings,
                                     resolvedFontFamily = resolvedFontFamily,
-                                    searchQuery = searchQuery,
+                                    searchQuery = effectiveSearchQuery,
                                     footnotes = footnotes,
                                     quotes = currentChapterQuotes,
                                     userWpm = userWpm,
@@ -734,7 +740,7 @@ fun ReaderScreen(
                                             block = ch.blocks[0],
                                             settings = settings,
                                             resolvedFontFamily = resolvedFontFamily,
-                                            searchQuery = searchQuery,
+                                            searchQuery = effectiveSearchQuery,
                                             footnotes = footnotes,
                                             quotes = emptyList(),
                                             onFootnoteClick = { _, _ -> },
@@ -787,7 +793,7 @@ fun ReaderScreen(
                                         resolvedFontFamily = resolvedFontFamily,
                                         pageIndex = pageIndex,
                                         chaptersCount = chapters.size,
-                                        searchQuery = searchQuery,
+                                        searchQuery = effectiveSearchQuery,
                                         footnotes = footnotes,
                                         selectionResetKey = selectionResetKey,
                                         onToggleControls = { showControls = !showControls },
@@ -1317,7 +1323,8 @@ fun ReaderScreen(
                     onAddQuote = { viewModel.addQuote(it, 0xFFFFF59DL) },
                     onDeleteQuote = { viewModel.removeQuote(it) },
                     savedWords = savedWords,
-                    onDeleteSavedWord = { viewModel.removeSavedWord(it) }
+                    onDeleteSavedWord = { viewModel.removeSavedWord(it) },
+                    onWordClick = { word -> viewModel.navigateToSavedWord(word) }
                 )
             }
 

@@ -2,6 +2,7 @@ package com.aura.reader.ui.screens.library
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.snap
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
@@ -123,12 +124,21 @@ fun LibrarySearchScreen(
         }
     }
 
+    val isEInk = LocalEInkMode.current
     val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     val trimmedQuery = searchQuery.trim()
     val isFilteringOrSearching = trimmedQuery.isNotBlank() || selectedGenreFilter != null
     val collageSubdued = isFilteringOrSearching || keyboardOpen
-    val heroHeight by animateDpAsState(if (collageSubdued) 100.dp else 320.dp, tween(350), label = "searchHeroHeight")
-    val titleInset by animateDpAsState(if (collageSubdued) 0.dp else 165.dp, tween(350), label = "searchTitleInset")
+    val heroHeight by animateDpAsState(
+        targetValue = if (isEInk || collageSubdued) 100.dp else 320.dp,
+        animationSpec = if (isEInk) snap() else tween(350),
+        label = "searchHeroHeight"
+    )
+    val titleInset by animateDpAsState(
+        targetValue = if (isEInk || collageSubdued) 0.dp else 165.dp,
+        animationSpec = if (isEInk) snap() else tween(350),
+        label = "searchTitleInset"
+    )
 
     val searchResults = remember(trimmedQuery, selectedGenreFilter, books) {
         if (!isFilteringOrSearching) {
@@ -179,8 +189,6 @@ fun LibrarySearchScreen(
             books.count { GenreClassifier.bookMatchesFilter(it, genre) }
         }
     }
-
-    val isEInk = LocalEInkMode.current
 
     Box(
         modifier = modifier

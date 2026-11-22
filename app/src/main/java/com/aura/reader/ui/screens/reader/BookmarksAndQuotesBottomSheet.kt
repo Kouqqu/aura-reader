@@ -76,7 +76,8 @@ fun BookmarksAndQuotesBottomSheet(
     onDeleteQuote: (id: String) -> Unit,
     onQuoteClick: (Quote) -> Unit = {},
     savedWords: List<com.aura.reader.data.model.SavedWord> = emptyList(),
-    onDeleteSavedWord: (id: String) -> Unit = {}
+    onDeleteSavedWord: (id: String) -> Unit = {},
+    onWordClick: (com.aura.reader.data.model.SavedWord) -> Unit = {}
 ) {
     val context = LocalContext.current
     val strings = LocalAppStrings.current
@@ -393,7 +394,12 @@ fun BookmarksAndQuotesBottomSheet(
                                     colors = CardDefaults.cardColors(
                                         containerColor = MaterialTheme.colorScheme.surfaceContainer
                                     ),
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            onWordClick(item)
+                                            onDismiss()
+                                        }
                                 ) {
                                     Column(
                                         modifier = Modifier

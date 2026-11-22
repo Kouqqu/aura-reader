@@ -1,4 +1,6 @@
 package com.aura.reader.ui.screens.library
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -259,14 +261,17 @@ fun LibraryScreen(
     val updateInstallState by viewModel.updateInstallState.collectAsState()
     val foundFiles by viewModel.foundDeviceFiles.collectAsState()
     val readerSettings by viewModel.readerSettings.collectAsState()
-    val isGlass = readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isEInk = LocalEInkMode.current
+    val effectiveDesignStyle = if (isEInk) AppDesignStyle.MATERIAL else readerSettings.appDesignStyle
+    val isGlass = effectiveDesignStyle == AppDesignStyle.LIQUID_GLASS
     val sysDark = isSystemInDarkTheme()
-    val isThemeDark = when (readerSettings.appThemeMode) {
+    val effectiveThemeMode = if (isEInk) ReaderThemeMode.LIGHT else readerSettings.appThemeMode
+    val isThemeDark = when (effectiveThemeMode) {
         ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
         ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
         ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
     }
-    val isSepiaTheme = readerSettings.appThemeMode == ReaderThemeMode.SEPIA
+    val isSepiaTheme = effectiveThemeMode == ReaderThemeMode.SEPIA
     val appSettings by viewModel.appSettings.collectAsState()
     val appLanguage by viewModel.appLanguage.collectAsState()
     val updateNotificationsEnabled by viewModel.updateNotificationsEnabled.collectAsState()
@@ -318,7 +323,6 @@ fun LibraryScreen(
     var showAddBooksSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
 
-    val isEInk = LocalEInkMode.current
     val pageAnimationSpec = spring<Float>(
         dampingRatio = Spring.DampingRatioNoBouncy,
         stiffness = 420f
@@ -332,6 +336,46 @@ fun LibraryScreen(
             }
         }
     }
+
+    val libraryInstantSwipe = if (isEInk) {
+        Modifier.pointerInput(pagerState.currentPage, pagerState.pageCount) {
+            var totalDrag = 0f
+            var triggered = false
+            detectHorizontalDragGestures(
+                onDragStart = {
+                    totalDrag = 0f
+                    triggered = false
+                },
+                onDragEnd = {
+                    if (!triggered) {
+                        val threshold = 35f
+                        if (totalDrag < -threshold && pagerState.currentPage < pagerState.pageCount - 1) {
+                            smoothScrollToPage(pagerState.currentPage + 1)
+                        } else if (totalDrag > threshold && pagerState.currentPage > 0) {
+                            smoothScrollToPage(pagerState.currentPage - 1)
+                        }
+                    }
+                },
+                onDragCancel = {
+                    totalDrag = 0f
+                    triggered = false
+                },
+                onHorizontalDrag = { _, dragAmount ->
+                    totalDrag += dragAmount
+                    val triggerThreshold = 75f
+                    if (!triggered) {
+                        if (totalDrag < -triggerThreshold && pagerState.currentPage < pagerState.pageCount - 1) {
+                            triggered = true
+                            smoothScrollToPage(pagerState.currentPage + 1)
+                        } else if (totalDrag > triggerThreshold && pagerState.currentPage > 0) {
+                            triggered = true
+                            smoothScrollToPage(pagerState.currentPage - 1)
+                        }
+                    }
+                }
+            )
+        }
+    } else Modifier
 
     BackHandler(enabled = showAddBooksSheet) {
         showAddBooksSheet = false
@@ -631,7 +675,7 @@ fun LibraryScreen(
                     isSettingsOpen = isSettingsOpen,
                     selectedMainTab = selectedMainTab,
                     selectedSettingsCategory = selectedSettingsCategory,
-                    designStyle = readerSettings.appDesignStyle,
+                    designStyle = effectiveDesignStyle,
                     clarity = readerSettings.glassClarity,
                     isDark = isThemeDark,
                     onMyBooksClick = {
@@ -688,8 +732,8 @@ fun LibraryScreen(
 
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = !isReorderMode
+                modifier = Modifier.fillMaxSize().then(libraryInstantSwipe),
+                userScrollEnabled = !isReorderMode && !isEInk
             ) { page ->
                 when (page) {
                     0 -> {
@@ -712,7 +756,7 @@ fun LibraryScreen(
                         ) {
                                     if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
                                         Column(Modifier.fillMaxSize()) {
-                                            if (isSearchExpanded && !isGlass) {
+                                            if (isSearchExpanded && !isGlass && !isEInk) {
                                                 SearchCoverCollage(emptyList(), subdued = true, modifier = Modifier.height(100.dp))
                                             }
                                             Box(Modifier.weight(1f)) {
@@ -733,7 +777,7 @@ fun LibraryScreen(
                                             verticalArrangement = Arrangement.spacedBy(12.dp),
                                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
-                                            if (isSearchExpanded && !isGlass) {
+                                            if (isSearchExpanded && !isGlass && !isEInk) {
                                                 item(key = "searchCollage", span = { GridItemSpan(maxLineSpan) }) {
                                                     val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
                                                     val subdued = searchQuery.isNotBlank() || keyboardOpen
@@ -1418,7 +1462,7 @@ fun LibraryScreen(
                     }
                     4 -> {
                         SettingsAboutPage(
-                            appDesignStyle = readerSettings.appDesignStyle,
+                            appDesignStyle = effectiveDesignStyle,
                             onOpenOnboarding = onOpenOnboarding
                         )
                     }
