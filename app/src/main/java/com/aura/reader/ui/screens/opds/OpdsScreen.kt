@@ -1,8 +1,15 @@
 package com.aura.reader.ui.screens.opds
 
 import com.aura.reader.ui.components.ParallaxCoverViewer
+import com.aura.reader.ui.components.liquidGlassMenuAppearance
+import com.aura.reader.ui.components.PopupBlurBehind
+import com.aura.reader.data.model.AppDesignStyle
+import androidx.compose.foundation.isSystemInDarkTheme
 
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.mutableFloatStateOf
+import kotlin.coroutines.cancellation.CancellationException
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -147,6 +154,9 @@ fun OpdsScreen(
     val vpnNoticeDismissed by viewModel.vpnNoticeDismissed.collectAsState()
     val searchScope by viewModel.searchScope.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
+    val appDesignStyle by viewModel.appDesignStyle.collectAsState()
+    val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isDark = isSystemInDarkTheme()
     var isSearchFocused by remember { mutableStateOf(false) }
     var inspectingCoverBook by remember { mutableStateOf<OpdsBook?>(null) }
 
@@ -154,8 +164,17 @@ fun OpdsScreen(
         viewModel.refreshConnectionStatus()
     }
 
-    BackHandler(enabled = canGoBack) {
-        viewModel.navigateBack()
+    var predictiveBackProgress by remember { mutableFloatStateOf(0f) }
+    PredictiveBackHandler(enabled = canGoBack) { progress ->
+        try {
+            progress.collect { backEvent ->
+                predictiveBackProgress = backEvent.progress
+            }
+            viewModel.navigateBack()
+        } catch (_: CancellationException) {
+        } finally {
+            predictiveBackProgress = 0f
+        }
     }
 
     var showMirrorDialog by remember { mutableStateOf(false) }
@@ -241,6 +260,13 @@ fun OpdsScreen(
     }
 
     Scaffold(
+        modifier = Modifier.graphicsLayer {
+            if (predictiveBackProgress > 0f) {
+                val p = predictiveBackProgress
+                translationX = p * size.width
+                alpha = 1f - (p * 0.12f)
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -519,12 +545,16 @@ fun OpdsScreen(
                         size = ExpressiveButtonSize.Small
                     )
 
+                    val sortMenuAppearance = liquidGlassMenuAppearance(isGlass, isDark)
                     DropdownMenu(
                         expanded = showSortDropdown,
                         onDismissRequest = { showSortDropdown = false },
                         shape = RoundedCornerShape(16.dp),
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        containerColor = sortMenuAppearance.containerColor,
+                        border = sortMenuAppearance.border,
+                        shadowElevation = sortMenuAppearance.shadowElevation
                     ) {
+                        PopupBlurBehind(isGlass = isGlass)
                         // 1. По читателям / популярности
                         val popIsDesc = sortOption != CatalogSortOption.POPULAR_ASC
                         CatalogSortMenuItem(

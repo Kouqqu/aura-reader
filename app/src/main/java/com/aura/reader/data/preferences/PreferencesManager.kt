@@ -13,9 +13,12 @@ import com.aura.reader.data.model.Quote
 import com.aura.reader.data.model.ReaderFontFamily
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.ReaderSettings
+import com.aura.reader.data.model.AppSettings
+import com.aura.reader.ui.theme.AppLanguage
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.model.TwoColumnMode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
@@ -72,6 +75,7 @@ class PreferencesManager(private val context: Context) {
         val UPDATE_NOTIFICATIONS_KEY = booleanPreferencesKey("update_notifications_enabled")
         val READING_STATS_ENABLED_KEY = booleanPreferencesKey("reading_stats_enabled")
         val MATERIAL_YOU_ENABLED_KEY = booleanPreferencesKey("material_you_enabled")
+        val COLOR_PRESET_KEY = stringPreferencesKey("color_preset")
         val OPDS_HISTORY_KEY = stringPreferencesKey("opds_search_history")
         val LIBRARY_SEARCH_HISTORY_KEY = stringPreferencesKey("library_search_history")
         val OPDS_BASE_URL_KEY = stringPreferencesKey("opds_base_url")
@@ -89,6 +93,7 @@ class PreferencesManager(private val context: Context) {
         val SERIF_FONT_NAME_KEY = stringPreferencesKey("serif_font_name")
         val SANS_SERIF_FONT_NAME_KEY = stringPreferencesKey("sans_serif_font_name")
         val MONOSPACE_FONT_NAME_KEY = stringPreferencesKey("monospace_font_name")
+        val MANGA_MODE_RTL_KEY = booleanPreferencesKey("manga_mode_rtl")
         val ANONYMOUS_ANALYTICS_KEY = booleanPreferencesKey("anonymous_analytics_enabled")
         val HAS_TRACKED_FIRST_OPEN_KEY = booleanPreferencesKey("has_tracked_first_open")
         val LAST_TRACKED_VERSION_CODE_KEY = intPreferencesKey("last_tracked_version_code")
@@ -103,10 +108,17 @@ class PreferencesManager(private val context: Context) {
         val SEASONAL_EFFECTS_ENABLED_KEY = booleanPreferencesKey("seasonal_effects_enabled")
         val HOLIDAY_OVERRIDE_KEY = stringPreferencesKey("holiday_season_override")
         val LAST_HOLIDAY_SOUND_SEASON_KEY = stringPreferencesKey("last_holiday_sound_season")
+        val PRIVATE_FOLDER_PASSWORD_HASH_KEY = stringPreferencesKey("private_folder_password_hash")
+        val PRIVATE_BOOK_IDS_KEY = stringPreferencesKey("private_book_ids_json")
         val BOTTOM_PROGRESS_MODE_KEY = intPreferencesKey("reader_bottom_progress_mode")
+        val READER_TAP_ZONES_HINT_SHOWN_KEY = booleanPreferencesKey("reader_tap_zones_hint_shown")
+        val AUTO_FETCH_METADATA_KEY = booleanPreferencesKey("auto_fetch_metadata")
+        val BOOK_PAGING_MODES_KEY = stringPreferencesKey("book_paging_modes_json")
+        val SAVED_WORDS_KEY = stringPreferencesKey("saved_words_json")
+        val EINK_MODE_ENABLED_KEY = booleanPreferencesKey("eink_mode_enabled")
     }
 
-        val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
+    val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[HAS_COMPLETED_ONBOARDING_KEY] ?: false
     }
 
@@ -262,6 +274,16 @@ class PreferencesManager(private val context: Context) {
         }
     }
 
+    val colorPreset: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[COLOR_PRESET_KEY] ?: "PURPLE"
+    }
+
+    suspend fun setColorPreset(preset: String) {
+        context.dataStore.edit { prefs ->
+            prefs[COLOR_PRESET_KEY] = preset
+        }
+    }
+
     val appLanguage: Flow<com.aura.reader.ui.theme.AppLanguage> = context.dataStore.data.map { prefs ->
         val code = prefs[APP_LANGUAGE_KEY] ?: com.aura.reader.ui.theme.AppLanguage.RU.code
         com.aura.reader.ui.theme.AppLanguage.fromCode(code)
@@ -284,7 +306,7 @@ class PreferencesManager(private val context: Context) {
     }
 
     val anonymousAnalyticsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[ANONYMOUS_ANALYTICS_KEY] ?: true
+        prefs[ANONYMOUS_ANALYTICS_KEY] ?: false
     }
 
     suspend fun setAnonymousAnalyticsEnabled(enabled: Boolean) {
@@ -371,6 +393,7 @@ class PreferencesManager(private val context: Context) {
         }
 
         val bottomProgressMode = prefs[BOTTOM_PROGRESS_MODE_KEY] ?: 0
+        val mangaModeRtl = prefs[MANGA_MODE_RTL_KEY] ?: false
 
         ReaderSettings(
             fontSizeSp = fontSize,
@@ -392,8 +415,76 @@ class PreferencesManager(private val context: Context) {
             appThemeMode = appThemeMode,
             appDesignStyle = appDesignStyle,
             glassClarity = prefs[GLASS_CLARITY_KEY] ?: 0.85f,
-            bottomProgressMode = bottomProgressMode
+            bottomProgressMode = bottomProgressMode,
+            mangaModeRtl = mangaModeRtl
         )
+    }
+
+    val appSettings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
+        val appThemeModeStr = prefs[APP_THEME_MODE_KEY] ?: ReaderThemeMode.SYSTEM_DYNAMIC.name
+        val appThemeMode = try {
+            ReaderThemeMode.valueOf(appThemeModeStr)
+        } catch (e: Exception) {
+            ReaderThemeMode.SYSTEM_DYNAMIC
+        }
+
+        val langCode = prefs[APP_LANGUAGE_KEY] ?: AppLanguage.RU.code
+        val lang = AppLanguage.entries.find { it.code == langCode } ?: AppLanguage.RU
+
+        val appDesignStyleStr = prefs[APP_DESIGN_STYLE_KEY] ?: AppDesignStyle.LIQUID_GLASS.name
+        val appDesignStyle = try {
+            AppDesignStyle.valueOf(appDesignStyleStr)
+        } catch (e: Exception) {
+            AppDesignStyle.LIQUID_GLASS
+        }
+
+        AppSettings(
+            themeMode = appThemeMode,
+            language = lang,
+            appDesignStyle = appDesignStyle,
+            glassClarity = prefs[GLASS_CLARITY_KEY] ?: 0.85f,
+            appFont = prefs[APP_FONT_KEY] ?: "GOOGLE_SANS",
+            updateNotificationsEnabled = prefs[UPDATE_NOTIFICATIONS_KEY] ?: true,
+            anonymousAnalyticsEnabled = prefs[ANONYMOUS_ANALYTICS_KEY] ?: false,
+            readingStatsEnabled = prefs[READING_STATS_ENABLED_KEY] ?: true,
+            materialYouEnabled = prefs[MATERIAL_YOU_ENABLED_KEY] ?: false,
+            colorPreset = prefs[COLOR_PRESET_KEY] ?: "PURPLE",
+            seasonalEffectsEnabled = prefs[SEASONAL_EFFECTS_ENABLED_KEY] ?: true,
+            holidayOverride = prefs[HOLIDAY_OVERRIDE_KEY] ?: "AUTO",
+            customOpdsEnabled = prefs[CUSTOM_OPDS_ENABLED_KEY] ?: false,
+            customOpdsUrl = prefs[OPDS_BASE_URL_KEY] ?: "",
+            developerModeEnabled = prefs[DEVELOPER_MODE_KEY] ?: false,
+            updateChannel = prefs[UPDATE_CHANNEL_KEY] ?: "RELEASE",
+            autoFetchMetadataEnabled = prefs[AUTO_FETCH_METADATA_KEY] ?: true,
+            libraryViewMode = prefs[LIBRARY_VIEW_MODE_KEY] ?: "LIST",
+            eInkModeEnabled = prefs[EINK_MODE_ENABLED_KEY] ?: false
+        )
+    }
+
+    suspend fun updateAppSettings(transform: (AppSettings) -> AppSettings) {
+        val current = appSettings.first()
+        val updated = transform(current)
+        context.dataStore.edit { prefs ->
+            prefs[APP_THEME_MODE_KEY] = updated.themeMode.name
+            prefs[APP_LANGUAGE_KEY] = updated.language.code
+            prefs[APP_DESIGN_STYLE_KEY] = updated.appDesignStyle.name
+            prefs[GLASS_CLARITY_KEY] = updated.glassClarity
+            prefs[APP_FONT_KEY] = updated.appFont
+            prefs[UPDATE_NOTIFICATIONS_KEY] = updated.updateNotificationsEnabled
+            prefs[ANONYMOUS_ANALYTICS_KEY] = updated.anonymousAnalyticsEnabled
+            prefs[READING_STATS_ENABLED_KEY] = updated.readingStatsEnabled
+            prefs[MATERIAL_YOU_ENABLED_KEY] = updated.materialYouEnabled
+            prefs[COLOR_PRESET_KEY] = updated.colorPreset
+            prefs[SEASONAL_EFFECTS_ENABLED_KEY] = updated.seasonalEffectsEnabled
+            prefs[HOLIDAY_OVERRIDE_KEY] = updated.holidayOverride
+            prefs[CUSTOM_OPDS_ENABLED_KEY] = updated.customOpdsEnabled
+            prefs[OPDS_BASE_URL_KEY] = updated.customOpdsUrl
+            prefs[DEVELOPER_MODE_KEY] = updated.developerModeEnabled
+            prefs[UPDATE_CHANNEL_KEY] = updated.updateChannel
+            prefs[AUTO_FETCH_METADATA_KEY] = updated.autoFetchMetadataEnabled
+            prefs[LIBRARY_VIEW_MODE_KEY] = updated.libraryViewMode
+            prefs[EINK_MODE_ENABLED_KEY] = updated.eInkModeEnabled
+        }
     }
 
     suspend fun updateBottomProgressMode(mode: Int) {
@@ -497,9 +588,36 @@ class PreferencesManager(private val context: Context) {
         }
     }
 
+    val bookPagingModesJson: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[BOOK_PAGING_MODES_KEY]
+    }
+
+    suspend fun setPagingModeForBook(bookId: String, pagingMode: Boolean) {
+        context.dataStore.edit { prefs ->
+            val currentJson = prefs[BOOK_PAGING_MODES_KEY]
+            val json = if (!currentJson.isNullOrBlank()) {
+                try {
+                    org.json.JSONObject(currentJson)
+                } catch (_: Exception) {
+                    org.json.JSONObject()
+                }
+            } else {
+                org.json.JSONObject()
+            }
+            json.put(bookId, pagingMode)
+            prefs[BOOK_PAGING_MODES_KEY] = json.toString()
+        }
+    }
+
     suspend fun updatePagingMode(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PAGING_MODE_KEY] = enabled
+        }
+    }
+
+    suspend fun updateMangaModeRtl(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[MANGA_MODE_RTL_KEY] = enabled
         }
     }
 
@@ -528,6 +646,10 @@ class PreferencesManager(private val context: Context) {
     }
 
     // --- Reading Time Stats ---
+    val readingStatsJson: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[READING_STATS_KEY]
+    }
+
     private fun getTodayDateString(): String {
         return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
     }
@@ -785,6 +907,80 @@ class PreferencesManager(private val context: Context) {
         }
     }
 
+    // --- Saved Words Management ---
+    val savedWords: Flow<List<com.aura.reader.data.model.SavedWord>> = context.dataStore.data.map { prefs ->
+        val json = prefs[SAVED_WORDS_KEY] ?: "[]"
+        try {
+            val arr = JSONArray(json)
+            val list = mutableListOf<com.aura.reader.data.model.SavedWord>()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                list.add(
+                    com.aura.reader.data.model.SavedWord(
+                        id = o.getString("id"),
+                        bookId = o.optString("bookId"),
+                        bookTitle = o.optString("bookTitle"),
+                        word = o.getString("word"),
+                        definition = o.getString("definition"),
+                        contextText = o.optString("contextText"),
+                        chapterIndex = o.optInt("chapterIndex", 0),
+                        timestamp = o.optLong("timestamp", System.currentTimeMillis())
+                    )
+                )
+            }
+            list
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun addSavedWord(word: com.aura.reader.data.model.SavedWord) {
+        context.dataStore.edit { prefs ->
+            val json = prefs[SAVED_WORDS_KEY] ?: "[]"
+            val arr = try { JSONArray(json) } catch (_: Exception) { JSONArray() }
+            val o = JSONObject().apply {
+                put("id", word.id)
+                put("bookId", word.bookId)
+                put("bookTitle", word.bookTitle)
+                put("word", word.word)
+                put("definition", word.definition)
+                put("contextText", word.contextText)
+                put("chapterIndex", word.chapterIndex)
+                put("timestamp", word.timestamp)
+            }
+            var updated = false
+            for (i in 0 until arr.length()) {
+                val existing = arr.getJSONObject(i)
+                if (existing.optString("word").equals(word.word, ignoreCase = true) &&
+                    existing.optString("bookId") == word.bookId
+                ) {
+                    arr.put(i, o)
+                    updated = true
+                    break
+                }
+            }
+            if (!updated) {
+                arr.put(o)
+            }
+            prefs[SAVED_WORDS_KEY] = arr.toString()
+        }
+    }
+
+    suspend fun removeSavedWord(id: String) {
+        context.dataStore.edit { prefs ->
+            val json = prefs[SAVED_WORDS_KEY] ?: "[]"
+            val arr = try { JSONArray(json) } catch (_: Exception) { JSONArray() }
+            val newArr = JSONArray()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                if (o.getString("id") != id) {
+                    newArr.put(o)
+                }
+            }
+            prefs[SAVED_WORDS_KEY] = newArr.toString()
+        }
+    }
+
     // --- Recent Books ---
     val recentBooksJson: Flow<String?> = context.dataStore.data.map { prefs ->
         prefs[RECENT_BOOKS_KEY]
@@ -815,12 +1011,22 @@ class PreferencesManager(private val context: Context) {
             prefs[RECENT_BOOKS_KEY] = merge(prefs[RECENT_BOOKS_KEY], JSONArray(manifest.getString("recentBooksJson")))
             manifest.optJSONArray("bookmarks")?.let { prefs[BOOKMARKS_KEY] = merge(prefs[BOOKMARKS_KEY], it) }
             manifest.optJSONArray("quotes")?.let { prefs[QUOTES_KEY] = merge(prefs[QUOTES_KEY], it) }
+            manifest.optJSONArray("savedWords")?.let { prefs[SAVED_WORDS_KEY] = merge(prefs[SAVED_WORDS_KEY], it) }
             manifest.optJSONArray("userCollections")?.let { incoming ->
                 val names = linkedSetOf<String>()
                 val old = JSONArray(prefs[USER_COLLECTIONS_KEY] ?: "[]")
                 for (i in 0 until old.length()) names.add(old.getString(i))
                 for (i in 0 until incoming.length()) names.add(incoming.getString(i))
                 prefs[USER_COLLECTIONS_KEY] = JSONArray(names.toList()).toString()
+            }
+            manifest.optJSONObject("readingStats")?.let { incoming ->
+                val current = try { JSONObject(prefs[READING_STATS_KEY] ?: "{}") } catch (e: Exception) { JSONObject() }
+                for (key in incoming.keys()) {
+                    val incomingSec = incoming.optLong(key, 0L)
+                    val currSec = current.optLong(key, 0L)
+                    current.put(key, maxOf(currSec, incomingSec))
+                }
+                prefs[READING_STATS_KEY] = current.toString()
             }
             manifest.optJSONObject("settings")?.let { settings ->
                 if (settings.has("fontSize")) prefs[FONT_SIZE_KEY] = settings.getDouble("fontSize").toFloat()
@@ -831,9 +1037,33 @@ class PreferencesManager(private val context: Context) {
                 if (settings.has("pagingMode")) prefs[PAGING_MODE_KEY] = settings.getBoolean("pagingMode")
                 if (settings.has("statsEnabled")) prefs[READING_STATS_ENABLED_KEY] = settings.getBoolean("statsEnabled")
                 if (settings.has("materialYou")) prefs[MATERIAL_YOU_ENABLED_KEY] = settings.getBoolean("materialYou")
+                if (settings.has("colorPreset")) prefs[COLOR_PRESET_KEY] = settings.getString("colorPreset")
                 if (settings.has("updateNotifications")) prefs[UPDATE_NOTIFICATIONS_KEY] = settings.getBoolean("updateNotifications")
                 if (settings.has("catalogUrl")) prefs[OPDS_BASE_URL_KEY] = settings.getString("catalogUrl")
                 if (settings.has("appLanguage")) prefs[APP_LANGUAGE_KEY] = settings.getString("appLanguage")
+                if (settings.has("fontName")) prefs[FONT_NAME_KEY] = settings.getString("fontName")
+                if (settings.has("serifFontName")) prefs[SERIF_FONT_NAME_KEY] = settings.getString("serifFontName")
+                if (settings.has("sansSerifFontName")) prefs[SANS_SERIF_FONT_NAME_KEY] = settings.getString("sansSerifFontName")
+                if (settings.has("monospaceFontName")) prefs[MONOSPACE_FONT_NAME_KEY] = settings.getString("monospaceFontName")
+                if (settings.has("lightImageBackground")) prefs[LIGHT_IMAGE_BG_KEY] = settings.getBoolean("lightImageBackground")
+                if (settings.has("autoHyphenation")) prefs[AUTO_HYPHENATION_KEY] = settings.getBoolean("autoHyphenation")
+                if (settings.has("twoColumnMode")) prefs[TWO_COLUMN_MODE_KEY] = settings.getString("twoColumnMode")
+                if (settings.has("pageAnimation")) prefs[PAGE_ANIMATION_KEY] = settings.getString("pageAnimation")
+                if (settings.has("hapticFeedbackEnabled")) prefs[HAPTIC_FEEDBACK_KEY] = settings.getBoolean("hapticFeedbackEnabled")
+                if (settings.has("syncThemesWithApp")) prefs[SYNC_THEMES_WITH_APP_KEY] = settings.getBoolean("syncThemesWithApp")
+                if (settings.has("appThemeMode")) prefs[APP_THEME_MODE_KEY] = settings.getString("appThemeMode")
+                if (settings.has("appDesignStyle")) prefs[APP_DESIGN_STYLE_KEY] = settings.getString("appDesignStyle")
+                if (settings.has("glassClarity")) prefs[GLASS_CLARITY_KEY] = settings.getDouble("glassClarity").toFloat()
+                if (settings.has("libraryViewMode")) prefs[LIBRARY_VIEW_MODE_KEY] = settings.getString("libraryViewMode")
+                if (settings.has("librarySortOrder")) prefs[LIBRARY_SORT_ORDER_KEY] = settings.getString("librarySortOrder")
+                if (settings.has("customBookOrder")) prefs[CUSTOM_BOOK_ORDER_KEY] = settings.getString("customBookOrder")
+                if (settings.has("autoFetchMetadata")) prefs[AUTO_FETCH_METADATA_KEY] = settings.getBoolean("autoFetchMetadata")
+                if (settings.has("customOpdsEnabled")) prefs[CUSTOM_OPDS_ENABLED_KEY] = settings.getBoolean("customOpdsEnabled")
+                if (settings.has("userAverageWpm")) prefs[AVERAGE_WPM_KEY] = settings.getDouble("userAverageWpm").toFloat()
+                if (settings.has("seasonalEffectsEnabled")) prefs[SEASONAL_EFFECTS_ENABLED_KEY] = settings.getBoolean("seasonalEffectsEnabled")
+                if (settings.has("mangaModeRtl")) prefs[MANGA_MODE_RTL_KEY] = settings.getBoolean("mangaModeRtl")
+                if (settings.has("eInkModeEnabled")) prefs[EINK_MODE_ENABLED_KEY] = settings.getBoolean("eInkModeEnabled")
+                if (manifest.has("bookPagingModes")) prefs[BOOK_PAGING_MODES_KEY] = manifest.getJSONObject("bookPagingModes").toString()
             }
         }
     }
@@ -1125,6 +1355,132 @@ class PreferencesManager(private val context: Context) {
             val arr = JSONArray()
             for (id in order) arr.put(id)
             prefs[CUSTOM_BOOK_ORDER_KEY] = arr.toString()
+        }
+    }
+
+    // --- Private Folder ---
+    val privateFolderPasswordHash: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[PRIVATE_FOLDER_PASSWORD_HASH_KEY] ?: ""
+    }
+
+    val privateBookIds: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[PRIVATE_BOOK_IDS_KEY] ?: "[]"
+        try {
+            val arr = JSONArray(raw)
+            val set = mutableSetOf<String>()
+            for (i in 0 until arr.length()) set.add(arr.getString(i))
+            set
+        } catch (e: Exception) {
+            emptySet()
+        }
+    }
+
+    private fun hashLegacy(password: String): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val bytes = digest.digest(password.toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun hashWithSalt(password: String, saltHex: String): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val combined = "$saltHex:$password".toByteArray(Charsets.UTF_8)
+        val hashHex = digest.digest(combined).joinToString("") { "%02x".format(it) }
+        return "$saltHex\$$hashHex"
+    }
+
+    suspend fun setPrivateFolderPassword(password: String) {
+        val saltBytes = ByteArray(16)
+        java.security.SecureRandom().nextBytes(saltBytes)
+        val saltHex = saltBytes.joinToString("") { "%02x".format(it) }
+        val saltedHash = hashWithSalt(password, saltHex)
+        context.dataStore.edit { prefs ->
+            prefs[PRIVATE_FOLDER_PASSWORD_HASH_KEY] = saltedHash
+        }
+    }
+
+    suspend fun verifyPrivateFolderPassword(password: String): Boolean {
+        val currentHash = context.dataStore.data.first()[PRIVATE_FOLDER_PASSWORD_HASH_KEY] ?: ""
+        if (currentHash.isEmpty()) return false
+        return if (currentHash.contains("$")) {
+            val parts = currentHash.split("$", limit = 2)
+            val saltHex = parts[0]
+            val expectedHash = parts[1]
+            val calculated = hashWithSalt(password, saltHex).substringAfter("$")
+            calculated == expectedHash
+        } else {
+            // Backward-compatible check with automatic salted upgrade
+            if (hashLegacy(password) == currentHash) {
+                setPrivateFolderPassword(password)
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    suspend fun addBooksToPrivateFolder(bookIds: Collection<String>) {
+        context.dataStore.edit { prefs ->
+            val current = mutableSetOf<String>()
+            val raw = prefs[PRIVATE_BOOK_IDS_KEY] ?: "[]"
+            try {
+                val arr = JSONArray(raw)
+                for (i in 0 until arr.length()) current.add(arr.getString(i))
+            } catch (_: Exception) {}
+            current.addAll(bookIds)
+            val out = JSONArray()
+            for (id in current) out.put(id)
+            prefs[PRIVATE_BOOK_IDS_KEY] = out.toString()
+        }
+    }
+
+    suspend fun removeBookFromPrivateFolder(bookId: String) {
+        context.dataStore.edit { prefs ->
+            val current = mutableSetOf<String>()
+            val raw = prefs[PRIVATE_BOOK_IDS_KEY] ?: "[]"
+            try {
+                val arr = JSONArray(raw)
+                for (i in 0 until arr.length()) current.add(arr.getString(i))
+            } catch (_: Exception) {}
+            current.remove(bookId)
+            val out = JSONArray()
+            for (id in current) out.put(id)
+            prefs[PRIVATE_BOOK_IDS_KEY] = out.toString()
+        }
+    }
+
+    suspend fun removeBooksFromPrivateFolder(bookIds: Collection<String>) {
+        context.dataStore.edit { prefs ->
+            val current = mutableSetOf<String>()
+            val raw = prefs[PRIVATE_BOOK_IDS_KEY] ?: "[]"
+            try {
+                val arr = JSONArray(raw)
+                for (i in 0 until arr.length()) current.add(arr.getString(i))
+            } catch (_: Exception) {}
+            current.removeAll(bookIds.toSet())
+            val out = JSONArray()
+            for (id in current) out.put(id)
+            prefs[PRIVATE_BOOK_IDS_KEY] = out.toString()
+        }
+    }
+
+    // --- Reader Tap Zones Tutorial ---
+    val readerTapZonesHintShown: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[READER_TAP_ZONES_HINT_SHOWN_KEY] ?: false
+    }
+
+    suspend fun setReaderTapZonesHintShown(shown: Boolean = true) {
+        context.dataStore.edit { prefs ->
+            prefs[READER_TAP_ZONES_HINT_SHOWN_KEY] = shown
+        }
+    }
+
+    val autoFetchMetadataEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[AUTO_FETCH_METADATA_KEY] ?: true
+    }
+
+    suspend fun setAutoFetchMetadataEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[AUTO_FETCH_METADATA_KEY] = enabled
         }
     }
 }

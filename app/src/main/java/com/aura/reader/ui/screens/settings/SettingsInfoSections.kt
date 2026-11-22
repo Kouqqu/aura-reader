@@ -8,15 +8,22 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Policy
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -29,21 +36,23 @@ import com.aura.reader.ui.theme.LocalAppStrings
 
 @Composable
 internal fun SettingsBackupSection(
+    isGlass: Boolean = false,
     onExportBackup: () -> Unit,
     onSendToGoogleDrive: () -> Unit,
     onRestoreBackup: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    var expanded by rememberSaveable { mutableStateOf(true) }
 
     // 5. Backup & Sync Section
-    Text(
-        text = strings.backupSectionTitle,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+    SettingsFoldHeader(
+        title = strings.backupSectionTitle,
+        isGlass = isGlass,
+        expanded = expanded,
+        onToggle = { expanded = !expanded }
     )
 
+    SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
     ExpressiveSettingsGroup {
         ExpressiveSettingsRow(
             title = strings.createBackupTitle,
@@ -75,27 +84,22 @@ internal fun SettingsBackupSection(
             }
         )
     }
+    }
 
     Spacer(modifier = Modifier.height(20.dp))
 }
 
 @Composable
 internal fun SettingsAboutSection(
+    isGlass: Boolean = false,
     isFullScreen: Boolean,
     onDismiss: () -> Unit,
     onOpenOnboarding: () -> Unit
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
-
-    // 6. About, GitHub & Donate Section
-    Text(
-        text = strings.aboutSectionTitle,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-    )
+    var showLicensesDialog by remember { mutableStateOf(false) }
+    var showCrashLogDialog by remember { mutableStateOf(false) }
 
     ExpressiveSettingsGroup {
         ExpressiveSettingsRow(
@@ -156,6 +160,24 @@ internal fun SettingsAboutSection(
         )
         ExpressiveDivider()
         ExpressiveSettingsRow(
+            title = strings.licensesTitle,
+            subtitle = null,
+            icon = {
+                SettingsIconBox(
+                    icon = Icons.Rounded.Policy,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
+                )
+            },
+            onClick = {
+                showLicensesDialog = true
+            },
+            trailing = {
+                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        )
+        ExpressiveDivider()
+        ExpressiveSettingsRow(
             title = strings.quickGuideTitle,
             subtitle = strings.quickGuideSubtitle,
             icon = {
@@ -173,6 +195,32 @@ internal fun SettingsAboutSection(
                 Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         )
+        ExpressiveDivider()
+        ExpressiveSettingsRow(
+            title = strings.crashLogTitle,
+            subtitle = strings.crashLogSubtitle,
+            icon = {
+                SettingsIconBox(
+                    icon = Icons.Rounded.BugReport,
+                    tint = MaterialTheme.colorScheme.error,
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+                )
+            },
+            onClick = {
+                showCrashLogDialog = true
+            },
+            trailing = {
+                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        )
+    }
+
+    if (showLicensesDialog) {
+        LicensesDialog(onDismiss = { showLicensesDialog = false })
+    }
+
+    if (showCrashLogDialog) {
+        CrashLogDialog(onDismiss = { showCrashLogDialog = false })
     }
 
     Spacer(modifier = Modifier.height(24.dp))

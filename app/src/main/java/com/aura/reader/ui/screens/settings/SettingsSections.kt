@@ -5,6 +5,11 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
@@ -18,8 +23,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,11 +37,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Analytics
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Dns
+import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Speed
@@ -46,6 +55,7 @@ import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,6 +69,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -66,9 +77,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aura.reader.data.model.AppDesignStyle
+import com.aura.reader.data.model.AppSettings
 import com.aura.reader.ui.components.LiquidGlassSwitch
 import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.data.opds.OpdsService
+import com.aura.reader.ui.screens.library.UpdateCheckState
 import com.aura.reader.ui.theme.AppLanguage
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -193,16 +206,17 @@ internal fun SettingsLanguageSection(
     onOpenLanguagePicker: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    var expanded by rememberSaveable { mutableStateOf(true) }
 
 // 2. Language & Fonts Section
-Text(
-    text = strings.languageSectionTitle,
-    style = MaterialTheme.typography.titleSmall,
-    fontWeight = FontWeight.Bold,
-    color = MaterialTheme.colorScheme.primary,
-    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+SettingsFoldHeader(
+    title = strings.languageSectionTitle,
+    isGlass = isGlass,
+    expanded = expanded,
+    onToggle = { expanded = !expanded }
 )
 
+SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
 ExpressiveSettingsGroup {
     ExpressiveSettingsRow(
         title = strings.languageSectionTitle,
@@ -419,47 +433,51 @@ ExpressiveSettingsGroup {
         }
     }
 }
+}
 
 }
 
 @Composable
 internal fun SettingsAdditionalFeaturesSection(
     isGlass: Boolean,
-    readingStatsEnabled: Boolean,
-    onToggleReadingStats: (Boolean) -> Unit,
-    customOpdsEnabled: Boolean,
-    customOpdsUrl: String,
-    onToggleCustomOpds: (Boolean) -> Unit,
-    onCustomOpdsUrlChange: (String) -> Unit,
-    onResetReadingSpeed: () -> Unit
+    appSettings: AppSettings,
+    onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
+    onResetReadingSpeed: () -> Unit,
+    onDownloadMissingCovers: (() -> Unit)? = null,
+    onDownloadMissingMetadata: (() -> Unit)? = null,
+    booksWithoutCoversCount: Int = 0,
+    booksWithoutMetadataCount: Int = 0,
+    onClearCache: (() -> Unit)? = null,
+    cacheSizeString: String = "0 КБ"
 ) {
     val strings = LocalAppStrings.current
+    var expanded by rememberSaveable { mutableStateOf(true) }
 
 // 3. Additional Features Section
-Text(
-    text = strings.additionalFeaturesSectionTitle,
-    style = MaterialTheme.typography.titleSmall,
-    fontWeight = FontWeight.Bold,
-    color = MaterialTheme.colorScheme.primary,
-    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+SettingsFoldHeader(
+    title = strings.additionalFeaturesSectionTitle,
+    isGlass = isGlass,
+    expanded = expanded,
+    onToggle = { expanded = !expanded }
 )
 
+SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
 ExpressiveSettingsGroup {
     ExpressiveSettingsRow(
-        title = strings.readingStatsToggle,
-        subtitle = strings.readingStatsSubtitle,
-        icon = { SettingsIconBox(Icons.Rounded.BarChart) },
-        onClick = { onToggleReadingStats(!readingStatsEnabled) },
+        title = strings.autoFetchMetadataTitle,
+        subtitle = strings.autoFetchMetadataDesc,
+        icon = { SettingsIconBox(Icons.Rounded.CloudDownload) },
+        onClick = { onUpdateSettings { it.copy(autoFetchMetadataEnabled = !it.autoFetchMetadataEnabled) } },
         trailing = {
             if (isGlass) {
                 LiquidGlassSwitch(
-                    checked = readingStatsEnabled,
-                    onCheckedChange = onToggleReadingStats
+                    checked = appSettings.autoFetchMetadataEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(autoFetchMetadataEnabled = v) } }
                 )
             } else {
                 Switch(
-                    checked = readingStatsEnabled,
-                    onCheckedChange = onToggleReadingStats,
+                    checked = appSettings.autoFetchMetadataEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(autoFetchMetadataEnabled = v) } },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -468,50 +486,6 @@ ExpressiveSettingsGroup {
             }
         }
     )
-    ExpressiveDivider()
-    Column(modifier = Modifier.padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f).padding(end = 12.dp)
-            ) {
-                SettingsIconBox(Icons.Rounded.Speed)
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = strings.readingSpeedSettingTitle,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = strings.resetReadingSpeedSubtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        OutlinedButton(
-            onClick = { onResetReadingSpeed() },
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Speed,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(strings.resetReadingSpeedTitle)
-        }
-    }
     ExpressiveDivider()
     Column(modifier = Modifier.padding(16.dp)) {
         Row(
@@ -541,13 +515,13 @@ ExpressiveSettingsGroup {
             }
             if (isGlass) {
                 LiquidGlassSwitch(
-                    checked = customOpdsEnabled,
-                    onCheckedChange = onToggleCustomOpds
+                    checked = appSettings.customOpdsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(customOpdsEnabled = v) } }
                 )
             } else {
                 Switch(
-                    checked = customOpdsEnabled,
-                    onCheckedChange = onToggleCustomOpds,
+                    checked = appSettings.customOpdsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(customOpdsEnabled = v) } },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -555,35 +529,100 @@ ExpressiveSettingsGroup {
                 )
             }
         }
-        if (customOpdsEnabled) {
-            Spacer(modifier = Modifier.height(14.dp))
-            var urlText by remember(customOpdsUrl) {
-                mutableStateOf(if (customOpdsUrl == OpdsService.DEFAULT_BASE_URL || customOpdsUrl.contains("flibusta", ignoreCase = true)) "" else customOpdsUrl)
-            }
-            OutlinedTextField(
-                value = urlText,
-                onValueChange = {
-                    urlText = it
-                    onCustomOpdsUrlChange(it)
-                },
-                placeholder = { Text("https://example.com/opds") },
-                label = { Text(strings.customOpdsUrl) },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                    if (urlText.isNotBlank()) {
-                        IconButton(onClick = {
-                            urlText = ""
-                            onCustomOpdsUrlChange("")
-                        }) {
-                            Icon(Icons.Rounded.Clear, contentDescription = strings.clear)
+        AnimatedVisibility(
+            visible = appSettings.customOpdsEnabled,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(14.dp))
+                var urlText by remember(appSettings.customOpdsUrl) {
+                    mutableStateOf(if (appSettings.customOpdsUrl == OpdsService.DEFAULT_BASE_URL || appSettings.customOpdsUrl.contains("flibusta", ignoreCase = true)) "" else appSettings.customOpdsUrl)
+                }
+                OutlinedTextField(
+                    value = urlText,
+                    onValueChange = {
+                        urlText = it
+                        onUpdateSettings { s -> s.copy(customOpdsUrl = it) }
+                    },
+                    placeholder = { Text("https://example.com/opds") },
+                    label = { Text(strings.customOpdsUrl) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        if (urlText.isNotBlank()) {
+                            IconButton(onClick = {
+                                urlText = ""
+                                onUpdateSettings { s -> s.copy(customOpdsUrl = "") }
+                            }) {
+                                Icon(Icons.Rounded.Clear, contentDescription = strings.clear)
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         }
     }
+}
+
+Spacer(modifier = Modifier.height(14.dp))
+
+ExpressiveSettingsGroup {
+    ExpressiveSettingsRow(
+        title = strings.readingStatsToggle,
+        subtitle = strings.readingStatsSubtitle,
+        icon = { SettingsIconBox(Icons.Rounded.BarChart) },
+        onClick = { onUpdateSettings { it.copy(readingStatsEnabled = !it.readingStatsEnabled) } },
+        trailing = {
+            if (isGlass) {
+                LiquidGlassSwitch(
+                    checked = appSettings.readingStatsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(readingStatsEnabled = v) } }
+                )
+            } else {
+                Switch(
+                    checked = appSettings.readingStatsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(readingStatsEnabled = v) } },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            }
+        }
+    )
+    ExpressiveDivider()
+    ExpressiveSettingsRow(
+        title = strings.readingSpeedSettingTitle,
+        subtitle = strings.resetReadingSpeedSubtitle,
+        icon = { SettingsIconBox(Icons.Rounded.Speed) },
+        onClick = onResetReadingSpeed,
+        trailing = {
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    )
+    if (onClearCache != null) {
+        ExpressiveDivider()
+        ExpressiveSettingsRow(
+            title = strings.clearAppCacheTitle,
+            subtitle = strings.clearAppCacheSubtitle(cacheSizeString),
+            icon = { SettingsIconBox(Icons.Rounded.DeleteOutline) },
+            onClick = onClearCache,
+            trailing = {
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        )
+    }
+}
 }
 
 }
@@ -591,47 +630,43 @@ ExpressiveSettingsGroup {
 @Composable
 internal fun SettingsUpdatesSection(
     isGlass: Boolean,
-    updateNotificationsEnabled: Boolean,
-    onToggleUpdateNotifications: (Boolean) -> Unit,
-    anonymousAnalyticsEnabled: Boolean,
-    onToggleAnonymousAnalytics: (Boolean) -> Unit,
+    appSettings: AppSettings,
+    onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
     currentAppVersion: String,
-    developerModeEnabled: Boolean,
-    updateChannel: String,
-    onUpdateChannelChange: (String) -> Unit,
-    holidayOverride: String = "AUTO",
-    onHolidayOverrideChange: (String) -> Unit = {},
+    updateCheckState: UpdateCheckState = UpdateCheckState.Idle,
+    onUpdateChannelChange: (String) -> Unit = {},
     onCheckUpdates: () -> Unit,
     onVersionTap: () -> Unit
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
+    var expanded by rememberSaveable { mutableStateOf(true) }
 
 // 4. Updates & Analytics Section
-Text(
-    text = strings.updatesSectionTitle,
-    style = MaterialTheme.typography.titleSmall,
-    fontWeight = FontWeight.Bold,
-    color = MaterialTheme.colorScheme.primary,
-    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+SettingsFoldHeader(
+    title = strings.updatesSectionTitle,
+    isGlass = isGlass,
+    expanded = expanded,
+    onToggle = { expanded = !expanded }
 )
 
+SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
 ExpressiveSettingsGroup {
     ExpressiveSettingsRow(
         title = strings.updateNotificationsToggle,
         subtitle = strings.updateNotificationsSubtitle,
         icon = { SettingsIconBox(Icons.Rounded.Notifications) },
-        onClick = { onToggleUpdateNotifications(!updateNotificationsEnabled) },
+        onClick = { onUpdateSettings { it.copy(updateNotificationsEnabled = !it.updateNotificationsEnabled) } },
         trailing = {
             if (isGlass) {
                 LiquidGlassSwitch(
-                    checked = updateNotificationsEnabled,
-                    onCheckedChange = onToggleUpdateNotifications
+                    checked = appSettings.updateNotificationsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(updateNotificationsEnabled = v) } }
                 )
             } else {
                 Switch(
-                    checked = updateNotificationsEnabled,
-                    onCheckedChange = onToggleUpdateNotifications,
+                    checked = appSettings.updateNotificationsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(updateNotificationsEnabled = v) } },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -645,17 +680,17 @@ ExpressiveSettingsGroup {
         title = strings.anonymousAnalyticsToggle,
         subtitle = strings.anonymousAnalyticsSubtitle,
         icon = { SettingsIconBox(Icons.Rounded.Analytics) },
-        onClick = { onToggleAnonymousAnalytics(!anonymousAnalyticsEnabled) },
+        onClick = { onUpdateSettings { it.copy(anonymousAnalyticsEnabled = !it.anonymousAnalyticsEnabled) } },
         trailing = {
             if (isGlass) {
                 LiquidGlassSwitch(
-                    checked = anonymousAnalyticsEnabled,
-                    onCheckedChange = onToggleAnonymousAnalytics
+                    checked = appSettings.anonymousAnalyticsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(anonymousAnalyticsEnabled = v) } }
                 )
             } else {
                 Switch(
-                    checked = anonymousAnalyticsEnabled,
-                    onCheckedChange = onToggleAnonymousAnalytics,
+                    checked = appSettings.anonymousAnalyticsEnabled,
+                    onCheckedChange = { v -> onUpdateSettings { it.copy(anonymousAnalyticsEnabled = v) } },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -666,6 +701,7 @@ ExpressiveSettingsGroup {
     )
     ExpressiveDivider()
     Column(modifier = Modifier.padding(16.dp)) {
+        val isChecking = updateCheckState is UpdateCheckState.Checking
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -687,18 +723,82 @@ ExpressiveSettingsGroup {
             }
             OutlinedButton(
                 onClick = onCheckUpdates,
-                shape = RoundedCornerShape(12.dp)
+                enabled = !isChecking,
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.SystemUpdate,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
+                if (isChecking) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(14.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Rounded.SystemUpdate,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(strings.checkUpdatesNow)
+                Text(
+                    if (isChecking) strings.checkingUpdates else strings.checkUpdatesNow,
+                    maxLines = 1
+                )
             }
         }
-        if (developerModeEnabled) {
+
+        // The result lives right under the button: a quiet check mark for "up to
+        // date", a spinner while the request is in flight, and a calm explanation
+        // when the network is unavailable. No more red error snackbar for a check
+        // that simply found nothing new.
+        AnimatedVisibility(
+            visible = updateCheckState is UpdateCheckState.UpToDate || updateCheckState is UpdateCheckState.Failed,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                when (val state = updateCheckState) {
+                    is UpdateCheckState.Checking -> {
+                        // Handled by the button itself to prevent duplicate indicators
+                    }
+                    is UpdateCheckState.UpToDate -> {
+                        Icon(
+                            imageVector = Icons.Rounded.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.upToDate,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    is UpdateCheckState.Failed -> {
+                        Icon(
+                            imageVector = Icons.Rounded.ErrorOutline,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.updateCheckFailed,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    else -> Unit
+                }
+            }
+        }
+        if (appSettings.developerModeEnabled) {
             Spacer(modifier = Modifier.height(14.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
             Spacer(modifier = Modifier.height(14.dp))
@@ -716,98 +816,31 @@ ExpressiveSettingsGroup {
             Spacer(modifier = Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 LiquidGlassFilterChip(
-                    selected = updateChannel == "RELEASE",
+                    selected = appSettings.updateChannel == "RELEASE",
                     isGlass = isGlass,
                     onClick = {
                         onUpdateChannelChange("RELEASE")
+                        onUpdateSettings { it.copy(updateChannel = "RELEASE") }
                         onCheckUpdates()
                         Toast.makeText(context, "${strings.updateChannelRelease}...", Toast.LENGTH_SHORT).show()
                     },
                     label = { Text(strings.updateChannelRelease) }
                 )
                 LiquidGlassFilterChip(
-                    selected = updateChannel == "BETA",
+                    selected = appSettings.updateChannel == "BETA",
                     isGlass = isGlass,
                     onClick = {
                         onUpdateChannelChange("BETA")
+                        onUpdateSettings { it.copy(updateChannel = "BETA") }
                         onCheckUpdates()
                         Toast.makeText(context, "${strings.updateChannelBeta}...", Toast.LENGTH_SHORT).show()
                     },
                     label = { Text(strings.updateChannelBeta) }
                 )
             }
-            Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = strings.holidayModeTitle,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = strings.holidayModeSubtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "AUTO",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("AUTO") },
-                    label = { Text(strings.holidayModeAuto) }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "HALLOWEEN",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("HALLOWEEN") },
-                    label = { Text("🎃 Хэллоуин") }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "CHRISTMAS_WESTERN",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("CHRISTMAS_WESTERN") },
-                    label = { Text("🎄 Рождество (25 дек)") }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "NEW_YEAR",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("NEW_YEAR") },
-                    label = { Text("❄️ Новый год") }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "CHRISTMAS_ORTHODOX",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("CHRISTMAS_ORTHODOX") },
-                    label = { Text("⭐ Рождество (7 янв)") }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "VALENTINE",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("VALENTINE") },
-                    label = { Text("💗 Валентин") }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "EASTER",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("EASTER") },
-                    label = { Text("🐣 Пасха") }
-                )
-                LiquidGlassFilterChip(
-                    selected = holidayOverride == "OFF",
-                    isGlass = isGlass,
-                    onClick = { onHolidayOverrideChange("OFF") },
-                    label = { Text(strings.holidayModeOff) }
-                )
-            }
         }
     }
+}
 }
 
 }

@@ -1,6 +1,7 @@
 package com.aura.reader.ui.components
 
 import android.view.HapticFeedbackConstants
+import com.aura.reader.ui.theme.LocalEInkMode
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.animation.core.Animatable
@@ -37,6 +38,7 @@ fun Modifier.expressiveBounce(
     scaleDown: Float = 0.96f,
     enabled: Boolean = true
 ): Modifier {
+    if (!enabled || LocalEInkMode.current) return this
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed && enabled) scaleDown else 1f,
@@ -109,7 +111,7 @@ fun Modifier.jellyOverscroll(
     stiffness: Float = Spring.StiffnessMediumLow,
     maxOverscroll: Float = 60f
 ): Modifier = composed {
-    if (!enabled) return@composed this
+    if (!enabled || LocalEInkMode.current) return@composed this
 
     val coroutineScope = rememberCoroutineScope()
     val offsetY = remember { Animatable(0f) }

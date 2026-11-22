@@ -21,15 +21,34 @@ object Fb2Parser {
         fileName: String,
         imagesDir: File? = null
     ): Book {
-        val stream = if (fileName.endsWith(".zip", ignoreCase = true)) {
+        val rawStream = if (fileName.endsWith(".zip", ignoreCase = true)) {
             val zis = ZipInputStream(inputStream)
             var entry = zis.nextEntry
-            while (entry != null && !entry.name.endsWith(".fb2", ignoreCase = true)) {
+            while (entry != null && !entry.name.endsWith(".fb2", ignoreCase = true) && !entry.name.endsWith(".xml", ignoreCase = true)) {
                 entry = zis.nextEntry
+            }
+            if (entry == null) {
+                throw IllegalArgumentException("В ZIP-архиве не найден файл FB2")
             }
             zis
         } else {
             inputStream
+        }
+
+        val buffered = if (rawStream is java.io.BufferedInputStream) rawStream else java.io.BufferedInputStream(rawStream)
+        buffered.mark(4096)
+        val headerBytes = ByteArray(4096)
+        val readCount = buffered.read(headerBytes).coerceAtLeast(0)
+        buffered.reset()
+
+        val headerText = String(headerBytes, 0, readCount, Charsets.ISO_8859_1)
+        val encodingMatch = Regex("""<\?xml[^>]+encoding=["']([^"']+)["']""", RegexOption.IGNORE_CASE).find(headerText)
+        val declaredEncoding = encodingMatch?.groupValues?.getOrNull(1)?.trim()
+
+        val finalEncoding = when {
+            !declaredEncoding.isNullOrBlank() -> declaredEncoding
+            isValidUtf8(headerBytes, readCount) -> "UTF-8"
+            else -> "windows-1251"
         }
 
         var title = fileName.removeSuffix(".fb2").removeSuffix(".zip")
@@ -46,7 +65,7 @@ object Fb2Parser {
         val currentNoteText = StringBuilder()
 
         val parser = Xml.newPullParser()
-        parser.setInput(stream, null)
+        parser.setInput(buffered, finalEncoding)
 
         var eventType = parser.eventType
         var inTitleInfo = false
@@ -449,6 +468,27 @@ object Fb2Parser {
             series = series,
             seriesNumber = seriesNumber
         )
+    }
+
+    private fun isValidUtf8(bytes: ByteArray, length: Int): Boolean {
+        var i = 0
+        while (i < length) {
+            val b = bytes[i].toInt() and 0xFF
+            if (b <= 0x7F) {
+                i++
+            } else if ((b in 0xC2..0xDF) && i + 1 < length && (bytes[i + 1].toInt() and 0xC0 == 0x80)) {
+                i += 2
+            } else if ((b in 0xE0..0xEF) && i + 2 < length &&
+                (bytes[i + 1].toInt() and 0xC0 == 0x80) && (bytes[i + 2].toInt() and 0xC0 == 0x80)) {
+                i += 3
+            } else if ((b in 0xF0..0xF4) && i + 3 < length &&
+                (bytes[i + 1].toInt() and 0xC0 == 0x80) && (bytes[i + 2].toInt() and 0xC0 == 0x80) && (bytes[i + 3].toInt() and 0xC0 == 0x80)) {
+                i += 4
+            } else {
+                return false
+            }
+        }
+        return true
     }
 
     private fun isLikelyHeading(line: String): Boolean {

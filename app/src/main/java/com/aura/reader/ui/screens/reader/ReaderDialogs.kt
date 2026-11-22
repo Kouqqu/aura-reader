@@ -20,6 +20,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Info
@@ -159,10 +161,12 @@ fun DictionaryDialog(
     isLoading: Boolean,
     definition: WordDefinition?,
     errorMessage: String?,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onSaveWord: ((word: String, definition: String) -> Unit)? = null
 ) {
     val clipboardManager = LocalClipboardManager.current
     val strings = LocalAppStrings.current
+    var isSaved by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -274,12 +278,12 @@ fun DictionaryDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (definition != null) {
+                if (definition != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         TextButton(
                             onClick = {
                                 clipboardManager.setText(AnnotatedString("${definition.title}: ${definition.extract}"))
@@ -294,21 +298,29 @@ fun DictionaryDialog(
                                 softWrap = false
                             )
                         }
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-
-                    FilledTonalButton(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.defaultMinSize(minWidth = 96.dp),
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = strings.closeDialog,
-                            maxLines = 1,
-                            softWrap = false
-                        )
+                        if (onSaveWord != null) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TextButton(
+                                onClick = {
+                                    onSaveWord(definition.word, "${definition.title}: ${definition.extract}")
+                                    isSaved = true
+                                },
+                                enabled = !isSaved,
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Icon(
+                                    if (isSaved) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (isSaved) strings.wordInDictionary else strings.addToDictionary,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -326,10 +338,12 @@ fun TranslationDialog(
     targetLanguage: String,
     onSourceLanguageChange: (String) -> Unit,
     onTargetLanguageChange: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onSaveWord: ((word: String, definition: String) -> Unit)? = null
 ) {
     val clipboardManager = LocalClipboardManager.current
     val strings = LocalAppStrings.current
+    var isSaved by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -467,12 +481,12 @@ fun TranslationDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (translatedText != null) {
+                if (translatedText != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         TextButton(
                             onClick = {
                                 clipboardManager.setText(AnnotatedString(translatedText))
@@ -487,21 +501,29 @@ fun TranslationDialog(
                                 softWrap = false
                             )
                         }
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-
-                    FilledTonalButton(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.defaultMinSize(minWidth = 96.dp),
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = strings.closeDialog,
-                            maxLines = 1,
-                            softWrap = false
-                        )
+                        if (onSaveWord != null && originalText.length <= 60) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TextButton(
+                                onClick = {
+                                    onSaveWord(originalText.trim(), translatedText)
+                                    isSaved = true
+                                },
+                                enabled = !isSaved,
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Icon(
+                                    if (isSaved) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (isSaved) strings.wordInDictionary else strings.addToDictionary,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
                     }
                 }
             }

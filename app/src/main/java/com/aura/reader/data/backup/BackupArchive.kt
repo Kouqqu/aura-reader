@@ -15,11 +15,16 @@ internal class BackupArchive private constructor(
     val manifest: JSONObject,
     private val stagingDir: File,
     private val books: List<File>,
-    private val installedNames: Map<String, String>
+    private val installedNames: Map<String, String>,
+    private val fonts: List<File> = emptyList()
 ) : AutoCloseable {
     val bookCount: Int get() = maxOf(JSONArray(manifest.getString("recentBooksJson")).length(), books.size)
 
-    suspend fun install(savedBooksDir: File, saveMetadata: suspend (JSONObject) -> Unit) {
+    suspend fun install(
+        savedBooksDir: File,
+        customFontsDir: File? = null,
+        saveMetadata: suspend (JSONObject) -> Unit
+    ) {
         check(savedBooksDir.isDirectory || savedBooksDir.mkdirs()) { "Cannot create library directory" }
         val created = mutableListOf<File>()
         try {
@@ -30,6 +35,17 @@ internal class BackupArchive private constructor(
                 } else {
                     if (!book.renameTo(target)) throw IOException("Cannot install restored book")
                     created.add(target)
+                }
+            }
+            if (customFontsDir != null && fonts.isNotEmpty()) {
+                customFontsDir.mkdirs()
+                for (font in fonts) {
+                    val target = File(customFontsDir, font.name)
+                    if (!target.exists()) {
+                        if (font.renameTo(target)) {
+                            created.add(target)
+                        }
+                    }
                 }
             }
             // Original files are never overwritten: interruption before this atomic edit
@@ -56,6 +72,7 @@ internal class BackupArchive private constructor(
             try {
                 var manifestText: String? = null
                 val books = mutableListOf<File>()
+                val fonts = mutableListOf<File>()
                 val seen = mutableSetOf<String>()
                 var total = 0L
                 var count = 0
@@ -71,12 +88,17 @@ internal class BackupArchive private constructor(
                             var written = 0L
                             val buffer = ByteArray(8192)
                             val file = if (name == "manifest.json") File(stage, "manifest.json") else {
-                                require(name.startsWith("books/")) { "Unexpected backup entry" }
-                                val leaf = name.removePrefix("books/")
+                                require(name.startsWith("books/") || name.startsWith("fonts/")) { "Unexpected backup entry" }
+                                val isFont = name.startsWith("fonts/")
+                                val leaf = if (isFont) name.removePrefix("fonts/") else name.removePrefix("books/")
                                 require(leaf.isNotBlank() && leaf != "." && leaf != ".." &&
                                     leaf.none { it == '/' || it == '\\' || it == ':' || it == '\u0000' } &&
                                     !leaf.endsWith('.') && !leaf.endsWith(' ')) { "Invalid book filename" }
-                                File(File(stage, "books").apply { mkdirs() }, leaf).also { books.add(it) }
+                                if (isFont) {
+                                    File(File(stage, "fonts").apply { mkdirs() }, leaf).also { fonts.add(it) }
+                                } else {
+                                    File(File(stage, "books").apply { mkdirs() }, leaf).also { books.add(it) }
+                                }
                             }
                             file.outputStream().use { output ->
                                 while (true) {
@@ -115,7 +137,7 @@ internal class BackupArchive private constructor(
                     }
                 }
                 manifest.put("recentBooksJson", library.toString())
-                return BackupArchive(manifest, stage, books, installedNames)
+                return BackupArchive(manifest, stage, books, installedNames, fonts)
             } catch (error: Exception) {
                 stage.deleteRecursively()
                 throw error
@@ -136,7 +158,7 @@ internal class BackupArchive private constructor(
         }
 
         private fun validate(manifest: JSONObject) {
-            require(manifest.getInt("version") == 1) { "Unsupported backup version" }
+            require(manifest.getInt("version") in 1..2) { "Unsupported backup version" }
             val library = JSONArray(manifest.getString("recentBooksJson"))
             val ids = mutableSetOf<String>()
             for (i in 0 until library.length()) {
@@ -168,6 +190,16 @@ internal class BackupArchive private constructor(
                         item.getString("bookTitle")
                         item.getString("text")
                     }
+                }
+            }
+            if (manifest.has("savedWords")) {
+                val words = manifest.optJSONArray("savedWords") ?: JSONArray()
+                val wordIds = mutableSetOf<String>()
+                for (i in 0 until words.length()) {
+                    val item = words.getJSONObject(i)
+                    require(item.getString("id").isNotBlank() && wordIds.add(item.getString("id")))
+                    item.getString("word")
+                    item.getString("definition")
                 }
             }
             if (manifest.has("settings")) {

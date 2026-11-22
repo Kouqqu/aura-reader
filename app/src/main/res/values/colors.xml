@@ -6,10 +6,10 @@
     <color name="sepia_text">#3E2723</color>
     <color name="amoled_background">#000000</color>
     <color name="amoled_text">#E0E0E0</color>
-    <color name="ic_launcher_background">#6750A4</color>
+    <color name="ic_launcher_background">#1E1B4B</color>
 
     <!-- Splash / window background (system light theme) -->
-    <color name="splash_background">#F5F2FA</color>
+    <color name="splash_background">#FAF0E6</color>
 
     <!-- Widget Colors -->
     <color name="widget_bg">#1E1B2E</color>

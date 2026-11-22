@@ -12,15 +12,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,6 +42,8 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.painterResource
+import com.aura.reader.R
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.updater.UpdateInfo
 import com.aura.reader.ui.theme.LocalAppStrings
@@ -46,11 +51,14 @@ import com.aura.reader.ui.theme.LocalAppStrings
 @Composable
 fun LibraryDialogs(
     updateInfo: UpdateInfo?,
+    updateInstallState: UpdateInstallState = UpdateInstallState.Idle,
     showNewCollectionDialog: Boolean,
     collectionToDelete: String?,
     bookForCollections: Book?,
     userCollections: List<String>,
     onDismissUpdate: () -> Unit,
+    onDownloadAndInstall: () -> Unit = {},
+    onInstallDownloaded: () -> Unit = {},
     onOpenUpdatePage: (String) -> Unit,
     onSkipVersion: (String) -> Unit,
     onDismissNewCollection: () -> Unit,
@@ -64,7 +72,7 @@ fun LibraryDialogs(
 ) {
     val strings = LocalAppStrings.current
 
-    // In-App Update Dialog
+    // Update Dialog
     updateInfo?.let { info ->
         AlertDialog(
             onDismissRequest = { onDismissUpdate() },
@@ -75,25 +83,54 @@ fun LibraryDialogs(
                 )
             },
             text = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 280.dp)
-                        .verticalScroll(rememberScrollState())
+                Column(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = info.changelog,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    OutlinedButton(
+                        onClick = { onOpenUpdatePage(info.releaseUrl) },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_github),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(strings.downloadFromGithub)
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 280.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        Text(
+                            text = info.changelog,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    onDismissUpdate()
-                    onOpenUpdatePage(info.releaseUrl)
-                }) {
-                    Text(strings.download)
+                Button(
+                    onClick = {
+                        onDownloadAndInstall()
+                        onDismissUpdate()
+                    },
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Download,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(strings.updateAction)
                 }
             },
             dismissButton = {

@@ -6,8 +6,7 @@ import android.provider.OpenableColumns
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.BookFormat
 import com.aura.reader.data.model.Chapter
-import com.aura.reader.data.parser.EpubParser
-import com.aura.reader.data.parser.Fb2Parser
+import com.aura.reader.data.parser.BookIngestionPipeline
 import com.aura.reader.data.preferences.PreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,14 +18,14 @@ import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.InputStream
-import com.aura.reader.data.io.copyBoundedTo
-import com.aura.reader.data.io.readBoundedBytes
 import java.util.UUID
 
 class BookRepository(
     private val context: Context,
     private val preferencesManager: PreferencesManager
 ) {
+    private val ingestionPipeline = BookIngestionPipeline(context)
+
     private suspend fun <T> withLibraryLock(block: suspend () -> T): T =
         withContext(Dispatchers.IO) { preferencesManager.libraryMutex.withLock { block() } }
 
@@ -49,6 +48,17 @@ class BookRepository(
                         val cArr = obj.getJSONArray("collections")
                         for (j in 0 until cArr.length()) collectionsList.add(cArr.getString(j))
                     }
+                    val genresList = mutableListOf<String>()
+                    if (obj.has("genres")) {
+                        val gArr = obj.getJSONArray("genres")
+                        for (j in 0 until gArr.length()) genresList.add(gArr.getString(j))
+                    }
+                    val deletedAt = if (obj.has("deletedAtTimestamp") && !obj.isNull("deletedAtTimestamp")) obj.getLong("deletedAtTimestamp") else null
+                    val fileSizeBytes = obj.optLong("fileSizeBytes", 0L)
+                    val addedTimestamp = obj.optLong("addedTimestamp", obj.optLong("lastReadTimestamp", System.currentTimeMillis()))
+                    val firstOpenedTimestamp = if (obj.has("firstOpenedTimestamp") && !obj.isNull("firstOpenedTimestamp")) obj.getLong("firstOpenedTimestamp") else null
+                    val description = if (obj.has("description") && !obj.isNull("description")) obj.getString("description") else null
+
                     list.add(
                         Book(
                             id = obj.getString("id"),
@@ -67,9 +77,21 @@ class BookRepository(
                             collections = collectionsList,
                             series = if (obj.has("series") && !obj.isNull("series")) obj.getString("series") else null,
                             seriesNumber = if (obj.has("seriesNumber") && !obj.isNull("seriesNumber")) obj.getInt("seriesNumber") else null,
-                            manualShelf = if (obj.has("manualShelf") && !obj.isNull("manualShelf")) obj.getString("manualShelf") else null
+                            manualShelf = if (obj.has("manualShelf") && !obj.isNull("manualShelf")) obj.getString("manualShelf") else null,
+                            deletedAtTimestamp = deletedAt,
+                            fileSizeBytes = fileSizeBytes,
+                            addedTimestamp = addedTimestamp,
+                            firstOpenedTimestamp = firstOpenedTimestamp,
+                            description = description,
+                            genres = genresList
                         )
                     )
+                }
+                val cutoff = System.currentTimeMillis() - (15L * 24L * 60L * 60L * 1000L)
+                val expired = list.filter { it.deletedAtTimestamp != null && it.deletedAtTimestamp < cutoff }
+                if (expired.isNotEmpty()) {
+                    list.removeAll { it.deletedAtTimestamp != null && it.deletedAtTimestamp < cutoff }
+                    saveRecentBooks(list)
                 }
                 _recentBooks.value = list
             } catch (e: Exception) {
@@ -78,7 +100,7 @@ class BookRepository(
         }
     }
 
-    private suspend fun saveRecentBooks(books: List<Book>) = withContext(Dispatchers.IO) {
+    internal suspend fun saveRecentBooks(books: List<Book>) = withContext(Dispatchers.IO) {
         val array = JSONArray()
         for (b in books) {
             val obj = JSONObject().apply {
@@ -100,6 +122,20 @@ class BookRepository(
                 if (b.manualShelf != null) {
                     put("manualShelf", b.manualShelf)
                 }
+                if (b.deletedAtTimestamp != null) {
+                    put("deletedAtTimestamp", b.deletedAtTimestamp)
+                }
+                put("fileSizeBytes", b.fileSizeBytes)
+                put("addedTimestamp", b.addedTimestamp)
+                if (b.firstOpenedTimestamp != null) {
+                    put("firstOpenedTimestamp", b.firstOpenedTimestamp)
+                }
+                if (b.description != null) {
+                    put("description", b.description)
+                }
+                val gArr = JSONArray()
+                for (g in b.genres) gArr.put(g)
+                put("genres", gArr)
                 val cArr = JSONArray()
                 for (c in b.collections) cArr.put(c)
                 put("collections", cArr)
@@ -124,15 +160,23 @@ class BookRepository(
         }
         val existingInMemory = _currentBook.value
         if (existingInMemory != null && existingInMemory.id == bookToOpen.id && existingInMemory.chapters.isNotEmpty()) {
+            val totalChapters = existingInMemory.chapters.size
+            val resolvedChapter = if (bookToOpen.currentChapterIndex == 0 && bookToOpen.currentScrollOffset > 0 && bookToOpen.currentScrollOffset < totalChapters) {
+                bookToOpen.currentScrollOffset
+            } else {
+                bookToOpen.currentChapterIndex.coerceIn(0, (totalChapters - 1).coerceAtLeast(0))
+            }
             val updated = existingInMemory.copy(
-                currentChapterIndex = bookToOpen.currentChapterIndex,
+                currentChapterIndex = resolvedChapter,
                 currentScrollOffset = bookToOpen.currentScrollOffset,
                 currentBlockTextOffset = bookToOpen.currentBlockTextOffset,
                 currentScrollPixelOffset = bookToOpen.currentScrollPixelOffset,
                 progressPercent = bookToOpen.progressPercent,
                 manualShelf = bookToOpen.manualShelf ?: existingInMemory.manualShelf,
                 isFavorite = bookToOpen.isFavorite,
-                collections = if (bookToOpen.collections.isNotEmpty()) bookToOpen.collections else existingInMemory.collections
+                collections = if (bookToOpen.collections.isNotEmpty()) bookToOpen.collections else existingInMemory.collections,
+                firstOpenedTimestamp = existingInMemory.firstOpenedTimestamp ?: System.currentTimeMillis(),
+                lastReadTimestamp = System.currentTimeMillis()
             )
             _currentBook.value = updated
             addOrUpdateRecentBook(updated)
@@ -143,22 +187,35 @@ class BookRepository(
         val inputStream = getInputStreamForUri(uri, bookToOpen.id)
             ?: return@withLibraryLock Result.failure(Exception("Файл книги «${bookToOpen.title}» не найден на устройстве"))
 
-        val result = parseAndResolveBook(inputStream, uri, fileName, bookToOpen)
+        val result = ingestionPipeline.ingest(inputStream, uri, fileName, bookToOpen)
         result.onSuccess { book ->
+            val totalChapters = book.chapters.size
+            val resolvedChapter = if (bookToOpen.currentChapterIndex == 0 && bookToOpen.currentScrollOffset > 0 && bookToOpen.currentScrollOffset < totalChapters) {
+                bookToOpen.currentScrollOffset
+            } else {
+                bookToOpen.currentChapterIndex.coerceIn(0, (totalChapters - 1).coerceAtLeast(0))
+            }
             val resolved = book.copy(
                 id = bookToOpen.id,
                 title = if (bookToOpen.title.isNotBlank()) bookToOpen.title else book.title,
                 author = if (bookToOpen.author.isNotBlank()) bookToOpen.author else book.author,
                 series = bookToOpen.series ?: book.series,
                 seriesNumber = bookToOpen.seriesNumber ?: book.seriesNumber,
-                currentChapterIndex = bookToOpen.currentChapterIndex,
+                currentChapterIndex = resolvedChapter,
                 currentScrollOffset = bookToOpen.currentScrollOffset,
                 currentBlockTextOffset = bookToOpen.currentBlockTextOffset,
                 currentScrollPixelOffset = bookToOpen.currentScrollPixelOffset,
                 progressPercent = bookToOpen.progressPercent,
                 manualShelf = bookToOpen.manualShelf,
                 isFavorite = bookToOpen.isFavorite,
-                collections = bookToOpen.collections
+                collections = bookToOpen.collections,
+                firstOpenedTimestamp = bookToOpen.firstOpenedTimestamp ?: System.currentTimeMillis(),
+                lastReadTimestamp = System.currentTimeMillis(),
+                description = bookToOpen.description ?: book.description,
+                genres = if (bookToOpen.genres.isNotEmpty()) bookToOpen.genres else book.genres,
+                fileSizeBytes = if (bookToOpen.fileSizeBytes > 0) bookToOpen.fileSizeBytes else book.fileSizeBytes,
+                addedTimestamp = bookToOpen.addedTimestamp,
+                deletedAtTimestamp = bookToOpen.deletedAtTimestamp
             )
             _currentBook.value = resolved
             addOrUpdateRecentBook(resolved)
@@ -172,7 +229,7 @@ class BookRepository(
         val inputStream = getInputStreamForUri(uri)
             ?: return@withLibraryLock Result.failure(Exception("Не удалось прочитать файл «$fileName»"))
 
-        val result = parseAndResolveBook(inputStream, uri, fileName, null)
+        val result = ingestionPipeline.ingest(inputStream, uri, fileName, null)
         result.onSuccess { book ->
             // Names and titles are not identities: different books can share both.
             val existing = _recentBooks.value.find {
@@ -199,224 +256,6 @@ class BookRepository(
             return@withLibraryLock Result.success(resolvedBook)
         }
         result
-    }
-
-    private fun parseAndResolveBook(
-        inputStream: InputStream,
-        uri: Uri,
-        fileName: String,
-        savedBook: Book?
-    ): Result<Book> {
-        try {
-            val buffered = inputStream.buffered()
-            buffered.mark(8)
-            val header = ByteArray(4)
-            val headerSize = buffered.read(header)
-            buffered.reset()
-            if (fileName.endsWith(".pdf", ignoreCase = true) ||
-                (headerSize == 4 && header.contentEquals(byteArrayOf(37, 80, 68, 70)))) {
-                return parseStagedBook(buffered, uri, fileName, savedBook, BookFormat.PDF)
-            }
-            if (fileName.endsWith(".epub", ignoreCase = true)) {
-                return parseStagedBook(buffered, uri, fileName, savedBook, BookFormat.EPUB)
-            }
-            val bytes = buffered.use { it.readBoundedBytes(128L * 1024 * 1024) }
-            if (bytes.isEmpty()) {
-                return Result.failure(Exception("Файл книги пуст"))
-            }
-
-            val isZip = bytes.size >= 4 &&
-                    bytes[0] == 0x50.toByte() &&
-                    bytes[1] == 0x4B.toByte() &&
-                    bytes[2] == 0x03.toByte() &&
-                    bytes[3] == 0x04.toByte()
-
-            val bookCacheKey = UUID.nameUUIDFromBytes("${uri}_${fileName}".toByteArray()).toString()
-            val imagesDir = java.io.File(context.cacheDir, "book_images/$bookCacheKey").apply { mkdirs() }
-
-            val parsedBook = when {
-                fileName.endsWith(".epub", ignoreCase = true) -> {
-                    EpubParser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
-                }
-                fileName.endsWith(".fb2", ignoreCase = true) || fileName.endsWith(".fb2.zip", ignoreCase = true) -> {
-                    Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
-                }
-                fileName.endsWith(".txt", ignoreCase = true) -> {
-                    com.aura.reader.data.parser.TxtParser.parse(
-                        java.io.ByteArrayInputStream(bytes),
-                        uri.toString(),
-                        fileName
-                    )
-                }
-                fileName.endsWith(".cbz", ignoreCase = true) -> {
-                    com.aura.reader.data.parser.CbzParser.parse(
-                        java.io.ByteArrayInputStream(bytes),
-                        uri.toString(),
-                        fileName,
-                        imagesDir
-                    )
-                }
-                fileName.endsWith(".mobi", ignoreCase = true) || (bytes.size >= 68 && bytes[60] == 'B'.code.toByte() && bytes[61] == 'O'.code.toByte() && bytes[62] == 'O'.code.toByte() && bytes[63] == 'K'.code.toByte()) -> {
-                    com.aura.reader.data.parser.MobiParser.parse(
-                        java.io.ByteArrayInputStream(bytes),
-                        uri.toString(),
-                        fileName
-                    )
-                }
-                isZip -> {
-                    var hasMetaInf = false
-                    var hasFb2 = false
-                    var hasTxt = false
-                    var hasImages = false
-                    var entryName = ""
-                    try {
-                        val zis = java.util.zip.ZipInputStream(java.io.ByteArrayInputStream(bytes))
-                        var e = zis.nextEntry
-                        while (e != null) {
-                            val lower = e.name.lowercase()
-                            if (lower.contains("meta-inf/container.xml")) {
-                                hasMetaInf = true
-                                break
-                            }
-                            if (lower.endsWith(".fb2")) {
-                                hasFb2 = true
-                                entryName = e.name
-                            }
-                            if (lower.endsWith(".txt")) {
-                                hasTxt = true
-                                entryName = e.name
-                            }
-                            if (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") || lower.endsWith(".webp") || lower.endsWith(".gif")) {
-                                hasImages = true
-                            }
-                            e = zis.nextEntry
-                        }
-                    } catch (e: Exception) {}
-
-                    when {
-                        hasMetaInf -> EpubParser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
-                        hasFb2 -> Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
-                        hasTxt -> {
-                            val zis = java.util.zip.ZipInputStream(java.io.ByteArrayInputStream(bytes))
-                            var e = zis.nextEntry
-                            var txtBytes = ByteArray(0)
-                            while (e != null) {
-                                if (e.name == entryName) {
-                                    txtBytes = zis.readBytes()
-                                    break
-                                }
-                                e = zis.nextEntry
-                            }
-                            com.aura.reader.data.parser.TxtParser.parse(
-                                java.io.ByteArrayInputStream(txtBytes),
-                                uri.toString(),
-                                entryName
-                            )
-                        }
-                        hasImages || fileName.endsWith(".cbz", ignoreCase = true) -> {
-                            com.aura.reader.data.parser.CbzParser.parse(
-                                java.io.ByteArrayInputStream(bytes),
-                                uri.toString(),
-                                fileName,
-                                imagesDir
-                            )
-                        }
-                        else -> throw IllegalArgumentException("Архив «$fileName» не содержит поддерживаемых книг (FB2, EPUB, TXT, CBZ).")
-                    }
-                }
-                else -> {
-                    val sampleHeader = String(bytes.take(2048).toByteArray(), Charsets.UTF_8)
-                    if (sampleHeader.contains("<FictionBook", ignoreCase = true)) {
-                        Fb2Parser.parse(java.io.ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
-                    } else {
-                        try {
-                            com.aura.reader.data.parser.TxtParser.parse(
-                                java.io.ByteArrayInputStream(bytes),
-                                uri.toString(),
-                                fileName
-                            )
-                        } catch (e: Exception) {
-                            throw IllegalArgumentException("Формат «$fileName» не поддерживается. Aura Reader поддерживает FB2, EPUB, PDF, MOBI и TXT.")
-                        }
-                    }
-                }
-            }
-
-            val uniqueId = savedBook?.id ?: UUID.nameUUIDFromBytes("${uri}_${parsedBook.format.name}".toByteArray()).toString()
-            val safeName = fileName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
-            val localBookDir = java.io.File(context.filesDir, "saved_books").apply { mkdirs() }
-            val localBookFile = java.io.File(localBookDir, "${uniqueId}_$safeName")
-            if (savedBook == null || !localBookFile.exists() || localBookFile.length() != bytes.size.toLong()) {
-                try {
-                    val pending = java.io.File(localBookDir, localBookFile.name + ".tmp")
-                    try {
-                        pending.writeBytes(bytes)
-                        java.nio.file.Files.move(pending.toPath(), localBookFile.toPath(),
-                            java.nio.file.StandardCopyOption.REPLACE_EXISTING,
-                            java.nio.file.StandardCopyOption.ATOMIC_MOVE)
-                    } finally { pending.delete() }
-                } catch (e: Exception) {
-                    return Result.failure(e)
-                }
-            }
-
-            val persistentUriString = if (localBookFile.exists()) {
-                Uri.fromFile(localBookFile).toString()
-            } else {
-                uri.toString()
-            }
-
-            val resolved = parsedBook.copy(
-                id = uniqueId,
-                uriString = persistentUriString,
-                currentChapterIndex = savedBook?.currentChapterIndex ?: 0,
-                currentScrollOffset = savedBook?.currentScrollOffset ?: 0,
-                currentBlockTextOffset = savedBook?.currentBlockTextOffset ?: 0,
-                currentScrollPixelOffset = savedBook?.currentScrollPixelOffset ?: 0,
-                progressPercent = savedBook?.progressPercent ?: 0,
-                manualShelf = savedBook?.manualShelf,
-                isFavorite = savedBook?.isFavorite ?: false,
-                collections = savedBook?.collections ?: emptyList(),
-                coverBase64 = savedBook?.coverBase64 ?: parsedBook.coverBase64
-            )
-            return Result.success(resolved)
-        } catch (e: Exception) {
-            return Result.failure(e)
-        }
-    }
-
-    private fun parseStagedBook(
-        input: InputStream, uri: Uri, fileName: String, savedBook: Book?, format: BookFormat
-    ): Result<Book> {
-        val staged = java.io.File.createTempFile("import_", ".book", context.filesDir)
-        try {
-            input.use { source -> staged.outputStream().use { source.copyBoundedTo(it, 512L * 1024 * 1024) } }
-            val id = savedBook?.id ?: UUID.nameUUIDFromBytes((uri.toString() + "_" + format.name).toByteArray()).toString()
-            val safeName = fileName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
-            val destination = java.io.File(java.io.File(context.filesDir, "saved_books").apply { mkdirs() }, id + "_" + safeName)
-            val parsed = if (format == BookFormat.PDF) {
-                com.aura.reader.data.parser.PdfParser.parse(staged, destination, uri.toString(), fileName)
-            } else {
-                val imagesDir = java.io.File(context.cacheDir, "book_images/" + id).apply { mkdirs() }
-                EpubParser.parseFile(staged, uri.toString(), fileName, imagesDir)
-            }
-            java.nio.file.Files.move(staged.toPath(), destination.toPath(),
-                java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE)
-            return Result.success(parsed.copy(
-                id = id, uriString = Uri.fromFile(destination).toString(),
-                currentChapterIndex = savedBook?.currentChapterIndex ?: 0,
-                currentScrollOffset = savedBook?.currentScrollOffset ?: 0,
-                currentBlockTextOffset = savedBook?.currentBlockTextOffset ?: 0,
-                currentScrollPixelOffset = savedBook?.currentScrollPixelOffset ?: 0,
-                progressPercent = savedBook?.progressPercent ?: 0,
-                manualShelf = savedBook?.manualShelf,
-                isFavorite = savedBook?.isFavorite ?: false,
-                collections = savedBook?.collections ?: emptyList(),
-                coverBase64 = savedBook?.coverBase64 ?: parsed.coverBase64
-            ))
-        } catch (error: Exception) {
-            return Result.failure(error)
-        } finally { staged.delete() }
     }
 
     private fun getInputStreamForUri(uri: Uri, bookId: String? = null): InputStream? {
@@ -567,7 +406,7 @@ class BookRepository(
                 name.endsWith(".cbz")
     }
 
-    suspend fun removeBook(bookId: String) = withLibraryLock {
+    private suspend fun removeBookInternal(bookId: String) {
         val currentList = _recentBooks.value.toMutableList()
         val bookToRemove = currentList.find { it.id == bookId }
         currentList.removeAll { it.id == bookId }
@@ -599,8 +438,17 @@ class BookRepository(
                         f.delete()
                     }
                 }
+                val imagesDir = java.io.File(context.cacheDir, "book_images/$bookId")
+                if (imagesDir.exists()) {
+                    imagesDir.deleteRecursively()
+                }
             } catch (e: Exception) {}
         }
+    }
+
+    suspend fun removeBook(bookId: String) = withLibraryLock {
+        com.aura.reader.data.parser.PdfPageCache.closeRenderer()
+        removeBookInternal(bookId)
     }
 
     val bookmarks = preferencesManager.bookmarks
@@ -610,6 +458,10 @@ class BookRepository(
     val quotes = preferencesManager.quotes
     suspend fun addQuote(quote: com.aura.reader.data.model.Quote) = preferencesManager.addQuote(quote)
     suspend fun removeQuote(id: String) = preferencesManager.removeQuote(id)
+
+    val savedWords = preferencesManager.savedWords
+    suspend fun addSavedWord(word: com.aura.reader.data.model.SavedWord) = preferencesManager.addSavedWord(word)
+    suspend fun removeSavedWord(id: String) = preferencesManager.removeSavedWord(id)
 
     val todayReadingMinutes = preferencesManager.todayReadingMinutes
     val readingStatsData = preferencesManager.readingStatsData
@@ -725,6 +577,193 @@ class BookRepository(
                     lastReadTimestamp = updated.lastReadTimestamp
                 )
             }
+        }
+    }
+
+    // --- Trash & Recycle Bin (15 days retention) ---
+
+    suspend fun moveToTrash(bookId: String) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == bookId }
+        if (index >= 0) {
+            val old = currentList[index]
+            currentList[index] = old.copy(deletedAtTimestamp = System.currentTimeMillis())
+            saveRecentBooks(currentList)
+        }
+    }
+
+    suspend fun restoreFromTrash(bookId: String) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == bookId }
+        if (index >= 0) {
+            val old = currentList[index]
+            currentList[index] = old.copy(deletedAtTimestamp = null)
+            saveRecentBooks(currentList)
+        }
+    }
+
+    suspend fun deletePermanently(bookId: String) = withLibraryLock {
+        removeBookInternal(bookId)
+    }
+
+    suspend fun clearTrash() = withLibraryLock {
+        val trashed = _recentBooks.value.filter { it.deletedAtTimestamp != null }
+        for (b in trashed) {
+            removeBookInternal(b.id)
+        }
+    }
+
+    suspend fun purgeExpiredTrash(maxAgeDays: Int = 15) = withLibraryLock {
+        val cutoff = System.currentTimeMillis() - (maxAgeDays * 24L * 60L * 60L * 1000L)
+        val expired = _recentBooks.value.filter { it.deletedAtTimestamp != null && it.deletedAtTimestamp < cutoff }
+        for (b in expired) {
+            removeBookInternal(b.id)
+        }
+    }
+
+    // --- Batch Operations (Multi-Select) ---
+
+    suspend fun batchMoveToTrash(bookIds: Set<String>) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        val now = System.currentTimeMillis()
+        var changed = false
+        for (i in currentList.indices) {
+            if (currentList[i].id in bookIds) {
+                currentList[i] = currentList[i].copy(deletedAtTimestamp = now)
+                changed = true
+            }
+        }
+        if (changed) saveRecentBooks(currentList)
+    }
+
+    suspend fun batchRestoreFromTrash(bookIds: Set<String>) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        var changed = false
+        for (i in currentList.indices) {
+            if (currentList[i].id in bookIds) {
+                currentList[i] = currentList[i].copy(deletedAtTimestamp = null)
+                changed = true
+            }
+        }
+        if (changed) saveRecentBooks(currentList)
+    }
+
+    suspend fun batchDeletePermanently(bookIds: Set<String>) = withLibraryLock {
+        for (id in bookIds) {
+            removeBookInternal(id)
+        }
+    }
+
+    suspend fun batchSetReadingProgress(bookIds: Set<String>, progress: Int) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        val p = progress.coerceIn(0, 100)
+        var changed = false
+        for (i in currentList.indices) {
+            if (currentList[i].id in bookIds) {
+                val old = currentList[i]
+                val newManualShelf = when {
+                    p >= 100 -> "FINISHED"
+                    p == 0 -> "UNREAD"
+                    else -> old.manualShelf ?: "READING"
+                }
+                currentList[i] = old.copy(
+                    progressPercent = p,
+                    manualShelf = newManualShelf,
+                    lastReadTimestamp = System.currentTimeMillis()
+                )
+                changed = true
+            }
+        }
+        if (changed) saveRecentBooks(currentList)
+    }
+
+    suspend fun batchAddToCollection(bookIds: Set<String>, collectionName: String) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        var changed = false
+        for (i in currentList.indices) {
+            if (currentList[i].id in bookIds) {
+                val old = currentList[i]
+                if (collectionName !in old.collections) {
+                    val updated = old.copy(collections = old.collections + collectionName)
+                    currentList[i] = updated
+                    changed = true
+                }
+            }
+        }
+        if (changed) saveRecentBooks(currentList)
+    }
+
+    suspend fun batchSetManualShelf(bookIds: Set<String>, manualShelf: String?) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        var changed = false
+        for (i in currentList.indices) {
+            if (currentList[i].id in bookIds) {
+                val old = currentList[i]
+                val updatedProgress = when (manualShelf) {
+                    "FINISHED" -> 100
+                    "UNREAD" -> 0
+                    "READING" -> if (old.progressPercent == 0 || old.progressPercent >= 100) 1 else old.progressPercent
+                    else -> old.progressPercent
+                }
+                currentList[i] = old.copy(
+                    manualShelf = manualShelf,
+                    progressPercent = updatedProgress,
+                    lastReadTimestamp = System.currentTimeMillis()
+                )
+                changed = true
+            }
+        }
+        if (changed) saveRecentBooks(currentList)
+    }
+
+    suspend fun batchSetFavorite(bookIds: Set<String>, isFavorite: Boolean) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        var changed = false
+        for (i in currentList.indices) {
+            if (currentList[i].id in bookIds) {
+                currentList[i] = currentList[i].copy(isFavorite = isFavorite)
+                changed = true
+            }
+        }
+        if (changed) saveRecentBooks(currentList)
+    }
+
+    // --- Book Profile Metadata ---
+
+    suspend fun updateBookMetadata(
+        bookId: String,
+        title: String,
+        author: String,
+        series: String?,
+        seriesNumber: Int?,
+        genres: List<String>,
+        description: String?
+    ) = withLibraryLock {
+        val currentList = _recentBooks.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == bookId }
+        if (index >= 0) {
+            val old = currentList[index]
+            val updated = old.copy(
+                title = title.trim(),
+                author = author.trim(),
+                series = series?.trim()?.ifBlank { null },
+                seriesNumber = seriesNumber,
+                genres = genres,
+                description = description?.trim()?.ifBlank { null }
+            )
+            currentList[index] = updated
+            saveRecentBooks(currentList)
+            if (_currentBook.value?.id == bookId) {
+                _currentBook.value = _currentBook.value?.copy(
+                    title = updated.title,
+                    author = updated.author,
+                    series = updated.series,
+                    seriesNumber = updated.seriesNumber,
+                    genres = updated.genres,
+                    description = updated.description
+                )
+            }
+            com.aura.reader.widget.BookAppWidgetProvider.updateAllWidgets(context, updated)
         }
     }
 }

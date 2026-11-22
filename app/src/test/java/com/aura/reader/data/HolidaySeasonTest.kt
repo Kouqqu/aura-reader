@@ -209,6 +209,19 @@ class HolidaySeasonTest {
             HolidaySeason.EASTER,
             HolidaySeason.resolve(enabled = true, override = "EASTER", calendar = summerDay)
         )
+        assertEquals(
+            HolidaySeason.OLD_NEW_YEAR,
+            HolidaySeason.resolve(enabled = true, override = "OLD_NEW_YEAR", calendar = summerDay)
+        )
+
+        // Every plaque in the holiday style picker must round-trip: its id is the
+        // enum id, and resolving that id returns the same season.
+        for (season in HolidaySeason.entries.filter { it != HolidaySeason.NONE }) {
+            assertEquals(
+                season,
+                HolidaySeason.resolve(enabled = true, override = season.id, calendar = summerDay)
+            )
+        }
 
         val halloween = createCalendar(2026, Calendar.OCTOBER, 31)
         assertEquals(

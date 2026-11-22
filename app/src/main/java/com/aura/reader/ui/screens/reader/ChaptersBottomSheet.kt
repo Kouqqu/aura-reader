@@ -21,6 +21,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,7 @@ import com.aura.reader.ui.components.SyncBottomSheetSystemBars
 import com.aura.reader.ui.components.jellyOverscroll
 import com.aura.reader.ui.components.sheetScrollIsolation
 import com.aura.reader.data.model.Chapter
+import com.aura.reader.data.model.BlockType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,8 +60,11 @@ fun ChaptersBottomSheet(
                 .fillMaxWidth()
                 .padding(bottom = 24.dp)
         ) {
+            val isSinglePageChapters = remember(chapters) {
+                chapters.isNotEmpty() && chapters.all { it.blocks.size == 1 && it.blocks[0].type == BlockType.IMAGE }
+            }
             Text(
-                text = "Оглавление (${chapters.size})",
+                text = if (isSinglePageChapters) "Страницы (${chapters.size})" else "Оглавление (${chapters.size})",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)

@@ -18,9 +18,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.FormatQuote
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import android.widget.Toast
+import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -31,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -66,8 +74,14 @@ fun BookmarksAndQuotesBottomSheet(
     onDeleteBookmark: (id: String) -> Unit,
     onAddQuote: (text: String) -> Unit,
     onDeleteQuote: (id: String) -> Unit,
-    onQuoteClick: (Quote) -> Unit = {}
+    onQuoteClick: (Quote) -> Unit = {},
+    savedWords: List<com.aura.reader.data.model.SavedWord> = emptyList(),
+    onDeleteSavedWord: (id: String) -> Unit = {},
+    onWordClick: (com.aura.reader.data.model.SavedWord) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val strings = LocalAppStrings.current
+    val clipboardManager = LocalClipboardManager.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var newQuoteText by remember { mutableStateOf("") }
@@ -77,6 +91,9 @@ fun BookmarksAndQuotesBottomSheet(
     }
     val bookQuotes = remember(quotes, currentBookId) {
         quotes.filter { it.bookId == currentBookId }
+    }
+    val bookSavedWords = remember(savedWords, currentBookId) {
+        savedWords.filter { it.bookId.isEmpty() || it.bookId == currentBookId }
     }
 
     ModalBottomSheet(
@@ -131,6 +148,21 @@ fun BookmarksAndQuotesBottomSheet(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Цитаты (${bookQuotes.size})")
+                        }
+                    }
+                )
+                Tab(
+                    selected = selectedTabIndex == 2,
+                    onClick = { selectedTabIndex = 2 },
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Rounded.AutoStories,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("${strings.savedWordsTabTitle} (${bookSavedWords.size})")
                         }
                     }
                 )
@@ -319,6 +351,127 @@ fun BookmarksAndQuotesBottomSheet(
                                                     Icons.Rounded.Delete,
                                                     contentDescription = "Удалить цитату",
                                                     tint = MaterialTheme.colorScheme.outline
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                2 -> {
+                    // Saved Words Tab
+                    if (bookSavedWords.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(text = "📖", fontSize = 32.sp)
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = strings.savedWordsEmpty,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .jellyOverscroll(allowTopBounce = false),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(bookSavedWords, key = { it.id }) { item ->
+                                Card(
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            onWordClick(item)
+                                            onDismiss()
+                                        }
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(14.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = item.word,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                IconButton(
+                                                    onClick = {
+                                                        clipboardManager.setText(AnnotatedString("${item.word}: ${item.definition}"))
+                                                        Toast.makeText(context, strings.wordCopied, Toast.LENGTH_SHORT).show()
+                                                    },
+                                                    modifier = Modifier.size(32.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Rounded.ContentCopy,
+                                                        contentDescription = strings.copyWordDefinition,
+                                                        tint = MaterialTheme.colorScheme.outline,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                IconButton(
+                                                    onClick = {
+                                                        onDeleteSavedWord(item.id)
+                                                        Toast.makeText(context, strings.savedWordDeleted, Toast.LENGTH_SHORT).show()
+                                                    },
+                                                    modifier = Modifier.size(32.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Rounded.Delete,
+                                                        contentDescription = strings.deleteWord,
+                                                        tint = MaterialTheme.colorScheme.outline,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = item.definition,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            lineHeight = 20.sp
+                                        )
+
+                                        if (item.contextText.isNotBlank()) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Surface(
+                                                shape = RoundedCornerShape(8.dp),
+                                                color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text(
+                                                    text = "«${item.contextText.trim()}»",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontStyle = FontStyle.Italic,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                                 )
                                             }
                                         }

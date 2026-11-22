@@ -1,4 +1,6 @@
 package com.aura.reader.ui.screens.library
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -10,7 +12,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.runtime.CompositionLocalProvider
 import com.aura.reader.ui.components.LocalHazeState
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeSource
 import com.aura.reader.ui.components.expressiveClickable
 import com.aura.reader.ui.components.jellyOverscroll
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -26,19 +28,41 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 import androidx.compose.material3.FabPosition
+import com.aura.reader.ui.components.LiquidGlassMenuContainer
+import com.aura.reader.ui.components.LiquidGlassMenuItem
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.ui.components.FloatingNavigationIsland
 import com.aura.reader.ui.components.FloatingAddGlassButton
+import com.aura.reader.ui.components.MorphingFloatingBottomBar
 import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.ui.components.LiquidGlassCard
 import com.aura.reader.ui.components.liquidGlassMenuAppearance
+import com.aura.reader.ui.components.PopupBlurBehind
 import com.aura.reader.ui.components.ParallaxCoverViewer
 import com.aura.reader.util.BookShareUtils
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import com.aura.reader.ui.screens.settings.SettingsInterfacePage
+import com.aura.reader.ui.screens.settings.SettingsGeneralPage
+import com.aura.reader.ui.screens.settings.SettingsAboutPage
+import com.aura.reader.ui.theme.LocalEInkMode
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material3.HorizontalDivider
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
+import kotlin.coroutines.cancellation.CancellationException
+import com.aura.reader.ui.components.LiquidGlassSurface
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
@@ -54,6 +78,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -81,6 +106,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -108,6 +134,7 @@ import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Timer
 import com.aura.reader.ui.screens.settings.SettingsBottomSheet
 import com.aura.reader.ui.screens.reader.ReaderSettingsBottomSheet
+import androidx.compose.animation.core.FastOutSlowInEasing
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -124,6 +151,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -131,6 +159,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -160,10 +189,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import com.aura.reader.data.model.HolidaySeason
 import com.aura.reader.data.model.LocalHolidaySeason
 
 @OptIn(ExperimentalMaterial3Api::class)
+@android.annotation.SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun LibraryScreen(
     viewModel: LibraryViewModel,
@@ -189,7 +221,15 @@ fun LibraryScreen(
         accumulatedDragOffset = Offset.Zero
     }
 
-    var currentMainTab by rememberSaveable { mutableIntStateOf(0) }
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 5 })
+    val activePage = if (pagerState.isScrollInProgress) pagerState.targetPage else pagerState.currentPage
+    val isSettingsOpen = activePage >= 2
+    val selectedMainTab = when {
+        activePage == 1 -> 1
+        activePage >= 2 -> 2
+        else -> 0
+    }
+    val selectedSettingsCategory = (activePage - 2).coerceIn(0, 2)
 
     val infiniteTransition = rememberInfiniteTransition(label = "ios_wobble")
     val wobbleAngle by infiniteTransition.animateFloat(
@@ -217,20 +257,29 @@ fun LibraryScreen(
     var showReadingStatsSheet by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsState()
     val updateInfo by viewModel.updateInfo.collectAsState()
+    val updateCheckState by viewModel.updateCheckState.collectAsState()
+    val updateInstallState by viewModel.updateInstallState.collectAsState()
     val foundFiles by viewModel.foundDeviceFiles.collectAsState()
     val readerSettings by viewModel.readerSettings.collectAsState()
-    val isGlass = readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isEInk = LocalEInkMode.current
+    val effectiveDesignStyle = if (isEInk) AppDesignStyle.MATERIAL else readerSettings.appDesignStyle
+    val isGlass = effectiveDesignStyle == AppDesignStyle.LIQUID_GLASS
     val sysDark = isSystemInDarkTheme()
-    val isThemeDark = when (readerSettings.appThemeMode) {
+    val effectiveThemeMode = if (isEInk) ReaderThemeMode.LIGHT else readerSettings.appThemeMode
+    val isThemeDark = when (effectiveThemeMode) {
         ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
         ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
         ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
     }
+    val isSepiaTheme = effectiveThemeMode == ReaderThemeMode.SEPIA
+    val appSettings by viewModel.appSettings.collectAsState()
     val appLanguage by viewModel.appLanguage.collectAsState()
     val updateNotificationsEnabled by viewModel.updateNotificationsEnabled.collectAsState()
     val anonymousAnalyticsEnabled by viewModel.anonymousAnalyticsEnabled.collectAsState()
     val readingStatsEnabled by viewModel.readingStatsEnabled.collectAsState()
+    val autoFetchMetadataEnabled by viewModel.autoFetchMetadataEnabled.collectAsState()
     val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
+    val colorPreset by viewModel.colorPreset.collectAsState()
     val userCollections by viewModel.userCollections.collectAsState()
     val activeCollectionFilter by viewModel.activeCollectionFilter.collectAsState()
     val libraryViewMode by viewModel.libraryViewMode.collectAsState()
@@ -243,6 +292,10 @@ fun LibraryScreen(
     val holidayOverride by viewModel.holidayOverride.collectAsState()
     val holidaySeason = LocalHolidaySeason.current
     val lastHolidaySoundSeason by viewModel.lastHolidaySoundSeason.collectAsState()
+    val trashCount by viewModel.trashCount.collectAsState()
+    var selectedBookForProfile by remember { mutableStateOf<Book?>(null) }
+    var showClearTrashConfirmDialog by remember { mutableStateOf(false) }
+    var bookToDeletePermanently by remember { mutableStateOf<Book?>(null) }
 
     var holidayBurstKey by remember { mutableLongStateOf(0L) }
     var holidayBurstOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -268,14 +321,79 @@ fun LibraryScreen(
     val scope = rememberCoroutineScope()
     val gridState = rememberLazyGridState()
     var showAddBooksSheet by remember { mutableStateOf(false) }
+    var showSettingsSheet by remember { mutableStateOf(false) }
+
+    val pageAnimationSpec = spring<Float>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = 420f
+    )
+    val smoothScrollToPage: (Int) -> Unit = { page ->
+        scope.launch {
+            if (isEInk) {
+                pagerState.scrollToPage(page)
+            } else {
+                pagerState.animateScrollToPage(page, animationSpec = pageAnimationSpec)
+            }
+        }
+    }
+
+    val libraryInstantSwipe = if (isEInk) {
+        Modifier.pointerInput(pagerState.currentPage, pagerState.pageCount) {
+            var totalDrag = 0f
+            var triggered = false
+            detectHorizontalDragGestures(
+                onDragStart = {
+                    totalDrag = 0f
+                    triggered = false
+                },
+                onDragEnd = {
+                    if (!triggered) {
+                        val threshold = 35f
+                        if (totalDrag < -threshold && pagerState.currentPage < pagerState.pageCount - 1) {
+                            smoothScrollToPage(pagerState.currentPage + 1)
+                        } else if (totalDrag > threshold && pagerState.currentPage > 0) {
+                            smoothScrollToPage(pagerState.currentPage - 1)
+                        }
+                    }
+                },
+                onDragCancel = {
+                    totalDrag = 0f
+                    triggered = false
+                },
+                onHorizontalDrag = { _, dragAmount ->
+                    totalDrag += dragAmount
+                    val triggerThreshold = 75f
+                    if (!triggered) {
+                        if (totalDrag < -triggerThreshold && pagerState.currentPage < pagerState.pageCount - 1) {
+                            triggered = true
+                            smoothScrollToPage(pagerState.currentPage + 1)
+                        } else if (totalDrag > triggerThreshold && pagerState.currentPage > 0) {
+                            triggered = true
+                            smoothScrollToPage(pagerState.currentPage - 1)
+                        }
+                    }
+                }
+            )
+        }
+    } else Modifier
+
     BackHandler(enabled = showAddBooksSheet) {
         showAddBooksSheet = false
     }
 
-    BackHandler(enabled = isGlass && currentMainTab != 0 && !showAddBooksSheet) {
-        currentMainTab = 0
+    BackHandler(enabled = !isGlass && showSettingsSheet) {
+        showSettingsSheet = false
     }
-    var showSettingsSheet by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = pagerState.currentPage != 0 && !showAddBooksSheet && !isReorderMode) {
+        smoothScrollToPage(0)
+    }
+
+    LaunchedEffect(isGlass) {
+        if (showSettingsSheet) {
+            showSettingsSheet = false
+        }
+    }
     var showReaderThemeSheet by remember { mutableStateOf(false) }
     var bookToDelete by remember { mutableStateOf<Book?>(null) }
     var inspectingCoverBook by remember { mutableStateOf<Book?>(null) }
@@ -290,17 +408,60 @@ fun LibraryScreen(
     var bookForCollections by remember { mutableStateOf<Book?>(null) }
     var collectionToDelete by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(readerSettings.appDesignStyle) {
-        if (readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS && showSettingsSheet) {
-            showSettingsSheet = false
-            currentMainTab = 2
-        } else if (readerSettings.appDesignStyle != AppDesignStyle.LIQUID_GLASS && currentMainTab == 2) {
-            currentMainTab = 0
-            showSettingsSheet = true
+    val privateBookIds by viewModel.privateBookIds.collectAsState()
+    val currentHeroBook = remember(recentBooks, privateBookIds) {
+        recentBooks.firstOrNull { it.isReadingStarted && it.id !in privateBookIds }
+    }
+    val hasPrivatePassword by viewModel.hasPrivatePassword.collectAsState()
+    val isPrivateUnlocked by viewModel.isPrivateFolderUnlocked.collectAsState()
+    var showSetupPrivatePasswordDialog by remember { mutableStateOf(false) }
+    var pendingPrivateBookId by remember { mutableStateOf<String?>(null) }
+    var showUnlockPrivatePasswordDialog by remember { mutableStateOf(false) }
+    var showChangePrivatePasswordDialog by remember { mutableStateOf(false) }
+    var showAddBooksToPrivateDialog by remember { mutableStateOf(false) }
+    var privateFolderError by remember { mutableStateOf<String?>(null) }
+
+    var selectedBookIds by remember { mutableStateOf(setOf<String>()) }
+    val isSelectionMode = selectedBookIds.isNotEmpty()
+    var showBatchCollectionDialog by remember { mutableStateOf(false) }
+    var showSortMenu by remember { mutableStateOf(false) }
+    var showHeroMenu by remember { mutableStateOf(false) }
+    var rootCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var sortButtonCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+
+    BackHandler(enabled = showSortMenu) {
+        showSortMenu = false
+    }
+
+    BackHandler(enabled = showHeroMenu) {
+        showHeroMenu = false
+    }
+
+    PredictiveBackHandler(enabled = isSelectionMode) { progress ->
+        try {
+            progress.collect { }
+            selectedBookIds = emptySet()
+        } catch (_: CancellationException) {}
+    }
+
+    val handleTogglePrivate: (Book) -> Unit = { book ->
+        if (book.id in privateBookIds) {
+            viewModel.removeBookFromPrivateFolder(book.id)
+        } else {
+            if (!hasPrivatePassword) {
+                pendingPrivateBookId = book.id
+                showSetupPrivatePasswordDialog = true
+            } else {
+                viewModel.addBooksToPrivateFolder(setOf(book.id))
+            }
         }
     }
 
     // Backup & Restore Launchers
+    var showBackupOptionsDialog by remember { mutableStateOf(false) }
+    var backupTargetIsGoogleDrive by remember { mutableStateOf(false) }
+    var pendingIncludeBookFiles by remember { mutableStateOf(true) }
+
     val exportBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/zip")
     ) { uri: Uri? ->
@@ -308,6 +469,7 @@ fun LibraryScreen(
             viewModel.exportBackup(
                 uri = uri,
                 contentResolver = context.contentResolver,
+                includeBookFiles = pendingIncludeBookFiles,
                 onSuccess = { count ->
                     scope.launch { snackbarHostState.showSnackbar(strings.backupCreatedSuccess(count)) }
                 },
@@ -335,8 +497,9 @@ fun LibraryScreen(
         }
     }
 
-    val sendToGoogleDriveAction = {
+    val sendToGoogleDriveAction: (Boolean) -> Unit = { includeBookFiles ->
         viewModel.exportBackupToTempFile(
+            includeBookFiles = includeBookFiles,
             onSuccess = { file, count ->
                 try {
                     val fileUri = androidx.core.content.FileProvider.getUriForFile(
@@ -466,11 +629,20 @@ fun LibraryScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = mainScreenBg,
         topBar = {
-            androidx.compose.animation.AnimatedVisibility(
-                visible = currentMainTab == 0,
-                enter = fadeIn(animationSpec = tween(220)),
-                exit = fadeOut(animationSpec = tween(160))
-            ) {
+            val libraryPageOffset by remember(pagerState) {
+                derivedStateOf {
+                    val page = pagerState.currentPage
+                    val offset = pagerState.currentPageOffsetFraction
+                    if (page == 0) {
+                        offset.coerceIn(0f, 1f)
+                    } else if (page == 1 && offset < 0f) {
+                        (1f + offset).coerceIn(0f, 1f)
+                    } else {
+                        1f
+                    }
+                }
+            }
+            if (libraryPageOffset < 0.999f) {
                 LibraryTopBar(
                     isSearchExpanded = isSearchExpanded,
                     isGlass = isGlass,
@@ -478,10 +650,13 @@ fun LibraryScreen(
                     searchQuery = searchQuery,
                     libraryViewMode = libraryViewMode,
                     scrollBehavior = scrollBehavior,
+                    pageOffset = libraryPageOffset,
                     onSearchExpandedChange = { isSearchExpanded = it },
                     onSearchQueryChange = { viewModel.setSearchQuery(it) },
                     onToggleViewMode = { viewModel.toggleLibraryViewMode() },
-                    onOpenSettings = { showSettingsSheet = true },
+                    onOpenSettings = {
+                        smoothScrollToPage(2)
+                    },
                     onHolidayBadgeClick = { origin ->
                         holidayBurstKey = System.currentTimeMillis()
                         holidayBurstOrigin = origin
@@ -501,65 +676,55 @@ fun LibraryScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
-            } else if (isGlass) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FloatingNavigationIsland(
-                        designStyle = readerSettings.appDesignStyle,
-                        clarity = readerSettings.glassClarity,
-                        selectedTab = currentMainTab,
-                        isDark = isThemeDark,
-                        onMyBooksClick = {
-                            if (currentMainTab != 0) {
-                                currentMainTab = 0
-                            } else {
-                                scope.launch { gridState.animateScrollToItem(0) }
-                            }
-                        },
-                        onSearchClick = {
-                            currentMainTab = 1
-                        },
-                        onSettingsClick = {
-                            currentMainTab = 2
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    FloatingAddGlassButton(
-                        onClick = {
-                            if (currentMainTab != 0) {
-                                currentMainTab = 0
-                            }
-                            showAddBooksSheet = true
-                        },
-                        isDark = isThemeDark
-                    )
-                }
             } else {
-                ExtendedFloatingActionButton(
-                    shape = RoundedCornerShape(20.dp),
-                    onClick = { showAddBooksSheet = true },
-                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
-                    text = { Text(strings.addBooks) },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                MorphingFloatingBottomBar(
+                    isSettingsOpen = isSettingsOpen,
+                    selectedMainTab = selectedMainTab,
+                    selectedSettingsCategory = selectedSettingsCategory,
+                    designStyle = effectiveDesignStyle,
+                    clarity = readerSettings.glassClarity,
+                    isDark = isThemeDark,
+                    onMyBooksClick = {
+                        if (pagerState.currentPage != 0) {
+                            smoothScrollToPage(0)
+                        } else {
+                            scope.launch { gridState.animateScrollToItem(0) }
+                        }
+                    },
+                    onSearchClick = {
+                        smoothScrollToPage(1)
+                    },
+                    onSettingsClick = {
+                        smoothScrollToPage(2)
+                    },
+                    onBackFromSettingsClick = {
+                        smoothScrollToPage(0)
+                    },
+                    onSelectSettingsCategory = { categoryIndex ->
+                        smoothScrollToPage(2 + categoryIndex)
+                    },
+                    onAddBooksClick = {
+                        if (pagerState.currentPage != 0) {
+                            smoothScrollToPage(0)
+                        }
+                        showAddBooksSheet = true
+                    }
                 )
             }
         },
-        floatingActionButtonPosition = if (isGlass) FabPosition.Center else FabPosition.End,
+        floatingActionButtonPosition = FabPosition.Center,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .haze(hazeState)
+                .onGloballyPositioned { rootCoordinates = it }
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .hazeSource(hazeState)
+            ) {
             if (showAddBooksSheet) {
                 AddBooksBottomSheet(
                     onDismiss = { showAddBooksSheet = false },
@@ -571,133 +736,33 @@ fun LibraryScreen(
                 )
             }
 
-            AnimatedContent(
-                targetState = currentMainTab,
-                transitionSpec = {
-                    val forward = targetState > initialState
-                    val slideFraction = 0.28f
-                    if (forward) {
-                        (slideInHorizontally(
-                            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
-                        ) { width -> (width * slideFraction).toInt() } + fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)))
-                            .togetherWith(
-                                slideOutHorizontally(
-                                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
-                                ) { width -> (-width * slideFraction).toInt() } + fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing))
-                            )
-                    } else {
-                        (slideInHorizontally(
-                            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
-                        ) { width -> (-width * slideFraction).toInt() } + fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)))
-                            .togetherWith(
-                                slideOutHorizontally(
-                                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
-                                ) { width -> (width * slideFraction).toInt() } + fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing))
-                            )
-                    }
-                },
-                label = "dockTabNavigationTransition",
-                modifier = Modifier.fillMaxSize()
-            ) { tab ->
-                when (tab) {
-                    1 -> {
-                        LibrarySearchScreen(
-                                        searchQuery = searchQuery,
-                                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                                        searchHistory = librarySearchHistory,
-                                        onSelectHistoryQuery = { query ->
-                                            viewModel.setSearchQuery(query)
-                                        },
-                                        onRemoveHistoryQuery = { query ->
-                                            viewModel.removeLibrarySearchQuery(query)
-                                        },
-                                        onClearSearchHistory = {
-                                            viewModel.clearLibrarySearchHistory()
-                                        },
-                                        onSaveSearchQuery = { query ->
-                                            viewModel.saveLibrarySearchQuery(query)
-                                        },
-                                        books = recentBooks,
-                                        onBookClick = onBookSelected,
-                                        onDeleteBook = { book -> bookToDelete = book },
-                                        onToggleFavorite = { book -> viewModel.toggleFavorite(book.id) },
-                                        onAddToCollection = { book -> bookForCollections = book },
-                                        onSetProgress = { book, prog -> viewModel.setBookReadingProgress(book.id, prog) },
-                                        onCoverClick = { book -> inspectingCoverBook = book },
-                                        onShare = { book -> BookShareUtils.shareBookFile(context, book) },
-                                        onChangeCover = { book -> bookForCoverChange = book },
-                                        onBack = { currentMainTab = 0 },
-                                        libraryViewMode = libraryViewMode,
-                                        isDark = isThemeDark,
-                                        clarity = readerSettings.glassClarity
-                                    )
-                    }
-                    2 -> {
-                        SettingsBottomSheet(
-                                        currentTheme = readerSettings.appThemeMode,
-                                        currentLanguage = appLanguage,
-                                        updateNotificationsEnabled = updateNotificationsEnabled,
-                                        anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
-                                        readingStatsEnabled = readingStatsEnabled,
-                                        materialYouEnabled = materialYouEnabled,
-                                        seasonalEffectsEnabled = seasonalEffectsEnabled,
-                                        onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
-                                        holidayOverride = holidayOverride,
-                                        onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
-                                        isFullScreen = true,
-                                        onDismiss = { currentMainTab = 0 },
-                                        onOpenOnboarding = onOpenOnboarding,
-                                        onThemeChange = { viewModel.setAppThemeMode(it) },
-                                        onLanguageChange = { viewModel.setAppLanguage(it) },
-                                        onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
-                                        onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
-                                        onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
-                                        onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
-                                        customOpdsEnabled = customOpdsEnabled,
-                                        customOpdsUrl = catalogBaseUrl,
-                                        onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
-                                        onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
-                                        developerModeEnabled = developerModeEnabled,
-                                        updateChannel = updateChannel,
-                                        onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
-                                        onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
-                                        onCheckUpdates = {
-                                            viewModel.checkForUpdates(manual = true, context = context)
-                                        },
-                                        onExportBackup = {
-                                            exportBackupLauncher.launch("AuraReader_Backup_${System.currentTimeMillis()}.aurabackup")
-                                        },
-                                        onSendToGoogleDrive = {
-                                            sendToGoogleDriveAction()
-                                        },
-                                        onRestoreBackup = {
-                                            restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
-                                        },
-                                        readerTheme = readerSettings.themeMode,
-                                        syncThemesWithApp = readerSettings.syncThemesWithApp,
-                                        onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
-                                        onReaderThemeChange = { viewModel.setThemeMode(it) },
-                                        onOpenReaderThemeSettings = {
-                                            showReaderThemeSheet = true
-                                        },
-                                        appDesignStyle = readerSettings.appDesignStyle,
-                                        onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
-                                        glassClarity = readerSettings.glassClarity,
-                                        onGlassClarityChange = { viewModel.setGlassClarity(it) },
-                                        appFont = appFont,
-                                        onAppFontChange = { viewModel.setAppFont(it) },
-                                        onResetReadingSpeed = { viewModel.resetReadingSpeed() }
-                                    )
-                    }
-                    else -> {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize().then(libraryInstantSwipe),
+                userScrollEnabled = !isReorderMode && !isEInk
+            ) { page ->
+                when (page) {
+                    0 -> {
+                        val showHeroCard = currentHeroBook != null &&
+                                searchQuery.isBlank() &&
+                                (activeCollectionFilter.type == CollectionFilterType.ALL || activeCollectionFilter.type == CollectionFilterType.READING) &&
+                                librarySortOrder != LibrarySortOption.CUSTOM &&
+                                !isReorderMode
+
+                        val displayedRecentBooks = if (showHeroCard) {
+                            filteredRecentBooks.filter { it.id != currentHeroBook.id }
+                        } else {
+                            filteredRecentBooks
+                        }
+
                         Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(innerPadding)
-                                    ) {
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
+                        ) {
                                     if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
                                         Column(Modifier.fillMaxSize()) {
-                                            if (isSearchExpanded && !isGlass) {
+                                            if (isSearchExpanded && !isGlass && !isEInk) {
                                                 SearchCoverCollage(emptyList(), subdued = true, modifier = Modifier.height(100.dp))
                                             }
                                             Box(Modifier.weight(1f)) {
@@ -718,12 +783,12 @@ fun LibraryScreen(
                                             verticalArrangement = Arrangement.spacedBy(12.dp),
                                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
-                                            if (isSearchExpanded && !isGlass) {
+                                            if (isSearchExpanded && !isGlass && !isEInk) {
                                                 item(key = "searchCollage", span = { GridItemSpan(maxLineSpan) }) {
                                                     val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
                                                     val subdued = searchQuery.isNotBlank() || keyboardOpen
                                                     val height by animateDpAsState(if (subdued) 72.dp else 240.dp, tween(350), label = "materialSearchHero")
-                                                    AnimatedVisibility(
+                                                    androidx.compose.animation.AnimatedVisibility(
                                                         visible = isSearchExpanded && !isGlass,
                                                         enter = expandVertically(tween(320)) + fadeIn(tween(250)),
                                                         exit = shrinkVertically(tween(250)) + fadeOut(tween(200))
@@ -747,7 +812,16 @@ fun LibraryScreen(
                                                         update = curUpdate,
                                                         isGlass = isGlass,
                                                         isThemeDark = isThemeDark,
-                                                        onOpenUpdatePage = { url -> viewModel.openUpdatePage(context, url) }
+                                                        installState = updateInstallState,
+                                                        onDownloadAndInstall = {
+                                                            viewModel.downloadAndInstallUpdate(context)
+                                                        },
+                                                        onInstallDownloaded = {
+                                                            viewModel.installDownloadedUpdate(context)
+                                                        },
+                                                        onOpenUpdatePage = { url ->
+                                                            viewModel.openUpdatePage(context, url)
+                                                        }
                                                     )
                                                 }
                                             }
@@ -769,41 +843,81 @@ fun LibraryScreen(
                                             item(span = { GridItemSpan(maxLineSpan) }) {
                                                 LibraryCollectionChips(
                                                     activeFilter = activeCollectionFilter,
-                                                    hasSeries = remember(recentBooks) { recentBooks.any { !it.series.isNullOrBlank() } },
+                                                    hasSeries = remember(recentBooks, privateBookIds) { recentBooks.any { !it.series.isNullOrBlank() && it.id !in privateBookIds } },
                                                     userCollections = userCollections,
                                                     isGlass = isGlass,
                                                     isThemeDark = isThemeDark,
                                                     onFilterChange = { viewModel.setCollectionFilter(it) },
                                                     onDeleteCollection = { collectionToDelete = it },
-                                                    onNewCollection = { showNewCollectionDialog = true }
+                                                    onNewCollection = { showNewCollectionDialog = true },
+                                                    onPrivateFolderClick = {
+                                                        if (activeCollectionFilter.type == CollectionFilterType.PRIVATE_FOLDER) {
+                                                            viewModel.lockPrivateFolder()
+                                                        } else if (!hasPrivatePassword) {
+                                                            showSetupPrivatePasswordDialog = true
+                                                        } else if (isPrivateUnlocked) {
+                                                            viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.PRIVATE_FOLDER))
+                                                        } else {
+                                                            privateFolderError = null
+                                                            showUnlockPrivatePasswordDialog = true
+                                                        }
+                                                    },
+                                                    trashCount = trashCount,
+                                                    onTrashClick = {
+                                                        if (activeCollectionFilter.type == CollectionFilterType.TRASH) {
+                                                            viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.ALL))
+                                                        } else {
+                                                            viewModel.setCollectionFilter(ActiveCollectionFilter(CollectionFilterType.TRASH))
+                                                        }
+                                                    }
                                                 )
                                             }
 
-                                            val currentHeroBook = recentBooks.firstOrNull { it.isReadingStarted }
-                                            val showHeroCard = currentHeroBook != null &&
-                                                    searchQuery.isBlank() &&
-                                                    (activeCollectionFilter.type == CollectionFilterType.ALL || activeCollectionFilter.type == CollectionFilterType.READING) &&
-                                                    librarySortOrder != LibrarySortOption.CUSTOM &&
-                                                    !isReorderMode
-
-                                            val displayedRecentBooks = if (showHeroCard && currentHeroBook != null) {
-                                                filteredRecentBooks.filter { it.id != currentHeroBook.id }
-                                            } else {
-                                                filteredRecentBooks
+                                            if (activeCollectionFilter.type == CollectionFilterType.PRIVATE_FOLDER) {
+                                                item(key = "private_folder_banner", span = { GridItemSpan(maxLineSpan) }) {
+                                                    PrivateFolderBanner(
+                                                        bookCount = filteredRecentBooks.size,
+                                                        isGlass = isGlass,
+                                                        isDark = isThemeDark,
+                                                        onAddBooks = { showAddBooksToPrivateDialog = true },
+                                                        onChangePassword = {
+                                                            privateFolderError = null
+                                                            showChangePrivatePasswordDialog = true
+                                                        },
+                                                        onLock = { viewModel.lockPrivateFolder() },
+                                                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                                                    )
+                                                }
                                             }
 
-                                            if (showHeroCard && currentHeroBook != null) {
+                                            if (activeCollectionFilter.type == CollectionFilterType.TRASH) {
+                                                item(key = "trash_banner", span = { GridItemSpan(maxLineSpan) }) {
+                                                    TrashBanner(
+                                                        bookCount = filteredRecentBooks.size,
+                                                        isGlass = isGlass,
+                                                        isDark = isThemeDark,
+                                                        onClearTrash = { showClearTrashConfirmDialog = true },
+                                                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            if (showHeroCard) {
+                                                val heroBook = currentHeroBook ?: return@LazyVerticalGrid
                                                 item(key = "currently_reading_hero", span = { GridItemSpan(maxLineSpan) }) {
                                                     CurrentlyReadingHeroCard(
-                                                        book = currentHeroBook,
+                                                        book = heroBook,
                                                         onBookClick = onBookSelected,
-                                                        onDelete = { bookToDelete = currentHeroBook },
-                                                        onToggleFavorite = { viewModel.toggleFavorite(currentHeroBook.id) },
-                                                        onAddToCollection = { bookForCollections = currentHeroBook },
-                                                        onSetProgress = { prog -> viewModel.setBookReadingProgress(currentHeroBook.id, prog) },
-                                                        onCoverClick = { inspectingCoverBook = currentHeroBook },
-                                                        onShare = { BookShareUtils.shareBookFile(context, currentHeroBook) },
-                                                        onChangeCover = { bookForCoverChange = currentHeroBook },
+                                                        onDelete = { bookToDelete = heroBook },
+                                                        onToggleFavorite = { viewModel.toggleFavorite(heroBook.id) },
+                                                        onAddToCollection = { bookForCollections = heroBook },
+                                                        onSetProgress = { prog -> viewModel.setBookReadingProgress(heroBook.id, prog) },
+                                                        onCoverClick = { selectedBookForProfile = heroBook },
+                                                        onShare = { BookShareUtils.shareBookFile(context, heroBook) },
+                                                        onChangeCover = { bookForCoverChange = heroBook },
+                                                        isPrivate = heroBook.id in privateBookIds,
+                                                        onTogglePrivate = { handleTogglePrivate(heroBook) },
+                                                        onOpenMenu = { showHeroMenu = true },
                                                         isGlass = readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS,
                                                         isDark = isThemeDark,
                                                         clarity = readerSettings.glassClarity,
@@ -842,11 +956,13 @@ fun LibraryScreen(
                                                     val buttonBg = if (isGlass) {
                                                         if (isThemeDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
                                                     } else {
-                                                        MaterialTheme.colorScheme.surfaceContainer
+                                                        MaterialTheme.colorScheme.surfaceContainerHigh
                                                     }
                                                     val buttonBorder = if (isGlass) {
                                                         BorderStroke(0.5.dp, if (isThemeDark) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.10f))
-                                                    } else null
+                                                    } else {
+                                                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.50f))
+                                                    }
 
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
@@ -854,15 +970,16 @@ fun LibraryScreen(
                                                     ) {
                                                         // 1. Sort Button [ ≡ Последние ]
                                                         if (searchQuery.isBlank()) {
-                                                            Box {
-                                                                var showSortMenu by remember { mutableStateOf(false) }
-                                                                val sortLabel = when (librarySortOrder) {
-                                                                    LibrarySortOption.RECENT -> strings.sortByRecent
-                                                                    LibrarySortOption.TITLE -> strings.sortByTitle
-                                                                    LibrarySortOption.AUTHOR -> strings.sortByAuthor
-                                                                    LibrarySortOption.SERIES -> strings.sortBySeries
-                                                                    LibrarySortOption.CUSTOM -> strings.sortCustomOrder
-                                                                }
+                                                            val sortLabel = when (librarySortOrder) {
+                                                                LibrarySortOption.RECENT -> strings.sortByRecent
+                                                                LibrarySortOption.TITLE -> strings.sortByTitle
+                                                                LibrarySortOption.AUTHOR -> strings.sortByAuthor
+                                                                LibrarySortOption.SERIES -> strings.sortBySeries
+                                                                LibrarySortOption.CUSTOM -> strings.sortCustomOrder
+                                                            }
+                                                            Box(
+                                                                modifier = Modifier.onGloballyPositioned { sortButtonCoordinates = it }
+                                                            ) {
                                                                 ExpressiveSplitButton(
                                                                     leadingContent = {
                                                                         Icon(
@@ -890,178 +1007,26 @@ fun LibraryScreen(
                                                                     border = buttonBorder,
                                                                     size = ExpressiveButtonSize.Small
                                                                 )
+                                                            }
+                                                        }
 
-                                                                val sortMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
-                                                                DropdownMenu(
-                                                                    expanded = showSortMenu,
-                                                                    onDismissRequest = { showSortMenu = false },
-                                                                    shape = RoundedCornerShape(16.dp),
-                                                                    containerColor = sortMenuAppearance.containerColor,
-                                                                    border = sortMenuAppearance.border,
-                                                                    shadowElevation = sortMenuAppearance.shadowElevation
-                                                                ) {
-                                                                    // 1. По недавним
-                                                                    val isRecent = librarySortOrder == LibrarySortOption.RECENT
-                                                                    DropdownMenuItem(
-                                                                        text = {
-                                                                            Text(
-                                                                                strings.sortByRecent,
-                                                                                style = MaterialTheme.typography.bodyLarge,
-                                                                                fontWeight = if (isRecent) FontWeight.SemiBold else FontWeight.Normal
-                                                                            )
-                                                                        },
-                                                                        onClick = {
-                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.RECENT)
-                                                                            showSortMenu = false
-                                                                        },
-                                                                        leadingIcon = {
-                                                                            Icon(
-                                                                                imageVector = Icons.Rounded.Schedule,
-                                                                                contentDescription = null,
-                                                                                tint = if (isRecent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                                modifier = Modifier.size(20.dp)
-                                                                            )
-                                                                        },
-                                                                        trailingIcon = {
-                                                                            if (isRecent) {
-                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                                                            }
-                                                                        }
+                                                        if (displayedRecentBooks.isNotEmpty() && librarySortOrder == LibrarySortOption.CUSTOM && !isSelectionMode) {
+                                                            Surface(
+                                                                shape = CircleShape,
+                                                                color = buttonBg,
+                                                                border = buttonBorder,
+                                                                onClick = {
+                                                                    selectedBookIds = setOf(displayedRecentBooks.first().id)
+                                                                },
+                                                                modifier = Modifier.size(36.dp)
+                                                            ) {
+                                                                Box(contentAlignment = Alignment.Center) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Rounded.Checklist,
+                                                                        contentDescription = strings.selectBooks,
+                                                                        tint = MaterialTheme.colorScheme.onSurface,
+                                                                        modifier = Modifier.size(18.dp)
                                                                     )
-
-                                                                    // 2. По названию
-                                                                    val isTitle = librarySortOrder == LibrarySortOption.TITLE
-                                                                    DropdownMenuItem(
-                                                                        text = {
-                                                                            Text(
-                                                                                strings.sortByTitle,
-                                                                                style = MaterialTheme.typography.bodyLarge,
-                                                                                fontWeight = if (isTitle) FontWeight.SemiBold else FontWeight.Normal
-                                                                            )
-                                                                        },
-                                                                        onClick = {
-                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.TITLE)
-                                                                            showSortMenu = false
-                                                                        },
-                                                                        leadingIcon = {
-                                                                            Icon(
-                                                                                imageVector = Icons.AutoMirrored.Rounded.Sort,
-                                                                                contentDescription = null,
-                                                                                tint = if (isTitle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                                modifier = Modifier.size(20.dp)
-                                                                            )
-                                                                        },
-                                                                        trailingIcon = {
-                                                                            if (isTitle) {
-                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                                                            }
-                                                                        }
-                                                                    )
-
-                                                                    // 3. По автору
-                                                                    val isAuthor = librarySortOrder == LibrarySortOption.AUTHOR
-                                                                    DropdownMenuItem(
-                                                                        text = {
-                                                                            Text(
-                                                                                strings.sortByAuthor,
-                                                                                style = MaterialTheme.typography.bodyLarge,
-                                                                                fontWeight = if (isAuthor) FontWeight.SemiBold else FontWeight.Normal
-                                                                            )
-                                                                        },
-                                                                        onClick = {
-                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.AUTHOR)
-                                                                            showSortMenu = false
-                                                                        },
-                                                                        leadingIcon = {
-                                                                            Icon(
-                                                                                imageVector = Icons.Rounded.Person,
-                                                                                contentDescription = null,
-                                                                                tint = if (isAuthor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                                modifier = Modifier.size(20.dp)
-                                                                            )
-                                                                        },
-                                                                        trailingIcon = {
-                                                                            if (isAuthor) {
-                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                                                            }
-                                                                        }
-                                                                    )
-
-                                                                    // 4. По серии
-                                                                    val isSeries = librarySortOrder == LibrarySortOption.SERIES
-                                                                    DropdownMenuItem(
-                                                                        text = {
-                                                                            Text(
-                                                                                strings.sortBySeries,
-                                                                                style = MaterialTheme.typography.bodyLarge,
-                                                                                fontWeight = if (isSeries) FontWeight.SemiBold else FontWeight.Normal
-                                                                            )
-                                                                        },
-                                                                        onClick = {
-                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.SERIES)
-                                                                            showSortMenu = false
-                                                                        },
-                                                                        leadingIcon = {
-                                                                            Icon(
-                                                                                imageVector = Icons.Rounded.AutoStories,
-                                                                                contentDescription = null,
-                                                                                tint = if (isSeries) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                                modifier = Modifier.size(20.dp)
-                                                                            )
-                                                                        },
-                                                                        trailingIcon = {
-                                                                            if (isSeries) {
-                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                                                            }
-                                                                        }
-                                                                    )
-
-                                                                    // 5. Свой порядок
-                                                                    val isCustom = librarySortOrder == LibrarySortOption.CUSTOM
-                                                                    DropdownMenuItem(
-                                                                        text = {
-                                                                            Text(
-                                                                                strings.sortCustomOrder,
-                                                                                style = MaterialTheme.typography.bodyLarge,
-                                                                                fontWeight = if (isCustom) FontWeight.SemiBold else FontWeight.Normal
-                                                                            )
-                                                                        },
-                                                                        onClick = {
-                                                                            viewModel.setLibrarySortOrder(LibrarySortOption.CUSTOM)
-                                                                            showSortMenu = false
-                                                                        },
-                                                                        leadingIcon = {
-                                                                            Icon(
-                                                                                imageVector = Icons.Rounded.CollectionsBookmark,
-                                                                                contentDescription = null,
-                                                                                tint = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                                modifier = Modifier.size(20.dp)
-                                                                            )
-                                                                        },
-                                                                        trailingIcon = {
-                                                                            if (isCustom) {
-                                                                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                                                            }
-                                                                        }
-                                                                    )
-
-                                                                    val booksWithoutCovers = remember(recentBooks) { recentBooks.filter { it.coverBase64.isNullOrBlank() } }
-                                                                    if (booksWithoutCovers.isNotEmpty()) {
-                                                                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                                                                        DropdownMenuItem(
-                                                                            text = { Text(strings.downloadMissingCovers, style = MaterialTheme.typography.bodyLarge) },
-                                                                            leadingIcon = {
-                                                                                Icon(Icons.Rounded.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                                                                            },
-                                                                            onClick = {
-                                                                                showSortMenu = false
-                                                                                Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
-                                                                                viewModel.autoDownloadMissingCovers(recentBooks) { count ->
-                                                                                    Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
-                                                                                }
-                                                                            }
-                                                                        )
-                                                                    }
                                                                 }
                                                             }
                                                         }
@@ -1077,7 +1042,105 @@ fun LibraryScreen(
                                                         modifier = Modifier.padding(vertical = 16.dp)
                                                     )
                                                 }
+                                            } else if (displayedRecentBooks.isEmpty() && activeCollectionFilter.type == CollectionFilterType.PRIVATE_FOLDER) {
+                                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                                    Surface(
+                                                        shape = RoundedCornerShape(16.dp),
+                                                        color = if (isGlass) {
+                                                            if (isThemeDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)
+                                                        } else {
+                                                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f)
+                                                        },
+                                                        border = BorderStroke(
+                                                            0.5.dp,
+                                                            if (isGlass) {
+                                                                if (isThemeDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f)
+                                                            } else {
+                                                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                                                            }
+                                                        ),
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = 16.dp)
+                                                    ) {
+                                                        Column(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(24.dp),
+                                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Rounded.LockOpen,
+                                                                contentDescription = null,
+                                                                tint = MaterialTheme.colorScheme.primary,
+                                                                modifier = Modifier.size(40.dp)
+                                                            )
+                                                            Text(
+                                                                text = strings.privateFolderEmptyTitle,
+                                                                style = MaterialTheme.typography.titleMedium,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                            Text(
+                                                                text = strings.privateFolderEmptyDesc,
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            } else if (displayedRecentBooks.isEmpty() && activeCollectionFilter.type == CollectionFilterType.TRASH) {
+                                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                                    Surface(
+                                                        shape = RoundedCornerShape(16.dp),
+                                                        color = if (isGlass) {
+                                                            if (isThemeDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)
+                                                        } else {
+                                                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f)
+                                                        },
+                                                        border = BorderStroke(
+                                                            0.5.dp,
+                                                            if (isGlass) {
+                                                                if (isThemeDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f)
+                                                            } else {
+                                                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                                                            }
+                                                        ),
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = 16.dp)
+                                                    ) {
+                                                        Column(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(24.dp),
+                                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Rounded.DeleteOutline,
+                                                                contentDescription = null,
+                                                                tint = MaterialTheme.colorScheme.outline,
+                                                                modifier = Modifier.size(40.dp)
+                                                            )
+                                                            Text(
+                                                                text = strings.trashEmptyTitle,
+                                                                style = MaterialTheme.typography.titleMedium,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                            Text(
+                                                                text = strings.trashEmptyDesc,
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                            )
+                                                        }
+                                                    }
+                                                }
                                             }
+
+                                            val canReorder = librarySortOrder == LibrarySortOption.CUSTOM && !isSelectionMode && activeCollectionFilter.type != CollectionFilterType.TRASH
 
                                             gridItemsIndexed(
                                                 items = displayedRecentBooks,
@@ -1090,6 +1153,16 @@ fun LibraryScreen(
                                                         isGlass = isGlass,
                                                         isDark = isThemeDark,
                                                         isReorderMode = isReorderMode,
+                                                        isSelectionMode = isSelectionMode,
+                                                        isSelected = book.id in selectedBookIds,
+                                                        canReorder = canReorder,
+                                                        onToggleSelect = {
+                                                            selectedBookIds = if (book.id in selectedBookIds) {
+                                                                selectedBookIds - book.id
+                                                            } else {
+                                                                selectedBookIds + book.id
+                                                            }
+                                                        },
                                                         wobbleAngle = wobbleAngle,
                                                         wobbleOffset = wobbleOffset,
                                                         currentlyDraggedBookId = currentlyDraggedBookId,
@@ -1135,13 +1208,43 @@ fun LibraryScreen(
                                                             accumulatedDragOffset = Offset.Zero
                                                         },
                                                         onClick = { onBookSelected(book) },
-                                                        onDelete = { bookToDelete = book },
+                                                        onDelete = {
+                                                            if (activeCollectionFilter.type == CollectionFilterType.TRASH) {
+                                                                bookToDeletePermanently = book
+                                                            } else {
+                                                                viewModel.moveToTrash(book.id)
+                                                                scope.launch {
+                                                                    val res = snackbarHostState.showSnackbar(
+                                                                        message = strings.movedToTrashSnackbar,
+                                                                        actionLabel = strings.undo,
+                                                                        duration = SnackbarDuration.Short
+                                                                    )
+                                                                    if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                                                                        viewModel.restoreFromTrash(book.id)
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        onRestore = {
+                                                             viewModel.restoreFromTrash(book.id)
+                                                             scope.launch {
+                                                                 snackbarHostState.showSnackbar(strings.restoredFromTrashSnackbar)
+                                                             }
+                                                        },
+                                                        onDeletePermanently = {
+                                                            bookToDeletePermanently = book
+                                                        },
+                                                        onOpenProfile = {
+                                                            selectedBookForProfile = book
+                                                        },
                                                         onToggleFavorite = { viewModel.toggleFavorite(book.id) },
                                                         onAddToCollection = { bookForCollections = book },
                                                         onSetProgress = { prog -> viewModel.setBookReadingProgress(book.id, prog) },
                                                         onCoverClick = { inspectingCoverBook = book },
                                                         onShare = { BookShareUtils.shareBookFile(context, book) },
-                                                        onChangeCover = { bookForCoverChange = book }
+                                                        onChangeCover = { bookForCoverChange = book },
+                                                        isPrivate = book.id in privateBookIds,
+                                                        onTogglePrivate = { handleTogglePrivate(book) }
                                                     )
                                                 } else {
                                                     BookCard(
@@ -1150,6 +1253,16 @@ fun LibraryScreen(
                                                         isGlass = isGlass,
                                                         isDark = isThemeDark,
                                                         isReorderMode = isReorderMode,
+                                                        isSelectionMode = isSelectionMode,
+                                                        isSelected = book.id in selectedBookIds,
+                                                        canReorder = canReorder,
+                                                        onToggleSelect = {
+                                                            selectedBookIds = if (book.id in selectedBookIds) {
+                                                                selectedBookIds - book.id
+                                                            } else {
+                                                                selectedBookIds + book.id
+                                                            }
+                                                        },
                                                         wobbleAngle = wobbleAngle,
                                                         wobbleOffset = wobbleOffset,
                                                         currentlyDraggedBookId = currentlyDraggedBookId,
@@ -1184,13 +1297,43 @@ fun LibraryScreen(
                                                             accumulatedDragOffset = Offset.Zero
                                                         },
                                                         onClick = { onBookSelected(book) },
-                                                        onDelete = { bookToDelete = book },
+                                                        onDelete = {
+                                                            if (activeCollectionFilter.type == CollectionFilterType.TRASH) {
+                                                                bookToDeletePermanently = book
+                                                            } else {
+                                                                viewModel.moveToTrash(book.id)
+                                                                scope.launch {
+                                                                    val res = snackbarHostState.showSnackbar(
+                                                                        message = strings.movedToTrashSnackbar,
+                                                                        actionLabel = strings.undo,
+                                                                        duration = SnackbarDuration.Short
+                                                                    )
+                                                                    if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                                                                        viewModel.restoreFromTrash(book.id)
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        onRestore = {
+                                                             viewModel.restoreFromTrash(book.id)
+                                                             scope.launch {
+                                                                 snackbarHostState.showSnackbar(strings.restoredFromTrashSnackbar)
+                                                             }
+                                                        },
+                                                        onDeletePermanently = {
+                                                            bookToDeletePermanently = book
+                                                        },
+                                                        onOpenProfile = {
+                                                            selectedBookForProfile = book
+                                                        },
                                                         onToggleFavorite = { viewModel.toggleFavorite(book.id) },
                                                         onAddToCollection = { bookForCollections = book },
                                                         onSetProgress = { prog -> viewModel.setBookReadingProgress(book.id, prog) },
                                                         onCoverClick = { inspectingCoverBook = book },
                                                         onShare = { BookShareUtils.shareBookFile(context, book) },
-                                                        onChangeCover = { bookForCoverChange = book }
+                                                        onChangeCover = { bookForCoverChange = book },
+                                                        isPrivate = book.id in privateBookIds,
+                                                        onTogglePrivate = { handleTogglePrivate(book) }
                                                     )
                                                 }
                                             }
@@ -1212,19 +1355,610 @@ fun LibraryScreen(
                                         }
                                     }
                                 }
+                            }
+                    1 -> {
+                        LibrarySearchScreen(
+                            searchQuery = searchQuery,
+                            onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                            searchHistory = librarySearchHistory,
+                            onSelectHistoryQuery = { query ->
+                                viewModel.setSearchQuery(query)
+                            },
+                            onRemoveHistoryQuery = { query ->
+                                viewModel.removeLibrarySearchQuery(query)
+                            },
+                            onClearSearchHistory = {
+                                viewModel.clearLibrarySearchHistory()
+                            },
+                            onSaveSearchQuery = { query ->
+                                viewModel.saveLibrarySearchQuery(query)
+                            },
+                            books = remember(recentBooks, privateBookIds) { recentBooks.filter { it.deletedAtTimestamp == null && it.id !in privateBookIds } },
+                            onBookClick = onBookSelected,
+                            onDeleteBook = { book ->
+                                viewModel.moveToTrash(book.id)
+                                scope.launch {
+                                    val res = snackbarHostState.showSnackbar(
+                                        message = strings.movedToTrashSnackbar,
+                                        actionLabel = strings.undo,
+                                        duration = SnackbarDuration.Short
+                                    )
+                                    if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                                        viewModel.restoreFromTrash(book.id)
+                                    }
+                                }
+                            },
+                            onToggleFavorite = { book -> viewModel.toggleFavorite(book.id) },
+                            onAddToCollection = { book -> bookForCollections = book },
+                            onSetProgress = { book, prog -> viewModel.setBookReadingProgress(book.id, prog) },
+                            onCoverClick = { book -> inspectingCoverBook = book },
+                            onShare = { book -> BookShareUtils.shareBookFile(context, book) },
+                            onChangeCover = { book -> bookForCoverChange = book },
+                            onBack = { smoothScrollToPage(0) },
+                            libraryViewMode = libraryViewMode,
+                            isDark = isThemeDark,
+                            clarity = readerSettings.glassClarity
+                        )
+                    }
+                    2 -> {
+                        SettingsInterfacePage(
+                            appSettings = appSettings,
+                            onUpdateSettings = { viewModel.updateAppSettings(it) },
+                            syncThemesWithApp = readerSettings.syncThemesWithApp,
+                            onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
+                            onOpenReaderThemeSettings = {
+                                showReaderThemeSheet = true
+                            }
+                        )
+                    }
+                    3 -> {
+                        val booksWithoutCoversCount = remember(recentBooks) {
+                            recentBooks.count { it.deletedAtTimestamp == null && it.coverBase64.isNullOrBlank() }
+                        }
+                        val booksWithoutMetadataCount = remember(recentBooks) {
+                            recentBooks.count { it.deletedAtTimestamp == null && (it.description.isNullOrBlank() || it.genres.isEmpty()) }
+                        }
+                        var cacheSizeString by remember {
+                            mutableStateOf(
+                                com.aura.reader.data.storage.AppStorageManager.formatSize(
+                                    com.aura.reader.data.storage.AppStorageManager.getCacheSizeBytes(context)
+                                )
+                            )
+                        }
+                        SettingsGeneralPage(
+                            appSettings = appSettings,
+                            onUpdateSettings = { viewModel.updateAppSettings(it) },
+                            onResetReadingSpeed = { viewModel.resetReadingSpeed() },
+                            updateCheckState = updateCheckState,
+                            onCheckUpdates = {
+                                viewModel.checkForUpdates(manual = true, context = context)
+                            },
+                            onExportBackup = {
+                                backupTargetIsGoogleDrive = false
+                                showBackupOptionsDialog = true
+                            },
+                            onSendToGoogleDrive = {
+                                backupTargetIsGoogleDrive = true
+                                showBackupOptionsDialog = true
+                            },
+                            onRestoreBackup = {
+                                restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+                            },
+                            onDownloadMissingCovers = {
+                                Toast.makeText(context, strings.downloadMissingCovers + "...", Toast.LENGTH_SHORT).show()
+                                viewModel.autoDownloadMissingCovers(recentBooks) { count ->
+                                    Toast.makeText(context, strings.coversDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            onDownloadMissingMetadata = {
+                                Toast.makeText(context, strings.downloadMissingMetadata + "...", Toast.LENGTH_SHORT).show()
+                                viewModel.autoEnrichMissingMetadata(recentBooks) { count ->
+                                    Toast.makeText(context, strings.metadataDownloadedSuccess(count), Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            booksWithoutCoversCount = booksWithoutCoversCount,
+                            booksWithoutMetadataCount = booksWithoutMetadataCount,
+                            onClearCache = {
+                                com.aura.reader.data.storage.AppStorageManager.clearAllCache(context)
+                                cacheSizeString = com.aura.reader.data.storage.AppStorageManager.formatSize(
+                                    com.aura.reader.data.storage.AppStorageManager.getCacheSizeBytes(context)
+                                )
+                                Toast.makeText(context, strings.clearAppCacheSuccess, Toast.LENGTH_SHORT).show()
+                            },
+                            cacheSizeString = cacheSizeString
+                        )
+                    }
+                    4 -> {
+                        SettingsAboutPage(
+                            appDesignStyle = effectiveDesignStyle,
+                            onOpenOnboarding = onOpenOnboarding
+                        )
                     }
                 }
             }
+        }
+
+        // --- In-Window Sort Menu Overlay (placed outside hazeSource to sample genuine blur) ---
+        AnimatedVisibility(
+            visible = showSortMenu,
+            enter = fadeIn(tween(200, easing = FastOutSlowInEasing)),
+            exit = fadeOut(tween(160, easing = FastOutSlowInEasing))
+        ) {
+            val menuWidthDp = 240.dp
+            val estimatedMenuHeightDp = 250.dp
+            val menuWidthPx = with(density) { menuWidthDp.toPx() }
+            val estimatedMenuHeightPx = with(density) { estimatedMenuHeightDp.toPx() }
+            val gapPx = with(density) { 6.dp.toPx() }
+            val marginPx = with(density) { 16.dp.toPx() }
+
+            val isAttached = rootCoordinates?.isAttached == true && sortButtonCoordinates?.isAttached == true
+            val (menuX, menuY, isBelow) = remember(showSortMenu, rootCoordinates, sortButtonCoordinates) {
+                if (isAttached) {
+                    val root = rootCoordinates!!
+                    val btn = sortButtonCoordinates!!
+                    val btnPos = root.localPositionOf(btn, Offset.Zero)
+                    val btnSize = btn.size
+                    val rootSize = root.size
+
+                    val btnRight = btnPos.x + btnSize.width
+                    val btnBottom = btnPos.y + btnSize.height
+                    val btnTop = btnPos.y
+
+                    val targetX = (btnRight - menuWidthPx).coerceIn(marginPx, (rootSize.width - menuWidthPx - marginPx).coerceAtLeast(marginPx))
+                    val spaceBelow = rootSize.height - btnBottom
+                    val below = spaceBelow >= estimatedMenuHeightPx + marginPx
+                    val targetY = if (below) {
+                        btnBottom + gapPx
+                    } else {
+                        (btnTop - estimatedMenuHeightPx - gapPx).coerceAtLeast(marginPx)
+                    }
+                    Triple(targetX, targetY, below)
+                } else {
+                    Triple(marginPx, with(density) { 140.dp.toPx() }, true)
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { showSortMenu = false }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(menuX.roundToInt(), menuY.roundToInt()) }
+                        .width(menuWidthDp)
+                ) {
+                    AnimatedVisibility(
+                        visible = showSortMenu,
+                        enter = fadeIn(tween(220, easing = FastOutSlowInEasing)) + scaleIn(
+                            initialScale = 0.85f,
+                            transformOrigin = if (isBelow) TransformOrigin(0.9f, 0.05f) else TransformOrigin(0.9f, 0.95f),
+                            animationSpec = tween(220, easing = FastOutSlowInEasing)
+                        ),
+                        exit = fadeOut(tween(160, easing = FastOutSlowInEasing)) + scaleOut(
+                            targetScale = 0.85f,
+                            transformOrigin = if (isBelow) TransformOrigin(0.9f, 0.05f) else TransformOrigin(0.9f, 0.95f),
+                            animationSpec = tween(160, easing = FastOutSlowInEasing)
+                        )
+                    ) {
+                        LiquidGlassMenuContainer(
+                            isGlass = isGlass,
+                            isDark = isThemeDark,
+                            isSepia = isSepiaTheme,
+                            hazeState = hazeState
+                        ) {
+                            val isRecent = librarySortOrder == LibrarySortOption.RECENT
+                            LiquidGlassMenuItem(
+                                text = strings.sortByRecent,
+                                leadingIcon = {
+                                    Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = null, tint = if (isRecent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                },
+                                trailingIcon = if (isRecent) {
+                                    { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                                } else null,
+                                textColor = if (isRecent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (isRecent) FontWeight.SemiBold else FontWeight.Normal,
+                                onClick = {
+                                    viewModel.setLibrarySortOrder(LibrarySortOption.RECENT)
+                                    showSortMenu = false
+                                }
+                            )
+                            val isTitle = librarySortOrder == LibrarySortOption.TITLE
+                            LiquidGlassMenuItem(
+                                text = strings.sortByTitle,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.Title, contentDescription = null, tint = if (isTitle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                },
+                                trailingIcon = if (isTitle) {
+                                    { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                                } else null,
+                                textColor = if (isTitle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (isTitle) FontWeight.SemiBold else FontWeight.Normal,
+                                onClick = {
+                                    viewModel.setLibrarySortOrder(LibrarySortOption.TITLE)
+                                    showSortMenu = false
+                                }
+                            )
+                            val isAuthor = librarySortOrder == LibrarySortOption.AUTHOR
+                            LiquidGlassMenuItem(
+                                text = strings.sortByAuthor,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.Person, contentDescription = null, tint = if (isAuthor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                },
+                                trailingIcon = if (isAuthor) {
+                                    { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                                } else null,
+                                textColor = if (isAuthor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (isAuthor) FontWeight.SemiBold else FontWeight.Normal,
+                                onClick = {
+                                    viewModel.setLibrarySortOrder(LibrarySortOption.AUTHOR)
+                                    showSortMenu = false
+                                }
+                            )
+                            val isSeries = librarySortOrder == LibrarySortOption.SERIES
+                            LiquidGlassMenuItem(
+                                text = strings.sortBySeries,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.AutoStories, contentDescription = null, tint = if (isSeries) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                },
+                                trailingIcon = if (isSeries) {
+                                    { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                                } else null,
+                                textColor = if (isSeries) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (isSeries) FontWeight.SemiBold else FontWeight.Normal,
+                                onClick = {
+                                    viewModel.setLibrarySortOrder(LibrarySortOption.SERIES)
+                                    showSortMenu = false
+                                }
+                            )
+                            val isCustom = librarySortOrder == LibrarySortOption.CUSTOM
+                            LiquidGlassMenuItem(
+                                text = strings.sortCustomOrder,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.CollectionsBookmark, contentDescription = null, tint = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                },
+                                trailingIcon = if (isCustom) {
+                                    { Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                                } else null,
+                                textColor = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (isCustom) FontWeight.SemiBold else FontWeight.Normal,
+                                onClick = {
+                                    viewModel.setLibrarySortOrder(LibrarySortOption.CUSTOM)
+                                    showSortMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- In-Window Hero Card Menu Overlay (outside hazeSource to sample genuine blur) ---
+        val heroBook = currentHeroBook
+        if (heroBook != null) {
+            val heroHasCover = !heroBook.coverBase64.isNullOrBlank()
+            val heroIsPrivate = heroBook.id in privateBookIds
+
+            AnimatedVisibility(
+                visible = showHeroMenu,
+                enter = fadeIn(tween(220, easing = FastOutSlowInEasing)),
+                exit = fadeOut(tween(180, easing = FastOutSlowInEasing))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { showHeroMenu = false }
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        AnimatedVisibility(
+                            visible = showHeroMenu,
+                            enter = fadeIn(tween(240, easing = FastOutSlowInEasing)) + scaleIn(
+                                initialScale = 0.80f,
+                                transformOrigin = TransformOrigin(0.95f, 0.05f),
+                                animationSpec = tween(240, easing = FastOutSlowInEasing)
+                            ),
+                            exit = fadeOut(tween(180, easing = FastOutSlowInEasing)) + scaleOut(
+                                targetScale = 0.82f,
+                                transformOrigin = TransformOrigin(0.95f, 0.05f),
+                                animationSpec = tween(180, easing = FastOutSlowInEasing)
+                            ),
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 130.dp, end = 8.dp)
+                                .width(260.dp)
+                        ) {
+                            LiquidGlassMenuContainer(
+                                isGlass = isGlass,
+                                isDark = isThemeDark,
+                                isSepia = isSepiaTheme,
+                                hazeState = hazeState
+                            ) {
+                                LiquidGlassMenuItem(
+                                    text = strings.shareBookFile,
+                                    leadingIcon = {
+                                        Icon(Icons.Rounded.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    },
+                                    onClick = {
+                                        showHeroMenu = false
+                                        BookShareUtils.shareBookFile(context, heroBook)
+                                    }
+                                )
+                                LiquidGlassMenuItem(
+                                    text = if (heroHasCover) strings.changeCover else strings.downloadCover,
+                                    leadingIcon = {
+                                        Icon(if (heroHasCover) Icons.Rounded.Image else Icons.Rounded.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    },
+                                    onClick = {
+                                        showHeroMenu = false
+                                        bookForCoverChange = heroBook
+                                    }
+                                )
+                                LiquidGlassMenuItem(
+                                    text = strings.addToCollection,
+                                    leadingIcon = {
+                                        Icon(Icons.Rounded.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    },
+                                    onClick = {
+                                        showHeroMenu = false
+                                        bookForCollections = heroBook
+                                    }
+                                )
+                                LiquidGlassMenuItem(
+                                    text = if (heroIsPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate,
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = if (heroIsPrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    onClick = {
+                                        showHeroMenu = false
+                                        handleTogglePrivate(heroBook)
+                                    }
+                                )
+                                if (heroBook.progressPercent < 100) {
+                                    LiquidGlassMenuItem(
+                                        text = strings.markAsFinished,
+                                        leadingIcon = {
+                                            Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        },
+                                        onClick = {
+                                            showHeroMenu = false
+                                            viewModel.setBookReadingProgress(heroBook.id, 100)
+                                        }
+                                    )
+                                }
+                                if (heroBook.progressPercent > 0) {
+                                    LiquidGlassMenuItem(
+                                        text = strings.resetProgress,
+                                        leadingIcon = {
+                                            Icon(Icons.Rounded.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        },
+                                        onClick = {
+                                            showHeroMenu = false
+                                            viewModel.setBookReadingProgress(heroBook.id, 0)
+                                        }
+                                    )
+                                }
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                                LiquidGlassMenuItem(
+                                    text = strings.delete,
+                                    textColor = MaterialTheme.colorScheme.error,
+                                    leadingIcon = {
+                                        Icon(Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                    },
+                                    onClick = {
+                                        showHeroMenu = false
+                                        bookToDelete = heroBook
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- Multi-Select Floating Action Bar (Placed outside hazeSource to sample genuine blur) ---
+        AnimatedVisibility(
+            visible = isSelectionMode,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 96.dp, start = 16.dp, end = 16.dp)
+                .fillMaxWidth()
+        ) {
+            MultiSelectBarContainer(
+                isGlass = isGlass,
+                isThemeDark = isThemeDark,
+                isSepia = isSepiaTheme,
+                hazeState = hazeState,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = { selectedBookIds = emptySet() },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = strings.cancel,
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = strings.selectedCount(selectedBookIds.size),
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        val allDisplayedSelected = filteredRecentBooks.isNotEmpty() &&
+                            filteredRecentBooks.all { it.id in selectedBookIds }
+                        TextButton(
+                            onClick = {
+                                selectedBookIds = if (allDisplayedSelected) {
+                                    emptySet()
+                                } else {
+                                    filteredRecentBooks.map { it.id }.toSet()
+                                }
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = if (allDisplayedSelected) strings.deselectAll else strings.selectAll,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val isTrashView = activeCollectionFilter.type == CollectionFilterType.TRASH
+
+                        if (isTrashView) {
+                            MultiSelectActionButton(
+                                icon = Icons.Rounded.Restore,
+                                label = strings.batchRestore,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val count = selectedBookIds.size
+                                    viewModel.batchRestoreFromTrash(selectedBookIds)
+                                    selectedBookIds = emptySet()
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(strings.restoredFromTrashSnackbar)
+                                    }
+                                }
+                            )
+
+                            MultiSelectActionButton(
+                                icon = Icons.Rounded.DeleteForever,
+                                label = strings.batchDeletePermanently,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val toDelete = selectedBookIds
+                                    viewModel.batchDeletePermanently(toDelete)
+                                    selectedBookIds = emptySet()
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(strings.deletePermanently)
+                                    }
+                                }
+                            )
+                        } else {
+                            MultiSelectActionButton(
+                                icon = Icons.Rounded.FolderOpen,
+                                label = strings.batchAddToCollection,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f),
+                                onClick = { showBatchCollectionDialog = true }
+                            )
+
+                            val allArePrivate = selectedBookIds.isNotEmpty() && selectedBookIds.all { it in privateBookIds }
+                            MultiSelectActionButton(
+                                icon = if (allArePrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                                label = if (allArePrivate) strings.batchRemoveFromPrivate else strings.batchMakePrivate,
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val count = selectedBookIds.size
+                                    viewModel.batchTogglePrivate(selectedBookIds, !allArePrivate)
+                                    selectedBookIds = emptySet()
+                                    scope.launch {
+                                        val msg = if (allArePrivate) strings.batchUnprivateSnackbar(count) else strings.batchPrivateSnackbar(count)
+                                        snackbarHostState.showSnackbar(msg)
+                                    }
+                                }
+                            )
+
+                            val allRead = selectedBookIds.isNotEmpty() && filteredRecentBooks.filter { it.id in selectedBookIds }.all { it.progressPercent >= 100 }
+                            MultiSelectActionButton(
+                                icon = if (allRead) Icons.Rounded.Refresh else Icons.Rounded.CheckCircle,
+                                label = if (allRead) strings.batchMarkUnread else strings.batchMarkRead,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val count = selectedBookIds.size
+                                    val newProgress = if (allRead) 0 else 100
+                                    viewModel.batchSetReadingProgress(selectedBookIds, newProgress)
+                                    selectedBookIds = emptySet()
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(strings.batchMarkedReadSnackbar(count))
+                                    }
+                                }
+                            )
+
+                            MultiSelectActionButton(
+                                icon = Icons.Rounded.Delete,
+                                label = strings.batchMoveToTrash,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val count = selectedBookIds.size
+                                    val deletedIds = selectedBookIds
+                                    viewModel.batchMoveToTrash(deletedIds)
+                                    selectedBookIds = emptySet()
+                                    scope.launch {
+                                        val res = snackbarHostState.showSnackbar(
+                                            message = strings.batchMovedToTrashSnackbar(count),
+                                            actionLabel = strings.undo,
+                                            duration = SnackbarDuration.Short
+                                        )
+                                        if (res == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                                            viewModel.batchRestoreFromTrash(deletedIds)
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
     LibraryDialogs(
         updateInfo = updateInfo,
+        updateInstallState = updateInstallState,
         showNewCollectionDialog = showNewCollectionDialog,
         collectionToDelete = collectionToDelete,
         bookForCollections = bookForCollections,
         userCollections = userCollections,
         onDismissUpdate = { viewModel.dismissUpdateDialog() },
+        onDownloadAndInstall = { viewModel.downloadAndInstallUpdate(context) },
+        onInstallDownloaded = { viewModel.installDownloadedUpdate(context) },
         onOpenUpdatePage = { url -> viewModel.openUpdatePage(context, url) },
         onSkipVersion = { version -> viewModel.skipUpdateVersion(version) },
         onDismissNewCollection = { showNewCollectionDialog = false },
@@ -1237,64 +1971,42 @@ fun LibraryScreen(
         onNewCollectionRequested = { showNewCollectionDialog = true }
     )
 
-    if (showSettingsSheet) {
+    if (!isGlass && showSettingsSheet) {
         SettingsBottomSheet(
-            currentTheme = readerSettings.appThemeMode,
-            currentLanguage = appLanguage,
-            updateNotificationsEnabled = updateNotificationsEnabled,
-            anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
-            readingStatsEnabled = readingStatsEnabled,
-            materialYouEnabled = materialYouEnabled,
-            seasonalEffectsEnabled = seasonalEffectsEnabled,
-            onToggleSeasonalEffects = { viewModel.setSeasonalEffectsEnabled(it) },
-            holidayOverride = holidayOverride,
-            onHolidayOverrideChange = { viewModel.setHolidayOverride(it) },
+            appSettings = appSettings,
+            onUpdateSettings = { viewModel.updateAppSettings(it) },
+            readerSettings = readerSettings,
+            onUpdateReaderSettings = { transform ->
+                val next = transform(readerSettings)
+                if (next.syncThemesWithApp != readerSettings.syncThemesWithApp) {
+                    viewModel.setSyncThemesWithApp(next.syncThemesWithApp)
+                }
+            },
             onDismiss = { showSettingsSheet = false },
-            onOpenOnboarding = onOpenOnboarding,
-            onThemeChange = { viewModel.setAppThemeMode(it) },
-            onLanguageChange = { viewModel.setAppLanguage(it) },
-            onToggleUpdateNotifications = { viewModel.setUpdateNotificationsEnabled(it) },
-            onToggleAnonymousAnalytics = { viewModel.setAnonymousAnalyticsEnabled(it) },
-            onToggleReadingStats = { viewModel.setReadingStatsEnabled(it) },
-            onToggleMaterialYou = { viewModel.setMaterialYouEnabled(it) },
-            customOpdsEnabled = customOpdsEnabled,
-            customOpdsUrl = catalogBaseUrl,
-            onToggleCustomOpds = { viewModel.setCustomOpdsEnabled(it) },
-            onCustomOpdsUrlChange = { viewModel.setCustomOpdsUrl(it) },
-            developerModeEnabled = developerModeEnabled,
-            updateChannel = updateChannel,
-            onToggleDeveloperMode = { viewModel.setDeveloperModeEnabled(it) },
-            onUpdateChannelChange = { viewModel.setUpdateChannel(it) },
+            updateCheckState = updateCheckState,
             onCheckUpdates = {
                 viewModel.checkForUpdates(manual = true, context = context)
             },
             onExportBackup = {
                 showSettingsSheet = false
-                exportBackupLauncher.launch("AuraReader_Backup_${System.currentTimeMillis()}.aurabackup")
+                backupTargetIsGoogleDrive = false
+                showBackupOptionsDialog = true
             },
             onSendToGoogleDrive = {
                 showSettingsSheet = false
-                sendToGoogleDriveAction()
+                backupTargetIsGoogleDrive = true
+                showBackupOptionsDialog = true
             },
             onRestoreBackup = {
                 showSettingsSheet = false
                 restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
             },
-            readerTheme = readerSettings.themeMode,
-            syncThemesWithApp = readerSettings.syncThemesWithApp,
-            onSyncThemesChange = { viewModel.setSyncThemesWithApp(it) },
-            onReaderThemeChange = { viewModel.setThemeMode(it) },
             onOpenReaderThemeSettings = {
                 showSettingsSheet = false
                 showReaderThemeSheet = true
             },
-            appDesignStyle = readerSettings.appDesignStyle,
-            onAppDesignStyleChange = { viewModel.setAppDesignStyle(it) },
-            glassClarity = readerSettings.glassClarity,
-            onGlassClarityChange = { viewModel.setGlassClarity(it) },
-            appFont = appFont,
-            onAppFontChange = { viewModel.setAppFont(it) },
-            onResetReadingSpeed = { viewModel.resetReadingSpeed() }
+            onResetReadingSpeed = { viewModel.resetReadingSpeed() },
+            onOpenOnboarding = onOpenOnboarding
         )
     }
 
@@ -1367,6 +2079,457 @@ fun LibraryScreen(
             durationMillis = 2600
         )
     }
+
+    if (showSetupPrivatePasswordDialog) {
+        SetupPrivatePasswordDialog(
+            onDismiss = {
+                showSetupPrivatePasswordDialog = false
+                pendingPrivateBookId = null
+            },
+            onSavePassword = { password ->
+                viewModel.setPrivateFolderPassword(password) {
+                    showSetupPrivatePasswordDialog = false
+                    pendingPrivateBookId?.let { bookId ->
+                        viewModel.addBooksToPrivateFolder(setOf(bookId))
+                        pendingPrivateBookId = null
+                    }
+                }
+            }
+        )
+    }
+
+    if (showUnlockPrivatePasswordDialog) {
+        UnlockPrivateFolderDialog(
+            errorMessage = privateFolderError,
+            onDismiss = {
+                showUnlockPrivatePasswordDialog = false
+                privateFolderError = null
+            },
+            onUnlock = { password ->
+                viewModel.unlockPrivateFolder(
+                    password = password,
+                    onSuccess = {
+                        showUnlockPrivatePasswordDialog = false
+                        privateFolderError = null
+                    },
+                    onError = {
+                        privateFolderError = strings.privateFolderWrongPassword
+                    }
+                )
+            },
+            onBiometricUnlock = {
+                viewModel.unlockPrivateFolderBiometric(
+                    onSuccess = {
+                        showUnlockPrivatePasswordDialog = false
+                        privateFolderError = null
+                    }
+                )
+            }
+        )
+    }
+
+    if (showBackupOptionsDialog) {
+        com.aura.reader.ui.screens.settings.BackupOptionsDialog(
+            onDismiss = { showBackupOptionsDialog = false },
+            onConfirm = { includeBooks ->
+                showBackupOptionsDialog = false
+                if (backupTargetIsGoogleDrive) {
+                    sendToGoogleDriveAction(includeBooks)
+                } else {
+                    pendingIncludeBookFiles = includeBooks
+                    val prefix = if (includeBooks) "Full" else "Settings"
+                    exportBackupLauncher.launch("AuraReader_Backup_${prefix}_${System.currentTimeMillis()}.aurabackup")
+                }
+            }
+        )
+    }
+
+    if (showChangePrivatePasswordDialog) {
+        ChangePrivatePasswordDialog(
+            errorMessage = privateFolderError,
+            onDismiss = {
+                showChangePrivatePasswordDialog = false
+                privateFolderError = null
+            },
+            onChangePassword = { oldPassword, newPassword ->
+                viewModel.changePrivateFolderPassword(
+                    oldPassword = oldPassword,
+                    newPassword = newPassword,
+                    onSuccess = {
+                        showChangePrivatePasswordDialog = false
+                        privateFolderError = null
+                        scope.launch {
+                            snackbarHostState.showSnackbar(strings.privateFolderPasswordChanged)
+                        }
+                    },
+                    onError = {
+                        privateFolderError = strings.privateFolderWrongPassword
+                    }
+                )
+            }
+        )
+    }
+
+    if (showAddBooksToPrivateDialog) {
+        val availableBooksForPrivate = remember(recentBooks, privateBookIds) {
+            recentBooks.filter { it.id !in privateBookIds }
+        }
+        AddBooksToPrivateFolderDialog(
+            availableBooks = availableBooksForPrivate,
+            onDismiss = { showAddBooksToPrivateDialog = false },
+            onConfirm = { selectedIds ->
+                viewModel.addBooksToPrivateFolder(selectedIds)
+                showAddBooksToPrivateDialog = false
+            }
+        )
+    }
+
+    bookToDeletePermanently?.let { book ->
+        AlertDialog(
+            onDismissRequest = { bookToDeletePermanently = null },
+            title = { Text(strings.deletePermanentlyConfirmTitle, fontWeight = FontWeight.Bold) },
+            text = { Text(strings.deletePermanentlyConfirmDesc) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deletePermanently(book.id)
+                        bookToDeletePermanently = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(strings.deletePermanently, color = MaterialTheme.colorScheme.onError)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { bookToDeletePermanently = null }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
+    if (showClearTrashConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearTrashConfirmDialog = false },
+            title = { Text(strings.clearTrashConfirmTitle, fontWeight = FontWeight.Bold) },
+            text = { Text(strings.clearTrashConfirmDesc) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.clearTrash()
+                        showClearTrashConfirmDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(strings.clearTrash, color = MaterialTheme.colorScheme.onError)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearTrashConfirmDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
+    selectedBookForProfile?.let { book ->
+        BookProfileBottomSheet(
+            book = book,
+            onDismiss = { selectedBookForProfile = null },
+            onSave = { title, author, series, seriesNumber, genres, description ->
+                viewModel.updateBookMetadata(
+                    bookId = book.id,
+                    title = title,
+                    author = author,
+                    series = series,
+                    seriesNumber = seriesNumber,
+                    genres = genres,
+                    description = description
+                )
+                selectedBookForProfile = null
+                scope.launch {
+                    snackbarHostState.showSnackbar(strings.metadataSaved)
+                }
+            },
+            onOpenBook = {
+                val target = book
+                selectedBookForProfile = null
+                onBookSelected(target)
+            },
+            onInspectCover = {
+                val target = book
+                inspectingCoverBook = target
+            },
+            onChangeCover = {
+                val target = book
+                bookForCoverChange = target
+            },
+            onToggleRead = {
+                val newProgress = if (book.progressPercent >= 100) 0 else 100
+                viewModel.setBookReadingProgress(book.id, newProgress)
+            },
+            isGlass = isGlass,
+            isDark = isThemeDark
+        )
+    }
+
+    // --- Batch Collection Dialog ---
+    if (showBatchCollectionDialog) {
+        val existingCollections by viewModel.userCollections.collectAsState()
+        var newColName by remember { mutableStateOf("") }
+        var showCreateNewField by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = { showBatchCollectionDialog = false },
+            title = { Text(strings.batchAddToCollection) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = strings.selectedCount(selectedBookIds.size),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 1. Built-in Shelves
+                    Text(
+                        text = strings.shelvesTitle,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    val builtInShelves = listOf<Triple<String, androidx.compose.ui.graphics.vector.ImageVector, () -> Unit>>(
+                        Triple(strings.colFinished, Icons.Rounded.CheckCircle) {
+                            val count = selectedBookIds.size
+                            viewModel.batchSetManualShelf(selectedBookIds, "FINISHED")
+                            viewModel.batchSetReadingProgress(selectedBookIds, 100)
+                            showBatchCollectionDialog = false
+                            selectedBookIds = emptySet()
+                            scope.launch { snackbarHostState.showSnackbar(strings.batchMovedToShelfSnackbar(count, strings.colFinished)) }
+                        },
+                        Triple(strings.colReading, Icons.Rounded.AutoStories) {
+                            val count = selectedBookIds.size
+                            viewModel.batchSetManualShelf(selectedBookIds, "READING")
+                            showBatchCollectionDialog = false
+                            selectedBookIds = emptySet()
+                            scope.launch { snackbarHostState.showSnackbar(strings.batchMovedToShelfSnackbar(count, strings.colReading)) }
+                        },
+                        Triple(strings.colUnread, Icons.Rounded.BookmarkBorder) {
+                            val count = selectedBookIds.size
+                            viewModel.batchSetManualShelf(selectedBookIds, "UNREAD")
+                            viewModel.batchSetReadingProgress(selectedBookIds, 0)
+                            showBatchCollectionDialog = false
+                            selectedBookIds = emptySet()
+                            scope.launch { snackbarHostState.showSnackbar(strings.batchMovedToShelfSnackbar(count, strings.colUnread)) }
+                        },
+                        Triple(strings.colFavorites, Icons.Rounded.Favorite) {
+                            val count = selectedBookIds.size
+                            viewModel.batchSetFavorite(selectedBookIds, true)
+                            showBatchCollectionDialog = false
+                            selectedBookIds = emptySet()
+                            scope.launch { snackbarHostState.showSnackbar(strings.batchMovedToShelfSnackbar(count, strings.colFavorites)) }
+                        }
+                    )
+
+                    androidx.compose.foundation.layout.FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        builtInShelves.forEach { (shelfName, shelfIcon, onAction) ->
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                                onClick = onAction
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = shelfIcon,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = shelfName,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 2. User Collections
+                    Text(
+                        text = strings.customCollectionsTitle,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    if (existingCollections.isNotEmpty()) {
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            existingCollections.forEach { col ->
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
+                                    onClick = {
+                                        val count = selectedBookIds.size
+                                        viewModel.batchAddToCollection(selectedBookIds, col)
+                                        val msg = strings.batchAddedToCollectionSnackbar(count, col)
+                                        showBatchCollectionDialog = false
+                                        selectedBookIds = emptySet()
+                                        scope.launch { snackbarHostState.showSnackbar(msg) }
+                                    }
+                                ) {
+                                    Text(
+                                        text = col,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                    }
+                    if (!showCreateNewField) {
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = { showCreateNewField = true },
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(strings.newCollection)
+                        }
+                    } else {
+                        OutlinedTextField(
+                            value = newColName,
+                            onValueChange = { newColName = it },
+                            label = { Text(strings.collectionNamePlaceholder) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                if (showCreateNewField) {
+                    Button(
+                        onClick = {
+                            val name = newColName.trim()
+                            if (name.isNotBlank()) {
+                                viewModel.addUserCollection(name)
+                                val count = selectedBookIds.size
+                                viewModel.batchAddToCollection(selectedBookIds, name)
+                                val msg = strings.batchAddedToCollectionSnackbar(count, name)
+                                showBatchCollectionDialog = false
+                                selectedBookIds = emptySet()
+                                scope.launch { snackbarHostState.showSnackbar(msg) }
+                            }
+                        }
+                    ) {
+                        Text(strings.save)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBatchCollectionDialog = false }) {
+                    Text(strings.cancel)
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+    }
+}
+
+@Composable
+private fun MultiSelectActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 2.dp, vertical = 6.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = tint,
+            modifier = Modifier.size(22.dp)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
+            color = tint,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun MultiSelectBarContainer(
+    isGlass: Boolean,
+    isThemeDark: Boolean,
+    isSepia: Boolean,
+    hazeState: HazeState,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    if (isGlass) {
+        val tint = if (isSepia) Color(0x66FAF0E6) else null
+        LiquidGlassSurface(
+            shape = RoundedCornerShape(22.dp),
+            shadowElevation = 10.dp,
+            isDark = isThemeDark,
+            tintColor = tint,
+            hazeState = hazeState,
+            modifier = modifier,
+            content = content
+        )
+    } else {
+        Card(
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isSepia) Color(0xFFE6DDCF) else MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+            modifier = modifier
+        ) {
+            content()
+        }
     }
 }
 

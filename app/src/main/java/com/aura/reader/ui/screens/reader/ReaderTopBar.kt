@@ -1,5 +1,13 @@
 package com.aura.reader.ui.screens.reader
 
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.hazeBlur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.border
+import androidx.compose.ui.unit.dp
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -19,6 +27,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.DropdownMenu
 import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.ui.components.liquidGlassMenuAppearance
+import com.aura.reader.ui.components.PopupBlurBehind
 import androidx.compose.material3.DropdownMenuItem
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material.icons.rounded.Headphones
@@ -89,22 +98,24 @@ fun BoxScope.ReaderTopBar(
     onOpenBookInfo: () -> Unit,
     onOpenTtsSheet: () -> Unit,
     onOpenBookmarks: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    hazeState: HazeState? = null,
+    isSearchActive: Boolean = false,
+    onSearchActiveChange: (Boolean) -> Unit = {},
+    onOpenReaderMenu: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
-    var isSearchActive by remember { mutableStateOf(false) }
-    var showReaderMenu by remember { mutableStateOf(false) }
 
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn() + slideInVertically { -it },
-            exit = fadeOut() + slideOutVertically { -it },
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 10.dp)
-        ) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + slideInVertically { -it },
+        exit = fadeOut() + slideOutVertically { -it },
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    ) {
             val topBarContent: @Composable () -> Unit = {
                 if (isSearchActive) {
                     Row(
@@ -114,7 +125,7 @@ fun BoxScope.ReaderTopBar(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = {
-                            isSearchActive = false
+                            onSearchActiveChange(false)
                             viewModel.clearSearch()
                         }) {
                             Icon(
@@ -175,7 +186,7 @@ fun BoxScope.ReaderTopBar(
 
                         IconButton(
                             onClick = {
-                                isSearchActive = false
+                                onSearchActiveChange(false)
                                 viewModel.clearSearch()
                             },
                             modifier = Modifier.size(36.dp)
@@ -293,92 +304,44 @@ fun BoxScope.ReaderTopBar(
                         }
 
                         // Three-dots Overflow Menu
-                        Box {
-                            IconButton(onClick = { showReaderMenu = true }) {
-                                Icon(
-                                    imageVector = Icons.Rounded.MoreVert,
-                                    contentDescription = strings.moreOptions,
-                                    tint = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-
-                            val readerMenuAppearance = liquidGlassMenuAppearance(isGlass, isThemeDark)
-                            DropdownMenu(
-                                expanded = showReaderMenu,
-                                onDismissRequest = { showReaderMenu = false },
-                                shape = RoundedCornerShape(20.dp),
-                                containerColor = readerMenuAppearance.containerColor,
-                                border = readerMenuAppearance.border,
-                                shadowElevation = readerMenuAppearance.shadowElevation
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(strings.ttsListenAction) },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.Headphones, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        if (!ttsState.isServiceRunning) {
-                                            viewModel.startTts(context)
-                                        }
-                                        onOpenTtsSheet()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(strings.searchInBook) },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.Search, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        isSearchActive = true
-                                    }
-                                )
-
-                                DropdownMenuItem(
-                                    text = { Text(strings.bookmarksAndQuotes) },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.CollectionsBookmark, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        onOpenBookmarks()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(strings.fontAndTheme) },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.FormatSize, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showReaderMenu = false
-                                        onOpenSettings()
-                                    }
-                                )
-                            }
+                        IconButton(onClick = onOpenReaderMenu) {
+                            Icon(
+                                imageVector = Icons.Rounded.MoreVert,
+                                contentDescription = strings.moreOptions,
+                                tint = if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
                 }
             }
 
             if (isGlass) {
-                val topBarBg = if (isSepiaTheme) Color(0xF4FAF0E6) else null
+                val topBarBg = if (isSepiaTheme) {
+                    Color(0x66FAF0E6)
+                } else {
+                    null
+                }
                 LiquidGlassSurface(
                     shape = RoundedCornerShape(24.dp),
                     shadowElevation = 10.dp,
                     isDark = isThemeDark,
                     tintColor = topBarBg,
+                    hazeState = hazeState,
                     modifier = Modifier.fillMaxWidth(),
                     content = topBarContent
                 )
             } else {
                 Card(
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
+                        containerColor = if (isSepiaTheme) {
+                            Color(0xFFE8DFC8)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f)
+                        },
                         contentColor = MaterialTheme.colorScheme.onSurface
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = if (isThemeDark) 2.dp else 4.dp),
                     modifier = Modifier.fillMaxWidth(),
                     content = { topBarContent() }
                 )

@@ -72,7 +72,7 @@ import com.aura.reader.ui.components.jellyOverscroll
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.aura.reader.data.model.Book
-import com.aura.reader.data.service.CoverSearchService
+import com.aura.reader.data.service.BookEnricher
 import com.aura.reader.data.service.OnlineCover
 import com.aura.reader.ui.theme.LocalAppStrings
 import kotlinx.coroutines.launch
@@ -90,8 +90,8 @@ fun CoverSearchBottomSheet(
     val scope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val cleanTitle = remember(book.title) { CoverSearchService.cleanBookTitle(book.title) }
-    val cleanAuthor = remember(book.author) { CoverSearchService.cleanAuthorName(book.author) }
+    val cleanTitle = remember(book.title) { BookEnricher.cleanTitle(book.title) }
+    val cleanAuthor = remember(book.author) { BookEnricher.cleanAuthor(book.author) }
 
     var searchQuery by remember {
         val initial = if (cleanAuthor.isNotBlank()) "$cleanTitle $cleanAuthor" else cleanTitle
@@ -108,7 +108,7 @@ fun CoverSearchBottomSheet(
         scope.launch {
             isSearching = true
             selectedCover = null
-            covers = CoverSearchService.searchCovers(query, fallbackTitle = cleanTitle)
+            covers = BookEnricher.searchCovers(query, fallbackTitle = cleanTitle)
             isSearching = false
         }
     }
@@ -123,7 +123,7 @@ fun CoverSearchBottomSheet(
         if (uri != null) {
             scope.launch {
                 isSaving = true
-                val base64 = CoverSearchService.processUriAsBase64(context, uri)
+                val base64 = BookEnricher.processUriAsBase64(context, uri)
                 isSaving = false
                 if (base64 != null) {
                     onCoverSelected(base64)
@@ -447,7 +447,7 @@ fun CoverSearchBottomSheet(
                         val target = selectedCover ?: return@Button
                         scope.launch {
                             isSaving = true
-                            val base64 = CoverSearchService.downloadCoverAsBase64(target.highResUrl)
+                            val base64 = BookEnricher.downloadCoverAsBase64(target.highResUrl)
                             isSaving = false
                             if (base64 != null) {
                                 onCoverSelected(base64)

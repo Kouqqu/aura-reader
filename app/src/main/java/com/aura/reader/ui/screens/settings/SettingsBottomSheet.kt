@@ -103,12 +103,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.AppDesignStyle
+import com.aura.reader.data.model.AppSettings
+import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.ui.components.LiquidGlassSwitch
 import com.aura.reader.ui.components.LiquidGlassFilterChip
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.opds.OpdsService
 import com.aura.reader.ui.components.PixelFullScreenBurst
+import com.aura.reader.ui.screens.library.UpdateCheckState
 import com.aura.reader.ui.components.expressiveBounce
 import com.aura.reader.ui.components.expressiveClickable
 import com.aura.reader.ui.components.jellyOverscroll
@@ -116,61 +119,33 @@ import com.aura.reader.ui.components.sheetScrollIsolation
 import com.aura.reader.ui.theme.AmoledBackground
 import com.aura.reader.ui.theme.AmoledText
 import com.aura.reader.ui.theme.AppLanguage
+import androidx.compose.foundation.layout.navigationBarsPadding
 import com.aura.reader.ui.theme.LocalAppStrings
 import com.aura.reader.ui.theme.SepiaBackground
 import com.aura.reader.ui.theme.SepiaText
 
-private val LocalIsLiquidGlass = compositionLocalOf { false }
-private val LocalIsThemeDark = compositionLocalOf { true }
-private val LocalIsSepia = compositionLocalOf { false }
-private val LocalIsAmoled = compositionLocalOf { false }
+internal val LocalIsLiquidGlass = compositionLocalOf { false }
+internal val LocalIsThemeDark = compositionLocalOf { true }
+internal val LocalIsSepia = compositionLocalOf { false }
+internal val LocalIsAmoled = compositionLocalOf { false }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 
 @Composable
 fun SettingsBottomSheet(
-    currentTheme: ReaderThemeMode,
-    currentLanguage: AppLanguage,
-    updateNotificationsEnabled: Boolean,
-    readingStatsEnabled: Boolean,
-    materialYouEnabled: Boolean,
-    seasonalEffectsEnabled: Boolean = true,
-    onToggleSeasonalEffects: (Boolean) -> Unit = {},
-    holidayOverride: String = "AUTO",
-    onHolidayOverrideChange: (String) -> Unit = {},
-    anonymousAnalyticsEnabled: Boolean = true,
-    isFullScreen: Boolean = false,
+    appSettings: AppSettings,
+    onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
+    readerSettings: ReaderSettings,
+    onUpdateReaderSettings: ((ReaderSettings) -> ReaderSettings) -> Unit,
     onDismiss: () -> Unit,
-    onThemeChange: (ReaderThemeMode) -> Unit,
-    onLanguageChange: (AppLanguage) -> Unit,
-    onToggleUpdateNotifications: (Boolean) -> Unit,
-    onToggleAnonymousAnalytics: (Boolean) -> Unit = {},
-    onToggleReadingStats: (Boolean) -> Unit,
-    onToggleMaterialYou: (Boolean) -> Unit,
-    onCheckUpdates: () -> Unit,
-    customOpdsEnabled: Boolean = false,
-    customOpdsUrl: String = "",
-    onToggleCustomOpds: (Boolean) -> Unit = {},
-    onCustomOpdsUrlChange: (String) -> Unit = {},
+    updateCheckState: UpdateCheckState = UpdateCheckState.Idle,
+    onCheckUpdates: () -> Unit = {},
     onExportBackup: () -> Unit = {},
     onSendToGoogleDrive: () -> Unit = {},
     onRestoreBackup: () -> Unit = {},
-    developerModeEnabled: Boolean = false,
-    updateChannel: String = "RELEASE",
-    onToggleDeveloperMode: (Boolean) -> Unit = {},
-    onUpdateChannelChange: (String) -> Unit = {},
-    readerTheme: ReaderThemeMode = ReaderThemeMode.SYSTEM_DYNAMIC,
-    syncThemesWithApp: Boolean = false,
-    onSyncThemesChange: (Boolean) -> Unit = {},
-    onReaderThemeChange: (ReaderThemeMode) -> Unit = {},
     onOpenReaderThemeSettings: () -> Unit = {},
-    appDesignStyle: AppDesignStyle = AppDesignStyle.LIQUID_GLASS,
-    onAppDesignStyleChange: (AppDesignStyle) -> Unit = {},
-    glassClarity: Float = 0.85f,
-    onGlassClarityChange: (Float) -> Unit = {},
-    appFont: String = "GOOGLE_SANS",
-    onAppFontChange: (String) -> Unit = {},
     onResetReadingSpeed: () -> Unit = {},
+    isFullScreen: Boolean = false,
     onOpenOnboarding: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
@@ -194,7 +169,7 @@ fun SettingsBottomSheet(
     var showLanguageDialog by remember { mutableStateOf(false) }
 
     if (showChannelDialog) {
-        var selectedChannel by remember { mutableStateOf(updateChannel) }
+        var selectedChannel by remember { mutableStateOf(appSettings.updateChannel) }
         AlertDialog(
             onDismissRequest = { showChannelDialog = false },
             title = { Text(strings.updateChannelTitle, fontWeight = FontWeight.Bold) },
@@ -242,7 +217,7 @@ fun SettingsBottomSheet(
             confirmButton = {
                 Button(
                     onClick = {
-                        onUpdateChannelChange(selectedChannel)
+                        onUpdateSettings { it.copy(updateChannel = selectedChannel) }
                         showChannelDialog = false
                         onCheckUpdates()
                         val channelName = if (selectedChannel == "BETA") strings.updateChannelBeta else strings.updateChannelRelease
@@ -288,7 +263,7 @@ fun SettingsBottomSheet(
                 Button(
                     onClick = {
                         if (devPasswordInput.trim().equals("aura", ignoreCase = true)) {
-                            onToggleDeveloperMode(true)
+                            onUpdateSettings { it.copy(developerModeEnabled = true) }
                             showDevPasswordDialog = false
                             devPasswordInput = ""
                             showChannelDialog = true
@@ -355,13 +330,15 @@ fun SettingsBottomSheet(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     AppLanguage.entries.forEach { lang ->
-                        val isSelected = currentLanguage == lang
+                        val isSelected = appSettings.language == lang
                         Surface(
                             onClick = {
-                                if (lang != AppLanguage.UK && lang != AppLanguage.EN && appFont == "ZAKON") {
-                                    onAppFontChange("GOOGLE_SANS")
+                                val nextFont = if (lang != AppLanguage.UK && lang != AppLanguage.EN && appSettings.appFont == "ZAKON") {
+                                    "GOOGLE_SANS"
+                                } else {
+                                    appSettings.appFont
                                 }
-                                onLanguageChange(lang)
+                                onUpdateSettings { it.copy(language = lang, appFont = nextFont) }
                                 showLanguageDialog = false
                             },
                             shape = RoundedCornerShape(14.dp),
@@ -421,7 +398,8 @@ fun SettingsBottomSheet(
                     .verticalScroll(settingsScrollState)
             ) {
                 // Header
-                val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
+                val isEInk = appSettings.eInkModeEnabled
+                val isGlass = if (isEInk) false else appSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -451,47 +429,52 @@ fun SettingsBottomSheet(
                 Spacer(modifier = Modifier.height(16.dp))
 
             val sysDark = isSystemInDarkTheme()
-            val isThemeDark = when (currentTheme) {
+            val isThemeDark = if (isEInk) false else when (appSettings.themeMode) {
                 ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
                 ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
                 ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
             }
-            val isSepia = currentTheme == ReaderThemeMode.SEPIA
-            SettingsDesignStyleSection(
-                appDesignStyle = appDesignStyle,
-                isThemeDark = isThemeDark,
-                onAppDesignStyleChange = onAppDesignStyleChange
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
+            val isSepia = if (isEInk) false else appSettings.themeMode == ReaderThemeMode.SEPIA
+            if (!isEInk) {
+                SettingsDesignStyleSection(
+                    appDesignStyle = appSettings.appDesignStyle,
+                    isThemeDark = isThemeDark,
+                    onAppDesignStyleChange = { s -> onUpdateSettings { it.copy(appDesignStyle = s) } }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             SettingsThemeSection(
-                currentTheme = currentTheme,
+                currentTheme = appSettings.themeMode,
                 sysDark = sysDark,
                 isGlass = isGlass,
                 isThemeDark = isThemeDark,
                 isSepia = isSepia,
                 sheetCoordinates = sheetCoordinates,
-                syncThemesWithApp = syncThemesWithApp,
-                onSyncThemesChange = onSyncThemesChange,
-                materialYouEnabled = materialYouEnabled,
-                onToggleMaterialYou = onToggleMaterialYou,
-                seasonalEffectsEnabled = seasonalEffectsEnabled,
-                onToggleSeasonalEffects = onToggleSeasonalEffects,
+                syncThemesWithApp = readerSettings.syncThemesWithApp,
+                onSyncThemesChange = { v -> onUpdateReaderSettings { it.copy(syncThemesWithApp = v) } },
+                materialYouEnabled = appSettings.materialYouEnabled,
+                onToggleMaterialYou = { v -> onUpdateSettings { it.copy(materialYouEnabled = v) } },
+                colorPreset = appSettings.colorPreset,
+                onColorPresetChange = { p -> onUpdateSettings { it.copy(colorPreset = p) } },
+                seasonalEffectsEnabled = appSettings.seasonalEffectsEnabled,
+                onToggleSeasonalEffects = { v -> onUpdateSettings { it.copy(seasonalEffectsEnabled = v) } },
+                holidayOverride = appSettings.holidayOverride,
+                onHolidayOverrideChange = { h -> onUpdateSettings { it.copy(holidayOverride = h) } },
                 onOpenReaderThemeSettings = onOpenReaderThemeSettings,
                 onThemePicked = { mode, origin, colors ->
                     burstOrigin = origin
                     burstColors = colors
                     burstTriggerKey = System.currentTimeMillis()
-                    onThemeChange(mode)
+                    onUpdateSettings { it.copy(themeMode = mode) }
                 }
             )
 
             SettingsLanguageSection(
-                currentLanguage = currentLanguage,
-                appFont = appFont,
+                currentLanguage = appSettings.language,
+                appFont = appSettings.appFont,
                 isGlass = isGlass,
-                onAppFontChange = onAppFontChange,
+                onAppFontChange = { f -> onUpdateSettings { it.copy(appFont = f) } },
                 onOpenLanguagePicker = { showLanguageDialog = true }
             )
 
@@ -499,12 +482,8 @@ fun SettingsBottomSheet(
 
             SettingsAdditionalFeaturesSection(
                 isGlass = isGlass,
-                readingStatsEnabled = readingStatsEnabled,
-                onToggleReadingStats = onToggleReadingStats,
-                customOpdsEnabled = customOpdsEnabled,
-                customOpdsUrl = customOpdsUrl,
-                onToggleCustomOpds = onToggleCustomOpds,
-                onCustomOpdsUrlChange = onCustomOpdsUrlChange,
+                appSettings = appSettings,
+                onUpdateSettings = onUpdateSettings,
                 onResetReadingSpeed = { showResetSpeedConfirmDialog = true }
             )
 
@@ -512,19 +491,14 @@ fun SettingsBottomSheet(
 
             SettingsUpdatesSection(
                 isGlass = isGlass,
-                updateNotificationsEnabled = updateNotificationsEnabled,
-                onToggleUpdateNotifications = onToggleUpdateNotifications,
-                anonymousAnalyticsEnabled = anonymousAnalyticsEnabled,
-                onToggleAnonymousAnalytics = onToggleAnonymousAnalytics,
+                appSettings = appSettings,
+                onUpdateSettings = onUpdateSettings,
                 currentAppVersion = currentAppVersion,
-                developerModeEnabled = developerModeEnabled,
-                updateChannel = updateChannel,
-                onUpdateChannelChange = onUpdateChannelChange,
-                holidayOverride = holidayOverride,
-                onHolidayOverrideChange = onHolidayOverrideChange,
+                updateCheckState = updateCheckState,
+                onUpdateChannelChange = { ch -> onUpdateSettings { it.copy(updateChannel = ch) } },
                 onCheckUpdates = onCheckUpdates,
                 onVersionTap = {
-                    if (developerModeEnabled) {
+                    if (appSettings.developerModeEnabled) {
                         showChannelDialog = true
                     } else {
                         versionTapCount++
@@ -542,6 +516,7 @@ fun SettingsBottomSheet(
             Spacer(modifier = Modifier.height(20.dp))
 
             SettingsBackupSection(
+                isGlass = isGlass,
                 onExportBackup = onExportBackup,
                 onSendToGoogleDrive = onSendToGoogleDrive,
                 onRestoreBackup = onRestoreBackup
@@ -550,10 +525,14 @@ fun SettingsBottomSheet(
             Spacer(modifier = Modifier.height(20.dp))
 
             SettingsAboutSection(
+                isGlass = isGlass,
                 isFullScreen = isFullScreen,
                 onDismiss = onDismiss,
                 onOpenOnboarding = onOpenOnboarding
             )
+
+            Spacer(modifier = Modifier.height(110.dp))
+            Spacer(modifier = Modifier.navigationBarsPadding())
         }
 
             if (burstTriggerKey > 0L && burstColors.isNotEmpty()) {
@@ -568,15 +547,16 @@ fun SettingsBottomSheet(
         }
     }
 
-    val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isEInk = appSettings.eInkModeEnabled
+    val isGlass = if (isEInk) false else appSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
     val sysDark = isSystemInDarkTheme()
-    val isThemeDark = when (currentTheme) {
+    val isThemeDark = if (isEInk) false else when (appSettings.themeMode) {
         ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
         ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
         ReaderThemeMode.SYSTEM_DYNAMIC -> sysDark
     }
-    val isSepia = currentTheme == ReaderThemeMode.SEPIA
-    val isAmoled = currentTheme == ReaderThemeMode.AMOLED
+    val isSepia = if (isEInk) false else appSettings.themeMode == ReaderThemeMode.SEPIA
+    val isAmoled = if (isEInk) false else appSettings.themeMode == ReaderThemeMode.AMOLED
 
     CompositionLocalProvider(
         LocalIsLiquidGlass provides isGlass,
@@ -585,14 +565,13 @@ fun SettingsBottomSheet(
         LocalIsAmoled provides isAmoled
     ) {
         if (isFullScreen) {
-            val isMatYou = materialYouEnabled
+            val isMatYou = appSettings.materialYouEnabled
             val screenBg = if (isGlass) {
                 if (isSepia) {
                     Color(0xFFFAF0E6)
                 } else if (isThemeDark) {
-                    if (currentTheme == ReaderThemeMode.AMOLED) Color(0xFF000000)
-                    else if (isMatYou) MaterialTheme.colorScheme.background
-                    else Color(0xFF0F1117)
+                    if (appSettings.themeMode == ReaderThemeMode.AMOLED) Color(0xFF000000)
+                    else MaterialTheme.colorScheme.background
                 } else {
                     if (isMatYou) MaterialTheme.colorScheme.background else Color(0xFFF2F3F8)
                 }
@@ -616,11 +595,10 @@ fun SettingsBottomSheet(
                     if (isSepia) {
                         Color(0xFFFAF0E6)
                     } else if (isThemeDark) {
-                        if (currentTheme == ReaderThemeMode.AMOLED) Color(0xFF000000)
-                        else if (materialYouEnabled) MaterialTheme.colorScheme.background
-                        else Color(0xFF141722)
+                        if (appSettings.themeMode == ReaderThemeMode.AMOLED) Color(0xFF000000)
+                        else MaterialTheme.colorScheme.surfaceContainer
                     } else {
-                        if (materialYouEnabled) MaterialTheme.colorScheme.background else Color(0xFFF2F3F8)
+                        if (appSettings.materialYouEnabled) MaterialTheme.colorScheme.background else Color(0xFFF2F3F8)
                     }
                 } else MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
@@ -732,7 +710,7 @@ internal fun SettingsIconBox(
         val isMatYou = com.aura.reader.ui.components.LocalMaterialYouEnabled.current
         val bg = if (isDark) {
             if (isMatYou) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
-            else Color(0x35283448)
+            else MaterialTheme.colorScheme.surfaceContainerHighest
         } else {
             if (isMatYou) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
             else Color(0x10000000)
@@ -782,7 +760,7 @@ internal fun SettingsPainterIconBox(
         val isMatYou = com.aura.reader.ui.components.LocalMaterialYouEnabled.current
         val bg = if (isDark) {
             if (isMatYou) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
-            else Color(0x35283448)
+            else MaterialTheme.colorScheme.surfaceContainerHighest
         } else {
             if (isMatYou) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
             else Color(0x10000000)
@@ -893,9 +871,8 @@ internal fun ExpressiveSettingsGroup(
         val isSepia = LocalIsSepia.current
         val isAmoled = LocalIsAmoled.current
         val cardColor = if (isDark) {
-            if (isAmoled) Color(0xFF141419)
-            else if (isMatYou) MaterialTheme.colorScheme.surfaceContainer
-            else Color(0xFF1F2129)
+            if (isAmoled) Color(0xFF0F0F0F)
+            else MaterialTheme.colorScheme.surfaceContainer
         } else if (isSepia) {
             Color(0xFFFAF2E7)
         } else {

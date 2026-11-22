@@ -65,6 +65,9 @@ internal fun paginateBlocks(
         }
     }
 
+    val isBionic = settings.fontName.equals("Bionic", ignoreCase = true) ||
+            settings.fontName.equals("Бионический", ignoreCase = true)
+
     for ((originalIndex, block) in blocks.withIndex()) {
         when (block.type) {
             BlockType.IMAGE -> {
@@ -125,7 +128,7 @@ internal fun paginateBlocks(
                     fontStyle = FontStyle.Italic,
                     textAlign = TextAlign.End,
                     hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
-                    lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
+                    lineBreak = if (settings.autoHyphenation) LineBreak(strategy = LineBreak.Strategy.HighQuality, strictness = LineBreak.Strictness.Loose, wordBreak = LineBreak.WordBreak.Default) else LineBreak.Simple
                 )
                 val layout = textMeasurer.measure(formatTypography(block.text), style, constraints = Constraints(maxWidth = epigraphWidthPx))
                 var totalHeight = layout.size.height + with(density) { 16.dp.toPx() } // 4dp top + 12dp bottom
@@ -153,7 +156,7 @@ internal fun paginateBlocks(
                     fontFamily = resolvedFontFamily,
                     fontStyle = FontStyle.Italic,
                     hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
-                    lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
+                    lineBreak = if (settings.autoHyphenation) LineBreak(strategy = LineBreak.Strategy.HighQuality, strictness = LineBreak.Strictness.Loose, wordBreak = LineBreak.WordBreak.Default) else LineBreak.Simple
                 )
                 val layout = textMeasurer.measure(formatTypography(block.text), style, constraints = Constraints(maxWidth = verseWidthPx))
                 val totalHeight = layout.size.height + with(density) { 18.dp.toPx() } // 6dp top + 12dp bottom
@@ -180,14 +183,26 @@ internal fun paginateBlocks(
                         fontFamily = resolvedFontFamily,
                         textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp),
                         hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
-                        lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
+                        lineBreak = if (settings.autoHyphenation) LineBreak(strategy = LineBreak.Strategy.HighQuality, strictness = LineBreak.Strictness.Loose, wordBreak = LineBreak.WordBreak.Default) else LineBreak.Simple
                     )
 
-                    val layoutResult = textMeasurer.measure(
-                        text = remainingText,
-                        style = style,
-                        constraints = Constraints(maxWidth = maxWidthPx)
-                    )
+                    val layoutResult = if (isBionic) {
+                        val annotated = androidx.compose.ui.text.buildAnnotatedString {
+                            append(remainingText)
+                            applyBionicStyles(remainingText)
+                        }
+                        textMeasurer.measure(
+                            text = annotated,
+                            style = style,
+                            constraints = Constraints(maxWidth = maxWidthPx)
+                        )
+                    } else {
+                        textMeasurer.measure(
+                            text = remainingText,
+                            style = style,
+                            constraints = Constraints(maxWidth = maxWidthPx)
+                        )
+                    }
 
                     if (layoutResult.size.height + paragraphSpacingPx <= availableHeightPx) {
                         currentPage.add(originalIndex to block.copy(

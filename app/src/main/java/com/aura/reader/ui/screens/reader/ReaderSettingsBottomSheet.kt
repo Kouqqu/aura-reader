@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.aura.reader.ui.theme.LocalAppStrings
+import com.aura.reader.ui.theme.LocalEInkMode
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.FormatSize
@@ -37,6 +38,7 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
@@ -110,11 +112,13 @@ fun ReaderSettingsBottomSheet(
     onPageAnimationChange: (PageTurnAnimation) -> Unit = {},
     onHapticFeedbackChange: (Boolean) -> Unit = {},
     onFontNameChange: (String) -> Unit = {},
-    onResetReadingSpeed: (() -> Unit)? = null
+    onResetReadingSpeed: (() -> Unit)? = null,
+    onMangaModeRtlChange: (Boolean) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val strings = LocalAppStrings.current
     val context = LocalContext.current
+    val isEInk = LocalEInkMode.current
     val haptic = LocalHapticFeedback.current
     var sheetCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var burstTriggerKey by remember { mutableStateOf(0L) }
@@ -146,7 +150,7 @@ fun ReaderSettingsBottomSheet(
         )
     }
 
-    val isGlass = settings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isGlass = if (isEInk) false else settings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
     val sysDark = isSystemInDarkTheme()
     val isThemeDark = when (settings.themeMode) {
         ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
@@ -157,72 +161,104 @@ fun ReaderSettingsBottomSheet(
     val isSepia = settings.themeMode == ReaderThemeMode.SEPIA
 
     // Solid opaque sheet background: ZERO bleed-through from underlying screens
-    val sheetBgColor = if (isGlass) {
+    val sheetBgColor = if (isEInk) {
+        Color.White
+    } else if (isGlass) {
         if (isSepia) {
             Color(0xFFFAF0E6)
         } else if (isThemeDark) {
-            if (isAmoled) Color(0xFF000000) else Color(0xFF14151C)
+            if (isAmoled) Color(0xFF000000) else Color(0xFF141416)
         } else {
-            Color(0xFFF2F3F8)
+            Color(0xFFF7F7F9)
         }
     } else {
         MaterialTheme.colorScheme.surfaceContainerHigh
     }
 
-    val sheetBorderColor = if (isGlass) {
+    val sheetBorderColor = if (isEInk) {
+        Color(0xFFCCCCCC)
+    } else if (isGlass) {
         if (isThemeDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
     } else Color.Transparent
 
-    // Card background with clean contrast in neutral slate grey-blue
-    val cardBg = if (isGlass) {
+    // Card background with clean contrast in neutral obsidian graphite
+    val cardBg = if (isEInk) {
+        Color(0xFFFAFAFA)
+    } else if (isGlass) {
         if (isThemeDark) {
-            if (isAmoled) Color(0xFF141419) else Color(0xFF1F2129)
+            if (isAmoled) Color(0xFF101012) else Color(0xFF1C1C1F)
         } else {
             Color(0xFFFFFFFF)
         }
     } else {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     }
-    val cardBorder = if (isGlass) {
+    val cardBorder = if (isEInk) {
+        Color(0xFFCCCCCC)
+    } else if (isGlass) {
         if (isThemeDark) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.06f)
     } else Color.Transparent
 
-    val headerTitleColor = if (isGlass) {
+    val headerTitleColor = if (isEInk) {
+        Color.Black
+    } else if (isGlass) {
         if (isThemeDark) Color.White else Color(0xFF1A1C1E)
     } else {
         MaterialTheme.colorScheme.onSurface
     }
 
     // Design system purple primary accent for section titles across all modes
-    val sectionTitleColor = MaterialTheme.colorScheme.primary
+    val sectionTitleColor = if (isEInk) Color.Black else MaterialTheme.colorScheme.primary
 
-    val itemTitleColor = if (isGlass) {
+    val itemTitleColor = if (isEInk) {
+        Color.Black
+    } else if (isGlass) {
         if (isThemeDark) Color.White else Color(0xFF1A1C1E)
     } else {
         MaterialTheme.colorScheme.onSurface
     }
 
-    val itemSubtitleColor = if (isGlass) {
+    val itemSubtitleColor = if (isEInk) {
+        Color(0xFF555555)
+    } else if (isGlass) {
         if (isThemeDark) Color(0xFFB0B3BA) else Color(0xFF49454F)
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
 
-    val chipColors = FilterChipDefaults.filterChipColors(
-        containerColor = if (isGlass) {
-            if (isThemeDark) {
-                if (isAmoled) Color(0xFF141419) else Color(0xFF1F2129)
-            } else Color(0xFFEEEEF2)
-        } else MaterialTheme.colorScheme.surfaceContainerLow,
-        labelColor = if (isGlass) {
-            if (isThemeDark) Color(0xFFE2E2E6) else Color(0xFF1C1B1F)
-        } else MaterialTheme.colorScheme.onSurface,
-        iconColor = MaterialTheme.colorScheme.primary,
-        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
-    )
-    val chipBorder = if (isGlass) {
+    val chipColors = if (isEInk) {
+        FilterChipDefaults.filterChipColors(
+            containerColor = Color(0xFFF2F2F2),
+            labelColor = Color.Black,
+            iconColor = Color.Black,
+            selectedContainerColor = Color.Black,
+            selectedLabelColor = Color.White,
+            selectedLeadingIconColor = Color.White
+        )
+    } else {
+        FilterChipDefaults.filterChipColors(
+            containerColor = if (isGlass) {
+                if (isThemeDark) {
+                    if (isAmoled) Color(0xFF141416) else Color(0xFF242429)
+                } else Color(0xFFEEEEF2)
+            } else MaterialTheme.colorScheme.surfaceContainerLow,
+            labelColor = if (isGlass) {
+                if (isThemeDark) Color(0xFFE2E2E6) else Color(0xFF1C1B1F)
+            } else MaterialTheme.colorScheme.onSurface,
+            iconColor = MaterialTheme.colorScheme.primary,
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    }
+    val chipBorder = if (isEInk) {
+        FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = false,
+            borderColor = Color(0xFFCCCCCC),
+            selectedBorderColor = Color.Black
+        )
+    } else if (isGlass) {
         FilterChipDefaults.filterChipBorder(
             enabled = true,
             selected = false,
@@ -231,7 +267,20 @@ fun ReaderSettingsBottomSheet(
         )
     } else FilterChipDefaults.filterChipBorder(enabled = true, selected = false)
 
-    val textFieldColors = if (isGlass) {
+    val textFieldColors = if (isEInk) {
+        OutlinedTextFieldDefaults.colors(
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+            focusedBorderColor = Color.Black,
+            unfocusedBorderColor = Color(0xFF888888),
+            focusedLabelColor = Color.Black,
+            unfocusedLabelColor = Color(0xFF555555),
+            focusedTrailingIconColor = Color.Black,
+            unfocusedTrailingIconColor = Color.Black
+        )
+    } else if (isGlass) {
         OutlinedTextFieldDefaults.colors(
             focusedTextColor = itemTitleColor,
             unfocusedTextColor = itemTitleColor,
@@ -296,14 +345,15 @@ fun ReaderSettingsBottomSheet(
                     modifier = Modifier.padding(bottom = 20.dp)
                 )
 
-                // --- Theme Mode ---
-                Text(
-                    text = strings.themeModeTitle,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = sectionTitleColor
-                )
-                Spacer(modifier = Modifier.height(10.dp))
+                if (!isEInk) {
+                    // --- Theme Mode ---
+                    Text(
+                        text = strings.themeModeTitle,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = sectionTitleColor
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -336,7 +386,7 @@ fun ReaderSettingsBottomSheet(
 
                     ThemeOptionButton(
                         label = strings.themeDark,
-                        bgColor = Color(0xFF1E2125),
+                        bgColor = Color(0xFF161618),
                         textColor = Color(0xFFE2E2E6),
                         isSelected = settings.themeMode == ReaderThemeMode.DARK || settings.themeMode == ReaderThemeMode.SYSTEM_DYNAMIC,
                         hapticEnabled = settings.hapticFeedbackEnabled,
@@ -374,50 +424,8 @@ fun ReaderSettingsBottomSheet(
                     )
                 }
 
-                if (onMaterialYouChange != null) {
-                    Spacer(modifier = Modifier.height(14.dp))
-                    androidx.compose.material3.Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = cardBg,
-                        border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                                Text(
-                                    text = strings.materialYouToggle,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = itemTitleColor
-                                )
-                                Text(
-                                    text = strings.materialYouSubtitle,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = itemSubtitleColor
-                                )
-                            }
-                            if (isGlass) {
-                                LiquidGlassSwitch(
-                                    checked = materialYouEnabled,
-                                    onCheckedChange = onMaterialYouChange
-                                )
-                            } else {
-                                Switch(
-                                    checked = materialYouEnabled,
-                                    onCheckedChange = onMaterialYouChange
-                                )
-                            }
-                        }
-                    }
-                }
-
                 Spacer(modifier = Modifier.height(24.dp))
+            }
 
                 // --- Font Size ---
                 Row(
@@ -435,7 +443,7 @@ fun ReaderSettingsBottomSheet(
                         text = "${settings.fontSizeSp.toInt()} sp",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = if (isEInk) Color.Black else MaterialTheme.colorScheme.primary
                     )
                 }
 
@@ -449,6 +457,17 @@ fun ReaderSettingsBottomSheet(
                         onValueChange = onFontSizeChange,
                         valueRange = 12f..32f,
                         steps = 9,
+                        colors = if (isEInk) {
+                            androidx.compose.material3.SliderDefaults.colors(
+                                thumbColor = Color.Black,
+                                activeTrackColor = Color.Black,
+                                inactiveTrackColor = Color(0xFFCCCCCC),
+                                activeTickColor = Color.White,
+                                inactiveTickColor = Color(0xFF999999)
+                            )
+                        } else {
+                            androidx.compose.material3.SliderDefaults.colors()
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .padding(horizontal = 12.dp)
@@ -522,15 +541,16 @@ fun ReaderSettingsBottomSheet(
                 }
 
                 val fontChoices = (when (settings.fontFamily) {
-                    ReaderFontFamily.SERIF -> listOf(strings.fontDefault, "Literata", "PT Serif", "Lora")
-                    ReaderFontFamily.SANS_SERIF -> listOf(strings.fontDefault, "Google Sans", "Inter")
-                    ReaderFontFamily.MONOSPACE -> listOf(strings.fontDefault, "JetBrains Mono")
-                    ReaderFontFamily.SYSTEM_DEFAULT -> listOf(strings.fontDefault)
+                    ReaderFontFamily.SERIF -> listOf(strings.fontDefault, "Literata", "PT Serif", "Lora", strings.fontBionic)
+                    ReaderFontFamily.SANS_SERIF -> listOf(strings.fontDefault, "Google Sans", "Inter", strings.fontBionic)
+                    ReaderFontFamily.MONOSPACE -> listOf(strings.fontDefault, "JetBrains Mono", strings.fontBionic)
+                    ReaderFontFamily.SYSTEM_DEFAULT -> listOf(strings.fontDefault, strings.fontBionic)
                 }) + customFonts.map { "CUSTOM:${it.name}" }
 
                 var fontDropdownExpanded by remember { mutableStateOf(false) }
                 val currentFontLabel = when {
                     settings.fontName.isBlank() || settings.fontName == strings.fontDefault -> strings.fontDefault
+                    settings.fontName.equals("Bionic", ignoreCase = true) || settings.fontName == strings.fontBionic -> strings.fontBionic
                     settings.fontName.startsWith("CUSTOM:") -> settings.fontName.removePrefix("CUSTOM:").substringBeforeLast(".")
                     else -> settings.fontName
                 }
@@ -559,7 +579,9 @@ fun ReaderSettingsBottomSheet(
                         onDismissRequest = { fontDropdownExpanded = false }
                     ) {
                         fontChoices.forEach { fontOption ->
-                            val isSelected = (settings.fontName.isBlank() && fontOption == strings.fontDefault) || settings.fontName == fontOption
+                            val isSelected = (settings.fontName.isBlank() && fontOption == strings.fontDefault) ||
+                                settings.fontName == fontOption ||
+                                (fontOption == strings.fontBionic && settings.fontName.equals("Bionic", ignoreCase = true))
                             val fontDisplay = if (fontOption.startsWith("CUSTOM:")) {
                                 fontOption.removePrefix("CUSTOM:").substringBeforeLast(".")
                             } else {
@@ -568,7 +590,11 @@ fun ReaderSettingsBottomSheet(
                             DropdownMenuItem(
                                 text = { Text(fontDisplay) },
                                 onClick = {
-                                    val toSave = if (fontOption == strings.fontDefault) "" else fontOption
+                                    val toSave = when (fontOption) {
+                                        strings.fontDefault -> ""
+                                        strings.fontBionic -> "Bionic"
+                                        else -> fontOption
+                                    }
                                     onFontNameChange(toSave)
                                     fontDropdownExpanded = false
                                 },
@@ -620,6 +646,7 @@ fun ReaderSettingsBottomSheet(
                     )
                 }
 
+                if (!isEInk) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // --- Reading Mode (Continuous / Paging) ---
@@ -699,7 +726,10 @@ fun ReaderSettingsBottomSheet(
                             border = chipBorder
                         )
                     }
+                }
+                }
 
+                if (settings.pagingMode && !isEInk) {
                     Spacer(modifier = Modifier.height(14.dp))
                     Text(
                         text = strings.twoColumnSpreadSectionTitle,
@@ -744,49 +774,51 @@ fun ReaderSettingsBottomSheet(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- Haptic Feedback ---
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = cardBg,
-                    border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onHapticFeedbackChange(!settings.hapticFeedbackEnabled) }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                if (!isEInk) {
+                    // --- Haptic Feedback ---
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = cardBg,
+                        border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text(
-                                text = strings.hapticFeedbackTitle,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = itemTitleColor
-                            )
-                            Text(
-                                text = strings.hapticFeedbackSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = itemSubtitleColor
-                            )
-                        }
-                        if (isGlass) {
-                            LiquidGlassSwitch(
-                                checked = settings.hapticFeedbackEnabled,
-                                onCheckedChange = onHapticFeedbackChange
-                            )
-                        } else {
-                            Switch(
-                                checked = settings.hapticFeedbackEnabled,
-                                onCheckedChange = onHapticFeedbackChange
-                            )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onHapticFeedbackChange(!settings.hapticFeedbackEnabled) }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                Text(
+                                    text = strings.hapticFeedbackTitle,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = itemTitleColor
+                                )
+                                Text(
+                                    text = strings.hapticFeedbackSubtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = itemSubtitleColor
+                                )
+                            }
+                            if (isGlass) {
+                                LiquidGlassSwitch(
+                                    checked = settings.hapticFeedbackEnabled,
+                                    onCheckedChange = onHapticFeedbackChange
+                                )
+                            } else {
+                                Switch(
+                                    checked = settings.hapticFeedbackEnabled,
+                                    onCheckedChange = onHapticFeedbackChange
+                                )
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
                 // --- Auto Hyphenation ---
                 Surface(
@@ -830,46 +862,48 @@ fun ReaderSettingsBottomSheet(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                if (!isEInk) {
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                // --- Light Background for Illustrations in Dark Themes ---
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = cardBg,
-                    border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onLightImageBackgroundChange(!settings.lightImageBackground) }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    // --- Light Background for Illustrations in Dark Themes ---
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = cardBg,
+                        border = if (isGlass) BorderStroke(0.6.dp, cardBorder) else null,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text(
-                                text = strings.lightImageBgTitle,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = itemTitleColor
-                            )
-                            Text(
-                                text = strings.lightImageBgSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = itemSubtitleColor
-                            )
-                        }
-                        if (isGlass) {
-                            LiquidGlassSwitch(
-                                checked = settings.lightImageBackground,
-                                onCheckedChange = onLightImageBackgroundChange
-                            )
-                        } else {
-                            Switch(
-                                checked = settings.lightImageBackground,
-                                onCheckedChange = onLightImageBackgroundChange
-                            )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onLightImageBackgroundChange(!settings.lightImageBackground) }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                Text(
+                                    text = strings.lightImageBgTitle,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = itemTitleColor
+                                )
+                                Text(
+                                    text = strings.lightImageBgSubtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = itemSubtitleColor
+                                )
+                            }
+                            if (isGlass) {
+                                LiquidGlassSwitch(
+                                    checked = settings.lightImageBackground,
+                                    onCheckedChange = onLightImageBackgroundChange
+                                )
+                            } else {
+                                Switch(
+                                    checked = settings.lightImageBackground,
+                                    onCheckedChange = onLightImageBackgroundChange
+                                )
+                            }
                         }
                     }
                 }

@@ -1,6 +1,8 @@
 package com.aura.reader.ui.theme
 
+import android.content.Context
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -25,14 +27,25 @@ private val LightColorScheme = lightColorScheme(
     onPrimaryContainer = md_theme_light_onPrimaryContainer,
     secondary = md_theme_light_secondary,
     onSecondary = md_theme_light_onSecondary,
+    secondaryContainer = Color(0xFFE2E4EC),
+    onSecondaryContainer = Color(0xFF161C24),
+    tertiary = Color(0xFF7D5260),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFFFD8E4),
+    onTertiaryContainer = Color(0xFF31111D),
     background = md_theme_light_background,
     onBackground = md_theme_light_onBackground,
     surface = md_theme_light_surface,
     onSurface = md_theme_light_onSurface,
     surfaceVariant = md_theme_light_surfaceVariant,
     onSurfaceVariant = md_theme_light_onSurfaceVariant,
-    surfaceContainer = androidx.compose.ui.graphics.Color(0xFFF3EDF7),
-    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFFECE6F0)
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF7F7FA),
+    surfaceContainer = Color(0xFFF1F1F5),
+    surfaceContainerHigh = Color(0xFFE9E9EF),
+    surfaceContainerHighest = Color(0xFFE2E2E8),
+    outline = Color(0xFF74777F),
+    outlineVariant = Color(0xFFC4C6CF)
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -42,31 +55,49 @@ private val DarkColorScheme = darkColorScheme(
     onPrimaryContainer = md_theme_dark_onPrimaryContainer,
     secondary = md_theme_dark_secondary,
     onSecondary = md_theme_dark_onSecondary,
+    secondaryContainer = Color(0xFF262626),
+    onSecondaryContainer = Color(0xFFEDEDED),
     background = md_theme_dark_background,
     onBackground = md_theme_dark_onBackground,
     surface = md_theme_dark_surface,
     onSurface = md_theme_dark_onSurface,
     surfaceVariant = md_theme_dark_surfaceVariant,
     onSurfaceVariant = md_theme_dark_onSurfaceVariant,
-    surfaceContainer = androidx.compose.ui.graphics.Color(0xFF1E2125),
-    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF282C32)
+    surfaceContainerLowest = Color(0xFF0F0F0F),
+    surfaceContainerLow = Color(0xFF161616),
+    surfaceContainer = Color(0xFF1E1E1E),
+    surfaceContainerHigh = Color(0xFF252525),
+    surfaceContainerHighest = Color(0xFF2C2C2C),
+    outline = Color(0xFF383838),
+    outlineVariant = Color(0xFF242424)
 )
 
 private val SepiaColorScheme = lightColorScheme(
     primary = SepiaPrimary,
     onPrimary = SepiaOnPrimary,
-    primaryContainer = SepiaSurface,
-    onPrimaryContainer = SepiaText,
+    primaryContainer = Color(0xFFE2D6C4),
+    onPrimaryContainer = Color(0xFF2C1E12),
     secondary = SepiaSecondaryText,
-    onSecondary = SepiaOnPrimary,
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFE4DACB),
+    onSecondaryContainer = Color(0xFF2C1E12),
+    tertiary = Color(0xFF6B4E38),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFEADBCE),
+    onTertiaryContainer = Color(0xFF2C1E12),
     background = SepiaBackground,
     onBackground = SepiaText,
     surface = SepiaSurface,
     onSurface = SepiaText,
-    surfaceVariant = SepiaSurface,
+    surfaceVariant = Color(0xFFE6DDD0),
     onSurfaceVariant = SepiaSecondaryText,
-    surfaceContainer = androidx.compose.ui.graphics.Color(0xFFEBE3D3),
-    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFFE3DAC8)
+    surfaceContainerLowest = Color(0xFFFCF9F3),
+    surfaceContainerLow = Color(0xFFF2ECE0),
+    surfaceContainer = Color(0xFFECE4D6),
+    surfaceContainerHigh = Color(0xFFE6DDCF),
+    surfaceContainerHighest = Color(0xFFE0D6C6),
+    outline = Color(0xFF8C7E6C),
+    outlineVariant = Color(0xFFD4C8B5)
 )
 
 private val AmoledColorScheme = darkColorScheme(
@@ -114,14 +145,47 @@ private fun ColorScheme.withAmoledReaderSurfaces(): ColorScheme = copy(
     surfaceContainerHighest = Color(0xFF202020)
 )
 
+@RequiresApi(Build.VERSION_CODES.S)
+private fun dynamicDarkAdjusted(context: Context): ColorScheme {
+    val dyn = dynamicDarkColorScheme(context)
+    return dyn.copy(
+        background = Color(0xFF121212),
+        surface = Color(0xFF121212),
+        surfaceContainerLowest = Color(0xFF0F0F0F),
+        surfaceContainerLow = Color(0xFF161616),
+        surfaceContainer = Color(0xFF1E1E1E),
+        surfaceContainerHigh = Color(0xFF252525),
+        surfaceContainerHighest = Color(0xFF2C2C2C)
+    )
+}
+
+@RequiresApi(Build.VERSION_CODES.S)
+private fun dynamicAmoledAdjusted(context: Context): ColorScheme {
+    val dyn = dynamicDarkColorScheme(context)
+    return dyn.copy(
+        background = Color.Black,
+        surface = Color.Black,
+        surfaceContainerLowest = Color.Black,
+        surfaceContainerLow = Color(0xFF080808),
+        surfaceContainer = Color(0xFF101010),
+        surfaceContainerHigh = Color(0xFF181818),
+        surfaceContainerHighest = Color(0xFF202020)
+    )
+}
+
+val LocalColorPreset = androidx.compose.runtime.compositionLocalOf { "PURPLE" }
+val LocalEInkMode = androidx.compose.runtime.compositionLocalOf { false }
+
 @Composable
 fun AuraReaderTheme(
     themeMode: ReaderThemeMode = ReaderThemeMode.DARK,
     materialYou: Boolean = false,
+    colorPreset: String = "PURPLE",
     appFont: String = "GOOGLE_SANS",
     currentLanguage: AppLanguage = AppLanguage.RU,
     readerMode: Boolean = false,
     holidaySeason: HolidaySeason = HolidaySeason.NONE,
+    eInkMode: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
@@ -133,53 +197,63 @@ fun AuraReaderTheme(
         createAppTypography(fontFamily)
     }
 
+    val preset = com.aura.reader.data.model.AndroidColorPreset.fromId(colorPreset)
+    val baseLight = LightColorScheme.copy(
+        primary = preset.lightPrimary,
+        primaryContainer = preset.lightPrimaryContainer,
+        onPrimaryContainer = preset.lightOnPrimaryContainer,
+        secondary = preset.lightSecondary,
+        secondaryContainer = preset.lightPrimaryContainer.copy(alpha = 0.45f),
+        onSecondaryContainer = preset.lightOnPrimaryContainer
+    )
+    val baseDark = DarkColorScheme.copy(
+        primary = preset.darkPrimary,
+        primaryContainer = preset.darkPrimaryContainer,
+        onPrimaryContainer = preset.darkOnPrimaryContainer,
+        secondary = preset.darkSecondary,
+        secondaryContainer = preset.darkPrimaryContainer.copy(alpha = 0.45f),
+        onSecondaryContainer = preset.darkOnPrimaryContainer
+    )
+    val baseAmoled = AmoledColorScheme.copy(
+        primary = preset.darkPrimary,
+        primaryContainer = preset.darkPrimaryContainer,
+        onPrimaryContainer = preset.darkOnPrimaryContainer,
+        secondary = preset.darkSecondary,
+        secondaryContainer = preset.darkPrimaryContainer.copy(alpha = 0.45f),
+        onSecondaryContainer = preset.darkOnPrimaryContainer
+    )
+    val baseSepia = SepiaColorScheme
+
     val colorScheme = when (themeMode) {
         ReaderThemeMode.LIGHT -> {
             if (hasDynamic) {
                 dynamicLightColorScheme(context)
             } else {
-                LightColorScheme
+                baseLight
             }
         }
         ReaderThemeMode.DARK -> {
             if (hasDynamic) {
-                dynamicDarkColorScheme(context)
+                dynamicDarkAdjusted(context)
             } else {
-                DarkColorScheme
+                baseDark
             }
         }
         ReaderThemeMode.AMOLED -> {
             if (hasDynamic) {
-                val dyn = dynamicDarkColorScheme(context)
-                dyn.copy(
-                    background = androidx.compose.ui.graphics.Color.Black,
-                    surface = androidx.compose.ui.graphics.Color.Black,
-                    surfaceContainer = androidx.compose.ui.graphics.Color(0xFF101010),
-                    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF181818)
-                )
+                dynamicAmoledAdjusted(context)
             } else {
-                AmoledColorScheme
+                baseAmoled
             }
         }
         ReaderThemeMode.SEPIA -> {
-            if (hasDynamic) {
-                val dyn = dynamicLightColorScheme(context)
-                SepiaColorScheme.copy(
-                    primary = dyn.primary,
-                    onPrimary = dyn.onPrimary,
-                    primaryContainer = dyn.primaryContainer,
-                    onPrimaryContainer = dyn.onPrimaryContainer,
-                    secondary = dyn.secondary
-                )
-            } else {
-                SepiaColorScheme
-            }
+            baseSepia
         }
         ReaderThemeMode.SYSTEM_DYNAMIC -> {
             if (systemDark) {
-                if (hasDynamic) dynamicDarkColorScheme(context) else DarkColorScheme
+                if (hasDynamic) dynamicDarkAdjusted(context) else baseDark
             } else {
-                if (hasDynamic) dynamicLightColorScheme(context) else LightColorScheme
+                if (hasDynamic) dynamicLightColorScheme(context) else baseLight
             }
         }
     }
@@ -261,10 +335,78 @@ fun AuraReaderTheme(
         finalColorScheme
     }
 
+    val isAppDark = when (themeMode) {
+        ReaderThemeMode.LIGHT -> false
+        ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
+        ReaderThemeMode.SEPIA -> false
+        ReaderThemeMode.SYSTEM_DYNAMIC -> systemDark
+    }
+
+    val view = androidx.compose.ui.platform.LocalView.current
+    if (!view.isInEditMode) {
+        androidx.compose.runtime.SideEffect {
+            val window = (view.context as? android.app.Activity)?.window
+            if (window != null) {
+                val insetsController = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                insetsController.isAppearanceLightStatusBars = !isAppDark
+                insetsController.isAppearanceLightNavigationBars = !isAppDark
+            }
+        }
+    }
+
+    val effectiveColorScheme = if (eInkMode) {
+        LightColorScheme.copy(
+            background = Color.White,
+            surface = Color.White,
+            surfaceContainer = Color(0xFFF7F7F7),
+            surfaceContainerHigh = Color(0xFFEEEEEE),
+            surfaceContainerHighest = Color(0xFFE0E0E0),
+            surfaceContainerLow = Color(0xFFFAFAFA),
+            surfaceContainerLowest = Color.White,
+            surfaceVariant = Color(0xFFEBEBEB),
+            onBackground = Color.Black,
+            onSurface = Color.Black,
+            onSurfaceVariant = Color(0xFF222222),
+            primary = Color.Black,
+            onPrimary = Color.White,
+            primaryContainer = Color(0xFFE0E0E0),
+            onPrimaryContainer = Color.Black,
+            secondary = Color(0xFF333333),
+            onSecondary = Color.White,
+            secondaryContainer = Color(0xFFEBEBEB),
+            onSecondaryContainer = Color.Black,
+            tertiary = Color(0xFF333333),
+            onTertiary = Color.White,
+            tertiaryContainer = Color(0xFFEBEBEB),
+            onTertiaryContainer = Color.Black,
+            error = Color.Black,
+            onError = Color.White,
+            errorContainer = Color(0xFFE0E0E0),
+            onErrorContainer = Color.Black,
+            outline = Color(0xFF666666),
+            outlineVariant = Color(0xFFCCCCCC),
+            scrim = Color.Black,
+            surfaceTint = Color.Black
+        )
+    } else {
+        festiveColorScheme
+    }
+
     MaterialTheme(
-        colorScheme = festiveColorScheme,
+        colorScheme = effectiveColorScheme,
         typography = typography,
-        content = content
+        content = {
+            androidx.compose.runtime.CompositionLocalProvider(
+                LocalEInkMode provides eInkMode,
+                androidx.compose.foundation.text.selection.LocalTextSelectionColors provides (
+                    if (eInkMode) androidx.compose.foundation.text.selection.TextSelectionColors(
+                        handleColor = Color.Black,
+                        backgroundColor = Color(0xFFCCCCCC)
+                    ) else androidx.compose.foundation.text.selection.LocalTextSelectionColors.current
+                ),
+                content = content
+            )
+        }
     )
 }
 

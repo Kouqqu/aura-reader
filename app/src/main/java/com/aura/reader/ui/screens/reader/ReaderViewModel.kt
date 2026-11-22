@@ -29,14 +29,49 @@ class ReaderViewModel(
     val currentBook: StateFlow<Book?> = bookRepository.currentBook
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val readerSettings: StateFlow<ReaderSettings> = preferencesManager.readerSettings
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReaderSettings())
+    val readerSettings: StateFlow<ReaderSettings> = combine(
+        preferencesManager.readerSettings,
+        bookRepository.currentBook,
+        preferencesManager.bookPagingModesJson
+    ) { baseSettings, book, modesJson ->
+        if (book != null) {
+            val bookMode = if (!modesJson.isNullOrBlank()) {
+                try {
+                    val obj = org.json.JSONObject(modesJson)
+                    if (obj.has(book.id)) obj.getBoolean(book.id) else null
+                } catch (_: Exception) {
+                    null
+                }
+            } else null
+
+            val effectivePagingMode = bookMode ?: when (book.format) {
+                com.aura.reader.data.model.BookFormat.PDF,
+                com.aura.reader.data.model.BookFormat.CBZ -> false
+                else -> baseSettings.pagingMode
+            }
+            baseSettings.copy(pagingMode = effectivePagingMode)
+        } else {
+            baseSettings
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReaderSettings())
 
     val materialYouEnabled: StateFlow<Boolean> = preferencesManager.materialYouEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val colorPreset: StateFlow<String> = preferencesManager.colorPreset
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "PURPLE")
+
     val appLanguage: StateFlow<com.aura.reader.ui.theme.AppLanguage> = preferencesManager.appLanguage
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.aura.reader.ui.theme.AppLanguage.RU)
+
+    val tapZonesHintShown: StateFlow<Boolean> = preferencesManager.readerTapZonesHintShown
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun dismissTapZonesHint() {
+        viewModelScope.launch {
+            preferencesManager.setReaderTapZonesHintShown(true)
+        }
+    }
 
     val nextBookInSeries: StateFlow<Book?> = combine(
         bookRepository.currentBook,
@@ -137,18 +172,28 @@ class ReaderViewModel(
         _savedPixelOffset.value = book.currentScrollPixelOffset
         bookRepository.prepareBook(book)
         viewModelScope.launch {
-            bookRepository.openBook(book)
+            val result = bookRepository.openBook(book)
+            result.onSuccess { opened ->
+                _currentChapterIndex.value = opened.currentChapterIndex
+                _savedScrollOffset.value = opened.currentScrollOffset
+                _savedTextOffset.value = opened.currentBlockTextOffset
+                _savedPixelOffset.value = opened.currentScrollPixelOffset
+            }
         }
     }
 
-    fun setChapter(index: Int, offset: Int = 0) {
+    fun setChapter(index: Int, offset: Int = 0, textOffset: Int = 0) {
         val book = currentBook.value ?: return
         if (index in book.chapters.indices) {
             val chapterChanged = _currentChapterIndex.value != index
-            isAtBookEnd = false
+            if (index < book.chapters.size - 1) {
+                isAtBookEnd = false
+            } else {
+                isAtBookEnd = true
+            }
             _currentChapterIndex.value = index
             _savedScrollOffset.value = offset
-            _savedTextOffset.value = 0
+            _savedTextOffset.value = textOffset
             _savedPixelOffset.value = 0
             saveCurrentProgress()
 
@@ -205,25 +250,35 @@ class ReaderViewModel(
         val book = currentBook.value ?: return
         val prev = _currentChapterIndex.value - 1
         if (prev >= 0) {
-            val totalBlocks = book.chapters.getOrNull(prev)?.blocks?.size ?: 0
-            val offset = if (startAtEnd && totalBlocks > 0) totalBlocks - 1 else 0
-            setChapter(prev, offset)
+            val offset = if (startAtEnd) Int.MAX_VALUE else 0
+            val textOffset = if (startAtEnd) Int.MAX_VALUE else 0
+            setChapter(prev, offset, textOffset)
         }
     }
 
-    private var isAtBookEnd = false
+    var isAtBookEnd: Boolean = false
+        internal set
     private var pendingProgressSave: kotlinx.coroutines.Job? = null
 
     fun updateScrollProgress(scrollItemIndex: Int, totalItems: Int, textOffset: Int = 0, pixelOffset: Int = 0, atEnd: Boolean = false) {
-        isAtBookEnd = atEnd
+        val reachedEnd = atEnd || (totalItems > 0 && scrollItemIndex >= totalItems - 1)
+        if (reachedEnd) {
+            isAtBookEnd = true
+        } else if (scrollItemIndex < totalItems - 1) {
+            isAtBookEnd = false
+        }
         _savedScrollOffset.value = scrollItemIndex
         _savedTextOffset.value = textOffset
         _savedPixelOffset.value = pixelOffset
         pendingProgressSave?.cancel()
         pendingProgressSave = viewModelScope.launch {
-            kotlinx.coroutines.delay(300)
+            kotlinx.coroutines.delay(200)
             saveCurrentProgress()
         }
+    }
+
+    fun requestScrollToBlock(blockIndex: Int) {
+        _targetScrollOffset.value = blockIndex
     }
 
     fun saveCurrentProgress() {
@@ -232,8 +287,8 @@ class ReaderViewModel(
         val block = _savedScrollOffset.value
         val text = _savedTextOffset.value
         val pixel = _savedPixelOffset.value
-        val percent = if (isAtBookEnd || (book.progressPercent == 100 && book.currentChapterIndex == chapterIdx &&
-            book.currentScrollOffset == block && book.currentBlockTextOffset == text && book.currentScrollPixelOffset == pixel)) 100
+        val isActuallyAtEnd = isAtBookEnd && (chapterIdx >= book.chapters.size - 1 || book.chapters.size <= 1)
+        val percent = if (isActuallyAtEnd) 100
             else com.aura.reader.data.model.ReadingPosition.percent(book, chapterIdx, block, text)
         viewModelScope.launch {
             // Do not persist a position captured for a different book after navigation.
@@ -267,6 +322,12 @@ class ReaderViewModel(
         }
     }
 
+    fun setColorPreset(preset: String) {
+        viewModelScope.launch {
+            preferencesManager.setColorPreset(preset)
+        }
+    }
+
     fun setFontFamily(family: ReaderFontFamily) {
         viewModelScope.launch {
             preferencesManager.updateFontFamily(family)
@@ -286,8 +347,18 @@ class ReaderViewModel(
     }
 
     fun setPagingMode(enabled: Boolean) {
+        val book = currentBook.value
         viewModelScope.launch {
+            if (book != null) {
+                preferencesManager.setPagingModeForBook(book.id, enabled)
+            }
             preferencesManager.updatePagingMode(enabled)
+        }
+    }
+
+    fun setMangaModeRtl(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesManager.updateMangaModeRtl(enabled)
         }
     }
 
@@ -333,6 +404,7 @@ class ReaderViewModel(
             readingStartTime = 0L
         }
         saveCurrentProgress()
+        com.aura.reader.data.parser.PdfPageCache.closeRenderer()
     }
 
     // --- In-Book Search ---
@@ -425,6 +497,9 @@ class ReaderViewModel(
     val quotes = bookRepository.quotes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val savedWords = bookRepository.savedWords
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun toggleBookmark(previewText: String) {
         val book = currentBook.value ?: return
         val chapterIdx = _currentChapterIndex.value
@@ -506,12 +581,15 @@ class ReaderViewModel(
             } ?: -1
             if (found >= 0) found else 0
         }
-        val chapterTitle = book.chapters.getOrNull(quote.chapterIndex)?.title ?: "Глава ${quote.chapterIndex + 1}"
-        navigateToPositionWithReturn(
-            targetChapter = quote.chapterIndex,
-            targetBlock = targetBlock,
-            title = chapterTitle
+        val curCh = _currentChapterIndex.value
+        val curBlk = _savedScrollOffset.value
+        val curTitle = book.chapters.getOrNull(curCh)?.title ?: "Глава ${curCh + 1}"
+        _navReturnPoint.value = NavReturnPoint(
+            chapterIndex = curCh,
+            blockIndex = curBlk,
+            chapterTitle = curTitle
         )
+        jumpToPosition(quote.chapterIndex, targetBlock)
     }
 
     fun returnToPreviousPosition() {
@@ -558,6 +636,69 @@ class ReaderViewModel(
     fun removeQuote(id: String) {
         viewModelScope.launch {
             bookRepository.removeQuote(id)
+        }
+    }
+
+    fun saveWord(word: String, definition: String, contextText: String = "") {
+        val book = currentBook.value
+        val currentChIdx = _currentChapterIndex.value
+        viewModelScope.launch {
+            bookRepository.addSavedWord(
+                com.aura.reader.data.model.SavedWord(
+                    bookId = book?.id ?: "",
+                    bookTitle = book?.title ?: "",
+                    word = word.trim(),
+                    definition = definition.trim(),
+                    contextText = contextText.trim(),
+                    chapterIndex = currentChIdx
+                )
+            )
+        }
+    }
+
+    private val _highlightedWord = MutableStateFlow<String?>(null)
+    val highlightedWord: StateFlow<String?> = _highlightedWord.asStateFlow()
+
+    fun navigateToSavedWord(savedWord: com.aura.reader.data.model.SavedWord) {
+        val book = currentBook.value ?: return
+        val targetChapter = savedWord.chapterIndex.coerceIn(0, (book.chapters.size - 1).coerceAtLeast(0))
+        val chapter = book.chapters.getOrNull(targetChapter)
+        val word = savedWord.word.trim()
+        val context = savedWord.contextText.trim()
+        val targetBlock = if (chapter != null) {
+            val foundContext = if (context.isNotBlank()) {
+                chapter.blocks.indexOfFirst {
+                    it.text.contains(context) || (context.length > 20 && it.text.contains(context.take(30)))
+                }
+            } else -1
+            if (foundContext >= 0) {
+                foundContext
+            } else {
+                val foundWord = chapter.blocks.indexOfFirst { it.text.contains(word, ignoreCase = true) }
+                if (foundWord >= 0) foundWord else 0
+            }
+        } else 0
+        val curCh = _currentChapterIndex.value
+        val curBlk = _savedScrollOffset.value
+        val curTitle = book.chapters.getOrNull(curCh)?.title ?: "Глава ${curCh + 1}"
+        _navReturnPoint.value = NavReturnPoint(
+            chapterIndex = curCh,
+            blockIndex = curBlk,
+            chapterTitle = curTitle
+        )
+        jumpToPosition(targetChapter, targetBlock)
+        _highlightedWord.value = word
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(2500)
+            if (_highlightedWord.value == word) {
+                _highlightedWord.value = null
+            }
+        }
+    }
+
+    fun removeSavedWord(id: String) {
+        viewModelScope.launch {
+            bookRepository.removeSavedWord(id)
         }
     }
 
@@ -677,6 +818,11 @@ class ReaderViewModel(
         viewModelScope.launch {
             preferencesManager.resetAverageWpm()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        com.aura.reader.data.parser.PdfPageCache.closeRenderer()
     }
 }
 

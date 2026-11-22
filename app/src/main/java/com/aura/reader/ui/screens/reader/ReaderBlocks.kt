@@ -13,19 +13,23 @@ import androidx.compose.ui.text.style.LineBreak
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -34,6 +38,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -52,6 +57,54 @@ import com.aura.reader.data.model.ReaderSettings
 import java.io.File
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateOffsetAsState
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
+
+// ------------------------------------------------------------------------------------------------
+// BIONIC READING HELPER
+// ------------------------------------------------------------------------------------------------
+
+fun AnnotatedString.Builder.applyBionicStyles(text: String) {
+    var i = 0
+    val len = text.length
+    while (i < len) {
+        while (i < len && !text[i].isLetterOrDigit()) {
+            i++
+        }
+        if (i >= len) break
+        val start = i
+        while (i < len && text[i].isLetterOrDigit()) {
+            i++
+        }
+        val wordLen = i - start
+        val fixationLen = when {
+            wordLen <= 1 -> 1
+            wordLen <= 3 -> 1
+            wordLen <= 5 -> 2
+            wordLen <= 7 -> 3
+            wordLen <= 9 -> 4
+            else -> (wordLen * 0.45f).toInt().coerceAtLeast(1)
+        }
+        addStyle(
+            style = SpanStyle(fontWeight = FontWeight.Bold),
+            start = start,
+            end = start + fixationLen
+        )
+    }
+}
 
 // ------------------------------------------------------------------------------------------------
 // BLOCK RENDERER WITH SEARCH HIGHLIGHTING & FOOTNOTES
@@ -71,8 +124,16 @@ fun RenderBlock(
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onNavigateToChapter: ((chapterIndex: Int, blockIndex: Int) -> Unit)? = null,
     onToggleControls: () -> Unit,
-    onSaveQuote: (String) -> Unit
+    onSaveQuote: (String) -> Unit,
+    onPrevPage: (() -> Unit)? = null,
+    onNextPage: (() -> Unit)? = null,
+    isGraphicPage: Boolean = false,
+    isInScrollMode: Boolean = false
 ) {
+    val isBionic = remember(settings.fontName) {
+        settings.fontName.equals("Bionic", ignoreCase = true) ||
+        settings.fontName.equals("Бионический", ignoreCase = true)
+    }
     when (block.type) {
         BlockType.TITLE -> {
             val titleStyle = TextStyle(
@@ -207,11 +268,18 @@ fun RenderBlock(
         }
         BlockType.IMAGE -> {
             val context = LocalContext.current
-            var imageModel by remember(block.text) {
-                mutableStateOf<Any?>(if (block.text.startsWith("aura-pdf:")) null else File(block.text))
+            var renderTrigger by remember(block.text) { mutableIntStateOf(0) }
+            var imageModel by remember(block.text, renderTrigger) {
+                mutableStateOf<Any?>(
+                    if (block.text.startsWith("aura-pdf:")) {
+                        com.aura.reader.data.parser.PdfPageCache.getCachedFile(context, block.text)
+                    } else {
+                        File(block.text)
+                    }
+                )
             }
-            LaunchedEffect(block.text) {
-                if (block.text.startsWith("aura-pdf:")) {
+            LaunchedEffect(block.text, renderTrigger) {
+                if (block.text.startsWith("aura-pdf:") && imageModel == null) {
                     imageModel = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                         try { com.aura.reader.data.parser.PdfPageCache.render(context, block.text) }
                         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
@@ -219,29 +287,173 @@ fun RenderBlock(
                     }
                 }
             }
-            val isComicOrPdf = block.subText?.contains(" / ") == true || block.subText?.startsWith("Страница ") == true
+            val isComicOrPdf = isGraphicPage ||
+                    block.text.startsWith("aura-pdf:") ||
+                    block.text.startsWith("aurapdf://") ||
+                    block.text.contains("cbz_", ignoreCase = true) ||
+                    block.text.contains("cbr_", ignoreCase = true) ||
+                    block.text.contains("cbt_", ignoreCase = true) ||
+                    block.subText?.contains("comic", ignoreCase = true) == true ||
+                    block.subText?.contains("pdf", ignoreCase = true) == true ||
+                    block.subText?.contains("image_page", ignoreCase = true) == true ||
+                    block.subText?.contains(" / ") == true ||
+                    block.subText?.startsWith("Страница ") == true
+
             if (isComicOrPdf) {
-                Column(
+                var zoomScale by remember { mutableFloatStateOf(1f) }
+                var zoomOffset by remember { mutableStateOf(Offset.Zero) }
+                val animScale by animateFloatAsState(zoomScale, label = "comicZoomScale")
+                val animOffset by animateOffsetAsState(zoomOffset, label = "comicZoomOffset")
+                val pageRatio = remember(block.text) {
+                    com.aura.reader.util.GraphicPageDimensionsCache.getOrReadAspectRatio(block.text)
+                }
+
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { onToggleControls() },
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .then(
+                            if (isGraphicPage) {
+                                if (isInScrollMode) Modifier.aspectRatio(pageRatio) else Modifier.fillMaxHeight()
+                            } else {
+                                Modifier
+                            }
+                        )
+                        .padding(vertical = if (isGraphicPage) 0.dp else 2.dp)
+                        .clip(RoundedCornerShape(if (isGraphicPage) 0.dp else 2.dp))
+                        .pointerInput(onPrevPage, onNextPage, onToggleControls) {
+                            detectTapGestures(
+                                onDoubleTap = { tapOffset ->
+                                    if (zoomScale > 1.05f) {
+                                        zoomScale = 1f
+                                        zoomOffset = Offset.Zero
+                                    } else {
+                                        zoomScale = 2.5f
+                                        val center = Offset(size.width / 2f, size.height / 2f)
+                                        val delta = (center - tapOffset) * 1.5f
+                                        val maxX = (size.width * 1.5f) / 2f
+                                        val maxY = (size.height * 1.5f) / 2f
+                                        zoomOffset = Offset(
+                                            x = delta.x.coerceIn(-maxX, maxX),
+                                            y = delta.y.coerceIn(-maxY, maxY)
+                                        )
+                                    }
+                                },
+                                onTap = { tapOffset ->
+                                    if (zoomScale > 1.05f) {
+                                        zoomScale = 1f
+                                        zoomOffset = Offset.Zero
+                                    } else {
+                                        val edgeThreshold = 72.dp.toPx()
+                                        if (tapOffset.x < edgeThreshold && onPrevPage != null) {
+                                            onPrevPage()
+                                        } else if (tapOffset.x > size.width - edgeThreshold && onNextPage != null) {
+                                            onNextPage()
+                                        } else {
+                                            onToggleControls()
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                        .pointerInput(Unit) {
+                            awaitEachGesture {
+                                awaitFirstDown(requireUnconsumed = false)
+                                do {
+                                    val event = awaitPointerEvent()
+                                    val pressedPointers = event.changes.filter { it.pressed }
+                                    val pointerCount = pressedPointers.size
+
+                                    if (zoomScale > 1.05f) {
+                                        val pan = event.calculatePan()
+                                        val zoom = event.calculateZoom()
+                                        val newScale = (zoomScale * zoom).coerceIn(1f, 4f)
+                                        zoomScale = newScale
+                                        if (newScale > 1.05f) {
+                                            val maxX = (size.width * (newScale - 1f)) / 2f
+                                            val maxY = (size.height * (newScale - 1f)) / 2f
+                                            zoomOffset = Offset(
+                                                x = (zoomOffset.x + pan.x).coerceIn(-maxX, maxX),
+                                                y = (zoomOffset.y + pan.y).coerceIn(-maxY, maxY)
+                                            )
+                                        } else {
+                                            zoomScale = 1f
+                                            zoomOffset = Offset.Zero
+                                        }
+                                        event.changes.forEach {
+                                            if (it.positionChanged()) it.consume()
+                                        }
+                                    } else {
+                                        if (pointerCount >= 2) {
+                                            val zoom = event.calculateZoom()
+                                            if (kotlin.math.abs(zoom - 1f) > 0.01f) {
+                                                val newScale = (zoomScale * zoom).coerceIn(1f, 4f)
+                                                zoomScale = newScale
+                                                if (newScale > 1.05f) {
+                                                    val pan = event.calculatePan()
+                                                    val maxX = (size.width * (newScale - 1f)) / 2f
+                                                    val maxY = (size.height * (newScale - 1f)) / 2f
+                                                    zoomOffset = Offset(
+                                                        x = (zoomOffset.x + pan.x).coerceIn(-maxX, maxX),
+                                                        y = (zoomOffset.y + pan.y).coerceIn(-maxY, maxY)
+                                                    )
+                                                }
+                                                event.changes.forEach {
+                                                    if (it.positionChanged()) it.consume()
+                                                }
+                                            }
+                                        }
+                                    }
+                                } while (event.changes.any { it.pressed })
+                            }
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(imageModel)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = block.subText,
-                        contentScale = ContentScale.FillWidth,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(4.dp))
-                    )
+                    if (imageModel == null && block.text.startsWith("aura-pdf:")) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .then(if (isInScrollMode) Modifier.aspectRatio(pageRatio) else Modifier.fillMaxHeight()),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(32.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            )
+                        }
+                    } else {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(imageModel)
+                                .crossfade(true)
+                                .listener(
+                                    onSuccess = { _, result ->
+                                        val w = result.drawable.intrinsicWidth
+                                        val h = result.drawable.intrinsicHeight
+                                        if (w > 0 && h > 0) {
+                                            com.aura.reader.util.GraphicPageDimensionsCache.setAspectRatio(block.text, w.toFloat() / h.toFloat())
+                                        }
+                                    },
+                                    onError = { _, _ ->
+                                        if (block.text.startsWith("aura-pdf:")) {
+                                            renderTrigger++
+                                        }
+                                    }
+                                )
+                                .build(),
+                            contentDescription = block.subText,
+                            contentScale = if (isInScrollMode) ContentScale.FillWidth else ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .then(if (isGraphicPage && !isInScrollMode) Modifier.fillMaxHeight() else Modifier)
+                                .graphicsLayer {
+                                    scaleX = animScale
+                                    scaleY = animScale
+                                    translationX = animOffset.x
+                                    translationY = animOffset.y
+                                }
+                        )
+                    }
                 }
             } else {
                 val isSystemDark = isSystemInDarkTheme()
@@ -320,7 +532,7 @@ fun RenderBlock(
                 color = MaterialTheme.colorScheme.onBackground,
                 textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp),
                 hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
-                lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
+                lineBreak = if (settings.autoHyphenation) LineBreak(strategy = LineBreak.Strategy.HighQuality, strictness = LineBreak.Strictness.Loose, wordBreak = LineBreak.WordBreak.Default) else LineBreak.Simple
             )
 
             val formattedText = remember(block.text) { formatTypography(block.text.trim()) }
@@ -335,6 +547,7 @@ fun RenderBlock(
                 ttsWordStart = ttsWordStart,
                 ttsWordEnd = ttsWordEnd,
                 ttsSpokenWord = ttsSpokenWord,
+                isBionic = isBionic,
                 onFootnoteClick = onFootnoteClick,
                 onNavigateToChapter = onNavigateToChapter,
                 onToggleControls = onToggleControls,
@@ -360,6 +573,7 @@ fun InteractiveText(
     ttsWordStart: Int = -1,
     ttsWordEnd: Int = -1,
     ttsSpokenWord: String = "",
+    isBionic: Boolean = false,
     onFootnoteClick: (ref: String, content: String) -> Unit,
     onNavigateToChapter: ((chapterIndex: Int, blockIndex: Int) -> Unit)? = null,
     onToggleControls: () -> Unit,
@@ -368,9 +582,13 @@ fun InteractiveText(
 ) {
     val strings = LocalAppStrings.current
     val primaryColor = MaterialTheme.colorScheme.primary
-    val annotated = remember(rawText, searchQuery, footnotes, quotes, links, primaryColor, ttsWordStart, ttsWordEnd, ttsSpokenWord) {
+    val annotated = remember(rawText, searchQuery, footnotes, quotes, links, primaryColor, ttsWordStart, ttsWordEnd, ttsSpokenWord, isBionic) {
         buildAnnotatedString {
             append(rawText)
+
+            if (isBionic) {
+                applyBionicStyles(rawText)
+            }
 
             // Highlight real-time spoken TTS word
             if (ttsWordStart >= 0 || ttsSpokenWord.isNotBlank()) {

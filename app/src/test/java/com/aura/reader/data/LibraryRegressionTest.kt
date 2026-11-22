@@ -192,5 +192,69 @@ class LibraryRegressionTest {
         val settings = prefs.readerSettings.first()
         assertEquals(2, settings.bottomProgressMode)
     }
+
+    @Test fun trashLifecycleRetentionAndExpiration() = runBlocking {
+        val prefs = PreferencesManager(context)
+        prefs.saveRecentBooksJson("[]")
+        val repo = BookRepository(context, prefs)
+        val book = repo.openBookFromUri(source("trash_test", "book.txt", "Trash test book")).getOrThrow()
+
+        // Move to trash
+        repo.moveToTrash(book.id)
+        val trashed = repo.recentBooks.value.single()
+        assertNotNull(trashed.deletedAtTimestamp)
+
+        // Restore from trash
+        repo.restoreFromTrash(book.id)
+        val restored = repo.recentBooks.value.single()
+        assertNull(restored.deletedAtTimestamp)
+
+        // Expire older than 15 days
+        val pastTimestamp = System.currentTimeMillis() - (16L * 24 * 60 * 60 * 1000)
+        repo.moveToTrash(book.id)
+        val oldTrashedBook = repo.recentBooks.value.single().copy(deletedAtTimestamp = pastTimestamp)
+        repo.saveRecentBooks(listOf(oldTrashedBook))
+
+        // Reload should auto-purge expired trash
+        val reloaded = BookRepository(context, prefs)
+        reloaded.loadRecentBooks()
+        assertTrue(reloaded.recentBooks.value.isEmpty())
+    }
+
+    @Test fun bookProfileMetadataPersistence() = runBlocking {
+        val prefs = PreferencesManager(context)
+        prefs.saveRecentBooksJson("[]")
+        val repo = BookRepository(context, prefs)
+        val book = repo.openBookFromUri(source("profile_test", "book.txt", "Profile test book")).getOrThrow()
+
+        repo.updateBookMetadata(
+            bookId = book.id,
+            title = "Новое Название",
+            author = "Новый Автор",
+            series = "Космическая Одиссея",
+            seriesNumber = 3,
+            genres = listOf("Фантастика", "Космоопера"),
+            description = "Захватывающая история о далёких галактиках."
+        )
+
+        val updated = repo.recentBooks.value.single()
+        assertEquals("Новое Название", updated.title)
+        assertEquals("Новый Автор", updated.author)
+        assertEquals("Космическая Одиссея", updated.series)
+        assertEquals(3, updated.seriesNumber)
+        assertEquals(listOf("Фантастика", "Космоопера"), updated.genres)
+        assertEquals("Захватывающая история о далёких галактиках.", updated.description)
+
+        // Reload and verify persistence
+        val reloaded = BookRepository(context, prefs)
+        reloaded.loadRecentBooks()
+        val reloadedBook = reloaded.recentBooks.value.single()
+        assertEquals("Новое Название", reloadedBook.title)
+        assertEquals("Новый Автор", reloadedBook.author)
+        assertEquals("Космическая Одиссея", reloadedBook.series)
+        assertEquals(3, reloadedBook.seriesNumber)
+        assertEquals(listOf("Фантастика", "Космоопера"), reloadedBook.genres)
+        assertEquals("Захватывающая история о далёких галактиках.", reloadedBook.description)
+    }
 }
 

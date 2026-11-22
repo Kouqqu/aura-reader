@@ -783,6 +783,219 @@ was downloaded and inspected:
 - `classes.dex` contains "Доброе утро", "Доброй ночи", "Dzień dobry" and "בוקר טוב",
   plus the `DayPeriod` enum - the greeting survived R8 and ships in all languages.
 
+## 2.3.0-beta.3 (versionCode 168)
+
+Third 2.3 beta: fixes the settings sheet child stacking bug, adopts authentic Chumpy-style folding cards with rotating chevron badges, adds bottom inset padding against the navigation dock, restores and doubles the Rockstar aura logo glow, and brings centered M3 1.5.0 BookCardMenu to both grid and list book items.
+
+### SettingsFold layout collision fix & Chumpy cards
+In `2.3.0-beta.2`, `SettingsFoldContent` wrapped multiple composables inside a standalone `AnimatedVisibility` which defaulted to a `Box` layout, causing theme cards, holiday styles, and settings groups to pile up at coordinate (0, 0).
+- `SettingsFoldContent` now wraps its content in a `Column` with 14.dp vertical spacing, ensuring clear linear layout.
+- `SettingsFoldHeader` is redesigned into a tactile, rounded tonal surface card with an animated 90° rotating chevron in a circular badge.
+- Added 110.dp spacer plus `navigationBarsPadding` to the bottom of `SettingsBottomSheet`, so the floating dock never obscures bottom items like "Учитывать время чтения".
+
+### Rockstar logo aura glow restored
+The logo halo slot is increased to `logoBoxSize * 3.2f` and radius to `logoBoxSize * 1.6f`, with a rich radial gradient (alpha 0.85f -> 0.65f -> 0.35f -> 0.12f -> transparent). The glow extends 25–30 dp beyond the logo surface, breathing visibly in all themes and holiday modes.
+
+### Centered BookCardMenu in grid & list modes
+- In grid view (`BookGridCard`), a circular 3-dots `IconButton` is added to the top-right overlay of book covers.
+- `BookCardMenu` is moved to the card root level in both `BookListItem` and `BookGridCard`, anchoring to the full card width so that `anchorBounds.center.x - menuSize.width / 2` places the dropdown menu centered under the card with M3 1.5.0 scale-and-fade animation.
+- Grid menu now includes "mark as finished" and "reset progress" for parity with list mode.
+
+## 2.3.0-beta.2 (versionCode 167)
+
+Second 2.3 beta: the update plaque finally installs the update, Material 3 gets its
+expressive menus, the logo glow shimmers, and the Liquid Glass settings sheet folds.
+No dependency is upgraded blindly - see "Material 3 1.5.0 without a new compileSdk"
+below for the one version that moved and why it moved alone.
+
+### Update downloads and installs in place
+
+Until now the update dialog could only open the GitHub release page, so every beta
+was a manual download in a browser. The plaque and the dialog now carry a real
+primary action that fetches the APK, hands it to Android's installer and leaves no
+file behind.
+
+- **`UpdateInfo`** gained `apkUrl` and `apkSizeBytes`. The GitHub API response is
+  parsed for the `AuraReader.apk` asset instead of only the release page; if the
+  asset is missing (or an old release predates it) the download falls back to
+  `https://github.com/Kouqqu/aura-reader/releases/download/<tag>/AuraReader.apk`.
+  The release notes are still shown, unchanged.
+- **`AppUpdateManager.downloadApk`** writes into `cacheDir/updates`, wiping the
+  folder first, with a 64 KB buffer, a 15 s connect / 30 s read timeout and progress
+  reported as whole percents. It rejects a non-2xx response, an empty file, a file
+  shorter than `Content-Length`, and - the useful one - a body whose first two bytes
+  are not `PK`, so an HTML error page saved as `.apk` cannot be offered to the
+  installer. A failed download deletes its own partial file.
+- **`installApk`** returns one of `STARTED`, `PERMISSION_REQUIRED`, `FAILED`. When
+  "install unknown apps" is not granted it opens the per-app settings page via
+  `ACTION_MANAGE_UNKNOWN_APP_SOURCES` and reports `PERMISSION_REQUIRED`, so the
+  button turns into "Install" and works on the second tap once the user is back -
+  no extra explanation dialog. The APK is shared through the existing `FileProvider`
+  with a read grant and the package-archive MIME type.
+- **Cleanup.** `cleanupDownloadedApks` runs from `MainActivity.onCreate` and deletes
+  everything in `cacheDir/updates`. Because installing an update restarts the app,
+  the APK is gone immediately after the update; if the install is cancelled, the
+  cache and the next start still clean it up. The manifest adds
+  `REQUEST_INSTALL_PACKAGES`.
+- **State.** `LibraryViewModel` owns two machines: `UpdateCheckState`
+  (`Idle`/`Checking`/`UpToDate`/`Failed`) and `UpdateInstallState`
+  (`Idle`/`Downloading(progress?)`/`Ready`/`PermissionRequired`/`Failed(detail)`).
+  The download runs in a tracked job that is cancelled when the dialog is dismissed,
+  so a dismissed dialog cannot install later behind the user's back. Manual checks no
+  longer raise a red snackbar; a failure is shown in place.
+- **UI.** Both the update dialog and the update plaque draw a `WavyProgressIndicator`
+  while bytes arrive (indeterminate when the server sends no length), swap the
+  primary button between "Download and install", "Install" and "Try again", and keep
+  a compact GitHub button beside it as the escape hatch. Permission, download and
+  install failures each get their own sentence instead of a generic error.
+- **Strings.** Eight new `Strings` members in all seven languages:
+  `updateAction`, `downloadAndInstall`, `installUpdate`, `downloadFromGithub`,
+  `updateReadyToInstall`, `updateDownloadFailed`, `installPermissionNeeded`,
+  `updateCheckFailed`.
+
+### Material 3 1.5.0 without a new compileSdk
+
+`androidx.compose.material3:material3` is now `1.5.0`, the first stable M3
+Expressive release, pinned explicitly in `libs.versions.toml` because the
+`2026.09.00` BOM still carries `1.4.0`. The BOM itself stays at `2026.09.00`
+(Compose 1.12.1): BOM `2026.11.01` would carry material3 1.5.0 *and* Compose
+1.13.0, whose AAR metadata demands `compileSdk 37.1`, and only `android-37.0` is
+installed locally. Material 3 1.5.0 itself declares `minCompileSdk=37`, so the pin
+keeps the whole stack on the platform that exists. Recorded in `docs/upgrades.md`.
+
+### Settings sections fold in Liquid Glass
+
+- New `ui/screens/settings/SettingsFold.kt`: `SettingsFoldHeader` turns the section
+  caption into a tappable pill with a rotating chevron, and `SettingsFoldContent`
+  wraps the body in `AnimatedVisibility` with the M3 `motionScheme` spatial/effects
+  specs. Outside Liquid Glass the header is the same plain bold caption it always
+  was and the body is always visible, so the Material design did not change.
+- Applied to Theme, Language, Additional Features, Updates, Backup and About. Design
+  Style stays unfolded because it is the first decision on the sheet.
+- Sections start expanded; nothing is hidden by default, and the fold state survives
+  configuration changes via `rememberSaveable`.
+- `SettingsBackupSection` and `SettingsAboutSection` now take an `isGlass` flag from
+  `SettingsBottomSheet`.
+
+### Book card menu grows out of the card
+
+The list and grid "three dots" menus used stock `DropdownMenu`, which anchors to a
+corner. New `ui/components/BookCardMenu.kt` uses material3's `DropdownMenuPopup`
+with a `MenuAnchorPosition.Custom` provider: the menu's top-centre sits under the
+card's centre, flips above when there is no room below, and is clamped back into
+the window when the card is half-scrolled. It scales from 0.82 and fades in with
+`MaterialTheme.motionScheme`, and keeps the Liquid Glass / Material container
+appearance from `liquidGlassMenuAppearance`. Both `BookCards.kt` call sites use it.
+
+### Logo glow: shimmer instead of a single-colour breath
+
+The 46 dp logo square was already haloed in beta.1, but the halo was clipped at the
+top of the bar and only pulsed one colour. Now the halo is drawn in its own
+`requiredSize(logoBoxSize * 1.42f)` slot behind the mark, so it fades to transparent
+inside its own bounds instead of being cut by the bar; the radius is `0.70x` the
+logo. Its colour drifts between primary/tertiary/secondary (or the two holiday
+accents) on a 9 s linear phase while a separate 3.4 s breath changes the alpha, so
+the two loops do not stay in step. The collapsed bar still has no halo.
+
+### Update check state in Settings
+
+Checking no longer opens a toast-and-nothing flow: the check button shows a spinner
+and disables itself, and an inline row animates between "Checking", "You have the
+latest version" and the new failure sentence. `updateCheckFailed` was added to all
+seven `Strings` implementations.
+
+**Build.** `testDebugUnitTest lintDebug assembleDebug` -> `BUILD SUCCESSFUL`, 84
+tests, 0 failures. Not run on a device: no emulator or phone was connected, so the
+shimmer, the folding headers and the card-anchored menu still need one visual pass,
+and the in-app install path has not been exercised on a real phone (it needs the
+"install unknown apps" grant).
+
+## 2.3.0-beta.1 (versionCode 166)
+
+First beta of the 2.3 cycle: four appearance changes. No dependency, plugin or toolchain
+version changed. The tree sits on the stable `2.2.1` (`versionCode 165`) that was released
+separately with Gemini.
+
+### Holiday style picker in Appearance
+
+Holidays used to be reachable only through the developer mode chips in the Updates section,
+with hard-coded Russian labels. They are now a normal user-facing choice inside
+Appearance, next to the theme pills.
+
+- **New file** `ui/screens/settings/HolidayStyleSection.kt`: nine plaques in the same
+  rounded-16 dp / 2 dp selected-border language as `ExpressiveThemePill` (press bounce,
+  haptic tick, neutral glass or surface-container fill when unselected). Each plaque has a
+  30 dp emoji or icon tile, a name and a date hint.
+- **Rows.** `Auto` (by calendar) and `Standard` (no decoration) on the first row; then
+  Halloween, Christmas (25 Dec), New Year, Christmas (7 Jan), Winter holidays
+  (9-15 Jan), Valentine and Easter. Easter spans the last row.
+- **Behaviour.** Picking a season also switches the master "Holiday atmosphere" toggle on,
+  so the result is visible immediately. `Standard` writes the `OFF` override and switches
+  the toggle off; toggling it back on with `OFF` still selected falls back to `AUTO`
+  instead of leaving the atmosphere dead. Auto and every season keep the existing
+  `HolidaySeason.resolve(enabled, override)` logic untouched.
+- **Plumbing.** `holidayOverride` / `onHolidayOverrideChange` moved from
+  `SettingsUpdatesSection` to `SettingsThemeSection` (via `SettingsBottomSheet`); the
+  hard-coded developer chip row and its `horizontalScroll` imports were deleted.
+- **Strings.** Thirteen new `Strings` members (`holidayStyleTitle`, `holidayStyleSubtitle`,
+  `holidayStyleAuto`, `holidayStyleAutoHint`, `holidayStyleStandard`,
+  `holidayStyleStandardHint`, and one date hint per season) in all seven languages. The
+  total is now 389 members.
+
+### Greeting aligned under the app name
+
+The 24 sp greeting sat at the very left of the title column, i.e. optically under the logo
+square, which made the header look shifted. It now starts at `logoBoxSize + titleSpacing`
+(58 dp expanded), so the greeting and "Aura Reader" share one left edge. Nothing else about
+the greeting changed.
+
+### Rockstar-style logo glow
+
+The 46 dp logo square now sits on a soft radial halo: `primary` on ordinary days, the
+season accent on holidays. It is drawn with `drawBehind` at 1.22x the logo size, so it never
+affects layout, and breathes between 45% and 100% alpha over 3.4 s with `FastOutSlowIn`.
+It is suppressed in the collapsed bar, where the 28 dp logo has no room for a halo.
+
+### Material 3 wavy download progress (OPDS)
+
+`ui/components/WavyProgressIndicator.kt` was redrawn to the current Material shape instead
+of a custom active-only sine:
+
+- both the active segment and the track undulate with the same phase;
+- a 4 dp flat gap separates them at the progress head;
+- a 2 dp stop indicator closes the line, 4 dp before the edge;
+- stroke 4 dp (was 3.5), wavelength 32 dp (was 22), amplitude 2.4 dp (was 2.8), 1.6 s loop
+  (was 1.1 s), and a 10 dp damping envelope at both ends of every segment.
+
+Both OPDS call sites (book row and book details) use it unchanged.
+
+**Tests.** `HolidayStringsTest` now checks that all thirteen new style strings are non-blank
+in all seven languages. `HolidaySeasonTest` pins the Winter (`OLD_NEW_YEAR`) override and
+round-trips every picker id through `HolidaySeason.resolve`, so a renamed enum constant
+cannot silently break a plaque.
+
+**Build.** `testDebugUnitTest lintDebug assembleDebug` -> `BUILD SUCCESSFUL`, 84 tests,
+0 failures. Not run on a device: no emulator or phone was connected, so the glow, the
+plaque grid and the wave still need one visual pass.
+
+### Published verification
+
+Release: [v2.3.0-beta.1](https://github.com/Kouqqu/aura-reader/releases/tag/v2.3.0-beta.1)
+(prerelease; `v2.2.1` is still `latest`). Tag at `9d300a8`, CI run `44355462271` succeeded
+in ~7 min. The published `AuraReader.apk` (5,491,060 bytes, SHA-256
+`8920b6eda338ad915e37ea053b485ad59c8ccee2343f79a0ffb108babd7ac897`) was downloaded and
+inspected:
+
+- `aapt dump badging`: `versionCode='166'`, `versionName='2.3.0-beta.1'`.
+- `classes.dex` contains "Праздничный стиль", "Стандарт", "9–15 января" and the English
+  and Hebrew style titles, plus the `WavyProgressIndicator` class and the "logoGlowPulse"
+  animation label - the picker, the wave and the glow all survived R8.
+- "Сезонный режим (тест)" is gone from the dex: the developer-only holiday chips really
+  were removed, not just hidden.
+
+The asset size happens to equal the previous beta's 5,491,060 bytes; the digests differ,
+and the inspection above confirms the new content.
+
 ## 2.2.1 — Official Stable Release (versionCode 165)
 
 Official stable release consolidating all 2.2.1 updates:
@@ -794,3 +1007,516 @@ Official stable release consolidating all 2.2.1 updates:
 - **M3 Expressive Token Accuracy.** Split buttons, connected button groups, and action chips strictly match Google Material 3 Expressive token geometry and styling.
 
 Verified with `testDebugUnitTest lintDebug`.
+
+## 2.3.0-beta.4 — Morphing Bottom Dock & Unified HorizontalPager Architecture (versionCode 169)
+
+Chumpy-inspired bottom dock transformation and consolidated single-pager architecture:
+- **Unified HorizontalPager.** All top-level screens reside consecutively in a single `HorizontalPager(5)`:
+  - Page 0: Library («Мои книги»)
+  - Page 1: Search («Поиск»)
+  - Page 2: Settings: Interface («Интерфейс»)
+  - Page 3: Settings: General («Основные»)
+  - Page 4: Settings: About («О приложении»)
+- **Morphing Bottom Dock.** Transitioning to settings smoothly morphs the floating dock:
+  - Main state: Floating navigation island («Мои книги», «Поиск», «Настройки») + Floating Add glass button.
+  - Settings state: Circular 60dp «Назад» (←) button on the left + floating capsule with categories («Интерфейс», «Основные», «О приложении») on the right.
+  - Active category tab expands to display its label, while inactive tabs remain compact icons.
+  - Spring-driven slide and fade animations between states.
+- **Back Navigation.** Pressing the dock's round back button (←) or Android system back smoothly slides the dock back to main mode and scrolls the pager back to «Мои книги» (page 0).
+- **Elimination of Modal Layers.** Removed the duplicate `SettingsBottomSheet` modal and hacky `LaunchedEffect` style observer that caused overlapping elements in previous builds. All settings categories render cleanly inside dedicated pager screens.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.5 — Smooth Screen Transitions, Material 3 Classic Restoration & Instant Pill Capture (versionCode 170)
+
+- **Calibrated Screen Paging Speed.** Pager transition between screens tuned to a deliberate 450 ms `FastOutSlowInEasing` curve (`pageScrollSpec = tween(450, easing = FastOutSlowInEasing)`), restoring the comfortable, smooth pacing of previous releases.
+- **Strict Style Separation.** The bottom dock is rendered strictly when `readerSettings.appDesignStyle == AppDesignStyle.LIQUID_GLASS`. Material 3 stays purely in its classic layout (`ExtendedFloatingActionButton` [ + Добавить книги ] anchored at `FabPosition.End`, modal `SettingsBottomSheet` triggered via TopBar gear button, search bar in TopBar, `userScrollEnabled = false`).
+- **Instant Touch-Down Pill Capture.** Fixed `FloatingNavigationIsland` gesture kinematics: the pill now immediately targets the contact position `dragOffsetPx` on touch down with high-stiffness critically damped spring physics (`stiffness = 1200f`), eliminating the 250ms delayed hop from button center to finger. On release, it settles accurately onto the selected slot center.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.6 — New Official Logo & Branding, Restored Responsive Pill Kinematics & Snappy Navigation (versionCode 171)
+
+- **New Official Logo (Å).** Integrated the new official logo across all brand touchpoints:
+  - Adaptive launcher icons (`ic_launcher.png`, `ic_launcher_round.png`, `ic_launcher_foreground.png`).
+  - Android 13+ Material You monochrome themed icon (`ic_launcher_monochrome.png`).
+  - Background color set to deep twilight indigo `#1E1B4B` in `colors.xml`.
+  - Android 12+ splash screen animated icon (`ic_splash_logo.png`).
+  - In-app `AuraLogoIcon` in `LibraryEmptyState` and `LibraryTopBar` with halo shimmer glow.
+- **Restored Dock Pill Kinematics.** Restored the proven instant button snap (`tapTargetSlot`) in `FloatingNavigationIsland`:
+  - Instantaneous target slot lock upon touch-down without waiting or detours.
+  - Smooth finger tracking when dragging.
+  - Eliminated the delayed or jumping transition artifact.
+- **Natural, Snappy Screen Transitions.** Removed the 450 ms artificial tween delay in `HorizontalPager`, restoring instant and smooth spring paging with synchronized dock morphing.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.7 — 2.2.1 Screen Animation Kinematics, Proportional Logo Scaling & Topbar Aura Fix (versionCode 172)
+
+- **Authentic 2.2.1 Transition Dynamics.** Set `HorizontalPager` smooth scrolling to `spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)` matching the exact comfortable pacing of the 2.2.1 release.
+- **Balanced Logo Proportions.**
+  - Top bar emblem: tightly cropped logo scaled to 34.dp inside the 46.dp squircle container, properly filling the mark.
+  - Launcher icon: scaled down letter to height 220px in 512px canvas (safe zone ~43%), preventing the oversized look on Android launchers.
+- **Distinct Crossbar for Material You.** In `ic_launcher_monochrome.png`, the crossbar has a 2.5px negative space boundary separating it from the legs and a 60%–85% alpha gradient, making the smile arc clearly readable under Android 13+ dynamic palettes.
+- **Aura Clipping Elimination.** Calibrated halo radius to 1.05x with radial alpha decay reaching 0 at boundary, keeping the shimmer aura cleanly within top bar padding and preventing vertical/horizontal cutoff.
+- **Immediate «Перейти на GitHub» Access.** Relocated the GitHub update button to the top of `LibraryDialogs` update content right below the title, with updated localized string «Перейти на GitHub».
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.8 — Unclipped Top Bar Logo Aura, Compact Holiday Style Dropdown & Android Color Presets (versionCode 173)
+
+- **Unclipped Top Bar Logo Aura Glow.** Fixed the root cause of the straight horizontal cut-off line above the logo:
+  - In `LargeTopAppBar` (Material 3 `TwoRowsTopAppBar`), the expanded title container applies an internal `clipToBounds()`, which hard-clipped any halo glow extending above the 64dp pinned boundary.
+  - Moved the halo glow rendering to `LibraryTopBar`'s root container `Box` with `Modifier.drawBehind`, tracking the logo's global coordinates.
+  - The aura now radiates freely across the status bar, app name, and header with zero boundary clipping.
+- **Compact Folding Holiday Style Picker.**
+  - Converted "Праздничный стиль" into an expandable folding card (`SettingsHolidayStyleSection`) featuring a rotating chevron and real-time state subtitle.
+  - Removed duplicate "Авто: по календарю" and "Стандарт: без оформления" cards, as the "Праздничная атмосфера" toggle already governs atmosphere activation.
+  - Redesigned into a 2-column compact chip grid with emoji, concise date hints, and checkmark indicators. Tapping an active holiday deselects it and smoothly returns to the automatic calendar schedule.
+- **Android Color Presets (Circular Swatches).**
+  - Added standard Material 3 color presets in Interface settings: Purple (Lavender), Blue (Ocean), Teal, Green (Forest), Orange (Amber), Rose, Indigo, and Neutral (Monochrome).
+  - Rendered as interactive 42.dp circular swatches with expressive bounce, outer accent rings, and checkmark indicators.
+  - Tapping a preset selects that color theme across the app and smoothly switches from wallpaper colors to the selected preset palette.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.12 — Aura-Original Book Profile Design, Solid Opaque Surface & High-Contrast Typography (versionCode 177)
+
+- **Eliminated Sheet Translucency & Double Exposure Ghosting:**
+  - Diagnosed translucent background and faint underlying book items leaking through the sheet (`containerColor` had alpha `0xEC`, and all child cards had `0.5f` alpha).
+  - Switched `ModalBottomSheet` container and all inner cards to 100% solid, fully opaque colors:
+    - Dark mode: deep solid slate-indigo container (`#161722`) with elevated solid card background (`#212330`) and crisp boundary borders (`#2E3245`).
+    - Light mode: crisp solid off-white container (`#F7F6FA`) with pure white card surface (`#FFFFFF`).
+  - Completely removed transparent background bleed-through; library items underneath never leak through.
+- **High-Contrast, Expressive Typography & Colors:**
+  - Resolved dark text on dark container: explicit `titleColor` (`#FFFFFF` in dark mode, `#1C1B1F` in light mode), readable `subtitleColor` (`#B4B0C2`), and high-contrast `bodyColor` (`#E2DFEC`).
+  - Passed `contentColor = sheetContentColor` directly to `ModalBottomSheet`, preventing fallback to dark/unspecified content color in Compose.
+- **Removed Third-Party Tags Copy & Rebuilt in Aura Signature Style:**
+  - Removed all unwanted third-party tags elements («теги», «фанфик» placeholder, «+ + Тег»).
+  - Kept a dedicated, clean **«Жанры»** section with Aura-styled chips, instant deletion in edit mode, and dialog picker with popular genre presets (Фантастика, Детектив, Роман, Фэнтези, Научпоп, Триллер, Классика, История, Ужасы) and custom genre input.
+  - Reorganized the profile into 4 distinct, cohesive Aura sections:
+    1. **Book Header:** Zoomable cover thumbnail, bold high-contrast title, author, series/cycle badge, and format pill.
+    2. **Reading Progress Card:** Reading percentage, reading status, and «Отметить прочитанной» / «Сбросить» action button.
+    3. **Genres Card:** Interactive genre pills with clean «+ Добавить» action.
+    4. **Book Description Card:** Synopsis with inline edit button.
+    5. **File Details Card:** Formatted file size, format, date added, first opened, and last read dates.
+  - Dedicated focused edit mode with clear input fields for Title, Author, Cycle (Series title and volume number), Genres, and Synopsis with «[Сохранить]».
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.9 — Aura Glow Logo Anchor Fix, Open Source Licenses Viewer & Private Folder (versionCode 174)
+
+- **Fixed Top Bar Logo Aura Position & Drift.**
+  - Identified root cause of sporadic glow displacement: `LargeTopAppBar` evaluates the `title` composable twice in separate layouts (pinned small title at y ~ 20-40dp and expanded title at y ~ 70-110dp). Storing coordinates from the small title was overwriting the position and pulling the aura 60+ dp upward.
+  - Resolved by gating layout coordinate capture with `if (!isSmallTitle)` and calculating the center dynamically in `drawBehind` using `top.localPositionOf(logo, ...)`. The aura remains strictly anchored to the logo mark during all scroll states.
+- **Open Source Licenses Viewer (`LicensesDialog`).**
+  - Added a dedicated, clean licenses viewer showcasing all 3rd-party software, OFL fonts (Google Sans, Literata, Merriweather, Roboto, Inter, Playfair Display, Fira Code), Zakon typeface, Liquid Glass, Haze, jsoup, and AndroidX/Jetpack Compose libraries.
+  - Accessible via a new «Лицензии стороннего ПО» row in the «О приложении» settings section.
+- **Removed Redundant Folding Chevron in "About" Settings.**
+  - Cleaned up the «О приложении» settings page: removed the superfluous `SettingsFoldHeader` folding arrow since it contains a single consolidated group.
+- **Private Folder («Личная папка»).**
+  - Added secure Private Folder storage with SHA-256 password hashing.
+  - Setup dialog on first visit, password prompt on subsequent visits, and in-folder password change option.
+  - Ability to add books from the main library into the private folder, and remove them back to the general library from context menus.
+  - Books inside the private folder are completely isolated and hidden from public library views, search results, and hero banners.
+  - Added dedicated `🔒 Личная папка` chip in the collections row, action buttons in book dropdown menus, and in-folder banner with lock controls.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.10 — Licenses Subtitle Removal, GTA VI Vice City Seasonal Emblem, Inline Card Dropdown Menu, Trash Bin (15 Days), and Book Profile (versionCode 175)
+
+- **Clean Licenses Row:** Removed the explanatory subtitle («шрифты, шейдеры и открытые библиотеки») under «Лицензии стороннего ПО» in the "About" settings section.
+- **GTA VI Vice City Seasonal Emblem (`ic_aura_logo_vice.xml`, `logo_vice_gta6.svg`):**
+  - Integrated the custom Vice City sunset gradient logo with palm silhouettes and Aura 'Å' emblem celebrating the upcoming GTA VI release.
+  - Active temporarily until November 30 with dedicated Vice City sunset aura glow (`#F43F5E`, `#FFFF75B5`, `#6B1D5C`) in the top bar.
+  - Added user toggle in Interface settings («GTA VI Edition: Закатная тема и эксклюзивный логотип Vice City»).
+- **Smooth Inline Book Action Drawer (Out of Book Card):**
+  - Replaced floating popups with an animated inline action accordion dropping down smoothly out of the bottom of the book card itself (`animateContentSize` + `expandVertically` + `fadeIn`).
+  - Available in both grid and list library view modes, seamlessly revealing actions (Profile, Favorite, Collection, Private, Cover, Share, Progress, Trash).
+- **Recycle Bin («Корзина» with 15-Day Retention):**
+  - Deleting books moves them to Trash with `deletedAtTimestamp`.
+  - Automatic purging of books older than 15 days upon library reload.
+  - Dedicated `🗑️ Корзина (count)` filter chip, in-trash banner with one-click «Очистить корзину», and individual actions to «Восстановить» or «Удалить навсегда».
+  - Books in trash are completely excluded from active library grids, hero banner, and search.
+- **Interactive Book Profile («О книге» / `BookProfileBottomSheet`):**
+  - Profile sheet displaying cover thumbnail, reading progress pill, and format/file size badges.
+  - Editable title, author, cycle/series name, and volume number.
+  - Interactive genre chips with instant deletion and «Добавить» dialog supporting popular presets (Фантастика, Фэнтези, Детектив, Роман, Научпоп, Триллер, Классика, Приключения) and custom input.
+  - Editable synopsis / book description with multi-line text input.
+  - Technical file details: format, file size in KB/MB, date added to library, first opened date (or «Ещё не открывалась»), and last read date.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 84 tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.11 — GTA VI Vice City Launcher Icon (Untinted), Book Profile Overhaul (Shelest UX), Crash Fix & Compact Action Drawer (versionCode 176)
+
+- **GTA VI Vice City Launcher Icon (No Material You Dynamic Tinting):**
+  - Clarified scope: Reverted all in-app GTA VI UI overrides (no toggles in settings, no top bar logo alterations, no DataStore overrides).
+  - Applied the GTA VI Vice City sunset theme (`#1E1035` -> `#6B1D5C` -> `#F43F5E`) with palm silhouettes and white/pink 'Å' emblem exclusively to the launcher icon.
+  - Removed `<monochrome>` from `mipmap-anydpi-v26/ic_launcher.xml` and `ic_launcher_round.xml`, strictly preventing Android 13+ Material You from coloring/tinting the icon into wallpaper palette. Full-color sunset palette active through end of November 2026.
+  - Rendered crisp adaptive icon background and foreground along with all raster mipmap densities (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) using 4x supersampling.
+- **Fixed Crash on «О книге»:**
+  - Diagnosed crash caused by passing `bookId = book.id` into `BookCoverView` inside `BookProfileBottomSheet`, which created a duplicate `sharedElement` key collision with the library list item already attached in `LocalSharedTransitionScope`.
+  - Resolved by passing `bookId = null` in the sheet cover view, completely eliminating the key collision.
+- **Book Cover Interaction & Shelest-Style Profile Overhaul:**
+  - Tapping the book cover thumbnail directly in the library grid/list now opens the Book Profile sheet (`selectedBookForProfile = book`).
+  - Inside the Book Profile sheet, clicking the cover thumbnail triggers the existing full-screen `ParallaxCoverViewer`.
+  - Implemented Shelest-inspired two-mode architecture (`isEditMode` toggle):
+    - **View Mode:** Left cover thumbnail with full-screen zoom badge, book title (large bold), author, format and series badges, full-width «Читать дальше» / «Продолжить чтение» primary button, edit pencil button, reading progress card with percentage and «Отметить прочитанной» / «Сбросить» action, «Жанры и теги» card with «Изменить» and tag chips, «Аннотация» card with description preview, and technical footer (format, size, added date, first opened date).
+    - **Edit Mode:** Header `← Изменить` with `[Сохранить]` pill button; grouped cards for «Книга» (title, author text fields), «Цикл» (series name and book #), «Жанры» (chips with delete close icons and «Добавить» dialog with popular presets and custom input), and «Аннотация» (multi-line description field).
+- **Compact Inline Book Action Drawer:**
+  - Removed redundant favorite/heart chip from the inline expandable drawer (since the heart button is already located in the card header).
+  - Kept a single clean «В коллекцию» folder action.
+  - Tightened chip padding (7.dp horizontal, 3.5.dp vertical), chip height (~28-30.dp), icon size (13.5.dp), font size (11.sp), and spacing (4.dp), significantly reducing vertical footprint and eliminating dead space.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.12 — Aura-Original Book Profile Design, Solid Opaque Surface & High-Contrast Typography (versionCode 177)
+
+- **Eliminated Sheet Translucency & Double Exposure Ghosting:**
+  - Diagnosed translucent background and faint underlying book items leaking through the sheet (`containerColor` had alpha `0xEC`, and all child cards had `0.5f` alpha).
+  - Switched `ModalBottomSheet` container and all inner cards to 100% solid, fully opaque colors:
+    - Dark mode: deep solid slate-indigo container (`#161722`) with elevated solid card background (`#212330`) and crisp boundary borders (`#2E3245`).
+    - Light mode: crisp solid off-white container (`#F7F6FA`) with pure white card surface (`#FFFFFF`).
+  - Completely removed transparent background bleed-through; library items underneath never leak through.
+- **High-Contrast, Expressive Typography & Colors:**
+  - Resolved dark text on dark container: explicit `titleColor` (`#FFFFFF` in dark mode, `#1C1B1F` in light mode), readable `subtitleColor` (`#B4B0C2`), and high-contrast `bodyColor` (`#E2DFEC`).
+  - Passed `contentColor = sheetContentColor` directly to `ModalBottomSheet`, preventing fallback to dark/unspecified content color in Compose.
+- **Removed Third-Party Tags Copy & Rebuilt in Aura Signature Style:**
+  - Removed all unwanted third-party tags elements («теги», «фанфик» placeholder, «+ + Тег»).
+  - Kept a dedicated, clean **«Жанры»** section with Aura-styled chips, instant deletion in edit mode, and dialog picker with popular genre presets (Фантастика, Детектив, Роман, Фэнтези, Научпоп, Триллер, Классика, История, Ужасы) and custom genre input.
+  - Reorganized the profile into 4 distinct, cohesive Aura sections:
+    1. **Book Header:** Zoomable cover thumbnail, bold high-contrast title, author, series/cycle badge, and format pill.
+    2. **Reading Progress Card:** Reading percentage, reading status, and «Отметить прочитанной» / «Сбросить» action button.
+    3. **Genres Card:** Interactive genre pills with clean «+ Добавить» action.
+    4. **Book Description Card:** Synopsis with inline edit button.
+    5. **File Details Card:** Formatted file size, format, date added, first opened, and last read dates.
+  - Dedicated focused edit mode with clear input fields for Title, Author, Cycle (Series title and volume number), Genres, and Synopsis with «[Сохранить]».
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.13 — Multi-Select Batch Actions, Pure Graphite Book Profile, Unsaved Changes Protection & Reader Tap Zones Hint (versionCode 178)
+
+- **Multi-Select Batch Actions (Пакетное управление книгами):**
+  - Added batch selection state `selectedBookIds: Set<String>` in `LibraryScreen`.
+  - Added selection indicator checkboxes on `BookCard` (list view) and `BookGridCard` (grid view), along with glowing active border highlight.
+  - Added «Выбрать книги» option in both `BookListInlineActionTray` and `BookGridInlineActionTray`.
+  - Implemented floating batch action dock `AnimatedVisibility(visible = isSelectionMode)`:
+    - Counter of selected books (`strings.selectedCount`) and clear selection button (✕).
+    - Quick "Выбрать все" / "Снять выбор" toggle for currently displayed books.
+    - Normal view actions:
+      - «В коллекцию»: opens collection picker with existing collections list and inline new shelf creation dialog.
+      - «В личную папку» / «Из личной папки»: batch add or remove from encrypted private folder with notification snackbar.
+      - «Отметить прочитанным» / «Сбросить»: marks all selected books as 100% finished or resets progress to 0%.
+      - «В корзину»: moves all selected books to Trash with 15-day retention policy and an immediate «Отменить» (Undo) snackbar.
+    - Trash view actions:
+      - «Восстановить»: batch restores books from trash to the active library.
+      - «Удалить навсегда»: permanently removes selected book files and metadata.
+  - Added batch repository & ViewModel operations: `batchMoveToTrash`, `batchRestoreFromTrash`, `batchDeletePermanently`, `batchSetReadingProgress`, `batchAddToCollection`, `batchTogglePrivate`.
+- **Unsaved Changes Protection in Book Profile (Защита от потери данных):**
+  - Integrated `hasUnsavedChanges` dirty-state tracking comparing edited fields (title, author, series title, series number, genres, description) against the original book metadata.
+  - Intercepted system back gesture (`BackHandler(enabled = isEditMode)`), bottom sheet dismiss gestures (`onDismissRequest`), and back arrow navigation.
+  - Presents an interactive confirmation dialog with three clear options:
+    - «Сохранить»: commits all edited metadata and exits edit mode.
+    - «Сбросить»: discards all unsaved changes and reverts to view mode.
+    - «Остаться» (Cancel): cancels dialog dismiss and keeps editing intact.
+- **Reader Tap Zones Onboarding Tutorial (Неочевидность зон нажатия):**
+  - Created `ReaderTapZonesHintOverlay` in `ReaderScreen`: an elegant semi-transparent guided overlay appearing on first reader launch.
+  - Clearly visually delineates and explains the 3 reader tap zones:
+    - Left zone (25% width): Prev page (`ChevronLeft`, «Предыдущая страница»).
+    - Center zone (50% width): Menu & controls (`Tune`, «Панель управления и настройки»).
+    - Right zone (25% width): Next page (`ChevronRight`, «Следующая страница»).
+  - Includes a bold «Всё понятно» dismissal button.
+  - Dismissal preference is stored persistently in `PreferencesManager` (`readerTapZonesHintShown: Flow<Boolean>`), ensuring it is displayed only once.
+- **Seamless Full-Screen Cover Inspection:**
+  - Clicking book cover inside `BookProfileBottomSheet` directly launches `ParallaxCoverViewer` without dismissing `selectedBookForProfile`.
+  - Closing the cover viewer smoothly reveals the profile sheet right where the user left off, eliminating flickering and sheet reloads.
+- **Pure Graphite Book Profile Redesign:**
+  - Completely eliminated all blueish hues (`#161722`, `#212330`) in favor of rich, matte graphite and charcoal tones (`#141416`, `#1C1C1F`, `#28282D`).
+  - Removed the redundant and clunky «Читать» / «Продолжить чтение» button from the profile bottom sheet.
+  - Moved the Edit button to the top header row as an elegant icon button.
+  - Optimized the «Жанры» card: tightened padding (12 dp), reduced chip sizing (12 sp) for an ultra-clean, compact presentation.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all tests passed, 0 failures, exit code 0).
+
+## 2.3.0-beta.14 (versionCode 179) — Compact Book Action Tray, Cover Change in Profile, Multi-source Online Metadata & Auto-fetch Setting
+
+- **Streamlined Inline Book Action Tray (`BookCards.kt`):**
+  - Removed clutter from the inline book menu: removed «Выбрать книги», «О книге», and «Сменить обложку» (cover change moved directly into Book Profile).
+  - Maintained core actions: «В коллекцию», «В личную папку», «Отметить прочитанной» / «Сбросить прогресс».
+  - Increased button touch targets (min height 34 dp, padding 10 dp horiz / 6 dp vert, icon 16 dp, typography labelSmall 12 sp) while tightening layout spacing to 5 dp between items.
+  - Converted share and delete buttons to sleek icon-only chips (`Icons.Rounded.Share`, `Icons.Rounded.Delete`).
+- **Clean Book Profile UI (`BookProfileBottomSheet.kt`):**
+  - Eliminated in-place «Изменить» and «Добавить» buttons and flattened bracket artifacts `[]` from the view mode of the Genres section. When empty, displays a clean «Не указаны».
+  - Simplified the description section title to pure «Описание». Removed redundant inline edit/add buttons from view mode. When empty, displays «Описание книги пока не добавлено».
+  - Editing is strictly initiated via the pencil icon button in the sheet header, keeping view mode clean and uncluttered.
+  - Integrated cover changing directly into the profile sheet: added interactive thumbnail badge (`Icons.Rounded.AddPhotoAlternate`) and a quick action button in edit mode.
+- **Multi-Source Online Metadata Search (`BookMetadataSearchService.kt`):**
+  - Built a multi-source book metadata search service querying LitRes API (clean annotations, genres, series), FantLab API (synopses, cycles, genres), and OpenLibrary API without requiring API keys or VPN.
+  - In edit mode, added a prominent «Загрузить из сети» quick action with progress indicator and source attribution toast/badge.
+  - In view mode, provides a one-tap «Загрузить из сети» button when metadata is missing, automatically saving results.
+- **Auto-fetch Setting & Background Import Enrichment (`SettingsSections.kt`, `LibraryViewModel.kt`):**
+  - Added an «Автозагрузка данных книги» toggle in General Settings («Автоматически находить жанры и описание в сети при добавлении книг»), enabled by default.
+  - On single book open/import, multi-file import, or folder scanning, books missing genres or synopsis automatically query online metadata in the background and update their profiles seamlessly.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed, 0 errors, exit code 0).
+
+## 2.3.0-beta.17 (versionCode 182) — 100% Solid Obsidian Book Profile, Reader Haze Blur & Fiery Streak Badge
+
+- **100% Opaque Obsidian Book Profile (`BookProfileBottomSheet.kt`):**
+  - Completely resolved the semi-transparent bottom sheet issue where underlying library screen text ("Aura Reader / Добрый вечер") bled through as dirty smudges: sheet container is now 100% opaque solid obsidian `#141416` in dark mode (`#000000` in AMOLED, `#F7F7F9` in light mode) with 0% alpha.
+  - Enforced solid elevated card containers (`#1C1C1F`) and crisp specular borders (`0.08f` white alpha), ensuring zero transparency artifacts while retaining high contrast.
+- **Hardware-Accelerated Frosted Glass Blur in Reader (`ReaderScreen.kt`, `ReaderTopBar.kt`, `ReaderBottomBar.kt`):**
+  - Wired `HazeState` from `dev.chrisbanes.haze:1.7.3` directly into `ReaderScreen`, applying `.haze(readerHazeState)` to the stable content box containing reader chapters and text.
+  - Passed `readerHazeState` into `ReaderTopBar` and `ReaderBottomBar`, unlocking authentic 120 FPS frosted glass background blur under the top and bottom navigation bars.
+- **Elimination of Cold Blueish Casts Across Reader & Docks (`LiquidGlass.kt`, `ReaderSettingsBottomSheet.kt`, `TtsControlBar.kt`, `ReadingStatsBottomSheet.kt`, `BookCards.kt`):**
+  - Replaced cold blue-tinted container fills (`#181A20`, `#1F2129`, `#14151C`, `#1E2125`, `#281C1E26`) with Aura Reader's signature pure graphite obsidian palette (`#141416`, `#1C1C1F`, `#242429`, `#161618`).
+- **Fiery Reading Streak Achievement Badge (`LibraryBanners.kt`, `ReadingStatsBottomSheet.kt`):**
+  - Redesigned the streak indicator in `LibraryReadingStatsBanner` from plain text into an achievement badge pill: rounded surface with fiery translucent amber fill (`#FFFF9500` at 16% alpha), crisp amber border, flame emoji, and bold amber day counter.
+  - Enhanced `StreakBanner` in the reading stats bottom sheet with a coordinated amber glowing border.
+- **Refined Action Chips in Liquid Glass (`BookCards.kt`):**
+  - Enhanced inline action chips (`BookActionChip`) with delicate specular borders (`0.08f` white alpha / `0.06f` dark alpha) in Liquid Glass mode.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed, 0 errors, exit code 0).
+
+## 2.3.0-beta.15 (versionCode 180) — Deep Module Architecture Refactoring (AppSettings, BookIngestionPipeline, BookEnricher, BookActionDispatcher)
+
+- **Candidate 1: Deep AppSettings Architecture (`AppSettings.kt`, `PreferencesManager.kt`, `SettingsPages.kt`):**
+  - Unified 30+ disparate preference keys, flows, and callback parameters into a cohesive `AppSettings` data class.
+  - Eliminated the 30+ parameter prop-drilling pipe across `PreferencesManager` -> `LibraryViewModel` -> `LibraryScreen` -> `SettingsGeneralPage` / `SettingsInterfacePage` / `SettingsBottomSheet` -> `SettingsSections`.
+  - Settings screens now accept clean, reactive `appSettings: AppSettings` and an atomic `onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit` mutator.
+- **Candidate 2: Deep Ingestion Pipeline (`BookIngestionPipeline.kt`, `BookRepository.kt`):**
+  - Extracted 230+ lines of low-level parsing logic from `BookRepository` into `BookIngestionPipeline`.
+  - Encapsulated stream sniffing, MIME magic-byte detection (EPUB, FB2, TXT, CBZ, MOBI, PDF), container archive examination, parser dispatching, image caching, and atomic temp-file staging.
+  - Reduced `BookRepository` from 940 to 710 lines, focusing it purely on catalog metadata persistence, shelf structures, and concurrency locks.
+- **Candidate 3: Deep BookEnricher Facade (`BookEnricher.kt`, `CoverSearchService.kt`):**
+  - Created `com.aura.reader.data.service.BookEnricher` unifying multi-source metadata retrieval (LitRes, FantLab, OpenLibrary, Flibusta), cover searches, Base64 conversion, title/author sanitization, and background auto-enrichment.
+  - Wired `BookProfileBottomSheet`, `CoverSearchBottomSheet`, and `LibraryViewModel` directly to `BookEnricher`.
+  - Added publisher and extension stripping (`.mobi`, `.cbz`, `[Эксмо]`, `[АСТ]`, `[Альпина]`) prior to online queries.
+- **Candidate 4: Deep BookActionDispatcher (`BookAction.kt`, `LibraryViewModel.kt`):**
+  - Defined `BookAction` and `BookTarget` domain models unifying single-book and multi-select batch mutations.
+  - Consolidated operations (move to trash, restore, delete permanently, set reading progress, add to collection, toggle private folder) into `LibraryViewModel.dispatchBookAction`.
+  - Retained clean backward-compatible delegation methods.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all 97 unit tests passed, 0 errors, exit code 0).
+
+## 2.3.0-beta.16 (versionCode 181) — Ambient Editorial Visual Refinement in Liquid Glass Mode
+
+- **Book Card Decluttering (`BookCards.kt`):**
+  - Preserved the full `LinearProgressIndicator` line with rounded caps and enhanced translucent track in Liquid Glass mode (`Color.White.copy(alpha = 0.08f)` in dark).
+  - Relocated the format indicator from the crowded top-right row down directly above the progress bar: format capsule on the left (`FB2`), progress percentage on the right, and the sleek progress bar underneath.
+  - Gave the book title and author unrestricted horizontal breathing room next to favorite and menu icon buttons.
+  - Strictly preserved original Material Design layout untouched for `!isGlass`.
+- **Currently Reading Hero Card Harmony (`CurrentlyReadingHeroCard.kt`):**
+  - Unified the «Продолжить чтение» action button and progress indicator in Liquid Glass mode with the primary theme/Aura color (`MaterialTheme.colorScheme.primary` or festive accent), preventing jarring peach/orange Palette extraction mismatches on grayscale covers.
+  - Added subtle vertical specular gradient to the card background in Liquid Glass mode for enhanced depth.
+- **Airy Book Profile Sheet (`BookProfileBottomSheet.kt`):**
+  - Refined container surfaces in Liquid Glass mode into translucent frosted panels (`Color(0x1AFFFFFF)`) with thin specular borders (`Color.White.copy(alpha = 0.08f)`).
+  - Eliminated the dense «cards inside cards» heavy gray box look, elevating the profile into an airy, editorial literary overview.
+
+Verified with `testDebugUnitTest lintDebug assembleDebug` (all unit tests passed, 0 errors, exit code 0).
+
+## 2.3.0-beta.17 (versionCode 182) — 100% Solid Obsidian Book Profile, Reader Haze Blur & Fiery Streak Badge
+
+- **100% Opaque Obsidian Book Profile (`BookProfileBottomSheet.kt`):**
+  - Completely resolved the semi-transparent bottom sheet issue where underlying library screen text ("Aura Reader / Добрый вечер") bled through as dirty smudges: sheet container is now 100% opaque solid obsidian `#141416` in dark mode (`#000000` in AMOLED, `#F7F7F9` in light mode) with 0% alpha.
+  - Enforced solid elevated card containers (`#1C1C1F`) and crisp specular borders (`0.08f` white alpha), ensuring zero transparency artifacts while retaining high contrast.
+- **Hardware-Accelerated Frosted Glass Blur in Reader (`ReaderScreen.kt`, `ReaderTopBar.kt`, `ReaderBottomBar.kt`):**
+  - Wired `HazeState` from `dev.chrisbanes.haze:1.7.3` directly into `ReaderScreen`, applying `.haze(readerHazeState)` to the stable content box containing reader chapters and text.
+  - Passed `readerHazeState` into `ReaderTopBar` and `ReaderBottomBar`, unlocking authentic 120 FPS frosted glass background blur under the top and bottom navigation bars.
+- **Elimination of Cold Blueish Casts Across Reader & Docks (`LiquidGlass.kt`, `ReaderSettingsBottomSheet.kt`, `TtsControlBar.kt`, `ReadingStatsBottomSheet.kt`, `BookCards.kt`):**
+  - Replaced cold blue-tinted container fills (`#181A20`, `#1F2129`, `#14151C`, `#1E2125`, `#281C1E26`) with Aura Reader's signature pure graphite obsidian palette (`#141416`, `#1C1C1F`, `#242429`, `#161618`).
+- **Fiery Reading Streak Achievement Badge (`LibraryBanners.kt`, `ReadingStatsBottomSheet.kt`):**
+  - Redesigned the streak indicator in `LibraryReadingStatsBanner` from plain text into an achievement badge pill: rounded surface with fiery translucent amber fill (`#FFFF9500` at 16% alpha), crisp amber border, flame emoji, and bold amber day counter.
+  - Enhanced `StreakBanner` in the reading stats bottom sheet with a coordinated amber glowing border.
+- **Refined Action Chips in Liquid Glass (`BookCards.kt`):**
+  - Enhanced inline action chips (`BookActionChip`) with delicate specular borders (`0.08f` white alpha / `0.06f` dark alpha) in Liquid Glass mode.
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+## 2.3.0-beta.46 (versionCode 211) — Graphic Rendering Stability & Reading Position Fix
+- Optimized PDF and comic page rendering lifecycle in `ChapterContentView.kt` and `ChapterPagingView.kt`.
+- Eliminated spontaneous rewind and exit progress reset when closing graphic books.
+
+## 2.3.0-beta.47 (versionCode 212) — Instant Slider Navigation & 100% Ribbon Completion
+- Fixed live bottom slider responsiveness during dragging across continuous scroll ribbon and paged graphic modes.
+- Ensured 100% reading progress correctly maps to the final page without jumping backwards.
+
+## 2.3.0-beta.48 (versionCode 213) — Dimension Pre-reservation & Layout Shift Elimination
+- Added `GraphicPageDimensionsCache` to pre-reserve comic page dimensions, eliminating 0dp layout jumps during rapid scroll.
+- Decoupled slider drag state from underlying pager transitions for responsive seek bar interaction.
+
+## 2.3.0-beta.49 (versionCode 214) — Native PdfRenderer Teardown & Cache Hygiene
+- Enforced native `PdfRenderer` and bitmap resource disposal on reader pause/stop (`onDispose`), resolving native memory leaks during large PDF reading sessions.
+- Added automated disk cache hygiene routines for temporary rendered pages.
+
+## 2.3.0-beta.50 (versionCode 215) — 120Hz Enforcement, In-App Crash Log, E-Ink Mode & Personal Vocabulary
+- **120 Hz Display Refresh Enforcement (`HighRefresh.kt`, `MainActivity.kt`):**
+  - Added `HighRefresh.apply(window, isEInk)` enforcing the display's maximum supported refresh rate mode via `preferredDisplayModeId`.
+  - Prevents OEM 60 Hz throttling, ensuring consistent 120 FPS animations across modern devices. Automatically disabled when E-Ink mode is active.
+- **In-App Crash Log (`CrashLog.kt`, `CrashLogDialog.kt`, `SettingsInfoSections.kt`):**
+  - Added global uncaught exception handler in `MainActivity` persisting the last 10 crashes with full stack traces in `filesDir/crashes/`.
+  - Added public "Журнал сбоев" section in Settings -> "О приложении", allowing users to inspect error traces, copy comprehensive diagnostic reports (device model, Android version, app build, memory stats) to clipboard, and clear logs.
+- **E-Ink Display Mode (`EInkDetector.kt`, `Theme.kt`, `SettingsThemeSection.kt`, `SettingsPages.kt`):**
+  - Added hardware brand auto-detection for popular e-paper devices (Onyx Boox, PocketBook, Meebook, etc.) and explicit toggle in Interface settings.
+  - Switches to a high-contrast pure black-and-white color palette, disables GPU frosted glass blur (`Haze`), disables high refresh rate, and suppresses decorative animations to maximize battery life and text readability on e-paper.
+- **Personal Vocabulary / «Мой словарик» (`Book.kt`, `PreferencesManager.kt`, `BookRepository.kt`, `ReaderViewModel.kt`, `BookmarksAndQuotesBottomSheet.kt`, `ReaderDialogs.kt`):**
+  - Added "В словарик" quick-save button to dictionary definition (`DictionaryDialog`) and translation (`TranslationDialog`) popups, capturing the word, definition/translation, and sentence context.
+  - Added dedicated 3rd tab in the reader bookmarks/quotes bottom sheet to view, search, copy, and delete saved words.
+  - Integrated into `.aurabackup` v2 schema for backup and restore.
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+
+## 2.3.0-beta.18 (versionCode 183) — True Hardware Frosted Glass Blur, Ethereal Reader Aura Bars & Header Contrast Unification
+
+- **True Hardware Frosted Glass Blur (`LiquidGlass.kt`, `MorphingBottomDock.kt`):**
+  - Solved the root cause behind invisible blur across all Liquid Glass surfaces: previously, `LiquidGlassSurface` and bottom docks drew an opaque `0xEE` (93.3% alpha) background fill directly over `hazeChild`, obliterating the blurred pixels underneath.
+  - Migrated to Haze 1.7.3 modern `hazeEffect` with `HazeMaterials.regular(containerColor = ...)` (or `thin` in light mode), rendering the authentic 20dp frosted blur and material tint in a single pass.
+  - Set `baseFill = Color.Transparent` whenever `hazeState != null`, allowing the live blurred content beneath floating bars and docks to shine through with full clarity.
+- **Ethereal Reader Aura Tinted Bars (`ReaderTopBar.kt`, `ReaderBottomBar.kt`):**
+  - Eliminated the flat, dull gray/black slabs in the reader: added a luminous translucent purple aura tint (`primary.copy(alpha = 0.16f)`) in dark mode and warm sepia tint (`Color(0x388D6E63)`) in sepia mode.
+  - Real-time 120 FPS frosted glass blur now softly diffuses the book typography and illustrations directly under the top and bottom bars.
+- **Unified Library Header Contrast (`LibraryBanners.kt`, `ExpressiveButtons.kt`):**
+  - Resolved the jarring contrast and aesthetic mismatch between the Daily Reading Stats banner (`LibraryReadingStatsBanner`) and the collection filter chips row (`LibraryCollectionChips`).
+  - Unified `LibraryReadingStatsBanner` with the exact same frosted glass material tokens as the chips: `Color.White.copy(alpha = 0.06f)` fill in dark (`0.04f` in light), identical `0.6.dp` specular border (`Color.White.copy(0.08f)`), and matching `18.dp` squircle radius.
+  - The streak badge inside the banner now nests harmoniously with balanced font scale and soft amber glow (`#FFFF9500`).
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+## 2.3.0-beta.46 (versionCode 211) — Graphic Rendering Stability & Reading Position Fix
+- Optimized PDF and comic page rendering lifecycle in `ChapterContentView.kt` and `ChapterPagingView.kt`.
+- Eliminated spontaneous rewind and exit progress reset when closing graphic books.
+
+## 2.3.0-beta.47 (versionCode 212) — Instant Slider Navigation & 100% Ribbon Completion
+- Fixed live bottom slider responsiveness during dragging across continuous scroll ribbon and paged graphic modes.
+- Ensured 100% reading progress correctly maps to the final page without jumping backwards.
+
+## 2.3.0-beta.48 (versionCode 213) — Dimension Pre-reservation & Layout Shift Elimination
+- Added `GraphicPageDimensionsCache` to pre-reserve comic page dimensions, eliminating 0dp layout jumps during rapid scroll.
+- Decoupled slider drag state from underlying pager transitions for responsive seek bar interaction.
+
+## 2.3.0-beta.49 (versionCode 214) — Native PdfRenderer Teardown & Cache Hygiene
+- Enforced native `PdfRenderer` and bitmap resource disposal on reader pause/stop (`onDispose`), resolving native memory leaks during large PDF reading sessions.
+- Added automated disk cache hygiene routines for temporary rendered pages.
+
+## 2.3.0-beta.50 (versionCode 215) — 120Hz Enforcement, In-App Crash Log, E-Ink Mode & Personal Vocabulary
+- **120 Hz Display Refresh Enforcement (`HighRefresh.kt`, `MainActivity.kt`):**
+  - Added `HighRefresh.apply(window, isEInk)` enforcing the display's maximum supported refresh rate mode via `preferredDisplayModeId`.
+  - Prevents OEM 60 Hz throttling, ensuring consistent 120 FPS animations across modern devices. Automatically disabled when E-Ink mode is active.
+- **In-App Crash Log (`CrashLog.kt`, `CrashLogDialog.kt`, `SettingsInfoSections.kt`):**
+  - Added global uncaught exception handler in `MainActivity` persisting the last 10 crashes with full stack traces in `filesDir/crashes/`.
+  - Added public "Журнал сбоев" section in Settings -> "О приложении", allowing users to inspect error traces, copy comprehensive diagnostic reports (device model, Android version, app build, memory stats) to clipboard, and clear logs.
+- **E-Ink Display Mode (`EInkDetector.kt`, `Theme.kt`, `SettingsThemeSection.kt`, `SettingsPages.kt`):**
+  - Added hardware brand auto-detection for popular e-paper devices (Onyx Boox, PocketBook, Meebook, etc.) and explicit toggle in Interface settings.
+  - Switches to a high-contrast pure black-and-white color palette, disables GPU frosted glass blur (`Haze`), disables high refresh rate, and suppresses decorative animations to maximize battery life and text readability on e-paper.
+- **Personal Vocabulary / «Мой словарик» (`Book.kt`, `PreferencesManager.kt`, `BookRepository.kt`, `ReaderViewModel.kt`, `BookmarksAndQuotesBottomSheet.kt`, `ReaderDialogs.kt`):**
+  - Added "В словарик" quick-save button to dictionary definition (`DictionaryDialog`) and translation (`TranslationDialog`) popups, capturing the word, definition/translation, and sentence context.
+  - Added dedicated 3rd tab in the reader bookmarks/quotes bottom sheet to view, search, copy, and delete saved words.
+  - Integrated into `.aurabackup` v2 schema for backup and restore.
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+
+
+
+
+
+## 2.3.0-beta.51 (versionCode 216) — E-Ink Mode Refinement, UI Cleanup & Accurate Book Context Sentence
+- **E-Ink Mode Deep Refactoring (`SettingsPages.kt`, `SettingsThemeSection.kt`, `ReaderSettingsBottomSheet.kt`, `ReaderScreen.kt`, `ExpressiveModifiers.kt`, `LibraryScreen.kt`):**
+  - Turning on E-Ink mode automatically selects Material 3 design style and hides design style options from settings.
+  - Hides theme switcher pills, Material You dynamic colors toggle, Android color preset swatches, and seasonal effects while active.
+  - Locks book reader to paging mode with instant page turns (`PageTurnAnimation.INSTANT`), suppressing reading mode and page animation options.
+  - Suppresses all spring bounce physics (`expressiveBounce`), elastic overscroll (`jellyOverscroll`), and horizontal pager animation transitions across the library and reader.
+- **Crash Log Dialog (`CrashLogDialog.kt`):**
+  - Eliminated duplicate "Сбоев не зафиксировано" text in dialog header when empty, keeping it centered in the dialog body.
+  - Added installation idempotency guard to `CrashLog.install()`.
+- **Dictionary & Translation UI Polish (`ReaderDialogs.kt`):**
+  - Removed redundant overflowing bottom "Закрыть" button from `DictionaryDialog` and `TranslationDialog` (closing is handled via header `X` and dismiss).
+- **Accurate Book Context Sentence Extraction (`ReaderScreen.kt`):**
+  - Fixed context sentence capturing in `ReaderScreen.kt`: instead of falling back to system clipboard text after selection reset, searches the active book chapter blocks to extract the authentic surrounding sentence.
+- **Vocabulary Tab Polish (`BookmarksAndQuotesBottomSheet.kt`, `PreferencesManager.kt`):**
+  - Cleaned up empty state in vocabulary tab by removing redundant subtitle.
+  - Prevented duplicate word entries for the same book in `PreferencesManager.addSavedWord()`.
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+## 2.3.0-beta.52 (versionCode 217) — E-Ink Pure White Theme, Instant Swipe & Parser Resilience
+- **E-Ink Mode Deep Monochromatic Refinement (`Theme.kt`, `SettingsPages.kt`, `ReaderScreen.kt`, `ReaderSettingsBottomSheet.kt`):**
+  - Toggling E-Ink automatically enforces pure white theme (`ReaderThemeMode.LIGHT`) across the entire application and reader.
+  - Stripped theme selector and vibration controls from reader settings when E-Ink is active.
+  - Locked all UI color tokens to pure monochrome high-contrast black/white (surfaces, cards, buttons, sliders, badges) and configured custom black text selection handles.
+- **Instant E-Ink Page Swipe (`ChapterPagingView.kt`):**
+  - Replaced per-event micro-drag handler with full swipe-gesture threshold tracking in `PageTurnAnimation.INSTANT` and E-Ink mode, preventing ghosting and flipping pages instantaneously upon completion.
+  - Suppressed finger-following haptics in E-Ink.
+- **Search Screen E-Ink Static Mode (`LibrarySearchScreen.kt`):**
+  - Disabled animated cover collage (`SearchCoverCollage`) in E-Ink mode to eliminate screen redraw churn.
+- **EPUB Parser Resilience (`EpubParser.kt`):**
+  - Replaced strict `require` on duplicate ZIP entries with non-fatal warning logger.
+  - Implemented case-insensitive, normalized path resolver `findEntry` for `META-INF/container.xml`, OPF package, NCX, and chapter files.
+- **FB2 ZIP Handling & Encoding Fallback (`Fb2Parser.kt`):**
+  - Added entry discovery validation in `.fb2.zip` preventing unexpected EOF crashes.
+  - Implemented XML prologue and byte-level charset detector with automatic fallback to Windows-1251 for legacy Russian FB2 files.
+- **Filesystem Move Fallback (`BookIngestionPipeline.kt`):**
+  - Handled `AtomicMoveNotSupportedException` in `Files.move` with fallback to `REPLACE_EXISTING`.
+- **Dependency Matrix Alignment (`docs/upgrades.md`):**
+  - Corrected legacy documentation table to accurately state Haze 2.1.0, Navigation Compose 2.10.2, and Jsoup 1.24.1.
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+## 2.3.0-beta.53 (versionCode 218) — Non-destructive E-Ink Settings, Instant Library Swipes & Vocabulary Teleportation
+- **Non-destructive E-Ink State Persistence (`SettingsPages.kt`, `MainActivity.kt`, `LibraryScreen.kt`):**
+  - Toggling E-Ink mode no longer destructively mutates the user's saved `appDesignStyle` (e.g. Liquid Glass) or `themeMode` (e.g. Dark/AMOLED/Sepia) in DataStore.
+  - Dynamically enforces high-contrast Material 3 and white background while E-Ink is active, and immediately restores original preferences upon turning E-Ink off.
+- **Pure Monochrome Reader Settings Sheet (`ReaderSettingsBottomSheet.kt`, `ReaderScreen.kt`):**
+  - Passed `eInkMode = isEInk` to `AuraReaderTheme` in `ReaderScreen.kt`, ensuring `LocalEInkMode` properly reaches nested sheets.
+  - Strictly concealed Theme Mode options, Reading Mode (scroll/paged), Page Turn Animation, Two-Column Spread, Haptic Feedback, and Light Image Background toggles when E-Ink is active.
+  - Enforced pure high-contrast monochrome tokens across sliders, chips, font size labels, and dropdown controls (no blue accents).
+- **Instant Swipes in Library & Search (`LibraryScreen.kt`, `LibrarySearchScreen.kt`):**
+  - Attached `libraryInstantSwipe` gesture detector and disabled continuous scroll drag (`userScrollEnabled = !isReorderMode && !isEInk`) on `HorizontalPager` in `LibraryScreen.kt`, resulting in instant page switches without screen ghosting.
+  - Removed top layout offset in `LibrarySearchScreen.kt` in E-Ink mode to avoid empty space from disabled cover collage.
+- **Vocabulary Navigation & Highlight (`ReaderViewModel.kt`, `BookmarksAndQuotesBottomSheet.kt`, `ReaderScreen.kt`):**
+  - Tapping a saved vocabulary word card teleports the reader to the exact chapter and block in the book, dismisses the sheet, and temporarily highlights the word for 2.5 seconds using dynamic query matching.
+
+
+Verified with `testDebugUnitTest assembleDebug` (exit code 0).
+
+## 2.3.0-beta.54 (versionCode 219) — Settings Color Scoping in E-Ink & Description Polish
+- **Settings Color Scoping (`SettingsPages.kt`, `SettingsBottomSheet.kt`):**
+  - Ensured `LocalIsLiquidGlass`, `LocalIsThemeDark`, `LocalIsSepia`, and `LocalIsAmoled` evaluate to `false` when `eInkModeEnabled` is active.
+  - Resolved black-on-black text bug in `SettingsInterfacePage`, `SettingsGeneralPage`, `SettingsAboutPage`, and `SettingsBottomSheet`, restoring clean high-contrast light Material 3 container cards and black typography.
+- **E-Ink Mode Description (`AppStrings.kt`, `SettingsThemeSection.kt`):**
+  - Updated `eInkModeSubtitle` and `eInkModeActiveDesc` to concise «Специально для электронных книг» («Specifically for e-book readers»).
+
+## 2.3.0-beta.55 (versionCode 220) — Complete Onboarding Redesign & Reading Swipe Hint
+- **Onboarding Redesign (`OnboardingScreen.kt`):**
+  - Replaced legacy 4 slides with a fresh, 4-screen onboarding guide:
+    - Slide 0 («Добро пожаловать»): Design style options (`AppDesignStyle.LIQUID_GLASS` vs `AppDesignStyle.MATERIAL`) and 3-way theme selector (`ReaderThemeMode.LIGHT`, `ReaderThemeMode.DARK`, `ReaderThemeMode.SYSTEM_DYNAMIC`) with Dark theme active by default on launch.
+    - Slide 1 («Зажми слово»): Realistic book text selection mockup (`«Он улыбнулся в ответ»`) with genuine floating reader action toolbar: `[ Цитата ] [ Словарь ] [ Перевод ]`, strictly named «Словарь» without AI slop.
+    - Slide 2 («И ещё много всего»): 2x2 grid of clean feature tiles: OPDS Catalogs, Read-Aloud TTS, Comics & PDF, and high-contrast E-Ink mode.
+    - Slide 3 («Приятного чтения!»): Aura Reader squircle logo (`ic_aura_logo_squircle`) with a prominent `[ Начать читать ]` primary button navigating to the library.
+- **Reading Swipe Hints (`ReaderScreen.kt`, `AppStrings.kt`):**
+  - Updated reader tap zones hint overlay and localized strings across all languages to inform users that swiping also turns pages («(или свайп вправо)» / «(или свайп влево)»).
+
+## 2.3.0-beta.56 (versionCode 221) — Biometrics, Security & Privacy Audit, Pipeline & Player Hardening
+- **Biometric Unlock (`BiometricHelper.kt`, `PrivateFolderDialogs.kt`, `LibraryViewModel.kt`):**
+  - Added fingerprint / face biometric authentication for the private folder with fallback to password; `MainActivity` migrated to `FragmentActivity`.
+- **Onboarding Polish (`OnboardingScreen.kt`):**
+  - Display squircle application logo at 36dp in top bar instead of generic book icon.
+  - Removed duplicate bottom button on the 4th slide, keeping only the centered `[ Начать читать ]` button.
+- **Vocabulary Navigation Return (`ReaderViewModel.kt`):**
+  - Set `_navReturnPoint` unconditionally on `navigateToSavedWord` and `navigateToQuote` so the return button pill reliably displays upon teleporting to saved words.
+- **Security & Backup Audit (`PreferencesManager.kt`, `BackupManager.kt`, `AndroidManifest.xml`):**
+  - Upgraded private folder password hashing to cryptographically salted SHA-256 (`salt$hash`) with backward-compatible auto-migration.
+  - Stripped private books, files, quotes, bookmarks, and words from `.aurabackup` archives.
+  - Added `data_extraction_rules.xml`, `backup_rules.xml`, and `network_security_config.xml`.
+  - Changed default anonymous analytics toggle to opt-in (`false`).
+- **Player & Ingestion Hardening (`AmbientSoundPlayer.kt`, `GraphicPageDimensionsCache.kt`, `BookIngestionPipeline.kt`, `LibraryViewModel.kt`):**
+  - Managed AudioFocus with ducking and loss pausing for ambient sounds.
+  - Bound graphic dimensions cache to 500-entry LRU with cleanup on reader disposal.
+  - Handled `.azw3` via `MobiParser`, checked RAR headers for `.cbr` with user-friendly error message, and streamed CBZ ingestion.
+  - Consolidated dual `init` blocks in `LibraryViewModel`.
+
+

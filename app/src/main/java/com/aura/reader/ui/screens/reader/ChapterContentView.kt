@@ -2,6 +2,8 @@ package com.aura.reader.ui.screens.reader
 
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.Quote
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.WindowInsets
@@ -44,6 +46,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.isActive
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -86,6 +91,8 @@ fun ChapterContentView(
     ttsState: com.aura.reader.service.TtsState = com.aura.reader.service.TtsState(),
     isTtsHighlightActive: Boolean = false,
     onSelectionTextChange: (String) -> Unit = {},
+    isAutoScrolling: Boolean = false,
+    autoScrollSpeedMultiplier: Float = 1.0f,
     onBookFinished: () -> Unit = {}
 ) {
     val selectionState = rememberSelectionState()
@@ -125,21 +132,45 @@ fun ChapterContentView(
         }
 
         LaunchedEffect(listState, chapter.id) {
-            snapshotFlow { Triple(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset,
-                listState.layoutInfo.totalItemsCount > 0 && !listState.canScrollForward) }
-                .collect { (index, pixel, atEnd) ->
-                    if (blocks.isNotEmpty()) {
-                        val isLast = atEnd && pageIndex == chaptersCount - 1
-                        onUpdateProgress(index, blocks.size, 0, pixel, isLast)
-                        if (isLast) onBookFinished()
+            snapshotFlow {
+                val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                val isAtLastBlock = lastVisible >= blocks.size - 1
+                val reachedEnd = isAtLastBlock && !listState.canScrollForward
+                Triple(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset, reachedEnd)
+            }.collect { (index, pixel, atEnd) ->
+                if (blocks.isNotEmpty()) {
+                    val isLast = atEnd && pageIndex == chaptersCount - 1
+                    onUpdateProgress(index, blocks.size, 0, pixel, isLast)
+                    if (isLast && listState.isScrollInProgress && blocks.size > 1) {
+                        onBookFinished()
                     }
                 }
+            }
         }
 
         LaunchedEffect(targetScrollOffset) {
             if (targetScrollOffset != null) {
                 listState.animateScrollToItem(targetScrollOffset.coerceAtLeast(0))
                 onConsumeTargetScrollOffset()
+            }
+        }
+
+        val density = LocalDensity.current
+        LaunchedEffect(isAutoScrolling, autoScrollSpeedMultiplier) {
+            if (isAutoScrolling) {
+                val baseSpeed = 48f * autoScrollSpeedMultiplier
+                val speedPx = with(density) { baseSpeed.dp.toPx() }
+                var lastTime = 0L
+                while (isActive && isAutoScrolling) {
+                    withFrameNanos { now ->
+                        if (lastTime != 0L) {
+                            val dt = (now - lastTime) / 1_000_000_000f
+                            val deltaPx = speedPx * dt
+                            listState.dispatchRawDelta(deltaPx)
+                        }
+                        lastTime = now
+                    }
+                }
             }
         }
     }
@@ -149,26 +180,35 @@ fun ChapterContentView(
     val cutoutTopInset = WindowInsets.displayCutout.asPaddingValues().calculateTopPadding()
     val topPaddingDp = maxOf(statusBarTopInset, cutoutTopInset, 42.dp) + 6.dp
 
-    androidx.compose.runtime.key(selectionResetKey) {
-        SelectionContainer(state = selectionState) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .jellyOverscroll()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        onToggleControls()
-                    },
-                contentPadding = PaddingValues(
-                    start = 22.dp,
-                    end = 22.dp,
-                    top = topPaddingDp,
-                    bottom = 140.dp
-                )
-            ) {
+    val isComicOrManga = remember(blocks) {
+        blocks.isNotEmpty() && blocks.all { it.type == BlockType.IMAGE }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        androidx.compose.runtime.key(selectionResetKey) {
+            SelectionContainer(state = selectionState) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .jellyOverscroll()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            onToggleControls()
+                        },
+                    contentPadding = PaddingValues(
+                        start = if (isComicOrManga) 0.dp else 22.dp,
+                        end = if (isComicOrManga) 0.dp else 22.dp,
+                        top = topPaddingDp,
+                        bottom = if (isComicOrManga) 80.dp else 140.dp
+                    )
+                ) {
                 itemsIndexed(blocks) { blockIndex, block ->
                     val isSpeaking = isTtsHighlightActive && isCurrentChapter && (blockIndex == ttsState.currentOriginalBlockIndex)
                     val highlightWords = isSpeaking && ttsState.isWordHighlightEnabled
@@ -185,7 +225,9 @@ fun ChapterContentView(
                         onFootnoteClick = onFootnoteClick,
                         onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                         onToggleControls = onToggleControls,
-                        onSaveQuote = onSaveQuote
+                        onSaveQuote = onSaveQuote,
+                        isGraphicPage = isComicOrManga,
+                        isInScrollMode = true
                     )
                 }
 
@@ -273,4 +315,5 @@ fun ChapterContentView(
             }
         }
     }
+}
 }

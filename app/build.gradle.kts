@@ -5,14 +5,18 @@ plugins {
 
 android {
     namespace = "com.aura.reader"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         applicationId = "com.aura.reader"
         minSdk = 26
         targetSdk = 36
-        versionCode = 165
-        versionName = "2.2.1"
+        versionCode = 223
+        versionName = "2.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -79,6 +83,11 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    lint {
+        abortOnError = true
+        checkReleaseBuilds = false
+        disable += setOf("SuspiciousIndentation", "UnusedMaterial3ScaffoldPaddingParameter")
+    }
 }
 
 dependencies {
@@ -97,7 +106,9 @@ dependencies {
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.haze)
-    implementation(libs.haze.materials)
+    implementation(libs.haze.blur)
+    implementation(libs.haze.glass)
+    implementation(libs.haze.glass.material3)
     implementation("androidx.compose.ui:ui-text-google-fonts")
 
     implementation(libs.androidx.navigation.compose)
@@ -109,6 +120,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.androidx.documentfile)
     implementation("androidx.palette:palette-ktx:1.0.0")
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("com.telemetrydeck:kotlin-sdk:6.3.0")
 
     debugImplementation(libs.androidx.compose.ui.tooling)

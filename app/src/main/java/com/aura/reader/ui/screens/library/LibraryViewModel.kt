@@ -31,13 +31,18 @@ import com.aura.reader.data.model.isUnread
 import com.aura.reader.data.model.isFinished
 import com.aura.reader.data.model.ReaderSettings
 import com.aura.reader.data.model.AppDesignStyle
+import com.aura.reader.data.model.AppSettings
+import com.aura.reader.data.model.BookAction
+import com.aura.reader.data.model.BookTarget
 import com.aura.reader.data.model.HolidaySeason
 import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.preferences.PreferencesManager
-import com.aura.reader.data.service.CoverSearchService
+import com.aura.reader.data.service.BookEnricher
 import com.aura.reader.ui.theme.AppLanguage
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 
 enum class LibrarySortOption {
     RECENT,
@@ -54,7 +59,9 @@ enum class CollectionFilterType {
     SERIES,
     UNREAD,
     FINISHED,
-    CUSTOM
+    CUSTOM,
+    PRIVATE_FOLDER,
+    TRASH
 }
 
 data class ActiveCollectionFilter(
@@ -70,6 +77,23 @@ sealed interface LibraryUiState {
     data class Message(val message: String) : LibraryUiState
 }
 
+/** What the manual "check for updates" button is showing at this moment. */
+sealed interface UpdateCheckState {
+    data object Idle : UpdateCheckState
+    data object Checking : UpdateCheckState
+    data object UpToDate : UpdateCheckState
+    data class Failed(val detail: String?) : UpdateCheckState
+}
+
+/** The in-app download and install flow for a release APK. */
+sealed interface UpdateInstallState {
+    data object Idle : UpdateInstallState
+    data class Downloading(val progress: Float?) : UpdateInstallState
+    data object Ready : UpdateInstallState
+    data object PermissionRequired : UpdateInstallState
+    data class Failed(val detail: String?) : UpdateInstallState
+}
+
 class LibraryViewModel(
     private val bookRepository: BookRepository,
     private val preferencesManager: PreferencesManager
@@ -80,6 +104,13 @@ class LibraryViewModel(
 
     val appLanguage: StateFlow<AppLanguage> = preferencesManager.appLanguage
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppLanguage.RU)
+
+    val appSettings: StateFlow<AppSettings> = preferencesManager.appSettings
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppSettings())
+
+    fun updateAppSettings(transform: (AppSettings) -> AppSettings) {
+        viewModelScope.launch { preferencesManager.updateAppSettings(transform) }
+    }
 
     val updateNotificationsEnabled: StateFlow<Boolean> = preferencesManager.updateNotificationsEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
@@ -92,6 +123,9 @@ class LibraryViewModel(
 
     val materialYouEnabled: StateFlow<Boolean> = preferencesManager.materialYouEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val colorPreset: StateFlow<String> = preferencesManager.colorPreset
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "PURPLE")
 
     val libraryViewMode: StateFlow<String> = preferencesManager.libraryViewMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "LIST")
@@ -174,6 +208,10 @@ class LibraryViewModel(
         viewModelScope.launch { preferencesManager.setMaterialYouEnabled(enabled) }
     }
 
+    fun setColorPreset(preset: String) {
+        viewModelScope.launch { preferencesManager.setColorPreset(preset) }
+    }
+
     fun setUpdateNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setUpdateNotificationsEnabled(enabled) }
     }
@@ -191,6 +229,13 @@ class LibraryViewModel(
 
     fun setReadingStatsEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setReadingStatsEnabled(enabled) }
+    }
+
+    val autoFetchMetadataEnabled: StateFlow<Boolean> = preferencesManager.autoFetchMetadataEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun setAutoFetchMetadataEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setAutoFetchMetadataEnabled(enabled) }
     }
 
     val customOpdsEnabled: StateFlow<Boolean> = preferencesManager.customOpdsEnabled
@@ -267,6 +312,10 @@ class LibraryViewModel(
     val recentBooks: StateFlow<List<Book>> = bookRepository.recentBooks
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val trashCount: StateFlow<Int> = recentBooks.map { books ->
+        books.count { it.deletedAtTimestamp != null }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
@@ -298,11 +347,80 @@ class LibraryViewModel(
     val userCollections: StateFlow<List<String>> = bookRepository.userCollections
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val privateBookIds: StateFlow<Set<String>> = preferencesManager.privateBookIds
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    val hasPrivatePassword: StateFlow<Boolean> = preferencesManager.privateFolderPasswordHash
+        .map { it.isNotBlank() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    private val _isPrivateFolderUnlocked = MutableStateFlow(false)
+    val isPrivateFolderUnlocked: StateFlow<Boolean> = _isPrivateFolderUnlocked.asStateFlow()
+
+    fun unlockPrivateFolder(password: String, onSuccess: () -> Unit, onError: () -> Unit) {
+        viewModelScope.launch {
+            if (preferencesManager.verifyPrivateFolderPassword(password)) {
+                _isPrivateFolderUnlocked.value = true
+                _activeCollectionFilter.value = ActiveCollectionFilter(CollectionFilterType.PRIVATE_FOLDER)
+                onSuccess()
+            } else {
+                onError()
+            }
+        }
+    }
+
+    fun unlockPrivateFolderBiometric(onSuccess: () -> Unit) {
+        _isPrivateFolderUnlocked.value = true
+        _activeCollectionFilter.value = ActiveCollectionFilter(CollectionFilterType.PRIVATE_FOLDER)
+        onSuccess()
+    }
+
+    fun setPrivateFolderPassword(password: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            preferencesManager.setPrivateFolderPassword(password)
+            _isPrivateFolderUnlocked.value = true
+            _activeCollectionFilter.value = ActiveCollectionFilter(CollectionFilterType.PRIVATE_FOLDER)
+            onSuccess()
+        }
+    }
+
+    fun changePrivateFolderPassword(oldPassword: String, newPassword: String, onSuccess: () -> Unit, onError: () -> Unit) {
+        viewModelScope.launch {
+            if (preferencesManager.verifyPrivateFolderPassword(oldPassword)) {
+                preferencesManager.setPrivateFolderPassword(newPassword)
+                onSuccess()
+            } else {
+                onError()
+            }
+        }
+    }
+
+    fun lockPrivateFolder() {
+        _isPrivateFolderUnlocked.value = false
+        if (_activeCollectionFilter.value.type == CollectionFilterType.PRIVATE_FOLDER) {
+            _activeCollectionFilter.value = ActiveCollectionFilter(CollectionFilterType.ALL)
+        }
+    }
+
+    fun addBooksToPrivateFolder(bookIds: Set<String>) {
+        viewModelScope.launch {
+            preferencesManager.addBooksToPrivateFolder(bookIds)
+        }
+    }
+
+    fun removeBookFromPrivateFolder(bookId: String) {
+        viewModelScope.launch {
+            preferencesManager.removeBookFromPrivateFolder(bookId)
+        }
+    }
+
     private val _activeCollectionFilter = MutableStateFlow(ActiveCollectionFilter(CollectionFilterType.ALL))
     val activeCollectionFilter: StateFlow<ActiveCollectionFilter> = _activeCollectionFilter.asStateFlow()
 
     private val _customBookOrder = MutableStateFlow<List<String>>(emptyList())
     val customBookOrder: StateFlow<List<String>> = _customBookOrder.asStateFlow()
+
+    private val metadataFetchChannel = Channel<Book>(Channel.UNLIMITED)
 
     init {
         viewModelScope.launch {
@@ -310,6 +428,45 @@ class LibraryViewModel(
                 if (_customBookOrder.value.isEmpty() && savedOrder.isNotEmpty()) {
                     _customBookOrder.value = savedOrder
                 }
+            }
+        }
+        startMetadataFetchWorker()
+        viewModelScope.launch {
+            bookRepository.loadRecentBooks()
+        }
+        scanDeviceForBooks()
+        viewModelScope.launch {
+            if (preferencesManager.updateNotificationsEnabled.first()) {
+                checkForUpdates(manual = false)
+            }
+        }
+    }
+
+    private fun startMetadataFetchWorker() {
+        viewModelScope.launch(Dispatchers.IO) {
+            for (book in metadataFetchChannel) {
+                try {
+                    val current = bookRepository.recentBooks.value.firstOrNull { it.id == book.id } ?: book
+                    if (current.description.isNullOrBlank() || current.genres.isEmpty()) {
+                        val meta = BookEnricher.fetchMetadata(current.title, current.author)
+                        if (meta != null && (!meta.description.isNullOrBlank() || meta.genres.isNotEmpty())) {
+                            val newDesc = if (current.description.isNullOrBlank()) meta.description else current.description
+                            val newGenres = if (current.genres.isEmpty()) meta.genres else current.genres
+                            val newSeries = if (current.series.isNullOrBlank()) meta.series else current.series
+                            val newSeriesNumber = current.seriesNumber ?: meta.seriesNumber
+                            bookRepository.updateBookMetadata(
+                                bookId = current.id,
+                                title = current.title,
+                                author = current.author,
+                                description = newDesc ?: "",
+                                genres = newGenres,
+                                series = newSeries,
+                                seriesNumber = newSeriesNumber
+                            )
+                        }
+                        delay(250)
+                    }
+                } catch (_: Exception) {}
             }
         }
     }
@@ -402,7 +559,7 @@ class LibraryViewModel(
     }
 
     fun setBookReadingProgress(bookId: String, progress: Int) {
-        viewModelScope.launch { bookRepository.setBookReadingProgress(bookId, progress) }
+        dispatchBookAction(BookAction.SetProgress(progress), BookTarget.Single(bookId))
     }
 
     fun updateBookCover(bookId: String, newCoverBase64: String?) {
@@ -418,13 +575,13 @@ class LibraryViewModel(
             for (book in books) {
                 if (!book.coverBase64.isNullOrBlank()) continue
                 try {
-                    val cleanTitle = CoverSearchService.cleanBookTitle(book.title)
-                    val cleanAuthor = CoverSearchService.cleanAuthorName(book.author)
+                    val cleanTitle = BookEnricher.cleanTitle(book.title)
+                    val cleanAuthor = BookEnricher.cleanAuthor(book.author)
                     val query = if (cleanAuthor.isNotBlank()) "$cleanTitle $cleanAuthor" else cleanTitle
-                    val results = CoverSearchService.searchCovers(query, fallbackTitle = cleanTitle)
+                    val results = BookEnricher.searchCovers(query, fallbackTitle = cleanTitle)
                     val bestCover = results.firstOrNull()
                     if (bestCover != null) {
-                        val base64 = CoverSearchService.downloadCoverAsBase64(bestCover.highResUrl)
+                        val base64 = BookEnricher.downloadCoverAsBase64(bestCover.highResUrl)
                         if (!base64.isNullOrBlank()) {
                             bookRepository.updateBookCover(book.id, base64)
                             downloadedCount++
@@ -438,9 +595,46 @@ class LibraryViewModel(
         }
     }
 
+    fun autoEnrichMissingMetadata(
+        books: List<Book>,
+        onComplete: (Int) -> Unit
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val candidates = books.filter { it.deletedAtTimestamp == null && (it.description.isNullOrBlank() || it.genres.isEmpty()) }
+            var enrichedCount = 0
+            for (book in candidates) {
+                try {
+                    val meta = BookEnricher.fetchMetadata(book.title, book.author)
+                    if (meta != null && (!meta.description.isNullOrBlank() || meta.genres.isNotEmpty())) {
+                        val current = bookRepository.recentBooks.value.firstOrNull { it.id == book.id } ?: book
+                        val newDesc = if (current.description.isNullOrBlank()) meta.description else current.description
+                        val newGenres = if (current.genres.isEmpty()) meta.genres else current.genres
+                        val newSeries = if (current.series.isNullOrBlank()) meta.series else current.series
+                        val newSeriesNumber = current.seriesNumber ?: meta.seriesNumber
+                        bookRepository.updateBookMetadata(
+                            bookId = current.id,
+                            title = current.title,
+                            author = current.author,
+                            description = newDesc ?: "",
+                            genres = newGenres,
+                            series = newSeries,
+                            seriesNumber = newSeriesNumber
+                        )
+                        enrichedCount++
+                    }
+                    delay(300)
+                } catch (_: Exception) {}
+            }
+            withContext(Dispatchers.Main) {
+                onComplete(enrichedCount)
+            }
+        }
+    }
+
     fun exportBackup(
         uri: Uri,
         contentResolver: ContentResolver,
+        includeBookFiles: Boolean = true,
         onSuccess: (Int) -> Unit,
         onError: (String) -> Unit
     ) {
@@ -449,7 +643,7 @@ class LibraryViewModel(
                 val outputStream = contentResolver.openOutputStream(uri)
                     ?: throw java.io.IOException("Не удалось открыть файл для записи")
                 val count = outputStream.use { out ->
-                    val res = bookRepository.backupManager.exportBackup(out)
+                    val res = bookRepository.backupManager.exportBackup(out, includeBookFiles)
                     res.getOrThrow()
                 }
                 withContext(Dispatchers.Main) {
@@ -463,9 +657,9 @@ class LibraryViewModel(
         }
     }
 
-    fun exportBackup(outputStream: OutputStream, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
+    fun exportBackup(outputStream: OutputStream, includeBookFiles: Boolean = true, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            val res = bookRepository.backupManager.exportBackup(outputStream)
+            val res = bookRepository.backupManager.exportBackup(outputStream, includeBookFiles)
             withContext(Dispatchers.Main) {
                 res.onSuccess { count ->
                     onSuccess(count)
@@ -476,9 +670,9 @@ class LibraryViewModel(
         }
     }
 
-    fun exportBackupToTempFile(onSuccess: (File, Int) -> Unit, onError: (String) -> Unit) {
+    fun exportBackupToTempFile(includeBookFiles: Boolean = true, onSuccess: (File, Int) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            val res = bookRepository.backupManager.exportBackupToTempFile()
+            val res = bookRepository.backupManager.exportBackupToTempFile(includeBookFiles)
             res.onSuccess { pair ->
                 onSuccess(pair.first, pair.second)
             }.onFailure { e ->
@@ -532,22 +726,48 @@ class LibraryViewModel(
         _searchQuery,
         _activeCollectionFilter,
         preferencesManager.librarySortOrder,
-        _customBookOrder
-    ) { books, query, filter, sortStr, customOrderList ->
-        val q = query.trim()
-        val searchFiltered = if (q.isEmpty()) {
-            books
+        _customBookOrder,
+        preferencesManager.privateBookIds
+    ) { args: Array<Any?> ->
+        @Suppress("UNCHECKED_CAST")
+        val books = args[0] as List<Book>
+        val query = args[1] as String
+        val filter = args[2] as ActiveCollectionFilter
+        val sortStr = args[3] as String
+        @Suppress("UNCHECKED_CAST")
+        val customOrderList = args[4] as List<String>
+        @Suppress("UNCHECKED_CAST")
+        val privateIds = args[5] as Set<String>
+
+        val isTrashActive = filter.type == CollectionFilterType.TRASH
+        val isPrivateActive = filter.type == CollectionFilterType.PRIVATE_FOLDER
+
+        val baseBooks: List<Book> = if (isTrashActive) {
+            books.filter { it.deletedAtTimestamp != null }
         } else {
-            books.filter {
-                it.title.contains(q, ignoreCase = true) ||
-                it.author.contains(q, ignoreCase = true) ||
-                (it.series?.contains(q, ignoreCase = true) == true) ||
-                it.format.name.equals(q, ignoreCase = true)
+            val nonTrash = books.filter { it.deletedAtTimestamp == null }
+            if (isPrivateActive) {
+                nonTrash.filter { it.id in privateIds }
+            } else {
+                nonTrash.filter { it.id !in privateIds }
             }
         }
 
-        val collectionFiltered = when (filter.type) {
-            CollectionFilterType.ALL -> searchFiltered
+        val q = query.trim()
+        val searchFiltered: List<Book> = if (q.isEmpty()) {
+            baseBooks
+        } else {
+            baseBooks.filter {
+                it.title.contains(q, ignoreCase = true) ||
+                it.author.contains(q, ignoreCase = true) ||
+                (it.series?.contains(q, ignoreCase = true) == true) ||
+                it.format.name.equals(q, ignoreCase = true) ||
+                it.genres.any { genre -> genre.contains(q, ignoreCase = true) }
+            }
+        }
+
+        val collectionFiltered: List<Book> = when (filter.type) {
+            CollectionFilterType.ALL, CollectionFilterType.PRIVATE_FOLDER, CollectionFilterType.TRASH -> searchFiltered
             CollectionFilterType.READING -> searchFiltered.filter { it.isReadingStarted }
             CollectionFilterType.FAVORITES -> searchFiltered.filter { it.isFavorite }
             CollectionFilterType.SERIES -> searchFiltered.filter { !it.series.isNullOrBlank() }
@@ -559,33 +779,162 @@ class LibraryViewModel(
             }
         }
 
-        val sortOption = try { LibrarySortOption.valueOf(sortStr) } catch (e: Exception) { LibrarySortOption.RECENT }
-        when (sortOption) {
-            LibrarySortOption.RECENT -> collectionFiltered.sortedByDescending { it.lastReadTimestamp }
-            LibrarySortOption.TITLE -> collectionFiltered.sortedBy { it.title.lowercase() }
-            LibrarySortOption.AUTHOR -> collectionFiltered.sortedBy { it.author.lowercase() }
-            LibrarySortOption.SERIES -> {
-                collectionFiltered.sortedWith(
-                    compareBy<Book> { it.series.isNullOrBlank() }
-                        .thenBy { it.series?.lowercase() ?: "" }
-                        .thenBy { it.seriesNumber ?: Int.MAX_VALUE }
-                        .thenBy { it.title.lowercase() }
-                )
-            }
-            LibrarySortOption.CUSTOM -> {
-                if (customOrderList.isEmpty()) {
-                    collectionFiltered
-                } else {
-                    val orderMap = customOrderList.withIndex().associate { it.value to it.index }
-                    collectionFiltered.sortedBy { orderMap[it.id] ?: Int.MAX_VALUE }
+        val sortedBooks: List<Book> = if (isTrashActive) {
+            collectionFiltered.sortedByDescending { it.deletedAtTimestamp ?: 0L }
+        } else {
+            val sortOption = try { LibrarySortOption.valueOf(sortStr) } catch (e: Exception) { LibrarySortOption.RECENT }
+            when (sortOption) {
+                LibrarySortOption.RECENT -> collectionFiltered.sortedByDescending { it.lastReadTimestamp }
+                LibrarySortOption.TITLE -> collectionFiltered.sortedBy { it.title.lowercase() }
+                LibrarySortOption.AUTHOR -> collectionFiltered.sortedBy { it.author.lowercase() }
+                LibrarySortOption.SERIES -> {
+                    collectionFiltered.sortedWith(
+                        compareBy<Book> { it.series.isNullOrBlank() }
+                            .thenBy { it.series?.lowercase() ?: "" }
+                            .thenBy { it.seriesNumber ?: Int.MAX_VALUE }
+                            .thenBy { it.title.lowercase() }
+                    )
+                }
+                LibrarySortOption.CUSTOM -> {
+                    if (customOrderList.isEmpty()) {
+                        collectionFiltered
+                    } else {
+                        val orderMap = customOrderList.withIndex().associate { it.value to it.index }
+                        collectionFiltered.sortedBy { orderMap[it.id] ?: Int.MAX_VALUE }
+                    }
                 }
             }
         }
+        sortedBooks
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /**
+     * Unified entry point for single-book and multi-select batch mutations.
+     */
+    fun dispatchBookAction(action: BookAction, target: BookTarget) {
+        val ids = target.bookIds
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            when (action) {
+                is BookAction.MoveToTrash -> {
+                    if (ids.size == 1) {
+                        bookRepository.moveToTrash(ids.first())
+                    } else {
+                        bookRepository.batchMoveToTrash(ids)
+                    }
+                }
+                is BookAction.RestoreFromTrash -> {
+                    if (ids.size == 1) {
+                        bookRepository.restoreFromTrash(ids.first())
+                    } else {
+                        bookRepository.batchRestoreFromTrash(ids)
+                    }
+                }
+                is BookAction.DeletePermanently -> {
+                    if (ids.size == 1) {
+                        bookRepository.deletePermanently(ids.first())
+                    } else {
+                        bookRepository.batchDeletePermanently(ids)
+                    }
+                }
+                is BookAction.SetProgress -> {
+                    if (ids.size == 1) {
+                        bookRepository.setBookReadingProgress(ids.first(), action.progressPercent)
+                    } else {
+                        bookRepository.batchSetReadingProgress(ids, action.progressPercent)
+                    }
+                }
+                is BookAction.AddToCollection -> {
+                    if (ids.size == 1) {
+                        val book = bookRepository.recentBooks.value.find { it.id == ids.first() }
+                        val currentCols = book?.collections ?: emptyList()
+                        if (!currentCols.contains(action.collectionName)) {
+                            bookRepository.updateBookCollections(ids.first(), currentCols + action.collectionName)
+                        }
+                    } else {
+                        bookRepository.batchAddToCollection(ids, action.collectionName)
+                    }
+                }
+                is BookAction.TogglePrivate -> {
+                    if (action.makePrivate) {
+                        preferencesManager.addBooksToPrivateFolder(ids)
+                    } else {
+                        preferencesManager.removeBooksFromPrivateFolder(ids)
+                    }
+                }
+            }
+        }
+    }
+
+    fun moveToTrash(bookId: String) = dispatchBookAction(BookAction.MoveToTrash, BookTarget.Single(bookId))
+
+    fun restoreFromTrash(bookId: String) = dispatchBookAction(BookAction.RestoreFromTrash, BookTarget.Single(bookId))
+
+    fun deletePermanently(bookId: String) = dispatchBookAction(BookAction.DeletePermanently, BookTarget.Single(bookId))
+
+    fun clearTrash() {
+        viewModelScope.launch {
+            bookRepository.clearTrash()
+        }
+    }
+
+    fun updateBookMetadata(
+        bookId: String,
+        title: String,
+        author: String,
+        series: String?,
+        seriesNumber: Int?,
+        genres: List<String>,
+        description: String?
+    ) {
+        viewModelScope.launch {
+            bookRepository.updateBookMetadata(
+                bookId = bookId,
+                title = title,
+                author = author,
+                series = series,
+                seriesNumber = seriesNumber,
+                genres = genres,
+                description = description
+            )
+        }
+    }
 
     fun removeBook(bookId: String) {
         viewModelScope.launch {
             bookRepository.removeBook(bookId)
+        }
+    }
+
+    // --- Batch Operations (Multi-Select) delegating to BookActionDispatcher ---
+
+    fun batchMoveToTrash(bookIds: Set<String>) =
+        dispatchBookAction(BookAction.MoveToTrash, BookTarget.Multiple(bookIds))
+
+    fun batchRestoreFromTrash(bookIds: Set<String>) =
+        dispatchBookAction(BookAction.RestoreFromTrash, BookTarget.Multiple(bookIds))
+
+    fun batchDeletePermanently(bookIds: Set<String>) =
+        dispatchBookAction(BookAction.DeletePermanently, BookTarget.Multiple(bookIds))
+
+    fun batchSetReadingProgress(bookIds: Set<String>, progress: Int) =
+        dispatchBookAction(BookAction.SetProgress(progress), BookTarget.Multiple(bookIds))
+
+    fun batchAddToCollection(bookIds: Set<String>, collectionName: String) =
+        dispatchBookAction(BookAction.AddToCollection(collectionName), BookTarget.Multiple(bookIds))
+
+    fun batchTogglePrivate(bookIds: Set<String>, makePrivate: Boolean) =
+        dispatchBookAction(BookAction.TogglePrivate(makePrivate), BookTarget.Multiple(bookIds))
+
+    fun batchSetManualShelf(bookIds: Set<String>, manualShelf: String?) {
+        viewModelScope.launch {
+            bookRepository.batchSetManualShelf(bookIds, manualShelf)
+        }
+    }
+
+    fun batchSetFavorite(bookIds: Set<String>, isFavorite: Boolean) {
+        viewModelScope.launch {
+            bookRepository.batchSetFavorite(bookIds, isFavorite)
         }
     }
 
@@ -598,21 +947,18 @@ class LibraryViewModel(
     private val _downloadProgress = MutableStateFlow<Float?>(null)
     val downloadProgress: StateFlow<Float?> = _downloadProgress.asStateFlow()
 
+    private val _updateCheckState = MutableStateFlow<UpdateCheckState>(UpdateCheckState.Idle)
+    val updateCheckState: StateFlow<UpdateCheckState> = _updateCheckState.asStateFlow()
+
+    private val _updateInstallState =
+        MutableStateFlow<UpdateInstallState>(UpdateInstallState.Idle)
+    val updateInstallState: StateFlow<UpdateInstallState> = _updateInstallState.asStateFlow()
+
+    private var downloadedApk: File? = null
+    private var updateDownloadJob: kotlinx.coroutines.Job? = null
+
     private val _foundDeviceFiles = MutableStateFlow<List<File>>(emptyList())
     val foundDeviceFiles: StateFlow<List<File>> = _foundDeviceFiles.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            bookRepository.loadRecentBooks()
-        }
-        // Scan for books and check updates if notifications are enabled
-        scanDeviceForBooks()
-        viewModelScope.launch {
-            if (preferencesManager.updateNotificationsEnabled.first()) {
-                checkForUpdates(manual = false)
-            }
-        }
-    }
 
     private var updateDismissedThisSession: Boolean = false
 
@@ -624,6 +970,7 @@ class LibraryViewModel(
             if (!manual && updateDismissedThisSession) {
                 return@launch
             }
+            _updateCheckState.value = if (manual) UpdateCheckState.Checking else UpdateCheckState.Idle
             val currentVersion = "v${com.aura.reader.BuildConfig.VERSION_NAME}"
             val isBeta = preferencesManager.updateChannel.first() == "BETA"
             val result = AppUpdateManager.checkForUpdates(currentVersion, isBetaChannel = isBeta)
@@ -634,27 +981,56 @@ class LibraryViewModel(
                         return@onSuccess
                     }
                     _updateInfo.value = info
+                    if (manual) _updateCheckState.value = UpdateCheckState.Idle
                     if (preferencesManager.updateNotificationsEnabled.first() && !manual) {
                         context?.let { AppUpdateManager.showUpdateNotification(it, info.latestVersion) }
                     }
                 } else if (manual) {
-                    _uiState.value = LibraryUiState.Error("У вас установлена последняя версия!")
+                    // The button shows this inline, so it is a calm result rather
+                    // than a red error snackbar.
+                    _updateCheckState.value = UpdateCheckState.UpToDate
                 }
             }.onFailure { e ->
                 if (manual) {
-                    _uiState.value = LibraryUiState.Error("Не удалось проверить обновления: ${e.localizedMessage}")
+                    _updateCheckState.value = UpdateCheckState.Failed(e.localizedMessage)
                 }
             }
         }
     }
 
+    /**
+     * Opens the direct APK download or GitHub release page in the system browser.
+     */
+    fun downloadAndInstallUpdate(context: Context) {
+        val info = _updateInfo.value ?: return
+        openUpdatePage(context, info.apkUrl ?: info.releaseUrl)
+        dismissUpdateDialog()
+    }
+
+    /** Re-opens the browser download page. */
+    fun installDownloadedUpdate(context: Context) {
+        val info = _updateInfo.value ?: return
+        openUpdatePage(context, info.apkUrl ?: info.releaseUrl)
+        dismissUpdateDialog()
+    }
+
+    fun resetUpdateInstallState() {
+        _updateInstallState.value = UpdateInstallState.Idle
+    }
+
     fun dismissUpdateDialog() {
         updateDismissedThisSession = true
+        updateDownloadJob?.cancel()
+        updateDownloadJob = null
+        _updateInstallState.value = UpdateInstallState.Idle
         _updateInfo.value = null
     }
 
     fun skipUpdateVersion(version: String) {
         updateDismissedThisSession = true
+        updateDownloadJob?.cancel()
+        updateDownloadJob = null
+        _updateInstallState.value = UpdateInstallState.Idle
         _updateInfo.value = null
         viewModelScope.launch {
             preferencesManager.setSkippedUpdateVersion(version)
@@ -697,6 +1073,12 @@ class LibraryViewModel(
         }
     }
 
+    private fun tryAutoFetchMetadata(book: Book) {
+        if (!autoFetchMetadataEnabled.value) return
+        if (!book.description.isNullOrBlank() && book.genres.isNotEmpty()) return
+        metadataFetchChannel.trySend(book)
+    }
+
     fun openBook(book: Book) {
         viewModelScope.launch {
             _uiState.value = LibraryUiState.Loading
@@ -715,6 +1097,7 @@ class LibraryViewModel(
             val result = bookRepository.openBookFromUri(uri)
             result.onSuccess { book ->
                 _uiState.value = LibraryUiState.Success(book)
+                tryAutoFetchMetadata(book)
             }.onFailure { error ->
                 _uiState.value = LibraryUiState.Error(error.localizedMessage ?: "Не удалось открыть книгу")
             }
@@ -735,8 +1118,9 @@ class LibraryViewModel(
 
             for (uri in uris) {
                 val result = bookRepository.openBookFromUri(uri)
-                result.onSuccess {
+                result.onSuccess { book ->
                     addedCount++
+                    tryAutoFetchMetadata(book)
                 }.onFailure { e ->
                     errors.add(e.localizedMessage ?: "Неизвестная ошибка")
                 }
@@ -814,7 +1198,10 @@ class LibraryViewModel(
             var addedCount = 0
             for (uri in foundUris) {
                 val res = bookRepository.openBookFromUri(uri)
-                if (res.isSuccess) addedCount++
+                if (res.isSuccess) {
+                    addedCount++
+                    res.getOrNull()?.let { tryAutoFetchMetadata(it) }
+                }
             }
 
             if (addedCount > 0) {

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.BookFormat
 import com.aura.reader.data.model.OpdsBook
@@ -14,6 +15,7 @@ import com.aura.reader.data.opds.OpdsUrl
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.data.repository.BookRepository
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -116,6 +118,10 @@ class OpdsViewModel(
 
     val customOpdsEnabled: StateFlow<Boolean> = preferencesManager.customOpdsEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val appDesignStyle: StateFlow<AppDesignStyle> = preferencesManager.appSettings
+        .map { it.appDesignStyle }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppDesignStyle.LIQUID_GLASS)
 
     val baseUrl: StateFlow<String> = combine(
         preferencesManager.customOpdsEnabled,

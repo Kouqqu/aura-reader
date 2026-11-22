@@ -258,7 +258,12 @@ fun BookInfoDialog(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = if (book.format == BookFormat.CBZ) strings.cbzFormat else book.format.name.uppercase(),
+                                text = when (book.format) {
+                                    BookFormat.CBZ -> strings.cbzFormat
+                                    BookFormat.HTML -> strings.htmlFormat
+                                    BookFormat.MD -> strings.mdFormat
+                                    else -> book.format.name.uppercase()
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary

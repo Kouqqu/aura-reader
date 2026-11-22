@@ -24,14 +24,29 @@ object PdfParser {
                         Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)
                     } finally { thumb.recycle() }
                 }
+                val cleanTitle = fileName.substringBeforeLast(".")
+                val chapters = (0 until count).map { index ->
+                    Chapter(
+                        id = "pdf_page_$index",
+                        title = "Страница ${index + 1}",
+                        content = "",
+                        blocks = listOf(
+                            FormattedBlock(
+                                type = BlockType.IMAGE,
+                                text = PdfPageCache.pageUri(persistentSource, index),
+                                subText = "Страница ${index + 1} из $count"
+                            )
+                        ),
+                        order = index
+                    )
+                }
                 return Book(
-                    id = UUID.randomUUID().toString(), title = fileName.substringBeforeLast("."),
-                    coverBase64 = cover, format = BookFormat.PDF, uriString = uriString,
-                    chapters = (0 until count).map { index ->
-                        Chapter("pdf_page_" + index, "Страница " + (index + 1), "",
-                            listOf(FormattedBlock(BlockType.IMAGE, PdfPageCache.pageUri(persistentSource, index),
-                                "Страница " + (index + 1) + " из " + count)), index)
-                    }
+                    id = UUID.randomUUID().toString(),
+                    title = cleanTitle,
+                    coverBase64 = cover,
+                    format = BookFormat.PDF,
+                    uriString = uriString,
+                    chapters = chapters
                 )
             }
         }

@@ -83,9 +83,9 @@ fun ReadingStatsBottomSheet(
 
     val sheetBgColor = if (isLiquidGlass) {
         if (isDark) {
-            if (isAmoled) Color(0xFF000000) else Color(0xFF14151C)
+            if (isAmoled) Color(0xFF000000) else Color(0xFF141416)
         } else {
-            Color(0xFFF2F3F8)
+            Color(0xFFF7F7F9)
         }
     } else {
         MaterialTheme.colorScheme.surfaceContainerHigh
@@ -307,6 +307,15 @@ private fun StreakBanner(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(RoundedCornerShape(14.dp))
+                    .then(
+                        if (hasStreak) {
+                            Modifier.border(
+                                1.dp,
+                                Color(0xFFFF9500).copy(alpha = if (isDark) 0.35f else 0.25f),
+                                RoundedCornerShape(14.dp)
+                            )
+                        } else Modifier
+                    )
                     .background(
                         if (hasStreak) Color(0xFFFF9500).copy(alpha = if (isDark) 0.18f else 0.12f)
                         else if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)

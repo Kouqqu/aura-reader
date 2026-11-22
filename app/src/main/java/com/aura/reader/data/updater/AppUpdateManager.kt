@@ -14,7 +14,9 @@ data class UpdateInfo(
     val isAvailable: Boolean,
     val latestVersion: String,
     val changelog: String,
-    val releaseUrl: String
+    val releaseUrl: String,
+    val apkUrl: String? = null,
+    val apkSizeBytes: Long? = null
 )
 
 object AppUpdateManager {
@@ -25,6 +27,10 @@ object AppUpdateManager {
         "https://github.com/Kouqqu/aura-reader/releases/latest"
     private const val GITHUB_API_LATEST_RELEASE =
         "https://api.github.com/repos/Kouqqu/aura-reader/releases/latest"
+    private const val GITHUB_DOWNLOAD_BASE =
+        "https://github.com/Kouqqu/aura-reader/releases/download"
+    private const val APK_ASSET_NAME = "AuraReader.apk"
+    private const val UPDATE_CACHE_DIR = "updates"
 
     fun openReleasePage(context: Context, url: String? = null) {
         try {
@@ -44,6 +50,8 @@ object AppUpdateManager {
                 var tagName = ""
                 var body = ""
                 var releasePageUrl = ""
+                var apkUrl: String? = null
+                var apkSizeBytes: Long? = null
 
                 if (isBetaChannel) {
                     try {
@@ -59,6 +67,8 @@ object AppUpdateManager {
                             var bestTag = ""
                             var bestBody = ""
                             var bestUrl = ""
+                            var bestApkUrl: String? = null
+                            var bestApkSize: Long? = null
 
                             for (rIdx in 0 until releasesArray.length()) {
                                 val rel = releasesArray.getJSONObject(rIdx)
@@ -72,6 +82,9 @@ object AppUpdateManager {
                                     bestTag = tag
                                     bestBody = rel.optString("body", "").trim()
                                     bestUrl = tagUrl
+                                    val asset = findApkAsset(rel)
+                                    bestApkUrl = asset?.first
+                                    bestApkSize = asset?.second
                                 }
                             }
 
@@ -79,6 +92,8 @@ object AppUpdateManager {
                                 tagName = bestTag
                                 body = bestBody
                                 releasePageUrl = bestUrl
+                                apkUrl = bestApkUrl
+                                apkSizeBytes = bestApkSize
                             }
                         }
                     } catch (e: Exception) {}
@@ -93,7 +108,9 @@ object AppUpdateManager {
                                 isAvailable = isNewer,
                                 latestVersion = tagName,
                                 changelog = body.ifBlank { "Сборка $tagName Aura Reader с новыми улучшениями." },
-                                releaseUrl = releasePageUrl
+                                releaseUrl = releasePageUrl,
+                                apkUrl = apkUrl ?: fallbackApkUrl(tagName),
+                                apkSizeBytes = apkSizeBytes
                             )
                         )
                     }
@@ -136,6 +153,9 @@ object AppUpdateManager {
                         if (htmlUrl.isNotBlank()) {
                             releasePageUrl = htmlUrl
                         }
+                        val asset = findApkAsset(json)
+                        apkUrl = asset?.first
+                        apkSizeBytes = asset?.second
                     }
                 } catch (e: Exception) {}
 
@@ -156,7 +176,9 @@ object AppUpdateManager {
                         isAvailable = isNewer,
                         latestVersion = tagName,
                         changelog = body.ifBlank { "Вышла новая версия $tagName с улучшениями и новыми функциями." },
-                        releaseUrl = releasePageUrl
+                        releaseUrl = releasePageUrl,
+                        apkUrl = apkUrl ?: fallbackApkUrl(tagName),
+                        apkSizeBytes = apkSizeBytes
                     )
                 )
             } catch (e: Exception) {
@@ -200,6 +222,44 @@ object AppUpdateManager {
 
             notificationManager.notify(1001, builder.build())
         } catch (e: Exception) {}
+    }
+
+    /** The first `.apk` asset of a release, with its size when GitHub reports one. */
+    private fun findApkAsset(release: JSONObject): Pair<String, Long?>? {
+        val assets = release.optJSONArray("assets") ?: return null
+        for (index in 0 until assets.length()) {
+            val asset = assets.optJSONObject(index) ?: continue
+            val name = asset.optString("name", "")
+            val url = asset.optString("browser_download_url", "")
+            if (name.endsWith(".apk", ignoreCase = true) && url.isNotBlank()) {
+                return url to asset.optLong("size", 0L).takeIf { it > 0L }
+            }
+        }
+        return null
+    }
+
+    /** GitHub's predictable asset URL, for when the API was rate-limited. */
+    fun fallbackApkUrl(tag: String): String {
+        val cleanTag = tag.trim()
+        val assetName = if (cleanTag.isNotBlank()) "AuraReader-$cleanTag.apk" else "AuraReader.apk"
+        return "$GITHUB_DOWNLOAD_BASE/$cleanTag/$assetName"
+    }
+
+    /** Opens the direct APK download link or the release page in the system browser. */
+    fun openDownloadPage(context: Context, info: UpdateInfo) {
+        val targetUrl = info.apkUrl?.ifBlank { null } ?: info.releaseUrl.ifBlank { null } ?: GITHUB_LATEST_WEB_URL
+        openReleasePage(context, targetUrl)
+    }
+
+    /**
+     * Deletes APKs and temporary files left in cache. Called on every app start: once the
+     * installer has replaced the app, the old download is dead weight.
+     */
+    fun cleanupDownloadedApks(context: Context) {
+        try {
+            com.aura.reader.data.storage.AppStorageManager.cleanupTemporaryFiles(context)
+        } catch (_: Exception) {
+        }
     }
 
     fun isVersionNewer(latest: String, current: String): Boolean {

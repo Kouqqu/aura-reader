@@ -65,7 +65,7 @@ fun AddBooksBottomSheet(
 
     val sheetBgColor = if (isLiquidGlass) {
         if (isDark) {
-            if (isAmoled) Color(0xFF000000) else Color(0xFF14151C)
+            if (isAmoled) Color(0xFF000000) else MaterialTheme.colorScheme.surfaceContainer
         } else {
             Color(0xFFF6F7FA)
         }
@@ -156,7 +156,7 @@ fun AddBooksBottomSheet(
 
                 // Apple Inset Grouped Card
                 val groupBg = if (isDark) {
-                    if (isAmoled) Color(0xFF141419) else Color(0xFF1F2129)
+                    if (isAmoled) Color(0xFF141419) else MaterialTheme.colorScheme.surfaceContainerHigh
                 } else Color(0xFFFFFFFF)
                 val groupBorderColor = if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
 

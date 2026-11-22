@@ -1,11 +1,30 @@
 package com.aura.reader.ui.screens.library
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Restore
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.ui.zIndex
-import com.aura.reader.ui.components.liquidGlassMenuAppearance
+import com.aura.reader.ui.components.BookCardMenu
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Download
@@ -28,9 +47,11 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -90,6 +111,10 @@ fun BookCard(
     isGlass: Boolean = false,
     isDark: Boolean = isSystemInDarkTheme(),
     isReorderMode: Boolean = false,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    canReorder: Boolean = false,
+    onToggleSelect: () -> Unit = {},
     wobbleAngle: Float = 0f,
     wobbleOffset: Float = 0f,
     currentlyDraggedBookId: String? = null,
@@ -104,7 +129,12 @@ fun BookCard(
     onSetProgress: (Int) -> Unit = {},
     onCoverClick: () -> Unit = {},
     onShare: () -> Unit = {},
-    onChangeCover: () -> Unit = {}
+    onChangeCover: () -> Unit = {},
+    isPrivate: Boolean = false,
+    onTogglePrivate: () -> Unit = {},
+    onOpenProfile: () -> Unit = {},
+    onRestore: () -> Unit = {},
+    onDeletePermanently: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val strings = LocalAppStrings.current
@@ -127,6 +157,22 @@ fun BookCard(
         label = "cardBounce"
     )
 
+    val dragModifier = if (canReorder) {
+        Modifier.pointerInput(book.id) {
+            detectDragGesturesAfterLongPress(
+                onDragStart = {
+                    onDragStart()
+                },
+                onDragEnd = { onDragEnd() },
+                onDragCancel = { onDragEnd() },
+                onDrag = { change, dragAmount ->
+                    change.consume()
+                    onDrag(dragAmount)
+                }
+            )
+        }
+    } else Modifier
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -142,53 +188,81 @@ fun BookCard(
                     this.shadowElevation = 16f
                 }
             }
-            .pointerInput(book.id) {
-                detectDragGesturesAfterLongPress(
-                    onDragStart = {
-                        onDragStart()
-                    },
-                    onDragEnd = { onDragEnd() },
-                    onDragCancel = { onDragEnd() },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        onDrag(dragAmount)
-                    }
-                )
-            }
             .clip(RoundedCornerShape(20.dp))
-            .clickable(
+            .then(dragModifier)
+            .combinedClickable(
                 interactionSource = cardInteractionSource,
-                indication = if (isGlass) null else LocalIndication.current
-            ) {
-                if (isReorderMode) {
-                    showMenu = true
-                } else {
-                    onClick()
-                }
-            },
+                indication = if (isGlass) null else LocalIndication.current,
+                onClick = {
+                    if (isSelectionMode) {
+                        onToggleSelect()
+                    } else if (isReorderMode) {
+                        showMenu = true
+                    } else {
+                        onClick()
+                    }
+                },
+                onLongClick = if (!canReorder) {
+                    {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onToggleSelect()
+                    }
+                } else null
+            ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
-                if (isDark) Color(0x281C1E26) else Color(0x65FFFFFF)
+                if (isDark) Color(0x2818181B) else Color(0x65FFFFFF)
             } else if (isDraggingThis) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
             } else {
                 MaterialTheme.colorScheme.surfaceContainerLow
             }
         ),
-        border = if (isGlass) {
+        border = if (isSelected) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else if (isGlass) {
             BorderStroke(
                 0.5.dp,
                 if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
             )
         } else null
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .animateContentSize()
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+            if (isSelectionMode) {
+                Box(
+                    modifier = Modifier
+                        .padding(end = 12.dp)
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                        .border(
+                            1.5.dp,
+                            if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
             val hasCover = !book.coverBase64.isNullOrBlank()
             BookCoverView(
                 coverBase64 = book.coverBase64,
@@ -197,9 +271,21 @@ fun BookCard(
                 modifier = Modifier
                     .size(width = 64.dp, height = 90.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .clickable {
-                        if (hasCover) onCoverClick() else onChangeCover()
-                    }
+                    .combinedClickable(
+                        onClick = {
+                            if (isSelectionMode) {
+                                onToggleSelect()
+                            } else {
+                                onOpenProfile()
+                            }
+                        },
+                        onLongClick = if (!canReorder) {
+                            {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onToggleSelect()
+                            }
+                        } else null
+                    )
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -220,21 +306,23 @@ fun BookCard(
                     )
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(end = 6.dp)
-                        ) {
-                            Text(
-                                text = book.format.name.uppercase(),
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 9.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.5.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
+                        if (!isGlass) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(end = 6.dp)
+                            ) {
+                                Text(
+                                    text = book.format.name.uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 9.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
                         }
                         IconButton(
                             onClick = onToggleFavorite,
@@ -247,96 +335,18 @@ fun BookCard(
                                 modifier = Modifier.size(18.dp)
                             )
                         }
-                        Box {
-                            IconButton(
-                                onClick = { showMenu = true },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.MoreVert,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            val bookMenuAppearance = liquidGlassMenuAppearance(isGlass, isDark)
-                            DropdownMenu(
-                                expanded = showMenu,
-                                onDismissRequest = { showMenu = false },
-                                shape = RoundedCornerShape(20.dp),
-                                containerColor = bookMenuAppearance.containerColor,
-                                border = bookMenuAppearance.border,
-                                shadowElevation = bookMenuAppearance.shadowElevation
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(strings.shareBookFile) },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        onShare()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(if (hasCover) strings.changeCover else strings.downloadCover) },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = if (hasCover) Icons.Rounded.Image else Icons.Rounded.Download,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        onChangeCover()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(strings.addToCollection) },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        onAddToCollection()
-                                    }
-                                )
-                                if (book.progressPercent < 100) {
-                                    DropdownMenuItem(
-                                        text = { Text(strings.markAsFinished) },
-                                        leadingIcon = {
-                                            Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                        },
-                                        onClick = {
-                                            showMenu = false
-                                            onSetProgress(100)
-                                        }
-                                    )
-                                }
-                                if (book.progressPercent > 0) {
-                                    DropdownMenuItem(
-                                        text = { Text(strings.resetProgress) },
-                                        leadingIcon = {
-                                            Icon(Icons.Rounded.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        },
-                                        onClick = {
-                                            showMenu = false
-                                            onSetProgress(0)
-                                        }
-                                    )
-                                }
-
-                                DropdownMenuItem(
-                                    text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        onDelete()
-                                    }
-                                )
-                            }
+                        IconButton(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                showMenu = !showMenu
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (showMenu) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.MoreVert,
+                                contentDescription = strings.moreOptions,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
                 }
@@ -374,13 +384,32 @@ fun BookCard(
                 Column {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = strings.progressRead,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
+                        if (isGlass) {
+                            Surface(
+                                shape = RoundedCornerShape(5.dp),
+                                color = if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
+                            ) {
+                                Text(
+                                    text = book.format.name.uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp
+                                    ),
+                                    color = if (isDark) Color(0xFFD4D0DF) else Color(0xFF4A4656),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = strings.progressRead,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (book.progressPercent >= 100) {
                                 Icon(
@@ -399,19 +428,57 @@ fun BookCard(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(5.dp))
 
                     LinearProgressIndicator(
                         progress = { (book.progressPercent / 100f).coerceIn(0f, 1f) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(6.dp)
+                            .height(5.5.dp)
                             .clip(CircleShape),
                         strokeCap = StrokeCap.Round,
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        trackColor = if (isGlass) {
+                            if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+                        } else MaterialTheme.colorScheme.surfaceContainerHighest
                     )
                 }
+            }
+        }
+
+        AnimatedVisibility(
+                visible = showMenu,
+                enter = expandVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ) + fadeIn(),
+                exit = shrinkVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ) + fadeOut()
+            ) {
+                BookListInlineActionTray(
+                    book = book,
+                    isPrivate = isPrivate,
+                    hasCover = hasCover,
+                    isGlass = isGlass,
+                    isDark = isDark,
+                    onSelect = { showMenu = false; onToggleSelect() },
+                    onOpenProfile = { showMenu = false; onOpenProfile() },
+                    onToggleFavorite = { showMenu = false; onToggleFavorite() },
+                    onAddToCollection = { showMenu = false; onAddToCollection() },
+                    onTogglePrivate = { showMenu = false; onTogglePrivate() },
+                    onChangeCover = { showMenu = false; onChangeCover() },
+                    onShare = { showMenu = false; onShare() },
+                    onSetProgress = { prog -> showMenu = false; onSetProgress(prog) },
+                    onDelete = { showMenu = false; onDelete() },
+                    onRestore = { showMenu = false; onRestore() },
+                    onDeletePermanently = { showMenu = false; onDeletePermanently() }
+                )
             }
         }
     }
@@ -497,6 +564,10 @@ fun BookGridCard(
     isGlass: Boolean = false,
     isDark: Boolean = isSystemInDarkTheme(),
     isReorderMode: Boolean = false,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    canReorder: Boolean = false,
+    onToggleSelect: () -> Unit = {},
     wobbleAngle: Float = 0f,
     wobbleOffset: Float = 0f,
     currentlyDraggedBookId: String? = null,
@@ -512,6 +583,11 @@ fun BookGridCard(
     onCoverClick: () -> Unit = {},
     onShare: () -> Unit = {},
     onChangeCover: () -> Unit = {},
+    isPrivate: Boolean = false,
+    onTogglePrivate: () -> Unit = {},
+    onOpenProfile: () -> Unit = {},
+    onRestore: () -> Unit = {},
+    onDeletePermanently: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -535,6 +611,22 @@ fun BookGridCard(
         label = "gridCardBounce"
     )
 
+    val dragModifier = if (canReorder) {
+        Modifier.pointerInput(book.id) {
+            detectDragGesturesAfterLongPress(
+                onDragStart = {
+                    onDragStart()
+                },
+                onDragEnd = { onDragEnd() },
+                onDragCancel = { onDragEnd() },
+                onDrag = { change, dragAmount ->
+                    change.consume()
+                    onDrag(dragAmount)
+                }
+            )
+        }
+    } else Modifier
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -550,41 +642,40 @@ fun BookGridCard(
                     this.shadowElevation = 16f
                 }
             }
-            .pointerInput(book.id) {
-                detectDragGesturesAfterLongPress(
-                    onDragStart = {
-                        onDragStart()
-                    },
-                    onDragEnd = { onDragEnd() },
-                    onDragCancel = { onDragEnd() },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        onDrag(dragAmount)
-                    }
-                )
-            }
             .clip(RoundedCornerShape(20.dp))
-            .clickable(
+            .then(dragModifier)
+            .combinedClickable(
                 interactionSource = gridInteractionSource,
-                indication = if (isGlass) null else LocalIndication.current
-            ) {
-                if (isReorderMode) {
-                    showMenu = true
-                } else {
-                    onClick()
-                }
-            },
+                indication = if (isGlass) null else LocalIndication.current,
+                onClick = {
+                    if (isSelectionMode) {
+                        onToggleSelect()
+                    } else if (isReorderMode) {
+                        showMenu = true
+                    } else {
+                        onClick()
+                    }
+                },
+                onLongClick = if (!canReorder) {
+                    {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onToggleSelect()
+                    }
+                } else null
+            ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGlass) {
-                if (isDark) Color(0x281C1E26) else Color(0x65FFFFFF)
+                if (isDark) Color(0x2818181B) else Color(0x65FFFFFF)
             } else if (isDraggingThis) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
             } else {
                 MaterialTheme.colorScheme.surfaceContainerLow
             }
         ),
-        border = if (isGlass) {
+        border = if (isSelected) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else if (isGlass) {
             BorderStroke(
                 0.5.dp,
                 if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
@@ -595,6 +686,7 @@ fun BookGridCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(10.dp)
+                .animateContentSize()
         ) {
             Box(
                 modifier = Modifier
@@ -610,7 +702,21 @@ fun BookGridCard(
                     bookId = book.id,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clickable { if (hasCover) onCoverClick() else onChangeCover() }
+                        .combinedClickable(
+                            onClick = {
+                                if (isSelectionMode) {
+                                    onToggleSelect()
+                                } else {
+                                    onClick()
+                                }
+                            },
+                            onLongClick = if (!canReorder) {
+                                {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onToggleSelect()
+                                }
+                            } else null
+                        )
                 )
 
                 Surface(
@@ -633,23 +739,75 @@ fun BookGridCard(
                     )
                 }
 
-                if (book.isFavorite) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
-                        shadowElevation = 2.dp,
+                if (isSelectionMode) {
+                    Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(8.dp)
-                            .size(26.dp)
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.55f))
+                            .border(
+                                1.5.dp,
+                                if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.85f),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
+                        if (isSelected) {
                             Icon(
-                                Icons.Rounded.Favorite,
+                                imageVector = Icons.Rounded.Check,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(15.dp)
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(16.dp)
                             )
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (book.isFavorite) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
+                                shadowElevation = 2.dp,
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Rounded.Favorite,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                }
+                            }
+                        }
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
+                            shadowElevation = 2.dp,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    showMenu = !showMenu
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = if (showMenu) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.MoreVert,
+                                    contentDescription = strings.moreOptions,
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -733,65 +891,368 @@ fun BookGridCard(
                 )
             }
 
-            val gridMenuAppearance = liquidGlassMenuAppearance(isGlass, isDark)
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false },
-                shape = RoundedCornerShape(18.dp),
-                containerColor = gridMenuAppearance.containerColor,
-                border = gridMenuAppearance.border,
-                shadowElevation = gridMenuAppearance.shadowElevation
+            AnimatedVisibility(
+                visible = showMenu,
+                enter = expandVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ) + fadeIn(),
+                exit = shrinkVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ) + fadeOut()
             ) {
-                DropdownMenuItem(
-                    text = { Text(if (book.isFavorite) strings.colFavorites else strings.addToCollection) },
-                    leadingIcon = {
-                        Icon(
-                            if (book.isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                            contentDescription = null,
-                            tint = if (book.isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                        )
-                    },
-                    onClick = {
-                        showMenu = false
-                        onToggleFavorite()
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(strings.addToCollection) },
-                    leadingIcon = { Icon(Icons.Rounded.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                    onClick = {
-                        showMenu = false
-                        onAddToCollection()
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(if (hasCover) strings.changeCover else strings.downloadCover) },
-                    leadingIcon = { Icon(if (hasCover) Icons.Rounded.Image else Icons.Rounded.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                    onClick = {
-                        showMenu = false
-                        onChangeCover()
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(strings.shareBookFile) },
-                    leadingIcon = { Icon(Icons.Rounded.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                    onClick = {
-                        showMenu = false
-                        onShare()
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
-                    leadingIcon = {
-                        Icon(Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                    },
-                    onClick = {
-                        showMenu = false
-                        onDelete()
-                    }
+                BookGridInlineActionTray(
+                    book = book,
+                    isPrivate = isPrivate,
+                    hasCover = hasCover,
+                    isGlass = isGlass,
+                    isDark = isDark,
+                    onSelect = { showMenu = false; onToggleSelect() },
+                    onOpenProfile = { showMenu = false; onOpenProfile() },
+                    onToggleFavorite = { showMenu = false; onToggleFavorite() },
+                    onAddToCollection = { showMenu = false; onAddToCollection() },
+                    onTogglePrivate = { showMenu = false; onTogglePrivate() },
+                    onChangeCover = { showMenu = false; onChangeCover() },
+                    onShare = { showMenu = false; onShare() },
+                    onSetProgress = { prog -> showMenu = false; onSetProgress(prog) },
+                    onDelete = { showMenu = false; onDelete() },
+                    onRestore = { showMenu = false; onRestore() },
+                    onDeletePermanently = { showMenu = false; onDeletePermanently() }
                 )
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BookListInlineActionTray(
+    book: Book,
+    isPrivate: Boolean,
+    hasCover: Boolean,
+    isGlass: Boolean,
+    isDark: Boolean,
+    onSelect: () -> Unit = {},
+    onOpenProfile: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    onAddToCollection: () -> Unit,
+    onTogglePrivate: () -> Unit,
+    onChangeCover: () -> Unit,
+    onShare: () -> Unit,
+    onSetProgress: (Int) -> Unit,
+    onDelete: () -> Unit,
+    onRestore: () -> Unit,
+    onDeletePermanently: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    val isTrash = book.deletedAtTimestamp != null
+    val chipBorder = if (isGlass) {
+        BorderStroke(0.75.dp, if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f))
+    } else null
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        HorizontalDivider(
+            color = if (isGlass) {
+                if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            },
+            thickness = 0.8.dp,
+            modifier = Modifier.padding(bottom = 5.dp)
+        )
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            if (!isTrash) {
+                BookActionChip(
+                    icon = Icons.Rounded.FolderOpen,
+                    label = strings.addToCollection,
+                    onClick = onAddToCollection,
+                    tint = MaterialTheme.colorScheme.primary,
+                    border = chipBorder
+                )
+
+                BookActionChip(
+                    icon = if (isPrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                    label = if (isPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate,
+                    onClick = onTogglePrivate,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    border = chipBorder
+                )
+
+                if (book.progressPercent < 100) {
+                    BookActionChip(
+                        icon = Icons.Rounded.CheckCircle,
+                        label = strings.markAsFinished,
+                        onClick = { onSetProgress(100) },
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        border = chipBorder
+                    )
+                }
+                if (book.progressPercent > 0) {
+                    BookActionChip(
+                        icon = Icons.Rounded.Refresh,
+                        label = strings.resetProgress,
+                        onClick = { onSetProgress(0) },
+                        border = chipBorder
+                    )
+                }
+
+                BookActionChip(
+                    icon = Icons.Rounded.Share,
+                    label = null,
+                    contentDescription = strings.shareBookFile,
+                    onClick = onShare,
+                    border = chipBorder
+                )
+
+                BookActionChip(
+                    icon = Icons.Rounded.Delete,
+                    label = null,
+                    contentDescription = strings.moveToTrash,
+                    onClick = onDelete,
+                    tint = MaterialTheme.colorScheme.error,
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
+                    border = chipBorder
+                )
+            } else {
+                BookActionChip(
+                    icon = Icons.Rounded.Restore,
+                    label = strings.restoreFromTrash,
+                    onClick = onRestore,
+                    tint = MaterialTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    border = chipBorder
+                )
+                BookActionChip(
+                    icon = Icons.Rounded.DeleteForever,
+                    label = null,
+                    contentDescription = strings.deletePermanently,
+                    onClick = onDeletePermanently,
+                    tint = MaterialTheme.colorScheme.error,
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+                    border = chipBorder
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookGridInlineActionTray(
+    book: Book,
+    isPrivate: Boolean,
+    hasCover: Boolean,
+    isGlass: Boolean,
+    isDark: Boolean,
+    onSelect: () -> Unit = {},
+    onOpenProfile: () -> Unit = {},
+    onToggleFavorite: () -> Unit = {},
+    onAddToCollection: () -> Unit,
+    onTogglePrivate: () -> Unit,
+    onChangeCover: () -> Unit = {},
+    onShare: () -> Unit,
+    onSetProgress: (Int) -> Unit,
+    onDelete: () -> Unit,
+    onRestore: () -> Unit,
+    onDeletePermanently: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    val isTrash = book.deletedAtTimestamp != null
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 6.dp)
+    ) {
+        HorizontalDivider(
+            color = if (isGlass) {
+                if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            },
+            thickness = 0.8.dp,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+
+        if (!isTrash) {
+            GridMenuRow(
+                icon = Icons.Rounded.Info,
+                text = strings.bookProfileTitle,
+                onClick = onOpenProfile
+            )
+            GridMenuRow(
+                icon = Icons.Rounded.FolderOpen,
+                text = strings.addToCollection,
+                onClick = onAddToCollection
+            )
+            GridMenuRow(
+                icon = if (isPrivate) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                text = if (isPrivate) strings.privateFolderRemoveBook else strings.privateFolderMoveToPrivate,
+                onClick = onTogglePrivate
+            )
+            if (book.progressPercent < 100) {
+                GridMenuRow(
+                    icon = Icons.Rounded.CheckCircle,
+                    text = strings.markAsFinished,
+                    onClick = { onSetProgress(100) },
+                    tint = MaterialTheme.colorScheme.tertiary
+                )
+            }
+            if (book.progressPercent > 0) {
+                GridMenuRow(
+                    icon = Icons.Rounded.Refresh,
+                    text = strings.resetProgress,
+                    onClick = { onSetProgress(0) }
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    onClick = onShare,
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.Share,
+                            contentDescription = strings.shareBookFile,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                Surface(
+                    onClick = onDelete,
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = strings.moveToTrash,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        } else {
+            GridMenuRow(
+                icon = Icons.Rounded.Restore,
+                text = strings.restoreFromTrash,
+                onClick = onRestore,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            GridMenuRow(
+                icon = Icons.Rounded.DeleteForever,
+                text = strings.deletePermanently,
+                onClick = onDeletePermanently,
+                tint = MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
+
+@Composable
+private fun BookActionChip(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String? = null,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = label,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f),
+    border: BorderStroke? = null
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(10.dp),
+        color = containerColor,
+        border = border,
+        modifier = modifier.heightIn(min = 34.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = if (!label.isNullOrBlank()) 10.dp else 9.dp,
+                vertical = 6.dp
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = tint,
+                modifier = Modifier.size(16.dp)
+            )
+            if (!label.isNullOrBlank()) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = tint,
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GridMenuRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(8.dp),
+        color = Color.Transparent,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(15.dp)
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium.copy(fontSize = 11.sp),
+                color = tint,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

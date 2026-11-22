@@ -30,9 +30,10 @@ object CoverSearchService {
         .build()
 
     fun cleanBookTitle(raw: String): String {
-        var t = raw.replace(Regex("""\.(fb2|epub|pdf|txt)(\.zip)?$""", RegexOption.IGNORE_CASE), "")
-        t = t.replace(Regex("""\[(СИ|Самиздат|Серия[^\]]*|Том[^\]]*)\]""", RegexOption.IGNORE_CASE), "")
-        t = t.replace(Regex("""\((СИ|Самиздат|Серия[^\)]*|Том[^\)]*|РОСМЭН|АСТ|Эксмо)\)""", RegexOption.IGNORE_CASE), "")
+        var t = raw.trim()
+        t = t.replace(Regex("""\.(fb2|epub|pdf|txt|mobi|cbz)(\.zip)?$""", RegexOption.IGNORE_CASE), "")
+        t = t.replace(Regex("""\[(СИ|Самиздат|Серия[^\]]*|Том[^\]]*|РОСМЭН|АСТ|Эксмо|Альпина|МИФ|Азбука)[^\]]*\]""", RegexOption.IGNORE_CASE), "")
+        t = t.replace(Regex("""\((СИ|Самиздат|Серия[^\)]*|Том[^\)]*|РОСМЭН|АСТ|Эксмо|Альпина|МИФ|Азбука)[^\)]*\)""", RegexOption.IGNORE_CASE), "")
         t = t.replace(Regex("""\s+"""), " ").trim(' ', '.', ',', '-', '_', ':', ';')
         return t
     }

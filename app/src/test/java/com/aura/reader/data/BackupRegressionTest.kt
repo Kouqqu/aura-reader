@@ -111,4 +111,48 @@ class BackupRegressionTest {
         val restored = JSONArray(prefs.recentBooksJson.first()).getJSONObject(0)
         assertEquals("roundtrip content", File(java.net.URI(restored.getString("uriString"))).readText())
     }
+
+    @Test fun exportAndImportPreservesFontsAndStats() = runBlocking {
+        val prefs = PreferencesManager(context)
+        val fontsDir = File(context.filesDir, "custom_fonts").apply { mkdirs() }
+        val fontFile = File(fontsDir, "MyCustomFont.ttf").apply { writeText("mock font content") }
+        prefs.addReadingSeconds(1200L)
+
+        val manager = BackupManager(context, prefs)
+        val bytes = ByteArrayOutputStream()
+        manager.exportBackup(bytes).getOrThrow()
+
+        // Wipe local font and stats
+        fontFile.delete()
+        prefs.resetReadingStats()
+        assertEquals(0, prefs.todayReadingMinutes.first())
+
+        manager.importBackup(ByteArrayInputStream(bytes.toByteArray())).getOrThrow()
+
+        assertTrue(fontFile.exists())
+        assertEquals("mock font content", fontFile.readText())
+        assertEquals(20, prefs.todayReadingMinutes.first())
+    }
+
+    @Test fun exportSettingsOnlyExcludesBookFiles() = runBlocking {
+        val prefs = PreferencesManager(context)
+        val dir = File(context.filesDir, "saved_books").apply { mkdirs() }
+        File(dir, "my_book.txt").writeText("book content")
+        prefs.saveRecentBooksJson(JSONArray().put(book("my_book")).toString())
+
+        val manager = BackupManager(context, prefs)
+        val bytes = ByteArrayOutputStream()
+        manager.exportBackup(bytes, includeBookFiles = false).getOrThrow()
+
+        val zipIn = java.util.zip.ZipInputStream(ByteArrayInputStream(bytes.toByteArray()))
+        val entries = mutableListOf<String>()
+        var entry = zipIn.nextEntry
+        while (entry != null) {
+            entries.add(entry.name)
+            zipIn.closeEntry()
+            entry = zipIn.nextEntry
+        }
+        assertTrue(entries.contains("manifest.json"))
+        assertFalse(entries.any { it.startsWith("books/") })
+    }
 }

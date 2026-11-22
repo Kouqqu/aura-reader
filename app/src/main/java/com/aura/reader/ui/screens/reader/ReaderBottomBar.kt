@@ -1,5 +1,13 @@
 package com.aura.reader.ui.screens.reader
 
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.hazeBlur
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -38,8 +46,11 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import com.aura.reader.data.model.BlockType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -74,7 +85,8 @@ fun BoxScope.ReaderBottomBar(
     isGlass: Boolean,
     isThemeDark: Boolean,
     isSepiaTheme: Boolean,
-    viewModel: ReaderViewModel
+    viewModel: ReaderViewModel,
+    hazeState: HazeState? = null
 ) {
     val strings = LocalAppStrings.current
     val context = LocalContext.current
@@ -98,6 +110,12 @@ fun BoxScope.ReaderBottomBar(
                                 .padding(horizontal = 16.dp, vertical = 14.dp)
                         ) {
                             if (chapters.isNotEmpty()) {
+                                val isSinglePageChapters = remember(chapters) {
+                                    chapters.isNotEmpty() && chapters.all { it.blocks.size == 1 && it.blocks[0].type == BlockType.IMAGE }
+                                }
+                                val effectiveCurrentPage = if (isSinglePageChapters) currentChapterIndex else currentPagingPage
+                                val effectiveTotalPages = if (isSinglePageChapters) chapters.size else totalPagingPages
+
                                 if (settings.pagingMode) {
                                     // --- Paging Mode: Chapter Switcher Header + Page Slider ---
                                     Row(
@@ -145,7 +163,11 @@ fun BoxScope.ReaderBottomBar(
                                                     overflow = TextOverflow.Ellipsis
                                                 )
                                                 Text(
-                                                    text = "${strings.chapter} ${currentChapterIndex + 1} ${strings.ofChapters} ${chapters.size}",
+                                                    text = if (isSinglePageChapters) {
+                                                        "${strings.page} ${currentChapterIndex + 1} ${strings.ofPages} ${chapters.size}"
+                                                    } else {
+                                                        "${strings.chapter} ${currentChapterIndex + 1} ${strings.ofChapters} ${chapters.size}"
+                                                    },
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = MaterialTheme.colorScheme.primary,
                                                     fontWeight = FontWeight.Medium
@@ -186,22 +208,25 @@ fun BoxScope.ReaderBottomBar(
                                     ) {
                                         IconButton(
                                             onClick = {
-                                                if (currentPagingPage > 0) {
-                                                    val target = currentPagingPage - 1
+                                                if (effectiveCurrentPage > 0) {
+                                                    val target = effectiveCurrentPage - 1
                                                     lastPageSliderStep = target
                                                     if (settings.hapticFeedbackEnabled) {
                                                         performSliderTick(context, haptic)
                                                     }
+                                                    if (isSinglePageChapters) {
+                                                        viewModel.setChapter(target)
+                                                    }
                                                     onRequestPage(target)
                                                 }
                                             },
-                                            enabled = currentPagingPage > 0,
+                                            enabled = effectiveCurrentPage > 0,
                                             modifier = Modifier.size(36.dp)
                                          ) {
                                              Icon(
                                                  Icons.Rounded.ChevronLeft,
                                                  contentDescription = strings.prevPage,
-                                                 tint = if (currentPagingPage > 0) {
+                                                 tint = if (effectiveCurrentPage > 0) {
                                                      if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
                                                  } else {
                                                      (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
@@ -209,20 +234,38 @@ fun BoxScope.ReaderBottomBar(
                                              )
                                          }
 
+                                         var localPageSliderValue by remember { mutableFloatStateOf(effectiveCurrentPage.toFloat()) }
+                                         var isDraggingPageSlider by remember { mutableStateOf(false) }
+
+                                         androidx.compose.runtime.LaunchedEffect(effectiveCurrentPage) {
+                                             if (!isDraggingPageSlider) {
+                                                 localPageSliderValue = effectiveCurrentPage.toFloat()
+                                             }
+                                         }
+
                                          Slider(
-                                             value = currentPagingPage.toFloat().coerceIn(0f, (totalPagingPages - 1).coerceAtLeast(0).toFloat()),
+                                             value = if (isDraggingPageSlider) localPageSliderValue else effectiveCurrentPage.toFloat().coerceIn(0f, (effectiveTotalPages - 1).coerceAtLeast(1).toFloat()),
                                              onValueChange = { newVal ->
-                                                 val step = newVal.toInt()
+                                                 isDraggingPageSlider = true
+                                                 localPageSliderValue = newVal
+                                                 val step = kotlin.math.round(newVal).toInt().coerceIn(0, (effectiveTotalPages - 1).coerceAtLeast(0))
                                                  if (step != lastPageSliderStep) {
                                                      lastPageSliderStep = step
                                                      if (settings.hapticFeedbackEnabled) {
                                                          performSliderTick(context, haptic)
                                                      }
                                                  }
-                                                 onRequestPage(step)
                                              },
-                                             valueRange = 0f..(totalPagingPages - 1).coerceAtLeast(1).toFloat(),
-                                             steps = (totalPagingPages - 2).coerceAtLeast(0),
+                                             onValueChangeFinished = {
+                                                 isDraggingPageSlider = false
+                                                 val finalStep = kotlin.math.round(localPageSliderValue).toInt().coerceIn(0, (effectiveTotalPages - 1).coerceAtLeast(0))
+                                                 if (isSinglePageChapters) {
+                                                     viewModel.setChapter(finalStep)
+                                                 }
+                                                 onRequestPage(finalStep)
+                                             },
+                                             valueRange = 0f..(effectiveTotalPages - 1).coerceAtLeast(1).toFloat(),
+                                             steps = 0,
                                              modifier = Modifier.weight(1f),
                                              colors = SliderDefaults.colors(
                                                  thumbColor = MaterialTheme.colorScheme.primary,
@@ -235,22 +278,25 @@ fun BoxScope.ReaderBottomBar(
 
                                          IconButton(
                                              onClick = {
-                                                 if (currentPagingPage < totalPagingPages - 1) {
-                                                     val target = currentPagingPage + 1
+                                                 if (effectiveCurrentPage < effectiveTotalPages - 1) {
+                                                     val target = effectiveCurrentPage + 1
                                                      lastPageSliderStep = target
                                                      if (settings.hapticFeedbackEnabled) {
                                                          performSliderTick(context, haptic)
                                                      }
+                                                     if (isSinglePageChapters) {
+                                                         viewModel.setChapter(target)
+                                                     }
                                                      onRequestPage(target)
                                                  }
                                              },
-                                             enabled = currentPagingPage < totalPagingPages - 1,
+                                             enabled = effectiveCurrentPage < effectiveTotalPages - 1,
                                              modifier = Modifier.size(36.dp)
                                          ) {
                                              Icon(
                                                  Icons.Rounded.ChevronRight,
                                                  contentDescription = strings.nextPage,
-                                                 tint = if (currentPagingPage < totalPagingPages - 1) {
+                                                 tint = if (effectiveCurrentPage < effectiveTotalPages - 1) {
                                                      if (isGlass) (if (isThemeDark) Color.White else Color(0xFF191B1F)) else MaterialTheme.colorScheme.onSurface
                                                  } else {
                                                      (if (isThemeDark) Color.White else Color.Black).copy(alpha = 0.25f)
@@ -260,13 +306,32 @@ fun BoxScope.ReaderBottomBar(
                                     }
 
                                     Text(
-                                        text = "${strings.page} ${currentPagingPage + 1} ${strings.ofPages} $totalPagingPages  •  ${strings.pagingHint}",
+                                        text = "${strings.page} ${effectiveCurrentPage + 1} ${strings.ofPages} $effectiveTotalPages  •  ${strings.pagingHint}",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.65f)) else MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.align(Alignment.CenterHorizontally)
                                     )
                                 } else {
                                     // --- Continuous Mode: Chapter Slider ---
+                                    var localChapterSliderValue by remember { mutableFloatStateOf(currentChapterIndex.toFloat()) }
+                                    var isDraggingChapterSlider by remember { mutableStateOf(false) }
+
+                                    androidx.compose.runtime.LaunchedEffect(currentChapterIndex) {
+                                        if (!isDraggingChapterSlider) {
+                                            localChapterSliderValue = currentChapterIndex.toFloat()
+                                        }
+                                    }
+
+                                    val displayChapterIndex = if (isDraggingChapterSlider) kotlin.math.round(localChapterSliderValue).toInt().coerceIn(chapters.indices) else currentChapterIndex
+                                    val displayChapter = chapters.getOrNull(displayChapterIndex)
+                                    val realChapterTitle = displayChapter?.title?.takeIf { it.isNotBlank() }
+                                        ?: "${strings.chapter} ${displayChapterIndex + 1}"
+                                    val displayPercent = if (isDraggingChapterSlider && isSinglePageChapters && chapters.isNotEmpty()) {
+                                        if (displayChapterIndex >= chapters.size - 1) 100 else ((displayChapterIndex.toDouble() / chapters.size) * 100).toInt()
+                                    } else {
+                                        bookProgressPercent
+                                    }
+
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -287,8 +352,6 @@ fun BoxScope.ReaderBottomBar(
                                                 tint = MaterialTheme.colorScheme.primary
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            val realChapterTitle = currentChapter?.title?.takeIf { it.isNotBlank() }
-                                                ?: "${strings.chapter} ${currentChapterIndex + 1}"
                                             Text(
                                                 text = realChapterTitle,
                                                 style = MaterialTheme.typography.labelMedium,
@@ -299,7 +362,7 @@ fun BoxScope.ReaderBottomBar(
                                                 modifier = Modifier.weight(1f, fill = false)
                                             )
                                             Text(
-                                                text = " (${currentChapterIndex + 1}/${chapters.size})",
+                                                text = " (${displayChapterIndex + 1}/${chapters.size})",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.60f) else Color.Black.copy(alpha = 0.55f)) else MaterialTheme.colorScheme.onSurfaceVariant,
                                                 maxLines = 1
@@ -313,9 +376,8 @@ fun BoxScope.ReaderBottomBar(
                                             )
                                         }
 
-                                        val progress = bookProgressPercent
                                         Text(
-                                            text = "$progress%",
+                                            text = "$displayPercent%",
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary,
@@ -330,7 +392,15 @@ fun BoxScope.ReaderBottomBar(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         IconButton(
-                                            onClick = { viewModel.prevChapter() },
+                                            onClick = {
+                                                if (isSinglePageChapters) {
+                                                    val target = (currentChapterIndex - 1).coerceAtLeast(0)
+                                                    viewModel.setChapter(target)
+                                                    viewModel.requestScrollToBlock(target)
+                                                } else {
+                                                    viewModel.prevChapter()
+                                                }
+                                            },
                                             enabled = currentChapterIndex > 0,
                                             modifier = Modifier.size(36.dp)
                                         ) {
@@ -346,19 +416,28 @@ fun BoxScope.ReaderBottomBar(
                                         }
 
                                         Slider(
-                                            value = currentChapterIndex.toFloat(),
+                                            value = if (isDraggingChapterSlider) localChapterSliderValue else currentChapterIndex.toFloat().coerceIn(0f, (chapters.size - 1).coerceAtLeast(1).toFloat()),
                                             onValueChange = { newVal ->
-                                                val step = newVal.toInt()
+                                                isDraggingChapterSlider = true
+                                                localChapterSliderValue = newVal
+                                                val step = kotlin.math.round(newVal).toInt().coerceIn(chapters.indices)
                                                 if (step != lastChapterSliderStep) {
                                                     lastChapterSliderStep = step
                                                     if (settings.hapticFeedbackEnabled) {
                                                         performSliderTick(context, haptic)
                                                     }
                                                 }
-                                                viewModel.setChapter(step)
+                                            },
+                                            onValueChangeFinished = {
+                                                isDraggingChapterSlider = false
+                                                val finalStep = kotlin.math.round(localChapterSliderValue).toInt().coerceIn(chapters.indices)
+                                                viewModel.setChapter(finalStep)
+                                                if (isSinglePageChapters) {
+                                                    viewModel.requestScrollToBlock(finalStep)
+                                                }
                                             },
                                             valueRange = 0f..(chapters.size - 1).coerceAtLeast(1).toFloat(),
-                                            steps = (chapters.size - 2).coerceAtLeast(0),
+                                            steps = 0,
                                             modifier = Modifier.weight(1f),
                                             colors = SliderDefaults.colors(
                                                 thumbColor = MaterialTheme.colorScheme.primary,
@@ -367,7 +446,15 @@ fun BoxScope.ReaderBottomBar(
                                         )
 
                                         IconButton(
-                                            onClick = { viewModel.nextChapter() },
+                                            onClick = {
+                                                if (isSinglePageChapters) {
+                                                    val target = (currentChapterIndex + 1).coerceAtMost(chapters.size - 1)
+                                                    viewModel.setChapter(target)
+                                                    viewModel.requestScrollToBlock(target)
+                                                } else {
+                                                    viewModel.nextChapter()
+                                                }
+                                            },
                                             enabled = currentChapterIndex < chapters.size - 1,
                                             modifier = Modifier.size(36.dp)
                                         ) {
@@ -395,23 +482,32 @@ fun BoxScope.ReaderBottomBar(
                     }
 
                     if (isGlass) {
-                        val bottomBarBg = if (isSepiaTheme) Color(0xF4FAF0E6) else null
+                        val bottomBarBg = if (isSepiaTheme) {
+                            Color(0x66FAF0E6)
+                        } else {
+                            null
+                        }
                         LiquidGlassSurface(
                             shape = RoundedCornerShape(24.dp),
                             shadowElevation = 10.dp,
                             isDark = isThemeDark,
                             tintColor = bottomBarBg,
+                            hazeState = hazeState,
                             modifier = Modifier.fillMaxWidth(),
                             content = bottomBarContent
                         )
                     } else {
                         Card(
-                            shape = RoundedCornerShape(24.dp),
+                            shape = RoundedCornerShape(22.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
+                                containerColor = if (isSepiaTheme) {
+                                    Color(0xFFE8DFC8)
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f)
+                                },
                                 contentColor = MaterialTheme.colorScheme.onSurface
                             ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = if (isThemeDark) 2.dp else 4.dp),
                             modifier = Modifier.fillMaxWidth(),
                             content = { bottomBarContent() }
                         )

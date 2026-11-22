@@ -1,9 +1,14 @@
 package com.aura.reader.ui.components
+import com.aura.reader.ui.theme.SepiaBackground
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Settings
@@ -33,10 +38,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -98,11 +105,19 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Context
+import android.os.Build
+import android.view.WindowManager
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalView
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.theme.LocalAppStrings
+import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeChild
-import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.hazeBlur
+import dev.chrisbanes.haze.glass.GlassStyle
+import dev.chrisbanes.haze.glass.hazeGlass
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -116,9 +131,8 @@ val LocalMaterialYouEnabled = compositionLocalOf { false }
 /**
  * Shared appearance for dropdown menus.
  *
- * A real Haze blur is not available inside a Compose `Popup`, so the glass
- * variant uses a neutral, nearly opaque frosted fill and a light rim instead
- * of the old blue-tinted translucent rectangle.
+ * In Liquid Glass mode, the menu uses a translucent frosted fill and delicate specular rim,
+ * paired with [PopupBlurBehind] which blurs the window behind the popup on Android 12+.
  */
 data class LiquidGlassMenuAppearance(
     val containerColor: Color,
@@ -129,28 +143,42 @@ data class LiquidGlassMenuAppearance(
 @Composable
 fun liquidGlassMenuAppearance(
     isGlass: Boolean,
-    isDark: Boolean
+    isDark: Boolean,
+    isSepia: Boolean = MaterialTheme.colorScheme.background == SepiaBackground
 ): LiquidGlassMenuAppearance {
     if (!isGlass) {
         return LiquidGlassMenuAppearance(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+            containerColor = if (isSepia) Color(0xFFE6DDCF) else MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
             shadowElevation = 6.dp
         )
     }
 
-    val container = if (isDark) Color(0xF51A1A1D) else Color(0xF9FCFCFD)
+    val container = if (isDark) {
+        Color(0xF418181C)
+    } else if (isSepia) {
+        Color(0xF6EDE5D6)
+    } else {
+        Color(0xF7F8FAFC)
+    }
     val rim = if (isDark) {
         Brush.verticalGradient(
             listOf(
-                Color.White.copy(alpha = 0.22f),
-                Color.White.copy(alpha = 0.04f)
+                Color.White.copy(alpha = 0.28f),
+                Color.White.copy(alpha = 0.08f)
+            )
+        )
+    } else if (isSepia) {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.65f),
+                Color(0xFFD4C8B5).copy(alpha = 0.45f)
             )
         )
     } else {
         Brush.verticalGradient(
             listOf(
-                Color.White.copy(alpha = 0.90f),
+                Color.White.copy(alpha = 0.85f),
                 Color.Black.copy(alpha = 0.06f)
             )
         )
@@ -160,6 +188,32 @@ fun liquidGlassMenuAppearance(
         border = BorderStroke(0.85.dp, rim),
         shadowElevation = 16.dp
     )
+}
+
+/**
+ * Enables hardware window background blur behind Compose DropdownMenus / Popups
+ * on Android 12+ (API 31+). In Liquid Glass mode, this renders real frosted glass blur
+ * through the translucent menu surface.
+ */
+@Composable
+fun PopupBlurBehind(
+    isGlass: Boolean = true,
+    blurRadius: Int = 36
+) {
+    if (!isGlass || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+    val view = LocalView.current
+    LaunchedEffect(view) {
+        try {
+            val rootView = view.rootView
+            val params = rootView.layoutParams as? WindowManager.LayoutParams
+            if (params != null) {
+                params.flags = params.flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+                params.blurBehindRadius = blurRadius
+                val wm = view.context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+                wm?.updateViewLayout(rootView, params)
+            }
+        } catch (_: Throwable) {}
+    }
 }
 
 /**
@@ -178,18 +232,30 @@ fun LiquidGlassSurface(
     hazeState: HazeState? = null,
     content: @Composable () -> Unit
 ) {
+    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
+
     val hazeModifier = if (hazeState != null) {
-        Modifier.clip(shape).hazeChild(
-            state = hazeState,
-            style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
+        Modifier.clip(shape).hazeBlur(
+            input = HazeInput.Sources(hazeState),
+            style = HazeBlurStyle {
+                blurRadius(24.dp)
+                noiseFactor(0.015f)
+            }
         )
     } else Modifier
 
-    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
-    val baseFill = tintColor ?: if (isDark) {
-        if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)
+    val baseFill = if (hazeState != null) {
+        tintColor ?: if (isDark) {
+            if (isAmoled) Color(0x5508080A) else Color(0x60141416)
+        } else {
+            Color(0x66F7F8FA)
+        }
     } else {
-        Color(0xF5F6F7FA)
+        tintColor ?: if (isDark) {
+            if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
+        } else {
+            Color(0xF5F7F8FA)
+        }
     }
 
     val borderBrush = if (isDark) {
@@ -272,17 +338,20 @@ fun FloatingNavigationIsland(
         val dockShape = RoundedCornerShape(30.dp)
         val hazeState = LocalHazeState.current
         val hazeModifier = if (hazeState != null) {
-            Modifier.clip(dockShape).hazeChild(
-                state = hazeState,
-                style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
+            Modifier.clip(dockShape).hazeBlur(
+                input = HazeInput.Sources(hazeState),
+                style = HazeBlurStyle {
+                    blurRadius(16.dp)
+                    noiseFactor(0f)
+                }
             )
         } else Modifier
 
         val dockBgColor = if (isDark) {
-            if (isAmoled) Color(0xF2121316)
-            else Color(0xEE181A20)
+            if (isAmoled) Color(0xF20A0A0C)
+            else Color(0xEE141416)
         } else {
-            Color(0xF4F5F6FA)
+            Color(0xF4F7F8FA)
         }
         val dockBorderColor = if (isDark) {
             Color.White.copy(alpha = 0.06f)
@@ -615,132 +684,111 @@ fun FloatingNavigationIsland(
             }
         }
     } else {
-        // MATERIAL 3 EXPRESSIVE STYLE FALLBACK
+        // MATERIAL 3 EXPRESSIVE STYLE (Authentic Chumpy-style Pill Dock)
+        val density = LocalDensity.current
+        val haptic = LocalHapticFeedback.current
+        val dockShape = RoundedCornerShape(30.dp)
+        val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
+
+        val m3DockBgColor = if (isDark) {
+            if (isAmoled) Color(0xF40A0A0C) else Color(0xF4141416)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f)
+        }
+
+        val m3DockBorder = BorderStroke(
+            1.dp,
+            if (isDark) Color.White.copy(alpha = 0.08f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        )
+
         Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-            shadowElevation = 8.dp,
+            shape = dockShape,
+            color = m3DockBgColor,
+            border = m3DockBorder,
+            shadowElevation = if (isDark) 0.dp else 8.dp,
             modifier = modifier
                 .height(60.dp)
-                .width(320.dp)
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 6.dp, vertical = 6.dp),
+                    .fillMaxHeight()
+                    .padding(horizontal = 6.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // Tab 0: Books
-                val isBooksActive = selectedTab == 0
-                Surface(
-                    onClick = onMyBooksClick,
-                    shape = CircleShape,
-                    color = if (isBooksActive) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else Color.Transparent,
-                    modifier = Modifier
-                        .height(46.dp)
-                        .weight(1f)
-                        .expressiveClickable(scaleDown = 0.94f, onClick = onMyBooksClick)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                val tabs = listOf(
+                    Triple(Icons.AutoMirrored.Rounded.MenuBook, strings.navMyBooks, onMyBooksClick),
+                    Triple(Icons.Rounded.Search, strings.search, onSearchClick),
+                    Triple(Icons.Rounded.Settings, strings.settingsTitle, onSettingsClick)
+                )
+
+                tabs.forEachIndexed { index, (icon, label, onClick) ->
+                    val isTabActive = selectedTab == index
+                    val itemShape = RoundedCornerShape(25.dp)
+
+                    Surface(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onClick()
+                        },
+                        shape = itemShape,
+                        color = if (isTabActive) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else Color.Transparent,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .animateContentSize(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioNoBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                )
+                            )
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.MenuBook,
-                            contentDescription = strings.navMyBooks,
-                            tint = if (isBooksActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = strings.navMyBooks,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isBooksActive) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isBooksActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(4.dp))
-
-                // Tab 1: Search
-                val isSearchActive = selectedTab == 1
-                Surface(
-                    onClick = onSearchClick,
-                    shape = CircleShape,
-                    color = if (isSearchActive) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else Color.Transparent,
-                    modifier = Modifier
-                        .height(46.dp)
-                        .weight(1f)
-                        .expressiveClickable(scaleDown = 0.90f, onClick = onSearchClick)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Search,
-                            contentDescription = strings.search,
-                            tint = if (isSearchActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = strings.search,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isSearchActive) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSearchActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(4.dp))
-
-                // Tab 2: Settings
-                val isSettingsActive = selectedTab == 2
-                Surface(
-                    onClick = onSettingsClick,
-                    shape = CircleShape,
-                    color = if (isSettingsActive) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else Color.Transparent,
-                    modifier = Modifier
-                        .height(46.dp)
-                        .weight(1f)
-                        .expressiveClickable(scaleDown = 0.94f, onClick = onSettingsClick)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Settings,
-                            contentDescription = strings.settingsTitle,
-                            tint = if (isSettingsActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = strings.settingsTitle,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isSettingsActive) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSettingsActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .padding(horizontal = if (isTabActive) 14.dp else 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = label,
+                                tint = if (isTabActive) {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                } else {
+                                    if (isDark) Color.White.copy(alpha = 0.55f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                modifier = Modifier.size(20.dp)
+                            )
+                            AnimatedVisibility(
+                                visible = isTabActive,
+                                enter = fadeIn(tween(180)) + expandHorizontally(
+                                    animationSpec = spring<IntSize>(
+                                        dampingRatio = Spring.DampingRatioNoBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    )
+                                ),
+                                exit = fadeOut(tween(120)) + shrinkHorizontally(
+                                    animationSpec = spring<IntSize>(
+                                        dampingRatio = Spring.DampingRatioNoBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    )
+                                )
+                            ) {
+                                Row {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Clip
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -814,23 +862,26 @@ private fun TabDockRow(
 fun FloatingAddGlassButton(
     onClick: () -> Unit,
     isDark: Boolean = false,
+    isGlass: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
-    val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
     val shape = CircleShape
     val hazeState = LocalHazeState.current
-    val hazeModifier = if (hazeState != null) {
-        Modifier.clip(shape).hazeChild(
-            state = hazeState,
-            style = if (isDark) HazeMaterials.ultraThin() else HazeMaterials.thin()
+    val hazeModifier = if (isGlass && hazeState != null) {
+        Modifier.clip(shape).hazeBlur(
+            input = HazeInput.Sources(hazeState),
+            style = HazeBlurStyle {
+                blurRadius(16.dp)
+                noiseFactor(0f)
+            }
         )
     } else Modifier
 
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val containerScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
+        targetValue = if (isPressed) 0.94f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 650f),
         label = "addButtonScale"
     )
@@ -840,91 +891,129 @@ fun FloatingAddGlassButton(
         label = "addButtonPress"
     )
 
-    // Exact same dock glass styling as FloatingNavigationIsland
-    val dockBgColor = if (isDark) {
-        if (isAmoled) Color(0xF2121316) else Color(0xEE181A20)
-    } else {
-        Color(0xF4F5F6FA)
-    }
-    val dockBorderColor = if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
+    if (isGlass) {
+        val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
+        // Exact same dock glass styling as FloatingNavigationIsland
+        val dockBgColor = if (isDark) {
+            if (isAmoled) Color(0xF20A0A0C) else Color(0xEE141416)
+        } else {
+            Color(0xF4F7F8FA)
+        }
+        val dockBorderColor = if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.05f)
 
-    // Exact same inner pill styling as the sliding tablet in the dock
-    val pillBgColor = if (isDark) {
-        if (isAmoled) Color(0x10FFFFFF) else Color(0x0EFFFFFF)
-    } else {
-        Color(0x08000000)
-    }
-    val borderAlpha = if (isDark) {
-        0.05f + 0.22f * expansionProgress
-    } else {
-        0.04f + 0.16f * expansionProgress
-    }
-    val pillBorderColor = if (isDark) {
-        Color.White.copy(alpha = borderAlpha)
-    } else {
-        Color.Black.copy(alpha = borderAlpha)
-    }
-    val borderWidthDp = (0.5f + 0.4f * expansionProgress).dp
+        // Exact same inner pill styling as the sliding tablet in the dock
+        val pillBgColor = if (isDark) {
+            if (isAmoled) Color(0x10FFFFFF) else Color(0x0EFFFFFF)
+        } else {
+            Color(0x08000000)
+        }
+        val borderAlpha = if (isDark) {
+            0.05f + 0.22f * expansionProgress
+        } else {
+            0.04f + 0.16f * expansionProgress
+        }
+        val pillBorderColor = if (isDark) {
+            Color.White.copy(alpha = borderAlpha)
+        } else {
+            Color.Black.copy(alpha = borderAlpha)
+        }
+        val borderWidthDp = (0.5f + 0.4f * expansionProgress).dp
 
-    // Outer anchored glass vessel (matches 60dp height of FloatingNavigationIsland)
-    Box(
-        modifier = modifier
-            .then(
-                if (!isDark) {
-                    Modifier.shadow(
-                        elevation = 8.dp,
-                        shape = shape,
-                        clip = false,
-                        ambientColor = Color.Black.copy(alpha = 0.06f),
-                        spotColor = Color.Black.copy(alpha = 0.08f)
-                    )
-                } else Modifier
-            )
-            .size(60.dp)
-            .graphicsLayer {
-                scaleX = containerScale
-                scaleY = containerScale
-            }
-            .clip(shape)
-            .then(hazeModifier)
-            .background(dockBgColor)
-            .border(
-                width = 0.6.dp,
-                color = dockBorderColor,
-                shape = shape
-            )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                role = Role.Button,
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onClick()
-                }
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        // A centered press response always fits inside the 60dp glass circle.
-        val pillSize = (46 + 6 * expansionProgress).dp
+        // Outer anchored glass vessel (matches 60dp height of FloatingNavigationIsland)
         Box(
-            modifier = Modifier
-                .size(pillSize)
-                .clip(CircleShape)
-                .background(pillBgColor)
+            modifier = modifier
+                .then(
+                    if (!isDark) {
+                        Modifier.shadow(
+                            elevation = 8.dp,
+                            shape = shape,
+                            clip = false,
+                            ambientColor = Color.Black.copy(alpha = 0.06f),
+                            spotColor = Color.Black.copy(alpha = 0.08f)
+                        )
+                    } else Modifier
+                )
+                .size(60.dp)
+                .graphicsLayer {
+                    scaleX = containerScale
+                    scaleY = containerScale
+                }
+                .clip(shape)
+                .then(hazeModifier)
+                .background(dockBgColor)
                 .border(
-                    width = borderWidthDp,
-                    color = pillBorderColor,
-                    shape = CircleShape
+                    width = 0.6.dp,
+                    color = dockBorderColor,
+                    shape = shape
+                )
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    role = Role.Button,
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onClick()
+                    }
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Add,
-                contentDescription = LocalAppStrings.current.addBooks,
-                tint = MaterialTheme.colorScheme.primary,
+            // A centered press response always fits inside the 60dp glass circle.
+            val pillSize = (46 + 6 * expansionProgress).dp
+            Box(
                 modifier = Modifier
-                    .size(26.dp)
-            )
+                    .size(pillSize)
+                    .clip(CircleShape)
+                    .background(pillBgColor)
+                    .border(
+                        width = borderWidthDp,
+                        color = pillBorderColor,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = LocalAppStrings.current.addBooks,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+        }
+    } else {
+        // MATERIAL 3 EXPRESSIVE STYLE
+        val m3AddBorder = BorderStroke(
+            1.dp,
+            if (isDark) Color.White.copy(alpha = 0.16f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.50f)
+        )
+        Surface(
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            },
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            border = m3AddBorder,
+            shadowElevation = if (isDark) 0.dp else 6.dp,
+            interactionSource = interactionSource,
+            modifier = modifier
+                .size(60.dp)
+                .graphicsLayer {
+                    scaleX = containerScale
+                    scaleY = containerScale
+                }
+                .clip(CircleShape)
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = LocalAppStrings.current.addBooks,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
         }
     }
 }
@@ -1278,6 +1367,188 @@ fun LiquidGlassCard(
             )
         ) {
             content()
+        }
+    }
+}
+
+/**
+ * Authentic Liquid Glass Menu Container.
+ * Renders in-window directly on top of hazeSource, applying genuine 24.dp Haze blur
+ * identical to ReaderTopBar and ReaderBottomBar.
+ */
+@Composable
+fun LiquidGlassMenuContainer(
+    isGlass: Boolean,
+    isDark: Boolean,
+    isSepia: Boolean = MaterialTheme.colorScheme.background == SepiaBackground,
+    hazeState: HazeState? = LocalHazeState.current,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(22.dp),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    if (isGlass) {
+        val isAmoled = isDark && MaterialTheme.colorScheme.background == Color.Black
+
+        // Elevated frosted glass:
+        // Translucent obsidian in dark/amoled so 24dp Haze blur provides a luscious authentic frosted glass look,
+        // free of any matte bluish tint or opacity blockage.
+        val menuFill = if (hazeState != null) {
+            if (isDark) {
+                if (isAmoled) Color(0x750A0A0C) else Color(0x65141416)
+            } else if (isSepia) {
+                Color(0x80EDE5D6)
+            } else {
+                Color(0x85F8FAFC)
+            }
+        } else {
+            if (isDark) {
+                if (isAmoled) Color(0xFA0C0C0C) else Color(0xF5141416)
+            } else if (isSepia) {
+                Color(0xF5EDE5D6)
+            } else {
+                Color(0xF5F8FAFC)
+            }
+        }
+
+        val rimBrush = if (isDark) {
+            Brush.verticalGradient(
+                listOf(
+                    Color.White.copy(alpha = 0.22f),
+                    Color.White.copy(alpha = 0.05f)
+                )
+            )
+        } else if (isSepia) {
+            Brush.verticalGradient(
+                listOf(
+                    Color.White.copy(alpha = 0.65f),
+                    Color(0xFFD4C8B5).copy(alpha = 0.45f)
+                )
+            )
+        } else {
+            Brush.verticalGradient(
+                listOf(
+                    Color.White.copy(alpha = 0.85f),
+                    Color.Black.copy(alpha = 0.07f)
+                )
+            )
+        }
+
+        val hazeModifier = if (hazeState != null) {
+            Modifier.clip(shape).hazeBlur(
+                input = HazeInput.Sources(hazeState),
+                style = HazeBlurStyle {
+                    blurRadius(24.dp)
+                    noiseFactor(0.015f)
+                }
+            )
+        } else Modifier
+
+        Box(
+            modifier = modifier
+                .shadow(
+                    elevation = 20.dp,
+                    shape = shape,
+                    clip = false,
+                    ambientColor = Color.Black.copy(alpha = if (isDark) 0.40f else 0.10f),
+                    spotColor = Color.Black.copy(alpha = if (isDark) 0.60f else 0.18f)
+                )
+                .clip(shape)
+                .then(hazeModifier)
+                .background(menuFill)
+                .border(
+                    width = 0.85.dp,
+                    brush = rimBrush,
+                    shape = shape
+                )
+        ) {
+            val defaultContentColor = if (isDark) Color(0xFFF6F7F9) else Color(0xFF191B1F)
+            CompositionLocalProvider(LocalContentColor provides defaultContentColor) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                ) {
+                    content()
+                }
+            }
+        }
+    } else {
+        Card(
+            shape = shape,
+            colors = CardDefaults.cardColors(
+                containerColor = if (isSepia) {
+                    Color(0xFFE6DDCF)
+                } else if (isDark) {
+                    Color(0xFF1E1E1E)
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                },
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+            modifier = modifier
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+/**
+ * Liquid Glass Menu Item with crisp typography and tactile ripple.
+ */
+@Composable
+fun LiquidGlassMenuItem(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
+    trailingText: String? = null,
+    textColor: Color = MaterialTheme.colorScheme.onSurface,
+    fontWeight: FontWeight = FontWeight.Normal
+) {
+    Surface(
+        onClick = onClick,
+        color = Color.Transparent,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (leadingIcon != null) {
+                Box(modifier = Modifier.size(22.dp), contentAlignment = Alignment.Center) {
+                    leadingIcon()
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = fontWeight,
+                color = textColor,
+                modifier = Modifier.weight(1f)
+            )
+            if (trailingIcon != null) {
+                Box(modifier = Modifier.size(20.dp), contentAlignment = Alignment.Center) {
+                    trailingIcon()
+                }
+            } else if (trailingText != null) {
+                Text(
+                    text = trailingText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

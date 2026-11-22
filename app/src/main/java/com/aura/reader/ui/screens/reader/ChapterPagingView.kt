@@ -26,6 +26,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.runtime.snapshotFlow
 import com.aura.reader.ui.theme.LocalAppStrings
+import com.aura.reader.ui.theme.LocalEInkMode
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material.icons.rounded.SkipNext
 import kotlin.math.roundToInt
@@ -225,19 +226,18 @@ fun ChapterPagingView(
                 }
             }
         }
+        val isEInk = LocalEInkMode.current
         val haptic = LocalHapticFeedback.current
         var lastHapticSpread by remember { mutableIntStateOf(-1) }
         var lastHapticOffset by remember { mutableFloatStateOf(pagerState.currentPage.toFloat()) }
 
         // Continuous finger-following haptics during page flip
-        LaunchedEffect(pagerState.isScrollInProgress, pagerState.currentPageOffsetFraction) {
-            if (pagerState.isScrollInProgress) {
+        LaunchedEffect(pagerState.isScrollInProgress, pagerState.currentPageOffsetFraction, isEInk) {
+            if (!isEInk && settings.hapticFeedbackEnabled && pagerState.isScrollInProgress) {
                 val currentOffset = pagerState.currentPage + pagerState.currentPageOffsetFraction
                 val delta = kotlin.math.abs(currentOffset - lastHapticOffset)
                 if (delta >= 0.12f) {
-                    if (settings.hapticFeedbackEnabled) {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    }
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     lastHapticOffset = currentOffset
                 }
             } else {
@@ -257,8 +257,6 @@ fun ChapterPagingView(
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     }
                     onNextChapter()
-                } else if (!hasNext && settled == totalPagerSpreads - 1) {
-                    onBookFinished()
                 }
             }
         }
@@ -278,8 +276,7 @@ fun ChapterPagingView(
 
                 val currentBlock = pages.getOrNull(activePageIdx)?.firstOrNull()?.first ?: 0
                 val textOffset = pages.getOrNull(activePageIdx)?.firstOrNull()?.second?.sourceTextOffset ?: 0
-                onUpdateProgress(currentBlock, blocks.size.coerceAtLeast(1), textOffset, 0,
-                    !hasNext && activePageIdx + (if (isTwoColumn) 1 else 0) >= pages.lastIndex)
+                onUpdateProgress(currentBlock, blocks.size.coerceAtLeast(1), textOffset, 0, false)
             }
         }
 
@@ -346,35 +343,78 @@ fun ChapterPagingView(
             }
         }
 
-        val instantSwipeModifier = if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+        val instantSwipeModifier = if (settings.pageAnimation == PageTurnAnimation.INSTANT || isEInk) {
             Modifier.pointerInput(pagerState.currentPage, totalPagerSpreads) {
-                detectHorizontalDragGestures { _, dragAmount ->
-                    if (dragAmount < -25f) {
-                        if (pagerState.currentPage < totalPagerSpreads - 1) {
-                            coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
+                var totalDrag = 0f
+                var triggered = false
+                detectHorizontalDragGestures(
+                    onDragStart = {
+                        totalDrag = 0f
+                        triggered = false
+                    },
+                    onDragEnd = {
+                        if (!triggered) {
+                            val threshold = 35f
+                            if (totalDrag < -threshold) {
+                                if (pagerState.currentPage < totalPagerSpreads - 1) {
+                                    coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
+                                }
+                            } else if (totalDrag > threshold) {
+                                if (pagerState.currentPage > 0) {
+                                    coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
+                                }
+                            }
                         }
-                    } else if (dragAmount > 25f) {
-                        if (pagerState.currentPage > 0) {
-                            coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
+                    },
+                    onDragCancel = {
+                        totalDrag = 0f
+                        triggered = false
+                    },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        totalDrag += dragAmount
+                        val immediateThreshold = 80f
+                        if (!triggered) {
+                            if (totalDrag < -immediateThreshold) {
+                                triggered = true
+                                if (pagerState.currentPage < totalPagerSpreads - 1) {
+                                    coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
+                                }
+                            } else if (totalDrag > immediateThreshold) {
+                                triggered = true
+                                if (pagerState.currentPage > 0) {
+                                    coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
+                                }
+                            }
                         }
                     }
-                }
+                )
             }
         } else Modifier
 
         val flipPage: (Int) -> Unit = { target ->
             coroutineScope.launch {
-                if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
+                if (settings.pageAnimation == PageTurnAnimation.INSTANT || isEInk) {
                     pagerState.scrollToPage(target)
                 } else {
                     pagerState.animateScrollToPage(target)
                 }
             }
         }
+        val onPrevPageAction: () -> Unit = {
+            if (pagerState.currentPage > 0) {
+                flipPage(pagerState.currentPage - 1)
+            }
+        }
+        val onNextPageAction: () -> Unit = {
+            if (pagerState.currentPage < totalPagerSpreads - 1) {
+                flipPage(pagerState.currentPage + 1)
+            }
+        }
 
         HorizontalPager(
             state = pagerState,
-            userScrollEnabled = settings.pageAnimation != PageTurnAnimation.INSTANT,
+            userScrollEnabled = !isEInk && settings.pageAnimation != PageTurnAnimation.INSTANT,
             modifier = Modifier
                 .fillMaxSize()
                 .then(instantSwipeModifier)
@@ -441,37 +481,45 @@ fun ChapterPagingView(
                         detectTapGestures { offset ->
                             val edgeThreshold = 72.dp.toPx()
                             if (offset.x < edgeThreshold) {
-                                if (pagerState.currentPage > 0) {
-                                    flipPage(pagerState.currentPage - 1)
-                                }
+                                onPrevPageAction()
                             } else if (offset.x > size.width - edgeThreshold) {
-                                if (pagerState.currentPage < totalPagerSpreads - 1) {
-                                    flipPage(pagerState.currentPage + 1)
-                                }
+                                onNextPageAction()
                             } else {
                                 onToggleControls()
                             }
                         }
                     }
             ) {
+                val isComicOrManga = remember(blocks) {
+                    blocks.isNotEmpty() && blocks.all { it.type == BlockType.IMAGE }
+                }
+
                 if (hasPrev && spreadIdx == 0) {
-                    ChapterTransitionSpread(
-                        isNext = false,
-                        chapterTitle = prevChapter?.title ?: "",
-                        chapterNumber = chapterIndex,
-                        settings = settings,
-                        resolvedFontFamily = resolvedFontFamily,
-                        onClick = onPrevChapter
-                    )
+                    if (isComicOrManga) {
+                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+                    } else {
+                        ChapterTransitionSpread(
+                            isNext = false,
+                            chapterTitle = prevChapter.title,
+                            chapterNumber = chapterIndex,
+                            settings = settings,
+                            resolvedFontFamily = resolvedFontFamily,
+                            onClick = onPrevChapter
+                        )
+                    }
                 } else if (hasNext && spreadIdx == totalPagerSpreads - 1) {
-                    ChapterTransitionSpread(
-                        isNext = true,
-                        chapterTitle = nextChapter?.title ?: "",
-                        chapterNumber = chapterIndex + 2,
-                        settings = settings,
-                        resolvedFontFamily = resolvedFontFamily,
-                        onClick = onNextChapter
-                    )
+                    if (isComicOrManga) {
+                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+                    } else {
+                        ChapterTransitionSpread(
+                            isNext = true,
+                            chapterTitle = nextChapter.title,
+                            chapterNumber = chapterIndex + 2,
+                            settings = settings,
+                            resolvedFontFamily = resolvedFontFamily,
+                            onClick = onNextChapter
+                        )
+                    }
                 } else {
                     val contentSpreadIdx = spreadIdx - prevPageOffset
                     androidx.compose.runtime.key(selectionResetKey) {
@@ -525,7 +573,11 @@ fun ChapterPagingView(
                                                 onFootnoteClick = onFootnoteClick,
                                                 onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                                 onToggleControls = onToggleControls,
-                                                onSaveQuote = onSaveQuote
+                                                onSaveQuote = onSaveQuote,
+                                                onPrevPage = onPrevPageAction,
+                                                onNextPage = onNextPageAction,
+                                                isGraphicPage = false,
+                                                isInScrollMode = false
                                             )
                                         }
                                     }
@@ -563,19 +615,27 @@ fun ChapterPagingView(
                                                 onFootnoteClick = onFootnoteClick,
                                                 onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                                 onToggleControls = onToggleControls,
-                                                onSaveQuote = onSaveQuote
+                                                onSaveQuote = onSaveQuote,
+                                                onPrevPage = onPrevPageAction,
+                                                onNextPage = onNextPageAction,
+                                                isGraphicPage = false,
+                                                isInScrollMode = false
                                             )
                                         }
                                     }
                                 }
                             } else {
                                 val pageBlocks = pages.getOrNull(contentSpreadIdx) ?: emptyList()
+                                val isSingleImagePage = pageBlocks.size == 1 && pageBlocks[0].second.type == BlockType.IMAGE
                                 Column(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .padding(horizontal = 24.dp)
-                                        .padding(top = topPaddingDp, bottom = bottomPaddingDp),
-                                    verticalArrangement = Arrangement.Top
+                                        .padding(horizontal = if (isSingleImagePage) 0.dp else 24.dp)
+                                        .padding(
+                                            top = if (isSingleImagePage) 0.dp else topPaddingDp,
+                                            bottom = if (isSingleImagePage) 0.dp else bottomPaddingDp
+                                        ),
+                                    verticalArrangement = if (isSingleImagePage) Arrangement.Center else Arrangement.Top
                                 ) {
                                     for ((originalIndex, block) in pageBlocks) {
                                         val isSpeaking = isTtsHighlightActive && (originalIndex == ttsState.currentOriginalBlockIndex)
@@ -597,7 +657,11 @@ fun ChapterPagingView(
                                             onFootnoteClick = onFootnoteClick,
                                             onNavigateToChapter = { ch, blk -> onFootnoteClick("", "nav:$ch:$blk") },
                                             onToggleControls = onToggleControls,
-                                            onSaveQuote = onSaveQuote
+                                            onSaveQuote = onSaveQuote,
+                                            onPrevPage = onPrevPageAction,
+                                            onNextPage = onNextPageAction,
+                                            isGraphicPage = isSingleImagePage,
+                                            isInScrollMode = false
                                         )
                                     }
                                 }

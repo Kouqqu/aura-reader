@@ -11,7 +11,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Base64
 import android.widget.Toast
-import com.aura.reader.data.service.CoverSearchService
+import com.aura.reader.data.service.BookEnricher
 import com.aura.reader.ui.theme.Strings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +37,7 @@ object CoverDownloadUtils {
                     val bytes = Base64.decode(coverBase64, Base64.DEFAULT)
                     bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                 } else if (!coverUrl.isNullOrBlank()) {
-                    val downloadedBase64 = CoverSearchService.downloadCoverAsBase64(coverUrl)
+                    val downloadedBase64 = BookEnricher.downloadCoverAsBase64(coverUrl)
                     if (!downloadedBase64.isNullOrBlank()) {
                         val bytes = Base64.decode(downloadedBase64, Base64.DEFAULT)
                         bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)

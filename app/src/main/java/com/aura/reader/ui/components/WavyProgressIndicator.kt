@@ -25,8 +25,13 @@ import kotlin.math.PI
 import kotlin.math.sin
 
 /**
- * Material 3 Expressive animated wavy progress bar (similar to Android 15/16 media scrubber).
- * Features a smoothly undulating sine wave that flows as progress increases.
+ * Material 3 Expressive wavy progress indicator.
+ *
+ * Both the active segment and the track undulate with the same phase, a small
+ * flat gap separates them at the progress head, and a stop indicator closes the
+ * line. That is the shape the current Material spec uses; the previous version
+ * drew a sine wave only for the active part and left a flat track, which read as
+ * a custom bar rather than a Material indicator.
  */
 @Composable
 fun WavyProgressIndicator(
@@ -34,16 +39,16 @@ fun WavyProgressIndicator(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
     trackColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    strokeWidth: Dp = 3.5.dp,
-    amplitude: Dp = 2.8.dp,
-    waveLength: Dp = 22.dp
+    strokeWidth: Dp = 4.dp,
+    amplitude: Dp = 2.4.dp,
+    waveLength: Dp = 32.dp
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "wavyProgress")
     val phase by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1100, easing = LinearEasing),
+            animation = tween(durationMillis = 1600, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "wavePhase"
@@ -53,51 +58,58 @@ fun WavyProgressIndicator(
     val strokeWidthPx = with(density) { strokeWidth.toPx() }
     val amplitudePx = with(density) { amplitude.toPx() }
     val waveLengthPx = with(density) { waveLength.toPx() }
+    val gapPx = with(density) { 4.dp.toPx() }
+    val stopRadiusPx = with(density) { 2.dp.toPx() }
+    val dampPx = with(density) { 10.dp.toPx() }
 
-    Canvas(modifier = modifier.height(14.dp)) {
+    Canvas(modifier = modifier.height(16.dp)) {
         val width = size.width
         val centerY = size.height / 2f
         val clampedProgress = progress.coerceIn(0f, 1f)
-        val activeWidth = width * clampedProgress
+        val lineEnd = (width - stopRadiusPx * 2f - gapPx).coerceAtLeast(0f)
+        val activeEnd = lineEnd * clampedProgress
+        val trackStart = (activeEnd + gapPx).coerceAtMost(lineEnd)
 
-        // 1. Draw inactive track (flat background line)
-        if (activeWidth < width) {
-            drawLine(
-                color = trackColor.copy(alpha = 0.35f),
-                start = Offset(activeWidth, centerY),
-                end = Offset(width, centerY),
-                strokeWidth = strokeWidthPx,
-                cap = StrokeCap.Round
-            )
-        }
-
-        // 2. Draw active wavy progress path
-        if (activeWidth > 2f) {
-            val wavePath = Path()
+        fun wavePath(start: Float, end: Float): Path? {
+            if (end - start < 1f) return null
+            val path = Path()
             var first = true
+            var x = start
             val stepPx = 3f
-
-            var x = 0f
-            while (x <= activeWidth) {
-                // Smooth damping at both ends for a clean seamless visual join
-                val dampStart = (x / 10f).coerceIn(0f, 1f)
-                val dampEnd = ((activeWidth - x) / 10f).coerceIn(0f, 1f)
-                val edgeDamping = dampStart * dampEnd
-
-                val waveAngle = 2.0 * PI * ((x / waveLengthPx) - phase)
-                val y = centerY + (amplitudePx * edgeDamping * sin(waveAngle)).toFloat()
-
+            while (x <= end) {
+                val startDamp = ((x - start) / dampPx).coerceIn(0f, 1f)
+                val endDamp = ((end - x) / dampPx).coerceIn(0f, 1f)
+                val edge = startDamp * endDamp
+                val y = centerY +
+                    (amplitudePx * edge * sin(2.0 * PI * ((x / waveLengthPx) - phase))).toFloat()
                 if (first) {
-                    wavePath.moveTo(x, y)
+                    path.moveTo(x, y)
                     first = false
                 } else {
-                    wavePath.lineTo(x, y)
+                    path.lineTo(x, y)
                 }
                 x += stepPx
             }
+            // The damping envelope always flattens the segment's ends onto the centre line.
+            path.lineTo(end, centerY)
+            return path
+        }
 
+        wavePath(trackStart, lineEnd)?.let { path ->
             drawPath(
-                path = wavePath,
+                path = path,
+                color = trackColor.copy(alpha = 0.35f),
+                style = Stroke(
+                    width = strokeWidthPx,
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round
+                )
+            )
+        }
+
+        wavePath(0f, activeEnd)?.let { path ->
+            drawPath(
+                path = path,
                 color = color,
                 style = Stroke(
                     width = strokeWidthPx,
@@ -106,5 +118,12 @@ fun WavyProgressIndicator(
                 )
             )
         }
+
+        // Stop indicator at the far end, exactly like the flat linear indicator.
+        drawCircle(
+            color = trackColor.copy(alpha = 0.9f),
+            radius = stopRadiusPx,
+            center = Offset(width - stopRadiusPx, centerY)
+        )
     }
 }

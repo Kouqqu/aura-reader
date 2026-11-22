@@ -1,7 +1,15 @@
 package com.aura.reader.ui.screens.reader
 
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.SlowMotionVideo
+import androidx.compose.material.icons.rounded.PauseCircle
 import com.aura.reader.ui.components.PixelFullScreenBurst
 import com.aura.reader.ui.components.triggerThemeHaptic
 import androidx.compose.foundation.BorderStroke
@@ -22,6 +30,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -35,6 +44,22 @@ import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.ui.components.LiquidGlassSurface
 import com.aura.reader.ui.components.liquidGlassMenuAppearance
 import androidx.compose.material3.DropdownMenuItem
+import com.aura.reader.ui.components.LiquidGlassMenuContainer
+import com.aura.reader.ui.components.LiquidGlassMenuItem
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.CollectionsBookmark
+import androidx.compose.material.icons.rounded.FormatSize
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.MusicNote
+import com.aura.reader.util.AmbientSoundPlayer
+import com.aura.reader.util.AmbientSoundType
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.window.Popup
@@ -51,7 +76,8 @@ import androidx.compose.ui.platform.TextToolbar
 import androidx.compose.ui.platform.TextToolbarStatus
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.Font
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
+import kotlin.coroutines.cancellation.CancellationException
 import android.app.Activity
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -87,17 +113,35 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.isActive
+import com.aura.reader.ui.components.jellyOverscroll
+import com.aura.reader.data.model.BlockType
+import com.aura.reader.data.model.PageTurnAnimation
+import com.aura.reader.ui.theme.LocalEInkMode
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.ui.zIndex
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CollectionsBookmark
 import androidx.compose.material.icons.rounded.FormatSize
@@ -121,6 +165,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -129,12 +174,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.Chapter
 import com.aura.reader.data.model.ReaderFontFamily
 import com.aura.reader.ui.theme.AuraReaderTheme
@@ -152,25 +199,48 @@ fun ReaderScreen(
     viewModel: ReaderViewModel,
     onNavigateBack: () -> Unit
 ) {
+    var isScreenActive by remember { mutableStateOf(true) }
     // Active reading timer tracker
     DisposableEffect(Unit) {
+        isScreenActive = true
         viewModel.onResumeReading()
         onDispose {
+            isScreenActive = false
             viewModel.onPauseReading()
         }
     }
 
     val book by viewModel.currentBook.collectAsState()
-    val settings by viewModel.readerSettings.collectAsState()
+    val rawSettings by viewModel.readerSettings.collectAsState()
+    val isEInk = LocalEInkMode.current
+    val settings = remember(rawSettings, isEInk) {
+        if (isEInk) {
+            rawSettings.copy(
+                pagingMode = true,
+                pageAnimation = PageTurnAnimation.INSTANT,
+                themeMode = com.aura.reader.data.model.ReaderThemeMode.LIGHT,
+                hapticFeedbackEnabled = false,
+                appDesignStyle = com.aura.reader.data.model.AppDesignStyle.MATERIAL
+            )
+        } else {
+            rawSettings
+        }
+    }
     val currentChapterIndex by viewModel.currentChapterIndex.collectAsState()
     val savedOffset by viewModel.savedScrollOffset.collectAsState()
+    val tapZonesHintShown by viewModel.tapZonesHintShown.collectAsState()
     val savedTextOffset by viewModel.savedTextOffset.collectAsState()
     val savedPixelOffset by viewModel.savedPixelOffset.collectAsState()
     val materialYouEnabled by viewModel.materialYouEnabled.collectAsState()
+    val colorPreset by viewModel.colorPreset.collectAsState()
     val appLanguage by viewModel.appLanguage.collectAsState()
 
     // Search state
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val highlightedWord by viewModel.highlightedWord.collectAsState()
+    val effectiveSearchQuery = remember(searchQuery, highlightedWord) {
+        if (!highlightedWord.isNullOrBlank()) highlightedWord!! else searchQuery
+    }
     val searchResults by viewModel.searchResults.collectAsState()
     val currentSearchIndex by viewModel.currentSearchIndex.collectAsState()
     val targetScrollOffset by viewModel.targetScrollOffset.collectAsState()
@@ -178,10 +248,11 @@ fun ReaderScreen(
     // Bookmarks and Quotes
     val bookmarks by viewModel.bookmarks.collectAsState()
     val quotes by viewModel.quotes.collectAsState()
+    val savedWords by viewModel.savedWords.collectAsState()
     val navReturnPoint by viewModel.navReturnPoint.collectAsState()
     val userWpm by viewModel.userAverageWpm.collectAsState()
     val ttsState by com.aura.reader.service.BookTtsService.ttsState.collectAsState()
-    val isGlass = settings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
+    val isGlass = if (isEInk) false else settings.appDesignStyle == AppDesignStyle.LIQUID_GLASS
     val isThemeDark = when (settings.themeMode) {
         ReaderThemeMode.LIGHT, ReaderThemeMode.SEPIA -> false
         ReaderThemeMode.DARK, ReaderThemeMode.AMOLED -> true
@@ -207,10 +278,23 @@ fun ReaderScreen(
     val isTtsHighlightActive = ttsState.isServiceRunning && !showTtsSheet && ttsState.isPlaying
     var showChaptersSheet by remember { mutableStateOf(false) }
     var showBookmarksQuotesSheet by remember { mutableStateOf(false) }
+    var showReaderMenu by remember { mutableStateOf(false) }
+    var showAmbientSoundSheet by remember { mutableStateOf(false) }
+    val currentAmbientSound by AmbientSoundPlayer.currentSound.collectAsState()
+    var isAutoScrolling by remember { mutableStateOf(false) }
+    var autoScrollSpeedMultiplier by remember { mutableFloatStateOf(1.0f) }
+    var isSearchActive by remember { mutableStateOf(false) }
     var selectedFootnote by remember { mutableStateOf<Pair<String, String>?>(null) }
     var quoteToSave by remember { mutableStateOf<String?>(null) }
     val strings = LocalAppStrings.current
     val context = LocalContext.current
+
+    DisposableEffect(Unit) {
+        onDispose {
+            AmbientSoundPlayer.stop()
+            com.aura.reader.util.GraphicPageDimensionsCache.clear()
+        }
+    }
     val view = LocalView.current
     val window = remember(view) { (view.context as? Activity)?.window }
 
@@ -241,11 +325,13 @@ fun ReaderScreen(
 
 
     var dictionaryWord by remember { mutableStateOf<String?>(null) }
+    var dictionaryWordContext by remember { mutableStateOf("") }
     var dictionaryLoading by remember { mutableStateOf(false) }
     var dictionaryDefinition by remember { mutableStateOf<WordDefinition?>(null) }
     var dictionaryError by remember { mutableStateOf<String?>(null) }
 
     var translationText by remember { mutableStateOf<String?>(null) }
+    var translationTextContext by remember { mutableStateOf("") }
     var translationLoading by remember { mutableStateOf(false) }
     var translationResult by remember { mutableStateOf<String?>(null) }
     var translationError by remember { mutableStateOf<String?>(null) }
@@ -300,9 +386,12 @@ fun ReaderScreen(
         }
     }
 
-    BackHandler(enabled = selectedQuoteCopyAction != null) {
-        selectionResetKey++
-        customTextToolbar.hide()
+    PredictiveBackHandler(enabled = selectedQuoteCopyAction != null) { progress ->
+        try {
+            progress.collect { }
+            selectionResetKey++
+            customTextToolbar.hide()
+        } catch (_: CancellationException) {}
     }
 
     fun currentSelectionText(): String? {
@@ -312,6 +401,28 @@ fun ReaderScreen(
         // copy-to-read path so quote/dictionary/translation keep working.
         selectedQuoteCopyAction?.invoke()
         return clipboardManager.getText()?.text?.trim()?.takeIf { it.isNotBlank() }
+    }
+
+    fun extractSentenceContext(chapter: com.aura.reader.data.model.Chapter?, word: String): String {
+        if (chapter == null || word.isBlank()) return ""
+        val trimmedWord = word.trim()
+        val matchingBlock = chapter.blocks.firstOrNull { block ->
+            block.text.contains(trimmedWord, ignoreCase = true)
+        }
+        val sourceText = matchingBlock?.text ?: chapter.content
+        val wordIndex = sourceText.indexOf(trimmedWord, ignoreCase = true)
+        if (wordIndex == -1) return ""
+
+        val sentenceDelimiters = charArrayOf('.', '!', '?', '…', '\n')
+        val start = sourceText.lastIndexOfAny(sentenceDelimiters, wordIndex).let {
+            if (it == -1) 0 else it + 1
+        }
+        val end = sourceText.indexOfAny(sentenceDelimiters, wordIndex + trimmedWord.length).let {
+            if (it == -1) sourceText.length else it + 1
+        }
+
+        val sentence = sourceText.substring(start, end).trim()
+        return if (sentence.length > 250) sentence.take(250) + "…" else sentence
     }
 
     fun runTranslation(text: String, sourceLang: String, targetLang: String) {
@@ -339,7 +450,9 @@ fun ReaderScreen(
     AuraReaderTheme(
         themeMode = settings.themeMode,
         materialYou = materialYouEnabled,
-        readerMode = true
+        colorPreset = colorPreset,
+        readerMode = true,
+        eInkMode = isEInk
     ) {
       @Suppress("DEPRECATION")
       CompositionLocalProvider(LocalTextToolbar provides customTextToolbar, LocalClipboardManager provides interceptedClipboardManager) {
@@ -374,6 +487,7 @@ fun ReaderScreen(
         val chapters = book?.chapters ?: emptyList()
         val currentChapter = chapters.getOrNull(currentChapterIndex)
         val footnotes = book?.footnotes ?: emptyMap()
+        val readerHazeState = remember { HazeState() }
 
         Box(
             modifier = Modifier
@@ -384,128 +498,138 @@ fun ReaderScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .navigationBarsPadding()
+                    .hazeSource(readerHazeState)
+                    .background(MaterialTheme.colorScheme.background)
             ) {
                 if (chapters.isNotEmpty()) {
+                    val isSinglePageChapters = remember(chapters) {
+                        chapters.isNotEmpty() && chapters.all { it.blocks.size == 1 && it.blocks[0].type == BlockType.IMAGE }
+                    }
+
                     if (settings.pagingMode && currentChapter != null) {
-                        // --- Paging Mode (Листание страниц) ---
-                        androidx.compose.runtime.key(book?.id, currentChapterIndex) {
-                            ChapterPagingView(
-                                chapter = currentChapter,
-                                chapterIndex = currentChapterIndex,
-                                initialBlockIndex = savedOffset,
-                                initialTextOffset = savedTextOffset,
-                                overallProgress = book?.progressPercent,
-                                totalChapters = chapters.size,
-                                prevChapter = chapters.getOrNull(currentChapterIndex - 1),
-                                nextChapter = chapters.getOrNull(currentChapterIndex + 1),
-                                settings = settings,
-                                resolvedFontFamily = resolvedFontFamily,
-                                searchQuery = searchQuery,
-                                footnotes = footnotes,
-                                quotes = currentChapterQuotes,
-                                userWpm = userWpm,
-                                selectionResetKey = selectionResetKey,
-                                onPageTurn = { words -> viewModel.onPageOrSectionTurn(words) },
-                                targetBlockIndex = targetScrollOffset,
-                                targetPage = requestPagingPage,
-                                onConsumeTargetBlock = { viewModel.consumeTargetScrollOffset() },
-                                onConsumeTargetPage = { requestPagingPage = null },
-                                onToggleControls = { showControls = !showControls },
-                                onPrevChapter = { viewModel.prevChapter(startAtEnd = true) },
-                                onNextChapter = { viewModel.nextChapter() },
-                                onFootnoteClick = { ref, content ->
-                                    if (content.startsWith("nav:")) {
-                                        val parts = content.removePrefix("nav:").split(":")
-                                        val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
-                                        val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
-                                        viewModel.navigateToPositionWithReturn(ch, blk)
-                                    } else {
-                                        selectedFootnote = ref to content
-                                    }
-                                },
-                                onBottomProgressModeChange = { viewModel.updateBottomProgressMode(it) },
-                                onSaveQuote = { quoteToSave = it },
-                                onPageChange = { page, total ->
-                                    currentPagingPage = page
-                                    totalPagingPages = total
-                                },
-                                onUpdateProgress = { blockIdx, totalBlocks, textOffset, pixelOffset, atEnd ->
-                                    viewModel.updateScrollProgress(blockIdx, totalBlocks, textOffset, pixelOffset, atEnd)
-                                },
-                                onBookFinished = {
-                                    celebrationTriggerKey = System.currentTimeMillis()
-                                    triggerThemeHaptic(context)
-                                    if (nextBookInSeries != null) {
-                                        showNextInSeriesDialog = true
-                                    }
-                                },
-                                ttsState = ttsState,
-                                isTtsHighlightActive = isTtsHighlightActive,
-                                onSelectionTextChange = { text ->
-                                    if (text.isNotEmpty()) selectedReaderText = text
-                                }
+                        if (isSinglePageChapters) {
+                            // Dedicated seamless Graphic / Comic / PDF Paging Mode (0 transition spread)
+                            val pagerState = rememberPagerState(
+                                initialPage = currentChapterIndex.coerceIn(0, (chapters.size - 1).coerceAtLeast(0)),
+                                pageCount = { chapters.size }
                             )
-                        }
-                    } else {
-                        // --- Continuous Mode (Непрерывная лента со свайпом глав) ---
-                        val pagerState = rememberPagerState(
-                            initialPage = currentChapterIndex.coerceIn(0, chapters.size - 1),
-                            pageCount = { chapters.size }
-                        )
 
-                        LaunchedEffect(pagerState.currentPage) {
-                            if (pagerState.currentPage != currentChapterIndex) {
-                                viewModel.setChapter(pagerState.currentPage)
+                            LaunchedEffect(pagerState) {
+                                snapshotFlow { pagerState.settledPage }
+                                    .collect { page ->
+                                        if (!isScreenActive) return@collect
+                                        if (page in chapters.indices && page != currentChapterIndex) {
+                                            viewModel.setChapter(page)
+                                            val atEnd = page >= chapters.size - 1
+                                            viewModel.updateScrollProgress(page, chapters.size, 0, 0, atEnd)
+                                        }
+                                        currentPagingPage = page
+                                        totalPagingPages = chapters.size
+                                    }
                             }
-                        }
 
-                        LaunchedEffect(currentChapterIndex) {
-                            if (pagerState.currentPage != currentChapterIndex && currentChapterIndex in chapters.indices) {
-                                pagerState.animateScrollToPage(currentChapterIndex)
+                            LaunchedEffect(requestPagingPage) {
+                                val req = requestPagingPage
+                                if (req != null) {
+                                    val target = req.coerceIn(0, chapters.size - 1)
+                                    if (target != pagerState.currentPage) {
+                                        pagerState.scrollToPage(target)
+                                    }
+                                    requestPagingPage = null
+                                }
                             }
-                        }
 
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier.fillMaxSize()
-                        ) { pageIndex ->
-                            val chapter = chapters.getOrNull(pageIndex)
-                            if (chapter != null) {
-                                ChapterContentView(
-                                    chapter = chapter,
-                                    isCurrentChapter = pageIndex == currentChapterIndex,
-                                    initialScrollOffset = if (pageIndex == currentChapterIndex) savedOffset else 0,
-                                    initialPixelOffset = if (pageIndex == currentChapterIndex) savedPixelOffset else 0,
-                                    targetScrollOffset = if (pageIndex == currentChapterIndex) targetScrollOffset else null,
-                                    onConsumeTargetScrollOffset = { viewModel.consumeTargetScrollOffset() },
+                            val haptic = LocalHapticFeedback.current
+                            var lastHapticOffset by remember { mutableFloatStateOf(pagerState.currentPage.toFloat()) }
+                            LaunchedEffect(pagerState.isScrollInProgress, pagerState.currentPageOffsetFraction) {
+                                if (pagerState.isScrollInProgress) {
+                                    val currentOffset = pagerState.currentPage + pagerState.currentPageOffsetFraction
+                                    val delta = kotlin.math.abs(currentOffset - lastHapticOffset)
+                                    if (delta >= 0.12f) {
+                                        if (settings.hapticFeedbackEnabled) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        }
+                                        lastHapticOffset = currentOffset
+                                    }
+                                } else {
+                                    lastHapticOffset = pagerState.currentPage.toFloat()
+                                }
+                            }
+
+                            HorizontalPager(
+                                state = pagerState,
+                                beyondViewportPageCount = 1,
+                                modifier = Modifier.fillMaxSize()
+                            ) { pageIdx ->
+                                val ch = chapters.getOrNull(pageIdx)
+                                if (ch != null && ch.blocks.isNotEmpty()) {
+                                    RenderBlock(
+                                        block = ch.blocks[0],
+                                        settings = settings,
+                                        resolvedFontFamily = resolvedFontFamily,
+                                        searchQuery = effectiveSearchQuery,
+                                        footnotes = footnotes,
+                                        quotes = emptyList(),
+                                        onFootnoteClick = { _, _ -> },
+                                        onToggleControls = { showControls = !showControls },
+                                        onSaveQuote = { quoteToSave = it },
+                                        onPrevPage = if (pageIdx > 0) {
+                                            { coroutineScope.launch { pagerState.animateScrollToPage(pageIdx - 1) } }
+                                        } else null,
+                                        onNextPage = if (pageIdx < chapters.size - 1) {
+                                            { coroutineScope.launch { pagerState.animateScrollToPage(pageIdx + 1) } }
+                                        } else null,
+                                        isGraphicPage = true,
+                                        isInScrollMode = false
+                                    )
+                                }
+                            }
+                        } else {
+                            // --- Paging Mode (Листание страниц) ---
+                            androidx.compose.runtime.key(book?.id, currentChapterIndex) {
+                                ChapterPagingView(
+                                    chapter = currentChapter,
+                                    chapterIndex = currentChapterIndex,
+                                    initialBlockIndex = savedOffset,
+                                    initialTextOffset = savedTextOffset,
+                                    overallProgress = book?.progressPercent,
+                                    totalChapters = chapters.size,
+                                    prevChapter = chapters.getOrNull(currentChapterIndex - 1),
+                                    nextChapter = chapters.getOrNull(currentChapterIndex + 1),
                                     settings = settings,
                                     resolvedFontFamily = resolvedFontFamily,
-                                    pageIndex = pageIndex,
-                                    chaptersCount = chapters.size,
-                                    searchQuery = searchQuery,
+                                    searchQuery = effectiveSearchQuery,
                                     footnotes = footnotes,
+                                    quotes = currentChapterQuotes,
+                                    userWpm = userWpm,
                                     selectionResetKey = selectionResetKey,
+                                    onPageTurn = { words -> viewModel.onPageOrSectionTurn(words) },
+                                    targetBlockIndex = targetScrollOffset,
+                                    targetPage = requestPagingPage,
+                                    onConsumeTargetBlock = { viewModel.consumeTargetScrollOffset() },
+                                    onConsumeTargetPage = { requestPagingPage = null },
                                     onToggleControls = { showControls = !showControls },
+                                    onPrevChapter = { viewModel.prevChapter(startAtEnd = true) },
+                                    onNextChapter = { viewModel.nextChapter() },
                                     onFootnoteClick = { ref, content ->
-                                    if (content.startsWith("nav:")) {
-                                        val parts = content.removePrefix("nav:").split(":")
-                                        val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
-                                        val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
-                                        viewModel.navigateToPositionWithReturn(ch, blk)
-                                    } else {
-                                        selectedFootnote = ref to content
-                                    }
-                                },
-                                    onSaveQuote = { quoteToSave = it },
-                                    onPrevChapter = {
-                                        if (pageIndex > 0) {
-                                            coroutineScope.launch { pagerState.animateScrollToPage(pageIndex - 1) }
+                                        if (content.startsWith("nav:")) {
+                                            val parts = content.removePrefix("nav:").split(":")
+                                            val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                                            val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                            viewModel.navigateToPositionWithReturn(ch, blk)
+                                        } else {
+                                            selectedFootnote = ref to content
                                         }
                                     },
-                                    onNextChapter = {
-                                        if (pageIndex < chapters.size - 1) {
-                                            coroutineScope.launch { pagerState.animateScrollToPage(pageIndex + 1) }
+                                    onBottomProgressModeChange = { viewModel.updateBottomProgressMode(it) },
+                                    onSaveQuote = { quoteToSave = it },
+                                    onPageChange = { page, total ->
+                                        currentPagingPage = page
+                                        totalPagingPages = total
+                                    },
+                                    onUpdateProgress = { blockIdx, totalBlocks, textOffset, pixelOffset, atEnd ->
+                                        if (isScreenActive) {
+                                            viewModel.updateScrollProgress(blockIdx, totalBlocks, textOffset, pixelOffset, atEnd)
                                         }
                                     },
                                     onBookFinished = {
@@ -515,19 +639,209 @@ fun ReaderScreen(
                                             showNextInSeriesDialog = true
                                         }
                                     },
-                                    onUpdateProgress = { firstVisible, totalItems, textOffset, pixelOffset, atEnd ->
-                                        if (pageIndex == currentChapterIndex) {
-                                            viewModel.updateScrollProgress(firstVisible, totalItems, textOffset, pixelOffset, atEnd)
-                                        }
-                                    },
-                                    nextBookInSeries = nextBookInSeries,
-                                    onOpenNextBook = { viewModel.openNextBookInSeries(it) },
                                     ttsState = ttsState,
                                     isTtsHighlightActive = isTtsHighlightActive,
                                     onSelectionTextChange = { text ->
                                         if (text.isNotEmpty()) selectedReaderText = text
                                     }
                                 )
+                            }
+                        }
+                    } else {
+                        if (isSinglePageChapters) {
+                            // Dedicated seamless Graphic / Comic / PDF Continuous Ribbon (Свиток)
+                            androidx.compose.runtime.key(book?.id) {
+                                val initialPageIndex = currentChapterIndex.coerceIn(0, (chapters.size - 1).coerceAtLeast(0))
+                                val listState = rememberLazyListState(
+                                    initialFirstVisibleItemIndex = initialPageIndex
+                                )
+
+                                LaunchedEffect(targetScrollOffset) {
+                                    val target = targetScrollOffset
+                                    if (target != null) {
+                                        val bounded = target.coerceIn(0, chapters.size - 1)
+                                        listState.scrollToItem(bounded)
+                                        viewModel.consumeTargetScrollOffset()
+                                    }
+                                }
+
+                                LaunchedEffect(listState) {
+                                    snapshotFlow {
+                                        Triple(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset, listState.canScrollForward)
+                                    }.collect { (_, _, canScrollForward) ->
+                                        if (!isScreenActive) return@collect
+                                        if (chapters.isEmpty()) return@collect
+
+                                        val layout = listState.layoutInfo
+                                        val visibleItems = layout.visibleItemsInfo
+                                        if (visibleItems.isEmpty()) return@collect
+
+                                        val atEnd = !canScrollForward
+                                        val activeIndex = if (atEnd) {
+                                            chapters.lastIndex
+                                        } else {
+                                            val vHeight = layout.viewportEndOffset - layout.viewportStartOffset
+                                            val vCenter = layout.viewportStartOffset + vHeight / 2
+                                            val centerItem = visibleItems.firstOrNull { item ->
+                                                item.offset <= vCenter && (item.offset + item.size) >= vCenter
+                                            }
+                                            centerItem?.index ?: listState.firstVisibleItemIndex
+                                        }.coerceIn(chapters.indices)
+
+                                        if (activeIndex != currentChapterIndex || (atEnd && !viewModel.isAtBookEnd)) {
+                                            viewModel.setChapter(activeIndex)
+                                            viewModel.updateScrollProgress(activeIndex, chapters.size, 0, 0, atEnd)
+                                        }
+                                    }
+                                }
+
+                                val statusBarTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+                                val cutoutTopInset = WindowInsets.displayCutout.asPaddingValues().calculateTopPadding()
+                                val topPaddingDp = maxOf(statusBarTopInset, cutoutTopInset, 42.dp) + 6.dp
+
+                                val density = LocalDensity.current
+                                LaunchedEffect(isAutoScrolling, autoScrollSpeedMultiplier) {
+                                    if (isAutoScrolling) {
+                                        val baseSpeed = 48f * autoScrollSpeedMultiplier
+                                        val speedPx = with(density) { baseSpeed.dp.toPx() }
+                                        var lastTime = 0L
+                                        while (isActive && isAutoScrolling) {
+                                            withFrameNanos { now ->
+                                                if (lastTime != 0L) {
+                                                    val dt = (now - lastTime) / 1_000_000_000f
+                                                    val deltaPx = speedPx * dt
+                                                    listState.dispatchRawDelta(deltaPx)
+                                                }
+                                                lastTime = now
+                                            }
+                                        }
+                                    }
+                                }
+
+                                LazyColumn(
+                                    state = listState,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .jellyOverscroll()
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) {
+                                            showControls = !showControls
+                                        },
+                                    contentPadding = PaddingValues(
+                                        start = 0.dp,
+                                        end = 0.dp,
+                                        top = topPaddingDp,
+                                        bottom = 80.dp
+                                    )
+                                ) {
+                                    itemsIndexed(chapters, key = { _, ch -> ch.id }) { index, ch ->
+                                        RenderBlock(
+                                            block = ch.blocks[0],
+                                            settings = settings,
+                                            resolvedFontFamily = resolvedFontFamily,
+                                            searchQuery = effectiveSearchQuery,
+                                            footnotes = footnotes,
+                                            quotes = emptyList(),
+                                            onFootnoteClick = { _, _ -> },
+                                            onToggleControls = { showControls = !showControls },
+                                            onSaveQuote = { quoteToSave = it },
+                                            isGraphicPage = true,
+                                            isInScrollMode = true
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            // --- Continuous Mode (Непрерывная лента со свайпом глав) ---
+                            val pagerState = rememberPagerState(
+                                initialPage = currentChapterIndex.coerceIn(0, chapters.size - 1),
+                                pageCount = { chapters.size }
+                            )
+
+                            LaunchedEffect(pagerState) {
+                                snapshotFlow { pagerState.settledPage }
+                                    .collect { page ->
+                                        if (!isScreenActive) return@collect
+                                        if (page in chapters.indices && page != currentChapterIndex) {
+                                            viewModel.setChapter(page)
+                                        }
+                                    }
+                            }
+
+                            LaunchedEffect(currentChapterIndex) {
+                                if (!isScreenActive) return@LaunchedEffect
+                                if (pagerState.currentPage != currentChapterIndex && currentChapterIndex in chapters.indices) {
+                                    pagerState.animateScrollToPage(currentChapterIndex)
+                                }
+                            }
+
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier.fillMaxSize()
+                            ) { pageIndex ->
+                                val chapter = chapters.getOrNull(pageIndex)
+                                if (chapter != null) {
+                                    ChapterContentView(
+                                        chapter = chapter,
+                                        isCurrentChapter = pageIndex == currentChapterIndex,
+                                        initialScrollOffset = if (pageIndex == currentChapterIndex) savedOffset else 0,
+                                        initialPixelOffset = if (pageIndex == currentChapterIndex) savedPixelOffset else 0,
+                                        targetScrollOffset = if (pageIndex == currentChapterIndex) targetScrollOffset else null,
+                                        onConsumeTargetScrollOffset = { viewModel.consumeTargetScrollOffset() },
+                                        settings = settings,
+                                        resolvedFontFamily = resolvedFontFamily,
+                                        pageIndex = pageIndex,
+                                        chaptersCount = chapters.size,
+                                        searchQuery = effectiveSearchQuery,
+                                        footnotes = footnotes,
+                                        selectionResetKey = selectionResetKey,
+                                        onToggleControls = { showControls = !showControls },
+                                        onFootnoteClick = { ref, content ->
+                                        if (content.startsWith("nav:")) {
+                                            val parts = content.removePrefix("nav:").split(":")
+                                            val ch = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                                            val blk = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                            viewModel.navigateToPositionWithReturn(ch, blk)
+                                        } else {
+                                            selectedFootnote = ref to content
+                                        }
+                                    },
+                                        onSaveQuote = { quoteToSave = it },
+                                        onPrevChapter = {
+                                            if (pageIndex > 0) {
+                                                coroutineScope.launch { pagerState.animateScrollToPage(pageIndex - 1) }
+                                            }
+                                        },
+                                        onNextChapter = {
+                                            if (pageIndex < chapters.size - 1) {
+                                                coroutineScope.launch { pagerState.animateScrollToPage(pageIndex + 1) }
+                                            }
+                                        },
+                                        onBookFinished = {
+                                            celebrationTriggerKey = System.currentTimeMillis()
+                                            triggerThemeHaptic(context)
+                                            if (nextBookInSeries != null) {
+                                                showNextInSeriesDialog = true
+                                            }
+                                        },
+                                        onUpdateProgress = { firstVisible, totalItems, textOffset, pixelOffset, atEnd ->
+                                            if (isScreenActive && pageIndex == currentChapterIndex) {
+                                                viewModel.updateScrollProgress(firstVisible, totalItems, textOffset, pixelOffset, atEnd)
+                                            }
+                                        },
+                                        nextBookInSeries = nextBookInSeries,
+                                        onOpenNextBook = { viewModel.openNextBookInSeries(it) },
+                                        ttsState = ttsState,
+                                        isTtsHighlightActive = isTtsHighlightActive,
+                                        isAutoScrolling = isAutoScrolling && !settings.pagingMode,
+                                        autoScrollSpeedMultiplier = autoScrollSpeedMultiplier,
+                                        onSelectionTextChange = { text ->
+                                            if (text.isNotEmpty()) selectedReaderText = text
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -572,7 +886,11 @@ fun ReaderScreen(
             onOpenBookInfo = { showBookInfoDialog = true },
             onOpenTtsSheet = { showTtsSheet = true },
             onOpenBookmarks = { showBookmarksQuotesSheet = true },
-            onOpenSettings = { showSettingsSheet = true }
+            onOpenSettings = { showSettingsSheet = true },
+            hazeState = readerHazeState,
+            isSearchActive = isSearchActive,
+            onSearchActiveChange = { isSearchActive = it },
+            onOpenReaderMenu = { showReaderMenu = true }
         )
 
 
@@ -590,8 +908,134 @@ fun ReaderScreen(
             isGlass = isGlass,
             isThemeDark = isThemeDark,
             isSepiaTheme = isSepiaTheme,
-            viewModel = viewModel
+            viewModel = viewModel,
+            hazeState = readerHazeState
         )
+
+        // In-window overflow menu with real Haze blur sampling readerHazeState
+        AnimatedVisibility(
+            visible = showReaderMenu,
+            enter = fadeIn(tween(220, easing = FastOutSlowInEasing)),
+            exit = fadeOut(tween(180, easing = FastOutSlowInEasing))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { showReaderMenu = false }
+            ) {
+                BackHandler { showReaderMenu = false }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                ) {
+                    AnimatedVisibility(
+                        visible = showReaderMenu,
+                        enter = fadeIn(tween(240, easing = FastOutSlowInEasing)) + scaleIn(
+                            initialScale = 0.80f,
+                            transformOrigin = TransformOrigin(0.95f, 0f),
+                            animationSpec = tween(240, easing = FastOutSlowInEasing)
+                        ),
+                        exit = fadeOut(tween(180, easing = FastOutSlowInEasing)) + scaleOut(
+                            targetScale = 0.82f,
+                            transformOrigin = TransformOrigin(0.95f, 0f),
+                            animationSpec = tween(180, easing = FastOutSlowInEasing)
+                        ),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 58.dp, end = 2.dp)
+                            .width(250.dp)
+                    ) {
+                        LiquidGlassMenuContainer(
+                            isGlass = isGlass,
+                            isDark = isThemeDark,
+                            isSepia = isSepiaTheme,
+                            hazeState = readerHazeState
+                        ) {
+                            LiquidGlassMenuItem(
+                                text = strings.ambientSoundsTitle,
+                                leadingIcon = {
+                                    Icon(
+                                        if (currentAmbientSound != AmbientSoundType.OFF) Icons.Rounded.GraphicEq else Icons.Rounded.MusicNote,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                trailingText = if (currentAmbientSound != AmbientSoundType.OFF) currentAmbientSound.getTitle(strings) else null,
+                                onClick = {
+                                    showReaderMenu = false
+                                    showAmbientSoundSheet = true
+                                }
+                            )
+                            LiquidGlassMenuItem(
+                                text = strings.ttsListenAction,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.Headphones, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                onClick = {
+                                    showReaderMenu = false
+                                    if (!ttsState.isServiceRunning) {
+                                        viewModel.startTts(context)
+                                    }
+                                    showTtsSheet = true
+                                }
+                            )
+                            LiquidGlassMenuItem(
+                                text = strings.searchInBook,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                onClick = {
+                                    showReaderMenu = false
+                                    isSearchActive = true
+                                }
+                            )
+                            LiquidGlassMenuItem(
+                                text = strings.bookmarksAndQuotes,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.CollectionsBookmark, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                onClick = {
+                                    showReaderMenu = false
+                                    showBookmarksQuotesSheet = true
+                                }
+                            )
+                            LiquidGlassMenuItem(
+                                text = strings.fontAndTheme,
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.FormatSize, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                onClick = {
+                                    showReaderMenu = false
+                                    showSettingsSheet = true
+                                }
+                            )
+                            if (!settings.pagingMode) {
+                                LiquidGlassMenuItem(
+                                    text = if (isAutoScrolling) strings.autoScrollStop else strings.autoScrollTitle,
+                                    leadingIcon = {
+                                        Icon(
+                                            if (isAutoScrolling) Icons.Rounded.PauseCircle else Icons.Rounded.SlowMotionVideo,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    onClick = {
+                                        showReaderMenu = false
+                                        isAutoScrolling = !isAutoScrolling
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
 
             if (celebrationTriggerKey != 0L) {
@@ -717,6 +1161,85 @@ fun ReaderScreen(
                     )
                 }
 
+            // Floating Auto-Scroll Control Bar when active
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isAutoScrolling && !settings.pagingMode,
+                enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = if (showControls) 185.dp else (44.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()))
+            ) {
+                LiquidGlassSurface(
+                    shape = RoundedCornerShape(24.dp),
+                    isDark = isThemeDark,
+                    hazeState = readerHazeState,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.SlowMotionVideo,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = strings.autoScrollTitle,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        IconButton(
+                            onClick = {
+                                autoScrollSpeedMultiplier = (autoScrollSpeedMultiplier - 0.25f).coerceAtLeast(0.25f)
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Remove,
+                                contentDescription = "-",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Text(
+                            text = String.format(java.util.Locale.US, "%.1fx", autoScrollSpeedMultiplier),
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        IconButton(
+                            onClick = {
+                                autoScrollSpeedMultiplier = (autoScrollSpeedMultiplier + 0.25f).coerceAtMost(5.0f)
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Add,
+                                contentDescription = "+",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconButton(
+                            onClick = { isAutoScrolling = false },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = strings.close,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
             // Bottom Sheets
             if (showTtsSheet) {
                 TtsBottomSheet(
@@ -757,7 +1280,17 @@ fun ReaderScreen(
                     onPageAnimationChange = { viewModel.setPageAnimation(it) },
                     onHapticFeedbackChange = { viewModel.setHapticFeedbackEnabled(it) },
                     onFontNameChange = { viewModel.setFontName(it) },
-                    onResetReadingSpeed = { viewModel.resetReadingSpeed() }
+                    onResetReadingSpeed = { viewModel.resetReadingSpeed() },
+                    onMangaModeRtlChange = { viewModel.setMangaModeRtl(it) }
+                )
+            }
+
+            if (showAmbientSoundSheet) {
+                AmbientSoundBottomSheet(
+                    onDismiss = { showAmbientSoundSheet = false },
+                    isGlass = isGlass,
+                    isDark = isThemeDark,
+                    isSepia = isSepiaTheme
                 )
             }
 
@@ -765,7 +1298,11 @@ fun ReaderScreen(
                 ChaptersBottomSheet(
                     chapters = chapters,
                     currentChapterIndex = currentChapterIndex,
-                    onChapterSelected = { viewModel.setChapter(it) },
+                    onChapterSelected = { selected ->
+                        viewModel.setChapter(selected)
+                        requestPagingPage = selected
+                        viewModel.requestScrollToBlock(selected)
+                    },
                     onDismiss = { showChaptersSheet = false }
                 )
             }
@@ -785,7 +1322,10 @@ fun ReaderScreen(
                     },
                     onDeleteBookmark = { viewModel.removeBookmark(it) },
                     onAddQuote = { viewModel.addQuote(it, 0xFFFFF59DL) },
-                    onDeleteQuote = { viewModel.removeQuote(it) }
+                    onDeleteQuote = { viewModel.removeQuote(it) },
+                    savedWords = savedWords,
+                    onDeleteSavedWord = { viewModel.removeSavedWord(it) },
+                    onWordClick = { word -> viewModel.navigateToSavedWord(word) }
                 )
             }
 
@@ -878,6 +1418,7 @@ fun ReaderScreen(
                         if (!clip.isNullOrBlank()) {
                             val word = clip.take(60)
                             dictionaryWord = word
+                            dictionaryWordContext = extractSentenceContext(currentChapter, word)
                             dictionaryLoading = true
                             dictionaryDefinition = null
                             dictionaryError = null
@@ -899,6 +1440,7 @@ fun ReaderScreen(
                         selectionResetKey++
                         customTextToolbar.hide()
                         if (!clip.isNullOrBlank()) {
+                            translationTextContext = if (clip.length > 30) clip else extractSentenceContext(currentChapter, clip)
                             runTranslation(clip, translationSourceLang, translationTargetLang)
                         }
                     },
@@ -935,7 +1477,10 @@ fun ReaderScreen(
                     isLoading = dictionaryLoading,
                     definition = dictionaryDefinition,
                     errorMessage = dictionaryError,
-                    onDismiss = { dictionaryWord = null }
+                    onDismiss = { dictionaryWord = null },
+                    onSaveWord = { w, def ->
+                        viewModel.saveWord(w, def, dictionaryWordContext)
+                    }
                 )
             }
 
@@ -955,10 +1500,220 @@ fun ReaderScreen(
                         translationTargetLang = code
                         runTranslation(text, translationSourceLang, code)
                     },
-                    onDismiss = { translationText = null }
+                    onDismiss = { translationText = null },
+                    onSaveWord = { w, def ->
+                        viewModel.saveWord(w, def, translationTextContext)
+                    }
+                )
+            }
+
+            if (!tapZonesHintShown && book != null) {
+                ReaderTapZonesHintOverlay(
+                    onDismiss = { viewModel.dismissTapZonesHint() }
                 )
             }
         }
       }
+    }
+}
+
+@Composable
+private fun ReaderTapZonesHintOverlay(
+    onDismiss: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(200f)
+            .background(Color.Black.copy(alpha = 0.82f))
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss
+            )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(72.dp))
+            Surface(
+                shape = CircleShape,
+                color = Color.White.copy(alpha = 0.15f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f))
+            ) {
+                Text(
+                    text = strings.tapZonesHintTitle,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5f.sp
+                    ),
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                )
+            }
+
+            // 3 Zones
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Left Zone: Prev Page
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White.copy(alpha = 0.08f),
+                    border = BorderStroke(1.5.dp, Color.White.copy(alpha = 0.35f)),
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .fillMaxHeight()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                            modifier = Modifier.size(54.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.ChevronLeft,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = strings.tapZonesHintPrev,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            ),
+                            color = Color.White,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+
+                // Center Zone: Menu & Settings
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White.copy(alpha = 0.12f),
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)),
+                    modifier = Modifier
+                        .weight(1.8f)
+                        .fillMaxHeight()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                            modifier = Modifier.size(58.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Tune,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = strings.tapZonesHintMenu,
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            ),
+                            color = Color.White,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+
+                // Right Zone: Next Page
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White.copy(alpha = 0.08f),
+                    border = BorderStroke(1.5.dp, Color.White.copy(alpha = 0.35f)),
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .fillMaxHeight()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                            modifier = Modifier.size(54.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = strings.tapZonesHintNext,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            ),
+                            color = Color.White,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+            }
+
+            // Bottom "Got It" Button
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp),
+                modifier = Modifier.padding(bottom = 48.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = strings.tapZonesGotIt,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        }
     }
 }

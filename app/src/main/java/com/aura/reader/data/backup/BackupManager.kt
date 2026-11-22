@@ -24,7 +24,10 @@ class BackupManager(
     private val preferencesManager: PreferencesManager
 ) {
 
-    suspend fun exportBackup(outputStream: OutputStream): Result<Int> = withContext(Dispatchers.IO) {
+    suspend fun exportBackup(
+        outputStream: OutputStream,
+        includeBookFiles: Boolean = true
+    ): Result<Int> = withContext(Dispatchers.IO) {
         preferencesManager.libraryMutex.withLock {
             try {
                 val zipOut = ZipOutputStream(outputStream)
@@ -37,16 +40,45 @@ class BackupManager(
                 val readerSettings = preferencesManager.readerSettings.first()
                 val statsEnabled = preferencesManager.readingStatsEnabled.first()
                 val materialYou = preferencesManager.materialYouEnabled.first()
+                val colorPreset = preferencesManager.colorPreset.first()
                 val appLang = preferencesManager.appLanguage.first()
                 val updateNotifs = preferencesManager.updateNotificationsEnabled.first()
                 val catalogUrl = preferencesManager.catalogBaseUrl.first()
 
+                val readingStatsJson = preferencesManager.readingStatsJson.first() ?: "{}"
+                val libraryViewMode = preferencesManager.libraryViewMode.first()
+                val librarySortOrder = preferencesManager.librarySortOrder.first()
+                val customBookOrder = preferencesManager.customBookOrder.first()
+                val autoFetchMetadata = preferencesManager.autoFetchMetadataEnabled.first()
+                val customOpdsEnabled = preferencesManager.customOpdsEnabled.first()
+                val userAverageWpm = preferencesManager.userAverageWpm.first()
+                val seasonalEffectsEnabled = preferencesManager.seasonalEffectsEnabled.first()
+                val privateBookIds = preferencesManager.privateBookIds.first()
+
+                val filteredRecentBooksJson = run {
+                    if (recentBooksJson.isBlank() || privateBookIds.isEmpty()) recentBooksJson
+                    else {
+                        try {
+                            val arr = JSONArray(recentBooksJson)
+                            val filtered = JSONArray()
+                            for (i in 0 until arr.length()) {
+                                val obj = arr.getJSONObject(i)
+                                if (obj.optString("id") !in privateBookIds) {
+                                    filtered.put(obj)
+                                }
+                            }
+                            filtered.toString()
+                        } catch (_: Exception) { recentBooksJson }
+                    }
+                }
+
                 val manifest = JSONObject().apply {
-                    put("version", 1)
+                    put("version", 2)
+                    put("includeBookFiles", includeBookFiles)
                     put("createdAt", System.currentTimeMillis())
                     put("createdAtFormatted", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()))
 
-                    put("recentBooksJson", recentBooksJson)
+                    put("recentBooksJson", filteredRecentBooksJson)
 
                     val userCollectionsArr = JSONArray()
                     for (col in userCollections) userCollectionsArr.put(col)
@@ -54,6 +86,7 @@ class BackupManager(
 
                     val bookmarksArr = JSONArray()
                     for (bm in bookmarksJson) {
+                        if (bm.bookId in privateBookIds) continue
                         bookmarksArr.put(JSONObject().apply {
                             put("id", bm.id)
                             put("bookId", bm.bookId)
@@ -68,6 +101,7 @@ class BackupManager(
 
                     val quotesArr = JSONArray()
                     for (q in quotesJson) {
+                        if (q.bookId in privateBookIds) continue
                         quotesArr.put(JSONObject().apply {
                             put("id", q.id)
                             put("bookId", q.bookId)
@@ -80,6 +114,26 @@ class BackupManager(
                     }
                     put("quotes", quotesArr)
 
+                    val savedWordsJson = preferencesManager.savedWords.first()
+                    val savedWordsArr = JSONArray()
+                    for (w in savedWordsJson) {
+                        if (w.bookId in privateBookIds) continue
+                        savedWordsArr.put(JSONObject().apply {
+                            put("id", w.id)
+                            put("bookId", w.bookId)
+                            put("bookTitle", w.bookTitle)
+                            put("word", w.word)
+                            put("definition", w.definition)
+                            put("contextText", w.contextText)
+                            put("chapterIndex", w.chapterIndex)
+                            put("timestamp", w.timestamp)
+                        })
+                    }
+                    put("savedWords", savedWordsArr)
+
+                    put("readingStats", try { JSONObject(readingStatsJson) } catch (_: Exception) { JSONObject() })
+                    put("bookPagingModes", try { JSONObject(preferencesManager.bookPagingModesJson.first() ?: "{}") } catch (_: Exception) { JSONObject() })
+
                     put("settings", JSONObject().apply {
                         put("fontSize", readerSettings.fontSizeSp)
                         put("lineHeight", readerSettings.lineHeightMultiplier)
@@ -90,8 +144,30 @@ class BackupManager(
                         put("appLanguage", appLang.code)
                         put("statsEnabled", statsEnabled)
                         put("materialYou", materialYou)
+                        put("colorPreset", colorPreset)
                         put("updateNotifications", updateNotifs)
                         put("catalogUrl", catalogUrl)
+                        put("fontName", readerSettings.fontName)
+                        put("serifFontName", readerSettings.serifFontName)
+                        put("sansSerifFontName", readerSettings.sansSerifFontName)
+                        put("monospaceFontName", readerSettings.monospaceFontName)
+                        put("lightImageBackground", readerSettings.lightImageBackground)
+                        put("autoHyphenation", readerSettings.autoHyphenation)
+                        put("twoColumnMode", readerSettings.twoColumnMode.name)
+                        put("pageAnimation", readerSettings.pageAnimation.name)
+                        put("hapticFeedbackEnabled", readerSettings.hapticFeedbackEnabled)
+                        put("syncThemesWithApp", readerSettings.syncThemesWithApp)
+                        put("appThemeMode", readerSettings.appThemeMode.name)
+                        put("appDesignStyle", readerSettings.appDesignStyle.name)
+                        put("glassClarity", readerSettings.glassClarity.toDouble())
+                        put("libraryViewMode", libraryViewMode)
+                        put("librarySortOrder", librarySortOrder)
+                        put("customBookOrder", customBookOrder)
+                        put("autoFetchMetadata", autoFetchMetadata)
+                        put("customOpdsEnabled", customOpdsEnabled)
+                        put("userAverageWpm", userAverageWpm.toDouble())
+                        put("seasonalEffectsEnabled", seasonalEffectsEnabled)
+                        put("eInkModeEnabled", preferencesManager.appSettings.first().eInkModeEnabled)
                     })
                 }
 
@@ -101,13 +177,15 @@ class BackupManager(
                 zipOut.write(manifest.toString(2).toByteArray(Charsets.UTF_8))
                 zipOut.closeEntry()
 
-                // 2. Archive saved books
+                // 2. Archive saved books (excluding private books, if requested)
                 val savedBooksDir = File(context.filesDir, "saved_books")
                 var bookFilesCount = 0
-                if (savedBooksDir.exists()) {
+                if (includeBookFiles && savedBooksDir.exists()) {
                     val files = savedBooksDir.listFiles() ?: emptyArray()
                     for (file in files) {
                         if (file.isFile && file.length() > 0) {
+                            val bookId = file.name.substringBefore("_")
+                            if (bookId in privateBookIds) continue
                             val bookEntry = ZipEntry("books/${file.name}")
                             zipOut.putNextEntry(bookEntry)
                             FileInputStream(file).use { fis ->
@@ -115,6 +193,22 @@ class BackupManager(
                             }
                             zipOut.closeEntry()
                             bookFilesCount++
+                        }
+                    }
+                }
+
+                // 3. Archive custom fonts
+                val customFontsDir = File(context.filesDir, "custom_fonts")
+                if (customFontsDir.exists()) {
+                    val fontFiles = customFontsDir.listFiles() ?: emptyArray()
+                    for (file in fontFiles) {
+                        if (file.isFile && file.length() > 0) {
+                            val fontEntry = ZipEntry("fonts/${file.name}")
+                            zipOut.putNextEntry(fontEntry)
+                            FileInputStream(file).use { fis ->
+                                fis.copyTo(zipOut)
+                            }
+                            zipOut.closeEntry()
                         }
                     }
                 }
@@ -132,13 +226,13 @@ class BackupManager(
         }
     }
 
-    suspend fun exportBackupToTempFile(): Result<Pair<File, Int>> = withContext(Dispatchers.IO) {
+    suspend fun exportBackupToTempFile(includeBookFiles: Boolean = true): Result<Pair<File, Int>> = withContext(Dispatchers.IO) {
         try {
             val backupsDir = File(context.cacheDir, "backups").apply { mkdirs() }
             val dateStr = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.US).format(Date())
             val tempFile = File(backupsDir, "AuraReader_Backup_$dateStr.aurabackup")
             val exportResult = FileOutputStream(tempFile).use { outputStream ->
-                exportBackup(outputStream)
+                exportBackup(outputStream, includeBookFiles)
             }
 
             if (exportResult.isSuccess) {
@@ -155,10 +249,11 @@ class BackupManager(
         try {
             preferencesManager.libraryMutex.withLock {
                 val savedBooksDir = File(context.filesDir, "saved_books")
+                val customFontsDir = File(context.filesDir, "custom_fonts")
                 BackupArchive.read(inputStream, context.filesDir, savedBooksDir).use { archive ->
                     // Do not allow cancellation between installing files and committing metadata.
                     withContext(kotlinx.coroutines.NonCancellable) {
-                        archive.install(savedBooksDir, preferencesManager::restoreBackupMetadata)
+                        archive.install(savedBooksDir, customFontsDir, preferencesManager::restoreBackupMetadata)
                     }
                     Result.success(archive.bookCount)
                 }

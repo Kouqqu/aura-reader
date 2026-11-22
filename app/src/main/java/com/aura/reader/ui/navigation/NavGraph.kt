@@ -9,9 +9,14 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -48,9 +53,14 @@ fun AuraNavGraph(
 ) {
     SharedTransitionLayout {
         CompositionLocalProvider(LocalSharedTransitionScope provides this) {
-            NavHost(
-                navController = navController,
-                startDestination = startDestination,
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                NavHost(
+                    navController = navController,
+                    startDestination = startDestination,
                 enterTransition = {
                     slideIntoContainer(
                         AnimatedContentTransitionScope.SlideDirection.Start,
@@ -74,6 +84,19 @@ fun AuraNavGraph(
                         AnimatedContentTransitionScope.SlideDirection.End,
                         animationSpec = tween(300, easing = FastOutSlowInEasing)
                     )
+                },
+                predictivePopEnterTransition = { _ ->
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        animationSpec = tween(300, easing = FastOutSlowInEasing),
+                        initialOffset = { -it / 3 }
+                    ) + fadeIn(animationSpec = tween(240))
+                },
+                predictivePopExitTransition = { _ ->
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        animationSpec = tween(300, easing = FastOutSlowInEasing)
+                    )
                 }
             ) {
                 composable(NavRoutes.ONBOARDING) {
@@ -88,7 +111,23 @@ fun AuraNavGraph(
                     )
                 }
 
-                composable(NavRoutes.LIBRARY) {
+                composable(
+                    route = NavRoutes.LIBRARY,
+                    exitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Start,
+                            animationSpec = tween(280, easing = FastOutSlowInEasing),
+                            targetOffset = { -it / 3 }
+                        ) + fadeOut(animationSpec = tween(240))
+                    },
+                    popEnterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.End,
+                            animationSpec = tween(280, easing = FastOutSlowInEasing),
+                            initialOffset = { -it / 3 }
+                        ) + fadeIn(animationSpec = tween(240))
+                    }
+                ) {
                     CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
                         LibraryScreen(
                             viewModel = libraryViewModel,
@@ -125,14 +164,15 @@ fun AuraNavGraph(
                     popEnterTransition = {
                         slideIntoContainer(
                             AnimatedContentTransitionScope.SlideDirection.End,
-                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                            animationSpec = tween(280, easing = FastOutSlowInEasing),
+                            initialOffset = { -it / 3 }
                         ) + fadeIn(animationSpec = tween(240))
                     },
                     popExitTransition = {
                         slideOutOfContainer(
                             AnimatedContentTransitionScope.SlideDirection.End,
                             animationSpec = tween(280, easing = FastOutSlowInEasing)
-                        ) + fadeOut(animationSpec = tween(240))
+                        )
                     }
                 ) {
                     CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
@@ -145,7 +185,34 @@ fun AuraNavGraph(
                     }
                 }
 
-                composable(NavRoutes.CATALOG) {
+                composable(
+                    route = NavRoutes.CATALOG,
+                    enterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Start,
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(240))
+                    },
+                    exitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Start,
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        ) + fadeOut(animationSpec = tween(240))
+                    },
+                    popEnterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.End,
+                            animationSpec = tween(280, easing = FastOutSlowInEasing),
+                            initialOffset = { -it / 3 }
+                        ) + fadeIn(animationSpec = tween(240))
+                    },
+                    popExitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.End,
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        )
+                    }
+                ) {
                     CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
                         OpdsScreen(
                             viewModel = opdsViewModel,
@@ -164,4 +231,5 @@ fun AuraNavGraph(
             }
         }
     }
+}
 }

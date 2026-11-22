@@ -8,7 +8,9 @@ enum class BookFormat {
     TXT,
     PDF,
     MOBI,
-    CBZ
+    CBZ,
+    HTML,
+    MD
 }
 
 enum class BlockType {
@@ -67,7 +69,13 @@ data class Book(
     val seriesNumber: Int? = null,
     val currentBlockTextOffset: Int = 0,
     val currentScrollPixelOffset: Int = 0,
-    val manualShelf: String? = null
+    val manualShelf: String? = null,
+    val deletedAtTimestamp: Long? = null,
+    val fileSizeBytes: Long = 0L,
+    val addedTimestamp: Long = System.currentTimeMillis(),
+    val firstOpenedTimestamp: Long? = null,
+    val description: String? = null,
+    val genres: List<String> = emptyList()
 )
 
 @Immutable
@@ -91,6 +99,18 @@ data class Quote(
     val timestamp: Long = System.currentTimeMillis(),
     val color: Long = 0xFFFFF59D,
     val blockIndex: Int = -1
+)
+
+@Immutable
+data class SavedWord(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val bookId: String,
+    val bookTitle: String = "",
+    val word: String,
+    val definition: String,
+    val contextText: String = "",
+    val chapterIndex: Int = 0,
+    val timestamp: Long = System.currentTimeMillis()
 )
 
 val Book.isReadingStarted: Boolean

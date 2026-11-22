@@ -487,10 +487,13 @@ object OpdsService {
     }
 
     private fun formatFileSize(bytes: Long): String {
+        val mb = bytes / (1024f * 1024f)
         return when {
-            bytes >= 1024 * 1024 -> String.format(Locale.US, "%.1f МБ", bytes / (1024f * 1024f))
-            bytes >= 1024 -> "${bytes / 1024} КБ"
-            else -> "$bytes Б"
+            mb >= 10f -> String.format(Locale.US, "%.1f МБ", mb)
+            mb >= 1f -> String.format(Locale.US, "%.1f МБ", mb)
+            mb >= 0.1f -> String.format(Locale.US, "%.1f МБ", mb)
+            mb > 0f -> String.format(Locale.US, "%.2f МБ", mb)
+            else -> "0 МБ"
         }
     }
 
@@ -513,6 +516,8 @@ object OpdsService {
                 BookFormat.MOBI -> "mobi"
                 BookFormat.TXT -> "txt"
                 BookFormat.CBZ -> "cbz"
+                BookFormat.HTML -> "html"
+                BookFormat.MD -> "md"
             }
             val destFile = File(booksDir, "${safeBaseName}_${safeBookId}.$ext")
 
@@ -571,6 +576,8 @@ object OpdsService {
                     BookFormat.PDF -> ".pdf"
                     BookFormat.MOBI -> ".mobi"
                     BookFormat.TXT -> ".txt"
+                    BookFormat.HTML -> ".html"
+                    BookFormat.MD -> ".md"
                     BookFormat.EPUB, BookFormat.CBZ -> ".$ext"
                 }
                 var extracted = false

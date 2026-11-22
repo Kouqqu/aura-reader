@@ -2,7 +2,7 @@ package com.aura.reader
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.ComposeFoundationFlags
@@ -17,10 +17,14 @@ import com.aura.reader.ui.screens.reader.ReaderViewModel
 import com.aura.reader.ui.theme.AuraReaderTheme
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
 import com.aura.reader.data.model.ReaderSettings
+import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.ui.theme.AppLanguage
 import com.aura.reader.ui.theme.LocalAppStrings
 import com.aura.reader.ui.theme.getStrings
@@ -28,12 +32,13 @@ import com.aura.reader.ui.theme.getStrings
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.aura.reader.data.analytics.AnalyticsManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     private lateinit var preferencesManager: PreferencesManager
     private lateinit var bookRepository: BookRepository
@@ -43,6 +48,9 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Install crash log handler before any other code runs
+        com.aura.reader.util.CrashLog.install(applicationContext)
+
         // Takes over the system starting window; must run before super.onCreate().
         val splashScreen = installSplashScreen()
 
@@ -65,9 +73,19 @@ class MainActivity : ComponentActivity() {
 
         preferencesManager = PreferencesManager(applicationContext)
         bookRepository = BookRepository(applicationContext, preferencesManager)
+        // A previous in-app update has been installed by now, so the cached APK
+        // it was built from is no longer needed and must not keep taking space.
+        com.aura.reader.data.storage.AppStorageManager.cleanupTemporaryFiles(applicationContext)
         libraryViewModel = LibraryViewModel(bookRepository, preferencesManager)
         readerViewModel = ReaderViewModel(bookRepository, preferencesManager, applicationContext)
         opdsViewModel = com.aura.reader.ui.screens.opds.OpdsViewModel(bookRepository, preferencesManager)
+
+        // Background maintenance: purge orphaned book images and dead temporary files
+        lifecycleScope.launch(Dispatchers.IO) {
+            val books = bookRepository.recentBooks.first()
+            val activeIds = books.map { it.id }.toSet()
+            com.aura.reader.data.storage.AppStorageManager.cleanupTemporaryFiles(applicationContext, activeIds)
+        }
 
         // Track anonymous app metrics if enabled
         AnalyticsManager.trackAppLaunch(
@@ -109,6 +127,9 @@ class MainActivity : ComponentActivity() {
             val materialYouEnabled by preferencesManager.materialYouEnabled.collectAsState(
                 initial = false
             )
+            val colorPreset by preferencesManager.colorPreset.collectAsState(
+                initial = "PURPLE"
+            )
             val appFont by preferencesManager.appFont.collectAsState(
                 initial = "GOOGLE_SANS"
             )
@@ -125,21 +146,36 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
+            val appSettings by preferencesManager.appSettings.collectAsState(
+                initial = com.aura.reader.data.model.AppSettings()
+            )
             val completed = hasCompletedOnboarding
             if (completed != null) {
                 CompositionLocalProvider(
                     LocalAppStrings provides getStrings(appLanguage),
                     com.aura.reader.ui.theme.LocalAppLanguage provides appLanguage,
                     com.aura.reader.data.model.LocalHolidaySeason provides holidaySeason,
-                    com.aura.reader.ui.components.LocalMaterialYouEnabled provides materialYouEnabled
+                    com.aura.reader.ui.components.LocalMaterialYouEnabled provides materialYouEnabled,
+                    com.aura.reader.ui.theme.LocalColorPreset provides colorPreset
                 ) {
                     AuraReaderTheme(
-                        themeMode = settings.appThemeMode,
-                        materialYou = materialYouEnabled,
+                        themeMode = if (appSettings.eInkModeEnabled) ReaderThemeMode.LIGHT else settings.appThemeMode,
+                        materialYou = if (appSettings.eInkModeEnabled) false else materialYouEnabled,
+                        colorPreset = colorPreset,
                         appFont = appFont,
                         currentLanguage = appLanguage,
-                        holidaySeason = holidaySeason
+                        holidaySeason = holidaySeason,
+                        eInkMode = appSettings.eInkModeEnabled
                     ) {
+                        val windowBg = androidx.compose.material3.MaterialTheme.colorScheme.background.toArgb()
+                        val view = LocalView.current
+                        SideEffect {
+                            val window = (view.context as? android.app.Activity)?.window
+                            if (window != null) {
+                                window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(windowBg))
+                                com.aura.reader.util.HighRefresh.apply(window, isEInk = appSettings.eInkModeEnabled)
+                            }
+                        }
                         val navController = rememberNavController()
                         AuraNavGraph(
                             navController = navController,
