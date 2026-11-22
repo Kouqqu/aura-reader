@@ -654,6 +654,7 @@ interface Strings {
     // --- E-Ink Mode ---
     val eInkModeTitle: String get() = "Режим E-Ink"
     val eInkModeSubtitle: String get() = "Высококонтрастная палитра и отключение размытия для экранов на электронных чернилах"
+    val eInkModeActiveDesc: String get() = "Включён высококонтрастный монохромный режим. Темы, цвета интерфейса и анимации отключены."
 
     // --- Saved Words (Vocabulary) ---
     val savedWordsTabTitle: String get() = "Словарь"
@@ -1773,6 +1774,7 @@ class EnStrings : Strings {
     // --- E-Ink Mode ---
     override val eInkModeTitle: String = "E-Ink Mode"
     override val eInkModeSubtitle: String = "High-contrast monochrome palette and disabled blur effects for e-paper displays"
+    override val eInkModeActiveDesc: String = "High-contrast monochrome mode active. Themes, UI colors, and animations are disabled."
 
     // --- Saved Words (Vocabulary) ---
     override val savedWordsTabTitle: String = "Vocabulary"

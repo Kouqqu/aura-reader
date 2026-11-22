@@ -278,66 +278,49 @@ fun DictionaryDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (definition != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                if (definition != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString("${definition.title}: ${definition.extract}"))
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = strings.copyAction,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                        if (onSaveWord != null) {
+                            Spacer(modifier = Modifier.width(8.dp))
                             TextButton(
                                 onClick = {
-                                    clipboardManager.setText(AnnotatedString("${definition.title}: ${definition.extract}"))
+                                    onSaveWord(definition.word, "${definition.title}: ${definition.extract}")
+                                    isSaved = true
                                 },
+                                enabled = !isSaved,
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                             ) {
-                                Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Icon(
+                                    if (isSaved) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = strings.copyAction,
+                                    text = if (isSaved) strings.wordInDictionary else strings.addToDictionary,
                                     maxLines = 1,
                                     softWrap = false
                                 )
                             }
-                            if (onSaveWord != null) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                                TextButton(
-                                    onClick = {
-                                        onSaveWord(definition.word, "${definition.title}: ${definition.extract}")
-                                        isSaved = true
-                                    },
-                                    enabled = !isSaved,
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
-                                ) {
-                                    Icon(
-                                        if (isSaved) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = if (isSaved) strings.wordInDictionary else strings.addToDictionary,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                }
-                            }
                         }
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-
-                    FilledTonalButton(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.defaultMinSize(minWidth = 96.dp),
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = strings.closeDialog,
-                            maxLines = 1,
-                            softWrap = false
-                        )
                     }
                 }
             }
@@ -498,66 +481,49 @@ fun TranslationDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (translatedText != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                if (translatedText != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(translatedText))
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = strings.copyAction,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                        if (onSaveWord != null && originalText.length <= 60) {
+                            Spacer(modifier = Modifier.width(8.dp))
                             TextButton(
                                 onClick = {
-                                    clipboardManager.setText(AnnotatedString(translatedText))
+                                    onSaveWord(originalText.trim(), translatedText)
+                                    isSaved = true
                                 },
+                                enabled = !isSaved,
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                             ) {
-                                Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Icon(
+                                    if (isSaved) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = strings.copyAction,
+                                    text = if (isSaved) strings.wordInDictionary else strings.addToDictionary,
                                     maxLines = 1,
                                     softWrap = false
                                 )
                             }
-                            if (onSaveWord != null && originalText.length <= 60) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                                TextButton(
-                                    onClick = {
-                                        onSaveWord(originalText.trim(), translatedText)
-                                        isSaved = true
-                                    },
-                                    enabled = !isSaved,
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
-                                ) {
-                                    Icon(
-                                        if (isSaved) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = if (isSaved) strings.wordInDictionary else strings.addToDictionary,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                }
-                            }
                         }
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-
-                    FilledTonalButton(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.defaultMinSize(minWidth = 96.dp),
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = strings.closeDialog,
-                            maxLines = 1,
-                            softWrap = false
-                        )
                     }
                 }
             }

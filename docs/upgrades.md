@@ -3,6 +3,14 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
+Last updated: 2026-11-22, release `2.3.0-beta.51` (`versionCode 216`).
+`2.3.0-beta.51` changed no dependencies:
+- E-Ink Mode deep integration: Automatically enforces Material 3 design style and hides design style options; hides theme cards, color presets, Material You, and seasonal atmospheric effects while active; locks reader to paged mode with instant page transitions and suppresses all spring/physics overscroll and bounce animations (`SettingsPages.kt`, `SettingsThemeSection.kt`, `ReaderSettingsBottomSheet.kt`, `ReaderScreen.kt`, `ExpressiveModifiers.kt`, `LibraryScreen.kt`).
+- Crash log dialog cleanup: Removed duplicated "Сбоев не зафиксировано" subtitle from the dialog header, keeping it centered cleanly in the body (`CrashLogDialog.kt`). Guarded `CrashLog.install` against multiple invocations.
+- Dictionary & Translation UI refinement: Removed redundant, overflowing bottom "Закрыть" button from `DictionaryDialog` and `TranslationDialog`, keeping clean header close button and action buttons (`ReaderDialogs.kt`).
+- Accurate book context sentence extraction: Fixed context sentence capturing in `ReaderScreen.kt` so that saving a word extracts the actual sentence from the book text rather than falling back to the system clipboard.
+- Vocabulary tab UX polish: Streamlined empty state in `BookmarksAndQuotesBottomSheet.kt` by removing redundant subtitle text; prevented duplicate saved word entries in `PreferencesManager.kt`.
+
 Last updated: 2026-11-22, release `2.3.0-beta.50` (`versionCode 215`).
 `2.3.0-beta.50` changed no dependencies:
 - 120 Hz display refresh enforcement: Added `HighRefresh.apply(window, isEInk)` to lock the display refresh rate to the device's highest supported mode (`preferredDisplayModeId`), bypassing vendor-specific 60 Hz throttling for butter-smooth 120 FPS scrolling and animations (`HighRefresh.kt`, `MainActivity.kt`). Automatically disabled on E-Ink displays.

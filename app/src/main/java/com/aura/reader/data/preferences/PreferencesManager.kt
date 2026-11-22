@@ -948,7 +948,20 @@ class PreferencesManager(private val context: Context) {
                 put("chapterIndex", word.chapterIndex)
                 put("timestamp", word.timestamp)
             }
-            arr.put(o)
+            var updated = false
+            for (i in 0 until arr.length()) {
+                val existing = arr.getJSONObject(i)
+                if (existing.optString("word").equals(word.word, ignoreCase = true) &&
+                    existing.optString("bookId") == word.bookId
+                ) {
+                    arr.put(i, o)
+                    updated = true
+                    break
+                }
+            }
+            if (!updated) {
+                arr.put(o)
+            }
             prefs[SAVED_WORDS_KEY] = arr.toString()
         }
     }

@@ -18,8 +18,11 @@ data class CrashEntry(
 object CrashLog {
     private const val MAX_CRASH_LOGS = 10
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    private var isInstalled = false
 
     fun install(context: Context) {
+        if (isInstalled) return
+        isInstalled = true
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             runCatching {

@@ -51,6 +51,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import com.aura.reader.ui.screens.settings.SettingsInterfacePage
 import com.aura.reader.ui.screens.settings.SettingsGeneralPage
 import com.aura.reader.ui.screens.settings.SettingsAboutPage
+import com.aura.reader.ui.theme.LocalEInkMode
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material3.HorizontalDivider
@@ -317,13 +318,18 @@ fun LibraryScreen(
     var showAddBooksSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
 
+    val isEInk = LocalEInkMode.current
     val pageAnimationSpec = spring<Float>(
         dampingRatio = Spring.DampingRatioNoBouncy,
         stiffness = 420f
     )
     val smoothScrollToPage: (Int) -> Unit = { page ->
         scope.launch {
-            pagerState.animateScrollToPage(page, animationSpec = pageAnimationSpec)
+            if (isEInk) {
+                pagerState.scrollToPage(page)
+            } else {
+                pagerState.animateScrollToPage(page, animationSpec = pageAnimationSpec)
+            }
         }
     }
 

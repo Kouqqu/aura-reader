@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.aura.reader.ui.theme.LocalAppStrings
+import com.aura.reader.ui.theme.LocalEInkMode
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.FormatSize
@@ -117,6 +118,7 @@ fun ReaderSettingsBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val strings = LocalAppStrings.current
     val context = LocalContext.current
+    val isEInk = LocalEInkMode.current
     val haptic = LocalHapticFeedback.current
     var sheetCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var burstTriggerKey by remember { mutableStateOf(0L) }
@@ -586,6 +588,7 @@ fun ReaderSettingsBottomSheet(
                     )
                 }
 
+                if (!isEInk) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // --- Reading Mode (Continuous / Paging) ---
@@ -665,7 +668,10 @@ fun ReaderSettingsBottomSheet(
                             border = chipBorder
                         )
                     }
+                }
+                }
 
+                if (settings.pagingMode) {
                     Spacer(modifier = Modifier.height(14.dp))
                     Text(
                         text = strings.twoColumnSpreadSectionTitle,

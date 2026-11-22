@@ -130,6 +130,7 @@ import kotlinx.coroutines.isActive
 import com.aura.reader.ui.components.jellyOverscroll
 import com.aura.reader.data.model.BlockType
 import com.aura.reader.data.model.PageTurnAnimation
+import com.aura.reader.ui.theme.LocalEInkMode
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Bookmark
@@ -210,7 +211,18 @@ fun ReaderScreen(
     }
 
     val book by viewModel.currentBook.collectAsState()
-    val settings by viewModel.readerSettings.collectAsState()
+    val rawSettings by viewModel.readerSettings.collectAsState()
+    val isEInk = LocalEInkMode.current
+    val settings = remember(rawSettings, isEInk) {
+        if (isEInk) {
+            rawSettings.copy(
+                pagingMode = true,
+                pageAnimation = PageTurnAnimation.INSTANT
+            )
+        } else {
+            rawSettings
+        }
+    }
     val currentChapterIndex by viewModel.currentChapterIndex.collectAsState()
     val savedOffset by viewModel.savedScrollOffset.collectAsState()
     val tapZonesHintShown by viewModel.tapZonesHintShown.collectAsState()
@@ -305,11 +317,13 @@ fun ReaderScreen(
 
 
     var dictionaryWord by remember { mutableStateOf<String?>(null) }
+    var dictionaryWordContext by remember { mutableStateOf("") }
     var dictionaryLoading by remember { mutableStateOf(false) }
     var dictionaryDefinition by remember { mutableStateOf<WordDefinition?>(null) }
     var dictionaryError by remember { mutableStateOf<String?>(null) }
 
     var translationText by remember { mutableStateOf<String?>(null) }
+    var translationTextContext by remember { mutableStateOf("") }
     var translationLoading by remember { mutableStateOf(false) }
     var translationResult by remember { mutableStateOf<String?>(null) }
     var translationError by remember { mutableStateOf<String?>(null) }
@@ -379,6 +393,28 @@ fun ReaderScreen(
         // copy-to-read path so quote/dictionary/translation keep working.
         selectedQuoteCopyAction?.invoke()
         return clipboardManager.getText()?.text?.trim()?.takeIf { it.isNotBlank() }
+    }
+
+    fun extractSentenceContext(chapter: com.aura.reader.data.model.Chapter?, word: String): String {
+        if (chapter == null || word.isBlank()) return ""
+        val trimmedWord = word.trim()
+        val matchingBlock = chapter.blocks.firstOrNull { block ->
+            block.text.contains(trimmedWord, ignoreCase = true)
+        }
+        val sourceText = matchingBlock?.text ?: chapter.content
+        val wordIndex = sourceText.indexOf(trimmedWord, ignoreCase = true)
+        if (wordIndex == -1) return ""
+
+        val sentenceDelimiters = charArrayOf('.', '!', '?', '…', '\n')
+        val start = sourceText.lastIndexOfAny(sentenceDelimiters, wordIndex).let {
+            if (it == -1) 0 else it + 1
+        }
+        val end = sourceText.indexOfAny(sentenceDelimiters, wordIndex + trimmedWord.length).let {
+            if (it == -1) sourceText.length else it + 1
+        }
+
+        val sentence = sourceText.substring(start, end).trim()
+        return if (sentence.length > 250) sentence.take(250) + "…" else sentence
     }
 
     fun runTranslation(text: String, sourceLang: String, targetLang: String) {
@@ -1372,6 +1408,7 @@ fun ReaderScreen(
                         if (!clip.isNullOrBlank()) {
                             val word = clip.take(60)
                             dictionaryWord = word
+                            dictionaryWordContext = extractSentenceContext(currentChapter, word)
                             dictionaryLoading = true
                             dictionaryDefinition = null
                             dictionaryError = null
@@ -1393,6 +1430,7 @@ fun ReaderScreen(
                         selectionResetKey++
                         customTextToolbar.hide()
                         if (!clip.isNullOrBlank()) {
+                            translationTextContext = if (clip.length > 30) clip else extractSentenceContext(currentChapter, clip)
                             runTranslation(clip, translationSourceLang, translationTargetLang)
                         }
                     },
@@ -1431,7 +1469,7 @@ fun ReaderScreen(
                     errorMessage = dictionaryError,
                     onDismiss = { dictionaryWord = null },
                     onSaveWord = { w, def ->
-                        viewModel.saveWord(w, def, currentSelectionText() ?: "")
+                        viewModel.saveWord(w, def, dictionaryWordContext)
                     }
                 )
             }
@@ -1454,7 +1492,7 @@ fun ReaderScreen(
                     },
                     onDismiss = { translationText = null },
                     onSaveWord = { w, def ->
-                        viewModel.saveWord(w, def, currentSelectionText() ?: "")
+                        viewModel.saveWord(w, def, translationTextContext)
                     }
                 )
             }

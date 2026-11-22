@@ -109,6 +109,28 @@ internal fun SettingsThemeSection(
 
     SettingsFoldContent(isGlass = isGlass, expanded = expanded) {
 
+    if (eInkModeEnabled) {
+        ExpressiveSettingsGroup {
+            ExpressiveSettingsRow(
+                title = strings.eInkModeTitle,
+                subtitle = strings.eInkModeActiveDesc,
+                icon = { SettingsIconBox(Icons.Rounded.Contrast) },
+                onClick = { onToggleEInkMode(false) },
+                trailing = {
+                    Switch(
+                        checked = true,
+                        onCheckedChange = onToggleEInkMode,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    )
+                }
+            )
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+    } else {
+
     // Segmented Theme Switcher Card
     val themeCardContent: @Composable () -> Unit = {
         Column(
@@ -363,6 +385,7 @@ internal fun SettingsThemeSection(
     }
 
     Spacer(modifier = Modifier.height(20.dp))
+    }
     }
 }
 

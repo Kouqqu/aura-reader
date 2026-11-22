@@ -154,13 +154,15 @@ fun SettingsInterfacePage(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                SettingsDesignStyleSection(
-                    appDesignStyle = appSettings.appDesignStyle,
-                    isThemeDark = isThemeDark,
-                    onAppDesignStyleChange = { style -> onUpdateSettings { it.copy(appDesignStyle = style) } }
-                )
+                if (!appSettings.eInkModeEnabled) {
+                    SettingsDesignStyleSection(
+                        appDesignStyle = appSettings.appDesignStyle,
+                        isThemeDark = isThemeDark,
+                        onAppDesignStyleChange = { style -> onUpdateSettings { it.copy(appDesignStyle = style) } }
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
                 SettingsThemeSection(
                     currentTheme = appSettings.themeMode,
@@ -180,7 +182,14 @@ fun SettingsInterfacePage(
                     holidayOverride = appSettings.holidayOverride,
                     onHolidayOverrideChange = { h -> onUpdateSettings { it.copy(holidayOverride = h) } },
                     eInkModeEnabled = appSettings.eInkModeEnabled,
-                    onToggleEInkMode = { v -> onUpdateSettings { it.copy(eInkModeEnabled = v) } },
+                    onToggleEInkMode = { v ->
+                        onUpdateSettings {
+                            it.copy(
+                                eInkModeEnabled = v,
+                                appDesignStyle = if (v) AppDesignStyle.MATERIAL else it.appDesignStyle
+                            )
+                        }
+                    },
                     onOpenReaderThemeSettings = onOpenReaderThemeSettings,
                     onThemePicked = { mode, origin, colors ->
                         burstOrigin = origin

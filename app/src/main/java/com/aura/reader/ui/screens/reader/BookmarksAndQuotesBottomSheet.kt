@@ -377,13 +377,6 @@ fun BookmarksAndQuotesBottomSheet(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = strings.savedWordsEmptySubtitle,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.outline,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
                             }
                         }
                     } else {

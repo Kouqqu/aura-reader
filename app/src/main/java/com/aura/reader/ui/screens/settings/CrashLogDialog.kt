@@ -97,11 +97,13 @@ internal fun CrashLogDialog(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = if (entries.isEmpty()) strings.crashLogEmpty else "Записей: ${entries.size}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (entries.isNotEmpty()) {
+                        Text(
+                            text = "Записей: ${entries.size}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         },
