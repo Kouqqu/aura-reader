@@ -3,6 +3,14 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
+Last updated: 2026-11-23, release `2.3.0-beta.57` (`versionCode 222`).
+`2.3.0-beta.57` changed no dependencies:
+- CI Lint Fix: Resolved `FullBackupContent` error in `data_extraction_rules.xml` by cleaning up `<device-transfer>` rules so Android Lint validation succeeds cleanly during `./gradlew testDebugUnitTest lintDebug`.
+- Configurable Backup Scope: Added user-selectable backup scope modal dialog (`BackupOptionsDialog.kt`) when exporting backups or sending to Google Drive/cloud:
+  - Full backup (with book files): archives all books, quotes, bookmarks, vocabulary, reading stats, and settings.
+  - Settings & data only: lightweight archive with reading progress, quotes, bookmarks, vocabulary, stats, and settings without book files.
+  - Integrated into `LibraryScreen.kt`, `LibraryViewModel.kt`, `BackupManager.kt`, and localized across all 7 supported languages in `AppStrings.kt`.
+
 Last updated: 2026-11-23, release `2.3.0-beta.56` (`versionCode 221`).
 `2.3.0-beta.56` added `androidx.biometric:biometric:1.2.0-alpha05`:
 - Biometric authentication for Private Folder: Added biometric unlock support (`BiometricHelper.kt`, `PrivateFolderDialogs.kt`, `LibraryViewModel.kt`) enabling fingerprint and face unlock when accessing the private folder, with `MainActivity` extending `FragmentActivity`.

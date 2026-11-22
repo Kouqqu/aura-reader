@@ -24,7 +24,10 @@ class BackupManager(
     private val preferencesManager: PreferencesManager
 ) {
 
-    suspend fun exportBackup(outputStream: OutputStream): Result<Int> = withContext(Dispatchers.IO) {
+    suspend fun exportBackup(
+        outputStream: OutputStream,
+        includeBookFiles: Boolean = true
+    ): Result<Int> = withContext(Dispatchers.IO) {
         preferencesManager.libraryMutex.withLock {
             try {
                 val zipOut = ZipOutputStream(outputStream)
@@ -71,6 +74,7 @@ class BackupManager(
 
                 val manifest = JSONObject().apply {
                     put("version", 2)
+                    put("includeBookFiles", includeBookFiles)
                     put("createdAt", System.currentTimeMillis())
                     put("createdAtFormatted", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()))
 
@@ -173,10 +177,10 @@ class BackupManager(
                 zipOut.write(manifest.toString(2).toByteArray(Charsets.UTF_8))
                 zipOut.closeEntry()
 
-                // 2. Archive saved books (excluding private books)
+                // 2. Archive saved books (excluding private books, if requested)
                 val savedBooksDir = File(context.filesDir, "saved_books")
                 var bookFilesCount = 0
-                if (savedBooksDir.exists()) {
+                if (includeBookFiles && savedBooksDir.exists()) {
                     val files = savedBooksDir.listFiles() ?: emptyArray()
                     for (file in files) {
                         if (file.isFile && file.length() > 0) {
@@ -222,13 +226,13 @@ class BackupManager(
         }
     }
 
-    suspend fun exportBackupToTempFile(): Result<Pair<File, Int>> = withContext(Dispatchers.IO) {
+    suspend fun exportBackupToTempFile(includeBookFiles: Boolean = true): Result<Pair<File, Int>> = withContext(Dispatchers.IO) {
         try {
             val backupsDir = File(context.cacheDir, "backups").apply { mkdirs() }
             val dateStr = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.US).format(Date())
             val tempFile = File(backupsDir, "AuraReader_Backup_$dateStr.aurabackup")
             val exportResult = FileOutputStream(tempFile).use { outputStream ->
-                exportBackup(outputStream)
+                exportBackup(outputStream, includeBookFiles)
             }
 
             if (exportResult.isSuccess) {

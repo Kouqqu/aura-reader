@@ -133,4 +133,26 @@ class BackupRegressionTest {
         assertEquals("mock font content", fontFile.readText())
         assertEquals(20, prefs.todayReadingMinutes.first())
     }
+
+    @Test fun exportSettingsOnlyExcludesBookFiles() = runBlocking {
+        val prefs = PreferencesManager(context)
+        val dir = File(context.filesDir, "saved_books").apply { mkdirs() }
+        File(dir, "my_book.txt").writeText("book content")
+        prefs.saveRecentBooksJson(JSONArray().put(book("my_book")).toString())
+
+        val manager = BackupManager(context, prefs)
+        val bytes = ByteArrayOutputStream()
+        manager.exportBackup(bytes, includeBookFiles = false).getOrThrow()
+
+        val zipIn = java.util.zip.ZipInputStream(ByteArrayInputStream(bytes.toByteArray()))
+        val entries = mutableListOf<String>()
+        var entry = zipIn.nextEntry
+        while (entry != null) {
+            entries.add(entry.name)
+            zipIn.closeEntry()
+            entry = zipIn.nextEntry
+        }
+        assertTrue(entries.contains("manifest.json"))
+        assertFalse(entries.any { it.startsWith("books/") })
+    }
 }

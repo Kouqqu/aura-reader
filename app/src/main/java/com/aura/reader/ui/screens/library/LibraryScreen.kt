@@ -458,6 +458,10 @@ fun LibraryScreen(
     }
 
     // Backup & Restore Launchers
+    var showBackupOptionsDialog by remember { mutableStateOf(false) }
+    var backupTargetIsGoogleDrive by remember { mutableStateOf(false) }
+    var pendingIncludeBookFiles by remember { mutableStateOf(true) }
+
     val exportBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/zip")
     ) { uri: Uri? ->
@@ -465,6 +469,7 @@ fun LibraryScreen(
             viewModel.exportBackup(
                 uri = uri,
                 contentResolver = context.contentResolver,
+                includeBookFiles = pendingIncludeBookFiles,
                 onSuccess = { count ->
                     scope.launch { snackbarHostState.showSnackbar(strings.backupCreatedSuccess(count)) }
                 },
@@ -492,8 +497,9 @@ fun LibraryScreen(
         }
     }
 
-    val sendToGoogleDriveAction = {
+    val sendToGoogleDriveAction: (Boolean) -> Unit = { includeBookFiles ->
         viewModel.exportBackupToTempFile(
+            includeBookFiles = includeBookFiles,
             onSuccess = { file, count ->
                 try {
                     val fileUri = androidx.core.content.FileProvider.getUriForFile(
@@ -1428,10 +1434,12 @@ fun LibraryScreen(
                                 viewModel.checkForUpdates(manual = true, context = context)
                             },
                             onExportBackup = {
-                                exportBackupLauncher.launch("AuraReader_Backup_${System.currentTimeMillis()}.aurabackup")
+                                backupTargetIsGoogleDrive = false
+                                showBackupOptionsDialog = true
                             },
                             onSendToGoogleDrive = {
-                                sendToGoogleDriveAction()
+                                backupTargetIsGoogleDrive = true
+                                showBackupOptionsDialog = true
                             },
                             onRestoreBackup = {
                                 restoreBackupLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
@@ -1981,11 +1989,13 @@ fun LibraryScreen(
             },
             onExportBackup = {
                 showSettingsSheet = false
-                exportBackupLauncher.launch("AuraReader_Backup_${System.currentTimeMillis()}.aurabackup")
+                backupTargetIsGoogleDrive = false
+                showBackupOptionsDialog = true
             },
             onSendToGoogleDrive = {
                 showSettingsSheet = false
-                sendToGoogleDriveAction()
+                backupTargetIsGoogleDrive = true
+                showBackupOptionsDialog = true
             },
             onRestoreBackup = {
                 showSettingsSheet = false
@@ -2114,6 +2124,22 @@ fun LibraryScreen(
                         privateFolderError = null
                     }
                 )
+            }
+        )
+    }
+
+    if (showBackupOptionsDialog) {
+        com.aura.reader.ui.screens.settings.BackupOptionsDialog(
+            onDismiss = { showBackupOptionsDialog = false },
+            onConfirm = { includeBooks ->
+                showBackupOptionsDialog = false
+                if (backupTargetIsGoogleDrive) {
+                    sendToGoogleDriveAction(includeBooks)
+                } else {
+                    pendingIncludeBookFiles = includeBooks
+                    val prefix = if (includeBooks) "Full" else "Settings"
+                    exportBackupLauncher.launch("AuraReader_Backup_${prefix}_${System.currentTimeMillis()}.aurabackup")
+                }
             }
         )
     }

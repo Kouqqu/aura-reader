@@ -634,6 +634,7 @@ class LibraryViewModel(
     fun exportBackup(
         uri: Uri,
         contentResolver: ContentResolver,
+        includeBookFiles: Boolean = true,
         onSuccess: (Int) -> Unit,
         onError: (String) -> Unit
     ) {
@@ -642,7 +643,7 @@ class LibraryViewModel(
                 val outputStream = contentResolver.openOutputStream(uri)
                     ?: throw java.io.IOException("Не удалось открыть файл для записи")
                 val count = outputStream.use { out ->
-                    val res = bookRepository.backupManager.exportBackup(out)
+                    val res = bookRepository.backupManager.exportBackup(out, includeBookFiles)
                     res.getOrThrow()
                 }
                 withContext(Dispatchers.Main) {
@@ -656,9 +657,9 @@ class LibraryViewModel(
         }
     }
 
-    fun exportBackup(outputStream: OutputStream, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
+    fun exportBackup(outputStream: OutputStream, includeBookFiles: Boolean = true, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            val res = bookRepository.backupManager.exportBackup(outputStream)
+            val res = bookRepository.backupManager.exportBackup(outputStream, includeBookFiles)
             withContext(Dispatchers.Main) {
                 res.onSuccess { count ->
                     onSuccess(count)
@@ -669,9 +670,9 @@ class LibraryViewModel(
         }
     }
 
-    fun exportBackupToTempFile(onSuccess: (File, Int) -> Unit, onError: (String) -> Unit) {
+    fun exportBackupToTempFile(includeBookFiles: Boolean = true, onSuccess: (File, Int) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            val res = bookRepository.backupManager.exportBackupToTempFile()
+            val res = bookRepository.backupManager.exportBackupToTempFile(includeBookFiles)
             res.onSuccess { pair ->
                 onSuccess(pair.first, pair.second)
             }.onFailure { e ->

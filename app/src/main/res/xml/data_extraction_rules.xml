@@ -4,7 +4,6 @@
         <exclude domain="file" path="crashes" />
     </cloud-backup>
     <device-transfer>
-        <include domain="file" path="saved_books" />
         <exclude domain="file" path="crashes" />
     </device-transfer>
 </data-extraction-rules>

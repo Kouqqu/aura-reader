@@ -194,6 +194,12 @@ interface Strings {
     val backupSectionTitle: String
     val createBackupTitle: String
     val createBackupSubtitle: String
+    val backupOptionsTitle: String
+    val backupOptionsSubtitle: String
+    val backupOptionFullTitle: String
+    val backupOptionFullDesc: String
+    val backupOptionSettingsTitle: String
+    val backupOptionSettingsDesc: String
     val sendToGoogleDriveTitle: String
     val sendToGoogleDriveSubtitle: String
     val restoreBackupTitle: String
@@ -827,6 +833,12 @@ class RuStrings : Strings {
     override val backupSectionTitle = "Резервное копирование и синхронизация"
     override val createBackupTitle = "Сохранить резервную копию"
     override val createBackupSubtitle = "Экспорт книг, цитат, закладок и настроек в файл"
+    override val backupOptionsTitle = "Резервная копия"
+    override val backupOptionsSubtitle = "Выберите состав архива для сохранения:"
+    override val backupOptionFullTitle = "Всё вместе с книгами"
+    override val backupOptionFullDesc = "Книги, цитаты, закладки, статистика, словарь и настройки. Рекомендуется для переноса библиотеки."
+    override val backupOptionSettingsTitle = "Только настройки и данные"
+    override val backupOptionSettingsDesc = "Цитаты, закладки, статистика, словарь и настройки без файлов книг. Быстро и компактно."
     override val sendToGoogleDriveTitle = "Отправить резервную копию"
     override val sendToGoogleDriveSubtitle = "Например, на Google Диск или в Telegram"
     override val restoreBackupTitle = "Восстановить из резервной копии"
@@ -1382,6 +1394,12 @@ class EnStrings : Strings {
     override val backupSectionTitle = "Backup & Synchronization"
     override val createBackupTitle = "Export backup file"
     override val createBackupSubtitle = "Export books, quotes, bookmarks and settings to a file"
+    override val backupOptionsTitle = "Backup Options"
+    override val backupOptionsSubtitle = "Choose what to include in the backup archive:"
+    override val backupOptionFullTitle = "Complete backup with books"
+    override val backupOptionFullDesc = "Books, quotes, bookmarks, reading stats, vocabulary, and settings. Ideal for device migration."
+    override val backupOptionSettingsTitle = "Settings and reading data only"
+    override val backupOptionSettingsDesc = "Quotes, bookmarks, reading stats, vocabulary, and settings without book files. Fast and compact."
     override val sendToGoogleDriveTitle = "Send backup copy"
     override val sendToGoogleDriveSubtitle = "For example, to Google Drive or Telegram"
     override val restoreBackupTitle = "Restore from backup"
@@ -2005,6 +2023,12 @@ class UkStrings : Strings {
     override val backupSectionTitle = "Резервне копіювання та синхронізація"
     override val createBackupTitle = "Зберегти резервну копію"
     override val createBackupSubtitle = "Експорт книг, цитат, закладок і налаштувань у файл"
+    override val backupOptionsTitle = "Резервна копія"
+    override val backupOptionsSubtitle = "Оберіть вміст архіву для збереження:"
+    override val backupOptionFullTitle = "Повна копія з книгами"
+    override val backupOptionFullDesc = "Книги, цитати, закладки, статистика, словник та налаштування. Рекомендовано для перенесення."
+    override val backupOptionSettingsTitle = "Лише налаштування та дані"
+    override val backupOptionSettingsDesc = "Цитати, закладки, статистика, словник та налаштування без файлів книг. Швидко та компактно."
     override val sendToGoogleDriveTitle = "Надіслати резервну копію"
     override val sendToGoogleDriveSubtitle = "Наприклад, на Google Диск або в Telegram"
     override val restoreBackupTitle = "Відновити з резервної копії"
@@ -2515,6 +2539,12 @@ class BeStrings : Strings {
     override val backupSectionTitle = "Рэзервовае капіраванне і сінхранізацыя"
     override val createBackupTitle = "Захаваць рэзервовую копію"
     override val createBackupSubtitle = "Экспарт кніг, цытат, закладак і налад у файл"
+    override val backupOptionsTitle = "Рэзервовая копія"
+    override val backupOptionsSubtitle = "Выберыце змесціва архіва для захавання:"
+    override val backupOptionFullTitle = "Поўная копія з кнігамі"
+    override val backupOptionFullDesc = "Кнігі, цытаты, закладкі, статыстыка, слоўнік і налады. Рэкамендуецца для пераносу."
+    override val backupOptionSettingsTitle = "Толькі налады і даныя"
+    override val backupOptionSettingsDesc = "Цытаты, закладкі, статыстыка, слоўнік і налады без файлаў кніг. Хутка і кампактна."
     override val sendToGoogleDriveTitle = "Адправіць рэзервовую копію"
     override val sendToGoogleDriveSubtitle = "Напрыклад, на Google Дыск або ў Telegram"
     override val restoreBackupTitle = "Аднавіць з рэзервовай копіі"
@@ -3105,6 +3135,12 @@ class PlStrings : Strings {
     override val backupSectionTitle = "Kopia zapasowa i synchronizacja"
     override val createBackupTitle = "Zapisz kopię zapasową"
     override val createBackupSubtitle = "Eksport książek, cytatów, zakładek i ustawień do pliku"
+    override val backupOptionsTitle = "Kopia zapasowa"
+    override val backupOptionsSubtitle = "Wybierz zawartość archiwum do zapisania:"
+    override val backupOptionFullTitle = "Pełna kopia wraz z książkami"
+    override val backupOptionFullDesc = "Książki, cytaty, zakładki, statystyki, słownik i ustawienia. Zalecane do przenoszenia."
+    override val backupOptionSettingsTitle = "Tylko ustawienia i dane"
+    override val backupOptionSettingsDesc = "Cytaty, zakładki, statystyki, słownik i ustawienia bez plików książek. Szybkie i małe."
     override val sendToGoogleDriveTitle = "Wyślij kopię zapasową"
     override val sendToGoogleDriveSubtitle = "Na przykład na Dysk Google lub do Telegrama"
     override val restoreBackupTitle = "Przywróć z kopii zapasowej"
@@ -3749,6 +3785,12 @@ class CsStrings : Strings {
     override val backupSectionTitle = "Zálohování a synchronizace"
     override val createBackupTitle = "Vytvořit zálohu"
     override val createBackupSubtitle = "Uložit knihy, záložky, citáty a historii čtení"
+    override val backupOptionsTitle = "Záloha"
+    override val backupOptionsSubtitle = "Vyberte obsah záložního archivu:"
+    override val backupOptionFullTitle = "Kompletní záloha včetně knih"
+    override val backupOptionFullDesc = "Knihy, citáty, záložky, statistiky, slovník a nastavení. Doporučeno pro přenos."
+    override val backupOptionSettingsTitle = "Pouze nastavení a data"
+    override val backupOptionSettingsDesc = "Citáty, záložky, statistiky, slovník a nastavení bez souborů knih. Rychlé a úsporné."
     override val sendToGoogleDriveTitle = "Odeslat záložní kopii"
     override val sendToGoogleDriveSubtitle = "Například na Disk Google nebo do Telegramu"
     override val restoreBackupTitle = "Obnovit ze zálohy"
@@ -4260,6 +4302,12 @@ class HeStrings : Strings {
     override val backupSectionTitle = "גיבוי וסנכרון"
     override val createBackupTitle = "ייצוא קובץ גיבוי"
     override val createBackupSubtitle = "ייצוא ספרים, ציטוטים, סימניות והגדרות לקובץ"
+    override val backupOptionsTitle = "אפשרויות גיבוי"
+    override val backupOptionsSubtitle = "בחר מה לכלול בקובץ הגיבוי:"
+    override val backupOptionFullTitle = "גיבוי מלא כולל ספרים"
+    override val backupOptionFullDesc = "ספרים, ציטוטים, סימניות, סטטיסטיקות, מילון והגדרות. מומלץ למעבר בין מכשירים."
+    override val backupOptionSettingsTitle = "הגדרות ונתוני קריאה בלבד"
+    override val backupOptionSettingsDesc = "ציטוטים, סימניות, סטטיסטיקות, מילון והגדרות ללא קובצי ספרים. מהיר וקומפקטי."
     override val sendToGoogleDriveTitle = "שלח עותק גיבוי"
     override val sendToGoogleDriveSubtitle = "למשל, ל-Google Drive או ל-Telegram"
     override val restoreBackupTitle = "שחזור מגיבוי"
