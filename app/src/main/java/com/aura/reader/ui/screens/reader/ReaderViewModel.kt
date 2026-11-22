@@ -309,6 +309,12 @@ class ReaderViewModel(
         }
     }
 
+    fun setMangaModeRtl(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesManager.updateMangaModeRtl(enabled)
+        }
+    }
+
     fun setAutoHyphenation(enabled: Boolean) {
         viewModelScope.launch {
             preferencesManager.updateAutoHyphenation(enabled)

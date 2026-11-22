@@ -8,7 +8,9 @@ enum class BookFormat {
     TXT,
     PDF,
     MOBI,
-    CBZ
+    CBZ,
+    HTML,
+    MD
 }
 
 enum class BlockType {

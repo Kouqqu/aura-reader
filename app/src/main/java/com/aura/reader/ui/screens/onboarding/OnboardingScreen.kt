@@ -660,7 +660,7 @@ private fun OnboardingFormatsSlide(isGlass: Boolean = false) {
 
         FeatureHighlightCard(
             icon = Icons.Rounded.AutoAwesome,
-            title = "EPUB, FB2, MOBI, PDF, TXT, CBZ",
+            title = "EPUB, FB2, MOBI, PDF, TXT, CBZ, HTML, MD",
             description = "Умный парсер глав, сохранение изображений, сноски и таблицы",
             isGlass = isGlass
         )

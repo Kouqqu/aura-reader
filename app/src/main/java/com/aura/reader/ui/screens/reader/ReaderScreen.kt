@@ -438,6 +438,7 @@ fun ReaderScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .hazeSource(readerHazeState)
+                    .background(MaterialTheme.colorScheme.background)
             ) {
                 if (chapters.isNotEmpty()) {
                     if (settings.pagingMode && currentChapter != null) {
@@ -581,8 +582,7 @@ fun ReaderScreen(
                                     autoScrollSpeedMultiplier = autoScrollSpeedMultiplier,
                                     onSelectionTextChange = { text ->
                                         if (text.isNotEmpty()) selectedReaderText = text
-                                    },
-                                    hazeState = readerHazeState
+                                    }
                                 )
                             }
                         }
@@ -1022,7 +1022,8 @@ fun ReaderScreen(
                     onPageAnimationChange = { viewModel.setPageAnimation(it) },
                     onHapticFeedbackChange = { viewModel.setHapticFeedbackEnabled(it) },
                     onFontNameChange = { viewModel.setFontName(it) },
-                    onResetReadingSpeed = { viewModel.resetReadingSpeed() }
+                    onResetReadingSpeed = { viewModel.resetReadingSpeed() },
+                    onMangaModeRtlChange = { viewModel.setMangaModeRtl(it) }
                 )
             }
 

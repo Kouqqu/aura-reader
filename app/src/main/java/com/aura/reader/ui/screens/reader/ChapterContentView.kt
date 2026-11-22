@@ -1,9 +1,9 @@
 package com.aura.reader.ui.screens.reader
 
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.Quote
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.WindowInsets
@@ -93,8 +93,7 @@ fun ChapterContentView(
     onSelectionTextChange: (String) -> Unit = {},
     isAutoScrolling: Boolean = false,
     autoScrollSpeedMultiplier: Float = 1.0f,
-    onBookFinished: () -> Unit = {},
-    hazeState: HazeState? = null
+    onBookFinished: () -> Unit = {}
 ) {
     val selectionState = rememberSelectionState()
 
@@ -176,27 +175,35 @@ fun ChapterContentView(
     val cutoutTopInset = WindowInsets.displayCutout.asPaddingValues().calculateTopPadding()
     val topPaddingDp = maxOf(statusBarTopInset, cutoutTopInset, 42.dp) + 6.dp
 
-    androidx.compose.runtime.key(selectionResetKey) {
-        SelectionContainer(state = selectionState) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier)
-                    .jellyOverscroll()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        onToggleControls()
-                    },
-                contentPadding = PaddingValues(
-                    start = 22.dp,
-                    end = 22.dp,
-                    top = topPaddingDp,
-                    bottom = 140.dp
-                )
-            ) {
+    val isComicOrManga = remember(blocks) {
+        blocks.isNotEmpty() && blocks.all { it.type == BlockType.IMAGE }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        androidx.compose.runtime.key(selectionResetKey) {
+            SelectionContainer(state = selectionState) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .jellyOverscroll()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            onToggleControls()
+                        },
+                    contentPadding = PaddingValues(
+                        start = if (isComicOrManga) 0.dp else 22.dp,
+                        end = if (isComicOrManga) 0.dp else 22.dp,
+                        top = topPaddingDp,
+                        bottom = if (isComicOrManga) 80.dp else 140.dp
+                    )
+                ) {
                 itemsIndexed(blocks) { blockIndex, block ->
                     val isSpeaking = isTtsHighlightActive && isCurrentChapter && (blockIndex == ttsState.currentOriginalBlockIndex)
                     val highlightWords = isSpeaking && ttsState.isWordHighlightEnabled
@@ -301,4 +308,5 @@ fun ChapterContentView(
             }
         }
     }
+}
 }

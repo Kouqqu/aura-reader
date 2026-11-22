@@ -42,8 +42,17 @@ class BackupManager(
                 val updateNotifs = preferencesManager.updateNotificationsEnabled.first()
                 val catalogUrl = preferencesManager.catalogBaseUrl.first()
 
+                val readingStatsJson = preferencesManager.readingStatsJson.first() ?: "{}"
+                val libraryViewMode = preferencesManager.libraryViewMode.first()
+                val librarySortOrder = preferencesManager.librarySortOrder.first()
+                val customBookOrder = preferencesManager.customBookOrder.first()
+                val autoFetchMetadata = preferencesManager.autoFetchMetadataEnabled.first()
+                val customOpdsEnabled = preferencesManager.customOpdsEnabled.first()
+                val userAverageWpm = preferencesManager.userAverageWpm.first()
+                val seasonalEffectsEnabled = preferencesManager.seasonalEffectsEnabled.first()
+
                 val manifest = JSONObject().apply {
-                    put("version", 1)
+                    put("version", 2)
                     put("createdAt", System.currentTimeMillis())
                     put("createdAtFormatted", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()))
 
@@ -81,6 +90,8 @@ class BackupManager(
                     }
                     put("quotes", quotesArr)
 
+                    put("readingStats", try { JSONObject(readingStatsJson) } catch (_: Exception) { JSONObject() })
+
                     put("settings", JSONObject().apply {
                         put("fontSize", readerSettings.fontSizeSp)
                         put("lineHeight", readerSettings.lineHeightMultiplier)
@@ -94,6 +105,27 @@ class BackupManager(
                         put("colorPreset", colorPreset)
                         put("updateNotifications", updateNotifs)
                         put("catalogUrl", catalogUrl)
+                        put("fontName", readerSettings.fontName)
+                        put("serifFontName", readerSettings.serifFontName)
+                        put("sansSerifFontName", readerSettings.sansSerifFontName)
+                        put("monospaceFontName", readerSettings.monospaceFontName)
+                        put("lightImageBackground", readerSettings.lightImageBackground)
+                        put("autoHyphenation", readerSettings.autoHyphenation)
+                        put("twoColumnMode", readerSettings.twoColumnMode.name)
+                        put("pageAnimation", readerSettings.pageAnimation.name)
+                        put("hapticFeedbackEnabled", readerSettings.hapticFeedbackEnabled)
+                        put("syncThemesWithApp", readerSettings.syncThemesWithApp)
+                        put("appThemeMode", readerSettings.appThemeMode.name)
+                        put("appDesignStyle", readerSettings.appDesignStyle.name)
+                        put("glassClarity", readerSettings.glassClarity.toDouble())
+                        put("libraryViewMode", libraryViewMode)
+                        put("librarySortOrder", librarySortOrder)
+                        put("customBookOrder", customBookOrder)
+                        put("autoFetchMetadata", autoFetchMetadata)
+                        put("customOpdsEnabled", customOpdsEnabled)
+                        put("userAverageWpm", userAverageWpm.toDouble())
+                        put("seasonalEffectsEnabled", seasonalEffectsEnabled)
+                        put("mangaModeRtl", readerSettings.mangaModeRtl)
                     })
                 }
 
@@ -117,6 +149,22 @@ class BackupManager(
                             }
                             zipOut.closeEntry()
                             bookFilesCount++
+                        }
+                    }
+                }
+
+                // 3. Archive custom fonts
+                val customFontsDir = File(context.filesDir, "custom_fonts")
+                if (customFontsDir.exists()) {
+                    val fontFiles = customFontsDir.listFiles() ?: emptyArray()
+                    for (file in fontFiles) {
+                        if (file.isFile && file.length() > 0) {
+                            val fontEntry = ZipEntry("fonts/${file.name}")
+                            zipOut.putNextEntry(fontEntry)
+                            FileInputStream(file).use { fis ->
+                                fis.copyTo(zipOut)
+                            }
+                            zipOut.closeEntry()
                         }
                     }
                 }
@@ -157,10 +205,11 @@ class BackupManager(
         try {
             preferencesManager.libraryMutex.withLock {
                 val savedBooksDir = File(context.filesDir, "saved_books")
+                val customFontsDir = File(context.filesDir, "custom_fonts")
                 BackupArchive.read(inputStream, context.filesDir, savedBooksDir).use { archive ->
                     // Do not allow cancellation between installing files and committing metadata.
                     withContext(kotlinx.coroutines.NonCancellable) {
-                        archive.install(savedBooksDir, preferencesManager::restoreBackupMetadata)
+                        archive.install(savedBooksDir, customFontsDir, preferencesManager::restoreBackupMetadata)
                     }
                     Result.success(archive.bookCount)
                 }

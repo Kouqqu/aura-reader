@@ -513,6 +513,8 @@ object OpdsService {
                 BookFormat.MOBI -> "mobi"
                 BookFormat.TXT -> "txt"
                 BookFormat.CBZ -> "cbz"
+                BookFormat.HTML -> "html"
+                BookFormat.MD -> "md"
             }
             val destFile = File(booksDir, "${safeBaseName}_${safeBookId}.$ext")
 
@@ -571,6 +573,8 @@ object OpdsService {
                     BookFormat.PDF -> ".pdf"
                     BookFormat.MOBI -> ".mobi"
                     BookFormat.TXT -> ".txt"
+                    BookFormat.HTML -> ".html"
+                    BookFormat.MD -> ".md"
                     BookFormat.EPUB, BookFormat.CBZ -> ".$ext"
                 }
                 var extracted = false

@@ -53,6 +53,14 @@ import com.aura.reader.data.model.ReaderSettings
 import java.io.File
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateOffsetAsState
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 
 // ------------------------------------------------------------------------------------------------
 // BIONIC READING HELPER
@@ -259,15 +267,61 @@ fun RenderBlock(
             }
             val isComicOrPdf = block.subText?.contains(" / ") == true || block.subText?.startsWith("Страница ") == true
             if (isComicOrPdf) {
-                Column(
+                var zoomScale by remember { mutableFloatStateOf(1f) }
+                var zoomOffset by remember { mutableStateOf(Offset.Zero) }
+                val animScale by animateFloatAsState(zoomScale, label = "comicZoomScale")
+                val animOffset by animateOffsetAsState(zoomOffset, label = "comicZoomOffset")
+
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { onToggleControls() },
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(vertical = 2.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .pointerInput(Unit) {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                val newScale = (zoomScale * zoom).coerceIn(1f, 4f)
+                                zoomScale = newScale
+                                if (newScale > 1f) {
+                                    val maxX = (size.width * (newScale - 1f)) / 2f
+                                    val maxY = (size.height * (newScale - 1f)) / 2f
+                                    zoomOffset = Offset(
+                                        x = (zoomOffset.x + pan.x).coerceIn(-maxX, maxX),
+                                        y = (zoomOffset.y + pan.y).coerceIn(-maxY, maxY)
+                                    )
+                                } else {
+                                    zoomOffset = Offset.Zero
+                                }
+                            }
+                        }
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onDoubleTap = { tapOffset ->
+                                    if (zoomScale > 1.05f) {
+                                        zoomScale = 1f
+                                        zoomOffset = Offset.Zero
+                                    } else {
+                                        zoomScale = 2.5f
+                                        val center = Offset(size.width / 2f, size.height / 2f)
+                                        val delta = (center - tapOffset) * 1.5f
+                                        val maxX = (size.width * 1.5f) / 2f
+                                        val maxY = (size.height * 1.5f) / 2f
+                                        zoomOffset = Offset(
+                                            x = delta.x.coerceIn(-maxX, maxX),
+                                            y = delta.y.coerceIn(-maxY, maxY)
+                                        )
+                                    }
+                                },
+                                onTap = {
+                                    if (zoomScale > 1.05f) {
+                                        zoomScale = 1f
+                                        zoomOffset = Offset.Zero
+                                    } else {
+                                        onToggleControls()
+                                    }
+                                }
+                            )
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
@@ -278,7 +332,12 @@ fun RenderBlock(
                         contentScale = ContentScale.FillWidth,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(4.dp))
+                            .graphicsLayer {
+                                scaleX = animScale
+                                scaleY = animScale
+                                translationX = animOffset.x
+                                translationY = animOffset.y
+                            }
                     )
                 }
             } else {

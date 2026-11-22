@@ -159,7 +159,7 @@ fun AddBooksScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "FB2, EPUB, PDF, TXT, CBZ, CBR",
+                        text = "FB2, EPUB, PDF, TXT, CBZ, CBR, CBT, HTML, MD",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium

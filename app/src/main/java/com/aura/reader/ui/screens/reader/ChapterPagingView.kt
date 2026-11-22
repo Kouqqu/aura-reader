@@ -347,15 +347,27 @@ fun ChapterPagingView(
         }
 
         val instantSwipeModifier = if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
-            Modifier.pointerInput(pagerState.currentPage, totalPagerSpreads) {
+            Modifier.pointerInput(pagerState.currentPage, totalPagerSpreads, settings.mangaModeRtl) {
                 detectHorizontalDragGestures { _, dragAmount ->
                     if (dragAmount < -25f) {
-                        if (pagerState.currentPage < totalPagerSpreads - 1) {
-                            coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
+                        if (settings.mangaModeRtl) {
+                            if (pagerState.currentPage > 0) {
+                                coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
+                            }
+                        } else {
+                            if (pagerState.currentPage < totalPagerSpreads - 1) {
+                                coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
+                            }
                         }
                     } else if (dragAmount > 25f) {
-                        if (pagerState.currentPage > 0) {
-                            coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
+                        if (settings.mangaModeRtl) {
+                            if (pagerState.currentPage < totalPagerSpreads - 1) {
+                                coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
+                            }
+                        } else {
+                            if (pagerState.currentPage > 0) {
+                                coroutineScope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
+                            }
                         }
                     }
                 }
@@ -372,13 +384,17 @@ fun ChapterPagingView(
             }
         }
 
-        HorizontalPager(
-            state = pagerState,
-            userScrollEnabled = settings.pageAnimation != PageTurnAnimation.INSTANT,
-            modifier = Modifier
-                .fillMaxSize()
-                .then(instantSwipeModifier)
-        ) { spreadIdx ->
+        val layoutDirection = if (settings.mangaModeRtl) androidx.compose.ui.unit.LayoutDirection.Rtl else androidx.compose.ui.unit.LayoutDirection.Ltr
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides layoutDirection
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                userScrollEnabled = settings.pageAnimation != PageTurnAnimation.INSTANT,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(instantSwipeModifier)
+            ) { spreadIdx ->
             // Вычисляем, насколько страница сдвинута от центра (от -1.0 до 1.0)
             val pageOffset = ((pagerState.currentPage - spreadIdx) + pagerState.currentPageOffsetFraction)
             val animModifier = when (settings.pageAnimation) {
@@ -437,16 +453,29 @@ fun ChapterPagingView(
                     .fillMaxSize()
                     .then(animModifier)
                     .background(MaterialTheme.colorScheme.background)
-                    .pointerInput(pagerState.currentPage, totalPagerSpreads) {
+                    .pointerInput(pagerState.currentPage, totalPagerSpreads, settings.mangaModeRtl) {
                         detectTapGestures { offset ->
                             val edgeThreshold = 72.dp.toPx()
+                            val isRtl = settings.mangaModeRtl
                             if (offset.x < edgeThreshold) {
-                                if (pagerState.currentPage > 0) {
-                                    flipPage(pagerState.currentPage - 1)
+                                if (isRtl) {
+                                    if (pagerState.currentPage < totalPagerSpreads - 1) {
+                                        flipPage(pagerState.currentPage + 1)
+                                    }
+                                } else {
+                                    if (pagerState.currentPage > 0) {
+                                        flipPage(pagerState.currentPage - 1)
+                                    }
                                 }
                             } else if (offset.x > size.width - edgeThreshold) {
-                                if (pagerState.currentPage < totalPagerSpreads - 1) {
-                                    flipPage(pagerState.currentPage + 1)
+                                if (isRtl) {
+                                    if (pagerState.currentPage > 0) {
+                                        flipPage(pagerState.currentPage - 1)
+                                    }
+                                } else {
+                                    if (pagerState.currentPage < totalPagerSpreads - 1) {
+                                        flipPage(pagerState.currentPage + 1)
+                                    }
                                 }
                             } else {
                                 onToggleControls()
@@ -570,12 +599,16 @@ fun ChapterPagingView(
                                 }
                             } else {
                                 val pageBlocks = pages.getOrNull(contentSpreadIdx) ?: emptyList()
+                                val isSingleImagePage = pageBlocks.size == 1 && pageBlocks[0].second.type == BlockType.IMAGE
                                 Column(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .padding(horizontal = 24.dp)
-                                        .padding(top = topPaddingDp, bottom = bottomPaddingDp),
-                                    verticalArrangement = Arrangement.Top
+                                        .padding(horizontal = if (isSingleImagePage) 0.dp else 24.dp)
+                                        .padding(
+                                            top = if (isSingleImagePage) 0.dp else topPaddingDp,
+                                            bottom = if (isSingleImagePage) 0.dp else bottomPaddingDp
+                                        ),
+                                    verticalArrangement = if (isSingleImagePage) Arrangement.Center else Arrangement.Top
                                 ) {
                                     for ((originalIndex, block) in pageBlocks) {
                                         val isSpeaking = isTtsHighlightActive && (originalIndex == ttsState.currentOriginalBlockIndex)
@@ -720,6 +753,7 @@ fun ChapterPagingView(
             }
         }
     }
+}
 }
 
 // ------------------------------------------------------------------------------------------------

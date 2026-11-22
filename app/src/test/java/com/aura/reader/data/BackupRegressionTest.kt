@@ -111,4 +111,26 @@ class BackupRegressionTest {
         val restored = JSONArray(prefs.recentBooksJson.first()).getJSONObject(0)
         assertEquals("roundtrip content", File(java.net.URI(restored.getString("uriString"))).readText())
     }
+
+    @Test fun exportAndImportPreservesFontsAndStats() = runBlocking {
+        val prefs = PreferencesManager(context)
+        val fontsDir = File(context.filesDir, "custom_fonts").apply { mkdirs() }
+        val fontFile = File(fontsDir, "MyCustomFont.ttf").apply { writeText("mock font content") }
+        prefs.addReadingSeconds(1200L)
+
+        val manager = BackupManager(context, prefs)
+        val bytes = ByteArrayOutputStream()
+        manager.exportBackup(bytes).getOrThrow()
+
+        // Wipe local font and stats
+        fontFile.delete()
+        prefs.resetReadingStats()
+        assertEquals(0, prefs.todayReadingMinutes.first())
+
+        manager.importBackup(ByteArrayInputStream(bytes.toByteArray())).getOrThrow()
+
+        assertTrue(fontFile.exists())
+        assertEquals("mock font content", fontFile.readText())
+        assertEquals(20, prefs.todayReadingMinutes.first())
+    }
 }

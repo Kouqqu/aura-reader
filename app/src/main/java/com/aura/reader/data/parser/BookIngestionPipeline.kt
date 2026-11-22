@@ -66,13 +66,22 @@ class BookIngestionPipeline(
                 fileName.endsWith(".epub", ignoreCase = true) -> {
                     EpubParser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                 }
-                fileName.endsWith(".fb2", ignoreCase = true) || fileName.endsWith(".fb2.zip", ignoreCase = true) -> {
+                fileName.endsWith(".fb2", ignoreCase = true) || fileName.endsWith(".fb2.zip", ignoreCase = true) || fileName.endsWith(".fbz", ignoreCase = true) -> {
                     Fb2Parser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
+                }
+                fileName.endsWith(".md", ignoreCase = true) || fileName.endsWith(".markdown", ignoreCase = true) -> {
+                    MarkdownParser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName)
+                }
+                fileName.endsWith(".html", ignoreCase = true) || fileName.endsWith(".htm", ignoreCase = true) -> {
+                    HtmlParser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
+                }
+                fileName.endsWith(".cbt", ignoreCase = true) -> {
+                    CbtParser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                 }
                 fileName.endsWith(".txt", ignoreCase = true) -> {
                     TxtParser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName)
                 }
-                fileName.endsWith(".cbz", ignoreCase = true) -> {
+                fileName.endsWith(".cbz", ignoreCase = true) || fileName.endsWith(".cbr", ignoreCase = true) -> {
                     CbzParser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                 }
                 fileName.endsWith(".mobi", ignoreCase = true) || (bytes.size >= 68 && bytes[60] == 'B'.code.toByte() && bytes[61] == 'O'.code.toByte() && bytes[62] == 'O'.code.toByte() && bytes[63] == 'K'.code.toByte()) -> {
@@ -82,6 +91,8 @@ class BookIngestionPipeline(
                     var hasMetaInf = false
                     var hasFb2 = false
                     var hasTxt = false
+                    var hasHtml = false
+                    var hasMd = false
                     var hasImages = false
                     var entryName = ""
                     try {
@@ -95,6 +106,14 @@ class BookIngestionPipeline(
                             }
                             if (lower.endsWith(".fb2")) {
                                 hasFb2 = true
+                                entryName = e.name
+                            }
+                            if (lower.endsWith(".html") || lower.endsWith(".htm")) {
+                                hasHtml = true
+                                entryName = e.name
+                            }
+                            if (lower.endsWith(".md") || lower.endsWith(".markdown")) {
+                                hasMd = true
                                 entryName = e.name
                             }
                             if (lower.endsWith(".txt")) {
@@ -111,6 +130,32 @@ class BookIngestionPipeline(
                     when {
                         hasMetaInf -> EpubParser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                         hasFb2 -> Fb2Parser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
+                        hasHtml -> {
+                            val zis = ZipInputStream(ByteArrayInputStream(bytes))
+                            var e = zis.nextEntry
+                            var htmlBytes = ByteArray(0)
+                            while (e != null) {
+                                if (e.name == entryName) {
+                                    htmlBytes = zis.readBytes()
+                                    break
+                                }
+                                e = zis.nextEntry
+                            }
+                            HtmlParser.parse(ByteArrayInputStream(htmlBytes), uri.toString(), entryName, imagesDir)
+                        }
+                        hasMd -> {
+                            val zis = ZipInputStream(ByteArrayInputStream(bytes))
+                            var e = zis.nextEntry
+                            var mdBytes = ByteArray(0)
+                            while (e != null) {
+                                if (e.name == entryName) {
+                                    mdBytes = zis.readBytes()
+                                    break
+                                }
+                                e = zis.nextEntry
+                            }
+                            MarkdownParser.parse(ByteArrayInputStream(mdBytes), uri.toString(), entryName)
+                        }
                         hasTxt -> {
                             val zis = ZipInputStream(ByteArrayInputStream(bytes))
                             var e = zis.nextEntry
@@ -124,16 +169,18 @@ class BookIngestionPipeline(
                             }
                             TxtParser.parse(ByteArrayInputStream(txtBytes), uri.toString(), entryName)
                         }
-                        hasImages || fileName.endsWith(".cbz", ignoreCase = true) -> {
+                        hasImages || fileName.endsWith(".cbz", ignoreCase = true) || fileName.endsWith(".cbr", ignoreCase = true) -> {
                             CbzParser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                         }
-                        else -> throw IllegalArgumentException("Архив «$fileName» не содержит поддерживаемых книг (FB2, EPUB, TXT, CBZ).")
+                        else -> throw IllegalArgumentException("Архив «$fileName» не содержит поддерживаемых книг (FB2, EPUB, TXT, CBZ, HTML, MD).")
                     }
                 }
                 else -> {
                     val sampleHeader = String(bytes.take(2048).toByteArray(), Charsets.UTF_8)
                     if (sampleHeader.contains("<FictionBook", ignoreCase = true)) {
                         Fb2Parser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
+                    } else if (sampleHeader.contains("<html", ignoreCase = true) || sampleHeader.contains("<!doctype html", ignoreCase = true)) {
+                        HtmlParser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName, imagesDir)
                     } else {
                         try {
                             TxtParser.parse(ByteArrayInputStream(bytes), uri.toString(), fileName)

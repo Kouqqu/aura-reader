@@ -171,6 +171,11 @@ interface Strings {
     fun nextInSeriesPrompt(title: String): String
     val nextInSeriesAction: String
     val cbzFormat: String
+    val mdFormat: String
+    val htmlFormat: String
+    val cbtFormat: String
+    val mangaModeRtlTitle: String
+    val mangaModeRtlDesc: String
     val newCollection: String
     val createCollectionDialogTitle: String
     val collectionNamePlaceholder: String
@@ -767,6 +772,11 @@ class RuStrings : Strings {
     override fun nextInSeriesPrompt(title: String) = "Вы завершили эту книгу. Открыть следующую часть «$title»?"
     override val nextInSeriesAction = "Читать далее"
     override val cbzFormat = "Комикс / Манга (CBZ)"
+    override val mdFormat = "Документ Markdown (MD)"
+    override val htmlFormat = "Веб-страница (HTML)"
+    override val cbtFormat = "Комикс (CBT)"
+    override val mangaModeRtlTitle = "Режим манги (справа налево)"
+    override val mangaModeRtlDesc = "Листание страниц справа налево для японской манги"
     override val newCollection = "Полка"
     override val createCollectionDialogTitle = "Новая коллекция"
     override val collectionNamePlaceholder = "Название полки"
@@ -1311,6 +1321,11 @@ class EnStrings : Strings {
     override fun nextInSeriesPrompt(title: String) = "You finished this book. Open the next book \"$title\"?"
     override val nextInSeriesAction = "Read Next"
     override val cbzFormat = "Comic / Manga (CBZ)"
+    override val mdFormat = "Markdown Document (MD)"
+    override val htmlFormat = "Web Page (HTML)"
+    override val cbtFormat = "Comic Archive (CBT)"
+    override val mangaModeRtlTitle = "Manga mode (Right-to-Left)"
+    override val mangaModeRtlDesc = "Page flipping from right to left for Japanese manga"
     override val newCollection = "Shelf"
     override val createCollectionDialogTitle = "New Collection"
     override val collectionNamePlaceholder = "Shelf name"
@@ -1897,6 +1912,11 @@ class UkStrings : Strings {
     override fun nextInSeriesPrompt(title: String) = "Ви завершили цю книгу. Відкрити наступну частину «$title»?"
     override val nextInSeriesAction = "Читати далі"
     override val cbzFormat = "Комікс / Манга (CBZ)"
+    override val mdFormat = "Документ Markdown (MD)"
+    override val htmlFormat = "Веб-сторінка (HTML)"
+    override val cbtFormat = "Комікс (CBT)"
+    override val mangaModeRtlTitle = "Режим манґи (справа наліво)"
+    override val mangaModeRtlDesc = "Гортання сторінок справа наліво для японської манґи"
     override val newCollection = "Полиця"
     override val createCollectionDialogTitle = "Нова колекція"
     override val collectionNamePlaceholder = "Назва полиці"
@@ -2402,6 +2422,11 @@ class BeStrings : Strings {
     override fun nextInSeriesPrompt(title: String) = "Вы скончылі гэтую кнігу. Адкрыць наступную частку «$title»?"
     override val nextInSeriesAction = "Чытаць далей"
     override val cbzFormat = "Комікс / Манга (CBZ)"
+    override val mdFormat = "Дакумент Markdown (MD)"
+    override val htmlFormat = "Вэб-старонка (HTML)"
+    override val cbtFormat = "Комікс (CBT)"
+    override val mangaModeRtlTitle = "Рэжым мангі (справа налева)"
+    override val mangaModeRtlDesc = "Гартанне старонак справа налева для японскай мангі"
     override val newCollection = "Паліца"
     override val createCollectionDialogTitle = "Новая калекцыя"
     override val collectionNamePlaceholder = "Назва паліцы"
@@ -2987,6 +3012,11 @@ class PlStrings : Strings {
     override fun nextInSeriesPrompt(title: String) = "Ukończyłeś tę książkę. Czy chcesz otworzyć kolejną część: „$title”?"
     override val nextInSeriesAction = "Czytaj dalej"
     override val cbzFormat = "Komiks / Manga (CBZ)"
+    override val mdFormat = "Dokument Markdown (MD)"
+    override val htmlFormat = "Strona WWW (HTML)"
+    override val cbtFormat = "Komiks (CBT)"
+    override val mangaModeRtlTitle = "Tryb mangi (od prawej do lewej)"
+    override val mangaModeRtlDesc = "Przerzucanie stron od prawej do lewej dla japońskiej mangi"
     override val newCollection = "Półka"
     override val createCollectionDialogTitle = "Nowa kolekcja"
     override val collectionNamePlaceholder = "Nazwa półki"
@@ -3628,6 +3658,11 @@ class CsStrings : Strings {
     override fun nextInSeriesPrompt(title: String) = "Dokončili jste tuto knihu. Otevřít další díl „$title“?"
     override val nextInSeriesAction = "Číst dál"
     override val cbzFormat = "Komiks / Manga (CBZ)"
+    override val mdFormat = "Dokument Markdown (MD)"
+    override val htmlFormat = "Webová stránka (HTML)"
+    override val cbtFormat = "Komiks (CBT)"
+    override val mangaModeRtlTitle = "Režim mangy (zprava doleva)"
+    override val mangaModeRtlDesc = "Listování stránek zprava doleva pro japonskou mangu"
     override val newCollection = "Nová sbírka"
     override val createCollectionDialogTitle = "Vytvořit sbírku"
     override val collectionNamePlaceholder = "Název sbírky"
@@ -4134,6 +4169,11 @@ class HeStrings : Strings {
     override fun nextInSeriesPrompt(title: String) = "המשך לספר הבא בסדרה: $title"
     override val nextInSeriesAction = "המשך לקרוא"
     override val cbzFormat = "קומיקס / מנגה (CBZ)"
+    override val mdFormat = "מסמך Markdown (MD)"
+    override val htmlFormat = "דף אינטרנט (HTML)"
+    override val cbtFormat = "קומיקס (CBT)"
+    override val mangaModeRtlTitle = "מצב מנגה (מימין לשמאל)"
+    override val mangaModeRtlDesc = "דפדוף מימין לשמאל עבור מנגה יפנית"
     override val newCollection = "מדף"
     override val createCollectionDialogTitle = "אוסף חדש"
     override val collectionNamePlaceholder = "שם המדף"

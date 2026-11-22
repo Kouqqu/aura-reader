@@ -126,8 +126,8 @@ fun LibrarySearchScreen(
     val trimmedQuery = searchQuery.trim()
     val isFilteringOrSearching = trimmedQuery.isNotBlank() || selectedGenreFilter != null
     val collageSubdued = isFilteringOrSearching || keyboardOpen
-    val heroHeight by animateDpAsState(if (collageSubdued) 110.dp else 310.dp, tween(350), label = "searchHeroHeight")
-    val titleInset by animateDpAsState(if (collageSubdued) 0.dp else 185.dp, tween(350), label = "searchTitleInset")
+    val heroHeight by animateDpAsState(if (collageSubdued) 100.dp else 320.dp, tween(350), label = "searchHeroHeight")
+    val titleInset by animateDpAsState(if (collageSubdued) 0.dp else 165.dp, tween(350), label = "searchTitleInset")
 
     val searchResults = remember(trimmedQuery, selectedGenreFilter, books) {
         if (!isFilteringOrSearching) {
@@ -183,12 +183,12 @@ fun LibrarySearchScreen(
         modifier = modifier
             .fillMaxSize()
             .background(screenBg)
-            .statusBarsPadding()
     ) {
         SearchCoverCollage(books, subdued = collageSubdued, modifier = Modifier.height(heroHeight))
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(titleInset))
@@ -196,7 +196,7 @@ fun LibrarySearchScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp, bottom = 12.dp, start = 4.dp),
+                    .padding(top = 8.dp, bottom = 12.dp, start = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(

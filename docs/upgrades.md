@@ -3,7 +3,21 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-11-22, release `2.3.0-beta.41` (`versionCode 206`).
+Last updated: 2026-11-22, release `2.3.0-beta.42` (`versionCode 207`).
+`2.3.0-beta.42` changed no dependencies:
+- Frosted glass blur in scroll mode: Fixed interface blur parity with paging mode by rendering a solid `MaterialTheme.colorScheme.background` within the `hazeSource` capture hierarchy in `ReaderScreen.kt` and `ChapterContentView.kt`, and eliminating conflicting child `hazeSource` registrations on `LazyColumn` so `readerHazeState` captures an opaque, solid backdrop with crisp text at 120 FPS across both paging and continuous scroll modes.
+- Search screen edge-to-edge layout: Removed outer `statusBarsPadding()` from the search container and moved it to the inner content column, enabling `SearchCoverCollage` to extend edge-to-edge behind the translucent status bar and positioning the "Поиск" title and search bar immediately beneath the status bar, harmonizing with the rest of the application (`LibrarySearchScreen.kt`).
+- Comprehensive backup & restore audit: Upgraded `.aurabackup` archive schema to version 2 (`BackupManager.kt`, `BackupArchive.kt`, `PreferencesManager.kt`). Backs up and restores user custom fonts (`custom_fonts/*.ttf, *.otf`), complete reading statistics history (`reading_stats_json` with idempotent date-keyed seconds merge), and all reader and library settings (`mangaModeRtl`, `fontName`, `twoColumnMode`, `pageAnimation`, `autoHyphenation`, `lightImageBackground`, `hapticFeedbackEnabled`, `syncThemesWithApp`, `appThemeMode`, `appDesignStyle`, `glassClarity`, `libraryViewMode`, `librarySortOrder`, `customBookOrder`, `autoFetchMetadata`, `userAverageWpm`, `seasonalEffectsEnabled`), while maintaining seamless backward compatibility with version 1 backups.
+- Comic & Manga reader experience:
+  - Added Manga Mode with Right-to-Left (RTL) reading direction toggle in reader settings (`mangaModeRtl`, `CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl)`), adapting both horizontal page swipes and edge tap detection.
+  - Interactive comic image zoom: Added double-tap to zoom (2.5x centered on tapped panel) and smooth pinch-to-zoom (1.0x to 4.0x) with bounded pan navigation in `ReaderBlocks.kt`.
+  - Full-bleed comic presentation: Eliminated horizontal margins on single-image pages in `ChapterPagingView.kt` and across image-only chapters in `ChapterContentView.kt` (continuous webtoon/manhwa mode).
+- Extended format support (`clach04/sample_reading_media` audit):
+  - Added native `MarkdownParser` supporting `.md` and `.markdown` with YAML frontmatter metadata extraction, headings, epigraphs, dividers, and lists (`BookFormat.MD`).
+  - Added native `HtmlParser` supporting `.html` and `.htm` web documents using JSoup, extracting document metadata, headings, blockquotes, paragraphs, and embedded base64 illustrations (`BookFormat.HTML`).
+  - Added native `CbtParser` supporting uncompressed TAR comic archives (`.cbt`).
+  - Added `.fbz` alias for FictionBook compressed archives and enabled `.html` / `.md` discovery within standard ZIP archives.
+  - Localized format labels and manga settings across all 7 supported languages in `AppStrings.kt`.
 `2.3.0-beta.41` changed no dependencies:
 - Authentic human ambient recordings: Replaced procedural/synthetic sounds for rain and fire with real, high-quality human field recordings (hearth fireplace with crackling embers and natural rain, Freesound CC0 / public domain via Muges/ambientsounds), crossfade-looped seamlessly and volume-matched with forest and ocean (`ambient_fire.ogg`, `ambient_rain.ogg`).
 - README badge layout: Re-positioned Telegram and Donation links/badges directly beneath the top project badges (License, Release, Android platform, Kotlin) in `README.md`.
