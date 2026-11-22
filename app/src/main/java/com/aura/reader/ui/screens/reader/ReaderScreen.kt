@@ -438,7 +438,6 @@ fun ReaderScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .hazeSource(readerHazeState)
-                    .navigationBarsPadding()
             ) {
                 if (chapters.isNotEmpty()) {
                     if (settings.pagingMode && currentChapter != null) {
@@ -582,7 +581,8 @@ fun ReaderScreen(
                                     autoScrollSpeedMultiplier = autoScrollSpeedMultiplier,
                                     onSelectionTextChange = { text ->
                                         if (text.isNotEmpty()) selectedReaderText = text
-                                    }
+                                    },
+                                    hazeState = readerHazeState
                                 )
                             }
                         }

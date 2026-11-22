@@ -6,6 +6,14 @@
   [![GitHub release](https://img.shields.io/github/v/release/Kouqqu/aura-reader?color=green)](https://github.com/Kouqqu/aura-reader/releases/latest)
   [![Platform](https://img.shields.io/badge/Platform-Android_8.0+-3DDC84.svg?logo=android&logoColor=white)](https://android.com)
   [![Kotlin](https://img.shields.io/badge/Kotlin-Jetpack_Compose-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+  <br><br>
+  <a href="https://t.me/koukkuteka" target="_blank">
+    <img src="assets/badge_telegram.svg" alt="Telegram" height="36">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://dalink.to/koukku" target="_blank">
+    <img src="assets/badge_donate.svg" alt="Donate" height="36">
+  </a>
 </div>
 
 ---
@@ -68,14 +76,4 @@ This project is open-source and licensed under the [GNU General Public License v
 
 Проект распространяется под свободной лицензией [GNU General Public License v3.0](LICENSE).
 
----
 
-<div align="center">
-  <a href="https://t.me/koukkuteka" target="_blank">
-    <img src="assets/badge_telegram.svg" alt="Telegram" height="36">
-  </a>
-  &nbsp;&nbsp;
-  <a href="https://dalink.to/koukku" target="_blank">
-    <img src="assets/badge_donate.svg" alt="Donate" height="36">
-  </a>
-</div>

@@ -572,7 +572,44 @@ fun LibraryScreen(
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = mainScreenBg,
-        topBar = {},
+        topBar = {
+            val libraryPageOffset by remember(pagerState) {
+                derivedStateOf {
+                    val page = pagerState.currentPage
+                    val offset = pagerState.currentPageOffsetFraction
+                    if (page == 0) {
+                        offset.coerceIn(0f, 1f)
+                    } else if (page == 1 && offset < 0f) {
+                        (1f + offset).coerceIn(0f, 1f)
+                    } else {
+                        1f
+                    }
+                }
+            }
+            if (libraryPageOffset < 0.999f) {
+                LibraryTopBar(
+                    isSearchExpanded = isSearchExpanded,
+                    isGlass = isGlass,
+                    isThemeDark = isThemeDark,
+                    searchQuery = searchQuery,
+                    libraryViewMode = libraryViewMode,
+                    scrollBehavior = scrollBehavior,
+                    pageOffset = libraryPageOffset,
+                    onSearchExpandedChange = { isSearchExpanded = it },
+                    onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                    onToggleViewMode = { viewModel.toggleLibraryViewMode() },
+                    onOpenSettings = {
+                        smoothScrollToPage(2)
+                    },
+                    onHolidayBadgeClick = { origin ->
+                        holidayBurstKey = System.currentTimeMillis()
+                        holidayBurstOrigin = origin
+                        triggerThemeHaptic(context)
+                        com.aura.reader.util.HolidaySoundPlayer.playHolidaySound(context, holidaySeason)
+                    }
+                )
+            }
+        },
         floatingActionButton = {
             if (isReorderMode) {
                 ExtendedFloatingActionButton(
@@ -625,7 +662,6 @@ fun LibraryScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .onGloballyPositioned { rootCoordinates = it }
         ) {
             Box(
@@ -663,35 +699,11 @@ fun LibraryScreen(
                             filteredRecentBooks
                         }
 
-                        Column(
-                            modifier = Modifier.fillMaxSize()
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
                         ) {
-                            LibraryTopBar(
-                                isSearchExpanded = isSearchExpanded,
-                                isGlass = isGlass,
-                                isThemeDark = isThemeDark,
-                                searchQuery = searchQuery,
-                                libraryViewMode = libraryViewMode,
-                                scrollBehavior = scrollBehavior,
-                                onSearchExpandedChange = { isSearchExpanded = it },
-                                onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                                onToggleViewMode = { viewModel.toggleLibraryViewMode() },
-                                onOpenSettings = {
-                                    smoothScrollToPage(2)
-                                },
-                                onHolidayBadgeClick = { origin ->
-                                    holidayBurstKey = System.currentTimeMillis()
-                                    holidayBurstOrigin = origin
-                                    triggerThemeHaptic(context)
-                                    com.aura.reader.util.HolidaySoundPlayer.playHolidaySound(context, holidaySeason)
-                                }
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth()
-                            ) {
                                     if (recentBooks.isEmpty() && uiState !is LibraryUiState.Loading) {
                                         Column(Modifier.fillMaxSize()) {
                                             if (isSearchExpanded && !isGlass) {
@@ -1288,7 +1300,6 @@ fun LibraryScreen(
                                     }
                                 }
                             }
-                        }
                     1 -> {
                         LibrarySearchScreen(
                             searchQuery = searchQuery,

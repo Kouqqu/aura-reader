@@ -1,5 +1,7 @@
 package com.aura.reader.ui.screens.reader
 
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.Quote
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
@@ -91,7 +93,8 @@ fun ChapterContentView(
     onSelectionTextChange: (String) -> Unit = {},
     isAutoScrolling: Boolean = false,
     autoScrollSpeedMultiplier: Float = 1.0f,
-    onBookFinished: () -> Unit = {}
+    onBookFinished: () -> Unit = {},
+    hazeState: HazeState? = null
 ) {
     val selectionState = rememberSelectionState()
 
@@ -179,6 +182,7 @@ fun ChapterContentView(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
+                    .then(if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier)
                     .jellyOverscroll()
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },

@@ -153,14 +153,14 @@ class ReaderViewModel(
         }
     }
 
-    fun setChapter(index: Int, offset: Int = 0) {
+    fun setChapter(index: Int, offset: Int = 0, textOffset: Int = 0) {
         val book = currentBook.value ?: return
         if (index in book.chapters.indices) {
             val chapterChanged = _currentChapterIndex.value != index
             isAtBookEnd = false
             _currentChapterIndex.value = index
             _savedScrollOffset.value = offset
-            _savedTextOffset.value = 0
+            _savedTextOffset.value = textOffset
             _savedPixelOffset.value = 0
             saveCurrentProgress()
 
@@ -217,9 +217,9 @@ class ReaderViewModel(
         val book = currentBook.value ?: return
         val prev = _currentChapterIndex.value - 1
         if (prev >= 0) {
-            val totalBlocks = book.chapters.getOrNull(prev)?.blocks?.size ?: 0
-            val offset = if (startAtEnd && totalBlocks > 0) totalBlocks - 1 else 0
-            setChapter(prev, offset)
+            val offset = if (startAtEnd) Int.MAX_VALUE else 0
+            val textOffset = if (startAtEnd) Int.MAX_VALUE else 0
+            setChapter(prev, offset, textOffset)
         }
     }
 

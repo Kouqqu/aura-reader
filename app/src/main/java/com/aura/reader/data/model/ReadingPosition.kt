@@ -2,12 +2,15 @@ package com.aura.reader.data.model
 
 /** Positions use a block index plus an offset into its formatted text. */
 object ReadingPosition {
-    fun pageForAnchor(pages: List<List<Pair<Int, FormattedBlock>>>, block: Int, textOffset: Int): Int =
-        pages.indexOfLast { page ->
+    fun pageForAnchor(pages: List<List<Pair<Int, FormattedBlock>>>, block: Int, textOffset: Int): Int {
+        if (pages.isEmpty()) return 0
+        if (block == Int.MAX_VALUE || block >= 999_999) return pages.lastIndex
+        return pages.indexOfLast { page ->
             page.firstOrNull()?.let { (index, chunk) ->
                 index < block || (index == block && chunk.sourceTextOffset <= textOffset)
             } ?: false
         }.coerceAtLeast(0)
+    }
 
     fun percent(book: Book, chapterIndex: Int, blockIndex: Int, textOffset: Int = 0): Int {
         if (book.chapters.isEmpty()) return 0

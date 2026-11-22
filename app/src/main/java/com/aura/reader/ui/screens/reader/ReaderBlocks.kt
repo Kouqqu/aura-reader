@@ -358,7 +358,7 @@ fun RenderBlock(
                 color = MaterialTheme.colorScheme.onBackground,
                 textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp),
                 hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
-                lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
+                lineBreak = if (settings.autoHyphenation) LineBreak(strategy = LineBreak.Strategy.HighQuality, strictness = LineBreak.Strictness.Loose, wordBreak = LineBreak.WordBreak.Default) else LineBreak.Simple
             )
 
             val formattedText = remember(block.text) { formatTypography(block.text.trim()) }

@@ -3,7 +3,14 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-11-22, release `2.3.0-beta.40` (`versionCode 205`).
+Last updated: 2026-11-22, release `2.3.0-beta.41` (`versionCode 206`).
+`2.3.0-beta.41` changed no dependencies:
+- Authentic human ambient recordings: Replaced procedural/synthetic sounds for rain and fire with real, high-quality human field recordings (hearth fireplace with crackling embers and natural rain, Freesound CC0 / public domain via Muges/ambientsounds), crossfade-looped seamlessly and volume-matched with forest and ocean (`ambient_fire.ogg`, `ambient_rain.ogg`).
+- README badge layout: Re-positioned Telegram and Donation links/badges directly beneath the top project badges (License, Release, Android platform, Kotlin) in `README.md`.
+- Top bar aura brightness dimming & search header fix: Restored `LibraryTopBar` to `Scaffold(topBar = { ... })` and removed double top padding on Page 1 (search screen), eliminating the black band at the top; modulated aura brightness directly in `drawBehind` (`auraAlpha = (1f - libraryPageOffset)`) without container layer clipping, allowing full-radius 150dp aura to dim smoothly during pager swipe while title and greeting animate with parallax and fade (`LibraryTopBar.kt`, `LibraryScreen.kt`).
+- Reader word hyphenation strictness: Upgraded paragraph line breaking to `LineBreak(strategy = HighQuality, strictness = Loose)` so that auto-hyphenation triggers more naturally across Russian and multilingual texts without creating ragged gaps at line ends (`ReaderBlocks.kt`, `ReaderPagination.kt`).
+- Previous chapter page navigation anchor: Fixed page turn backward from chapter start to reliably land on the very last page/spread of the previous chapter by passing `Int.MAX_VALUE` and resolving `ReadingPosition.pageForAnchor` to `pages.lastIndex` (`ReaderViewModel.kt`, `ReadingPosition.kt`, `ChapterPagingView.kt`).
+- Frosted glass blur in continuous scroll mode: Fixed interface blur in scroll mode by passing `HazeState` directly to `LazyColumn` (`hazeSource`) and removing `navigationBarsPadding` from the content container so the blur snapshot continuously updates at 120 FPS as the reader scrolls behind the top bar, bottom bar, and menus (`ChapterContentView.kt`, `ReaderScreen.kt`).
 `2.3.0-beta.40` changed no dependencies:
 - Grid view interaction: Clicking a book cover in the grid layout now immediately opens the book for reading, while opening the book profile bottom sheet is moved to the 3-dots action menu on that cover (`BookCards.kt`).
 - Batch multi-select shelves: Multi-select collection picker now includes built-in shelves ("Читаю", "Прочитано", "Непрочитанные", "В избранное") alongside custom collections, enabling immediate library organization after batch import (`LibraryScreen.kt`, `LibraryViewModel.kt`, `BookRepository.kt`).

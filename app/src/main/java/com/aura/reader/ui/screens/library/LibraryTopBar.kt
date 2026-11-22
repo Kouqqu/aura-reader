@@ -104,6 +104,7 @@ internal fun LibraryTopBar(
     searchQuery: String,
     libraryViewMode: String,
     scrollBehavior: TopAppBarScrollBehavior,
+    pageOffset: Float = 0f,
     onSearchExpandedChange: (Boolean) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onToggleViewMode: () -> Unit,
@@ -216,7 +217,8 @@ AnimatedContent(
                     val top = topBarCoords
                     val logo = expandedLogoCoords
                     val collapsedFraction = scrollBehavior.state.collapsedFraction
-                    val scrollAlpha = (1f - collapsedFraction / 0.35f).coerceIn(0f, 1f)
+                    val auraAlpha = (1f - pageOffset).coerceIn(0f, 1f)
+                    val scrollAlpha = (1f - collapsedFraction / 0.35f).coerceIn(0f, 1f) * auraAlpha
 
                     if (isThemeDark && scrollAlpha > 0.005f) {
                         val cloudCenter = if (top != null && logo != null && top.isAttached && logo.isAttached) {
@@ -281,6 +283,10 @@ AnimatedContent(
                 }
         ) {
             LargeTopAppBar(
+                modifier = Modifier.graphicsLayer {
+                    translationX = -pageOffset * size.width * 0.35f
+                    alpha = (1f - pageOffset).coerceIn(0f, 1f)
+                },
                 title = {
                     val isSmallTitle = LocalTextStyle.current.fontSize <= MaterialTheme.typography.titleLarge.fontSize
 
