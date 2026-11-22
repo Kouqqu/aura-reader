@@ -1489,3 +1489,14 @@ Verified with `testDebugUnitTest assembleDebug` (exit code 0).
   - Resolved black-on-black text bug in `SettingsInterfacePage`, `SettingsGeneralPage`, `SettingsAboutPage`, and `SettingsBottomSheet`, restoring clean high-contrast light Material 3 container cards and black typography.
 - **E-Ink Mode Description (`AppStrings.kt`, `SettingsThemeSection.kt`):**
   - Updated `eInkModeSubtitle` and `eInkModeActiveDesc` to concise «Специально для электронных книг» («Specifically for e-book readers»).
+
+## 2.3.0-beta.55 (versionCode 220) — Complete Onboarding Redesign & Reading Swipe Hint
+- **Onboarding Redesign (`OnboardingScreen.kt`):**
+  - Replaced legacy 4 slides with a fresh, 4-screen onboarding guide:
+    - Slide 0 («Добро пожаловать»): Design style options (`AppDesignStyle.LIQUID_GLASS` vs `AppDesignStyle.MATERIAL`) and 3-way theme selector (`ReaderThemeMode.LIGHT`, `ReaderThemeMode.DARK`, `ReaderThemeMode.SYSTEM_DYNAMIC`) with Dark theme active by default on launch.
+    - Slide 1 («Зажми слово»): Realistic book text selection mockup (`«Он улыбнулся в ответ»`) with genuine floating reader action toolbar: `[ Цитата ] [ Словарь ] [ Перевод ]`, strictly named «Словарь» without AI slop.
+    - Slide 2 («И ещё много всего»): 2x2 grid of clean feature tiles: OPDS Catalogs, Read-Aloud TTS, Comics & PDF, and high-contrast E-Ink mode.
+    - Slide 3 («Приятного чтения!»): Aura Reader squircle logo (`ic_aura_logo_squircle`) with a prominent `[ Начать читать ]` primary button navigating to the library.
+- **Reading Swipe Hints (`ReaderScreen.kt`, `AppStrings.kt`):**
+  - Updated reader tap zones hint overlay and localized strings across all languages to inform users that swiping also turns pages («(или свайп вправо)» / «(или свайп влево)»).
+

@@ -3,6 +3,15 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
+Last updated: 2026-11-23, release `2.3.0-beta.55` (`versionCode 220`).
+`2.3.0-beta.55` changed no dependencies:
+- Onboarding redesign: Redesigned the 4-slide introductory guide (`OnboardingScreen.kt`) to accurately showcase Aura Reader features:
+  - Slide 1 («Добро пожаловать»): Design style picker (Liquid Glass vs Material 3) and 3-way theme selector (Light, Dark, System) with Dark theme active by default on fresh installs.
+  - Slide 2 («Зажми слово»): Realistic book text selection mockup (`«Он улыбнулся в ответ»`) featuring actual reading toolbar actions: `[ Цитата ] [ Словарь ] [ Перевод ]`, strictly named «Словарь» without AI slop.
+  - Slide 3 («И ещё много всего»): 2x2 grid of clean feature tiles: OPDS Catalogs, Read-Aloud TTS, Comics & PDF, and high-contrast E-Ink mode.
+  - Slide 4 («Приятного чтения!»): Aura Reader squircle logo with prominent `[ Начать читать ]` primary button navigating directly to the library.
+- Reading navigation hints: Enhanced the in-reader tap zones hint overlay (`ReaderScreen.kt`, `AppStrings.kt`) to explicitly inform users that swiping also turns pages alongside edge taps («(или свайп вправо)» / «(или свайп влево)»).
+
 Last updated: 2026-11-22, release `2.3.0-beta.54` (`versionCode 219`).
 `2.3.0-beta.54` changed no dependencies:
 - Settings UI dynamic color correction for E-Ink: Fixed black-on-black text contrast in Interface, General, and About settings pages by properly scoping `LocalIsLiquidGlass`, `LocalIsThemeDark`, and `LocalIsAmoled` when E-Ink mode is active (`SettingsPages.kt`, `SettingsBottomSheet.kt`). Cards now render in clean, high-contrast Material 3 light surfaces (`surfaceContainer`) with crisp dark text.

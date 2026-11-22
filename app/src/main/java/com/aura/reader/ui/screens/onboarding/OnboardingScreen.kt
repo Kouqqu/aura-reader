@@ -1,15 +1,10 @@
 package com.aura.reader.ui.screens.onboarding
 
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,8 +22,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.runtime.remember
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -41,34 +34,40 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.BrightnessAuto
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.Contrast
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.FormatQuote
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -76,15 +75,12 @@ import androidx.compose.ui.unit.sp
 import com.aura.reader.R
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.ReaderSettings
+import com.aura.reader.data.model.ReaderThemeMode
 import com.aura.reader.data.preferences.PreferencesManager
 import com.aura.reader.ui.components.LiquidGlassSurface
-import com.aura.reader.ui.components.expressiveBounce
 import com.aura.reader.ui.components.expressiveClickable
 import com.aura.reader.ui.theme.LocalAppStrings
 import kotlinx.coroutines.launch
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
 @Composable
 fun OnboardingScreen(
@@ -92,13 +88,20 @@ fun OnboardingScreen(
     onFinish: () -> Unit
 ) {
     val strings = LocalAppStrings.current
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val isDark = isSystemInDarkTheme()
 
     val readerSettings by preferencesManager.readerSettings.collectAsState(initial = ReaderSettings())
     val appDesignStyle = readerSettings.appDesignStyle
     val isGlass = appDesignStyle == AppDesignStyle.LIQUID_GLASS
+
+    // Default to dark theme for fresh onboarding
+    LaunchedEffect(Unit) {
+        if (readerSettings.appThemeMode == ReaderThemeMode.SYSTEM_DYNAMIC) {
+            preferencesManager.updateAppThemeMode(ReaderThemeMode.DARK)
+            preferencesManager.updateThemeMode(ReaderThemeMode.DARK)
+        }
+    }
 
     val totalSlides = 4
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { totalSlides })
@@ -118,7 +121,7 @@ fun OnboardingScreen(
             .navigationBarsPadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Top Bar with Skip Button
+            // Top Bar with App Logo and Skip Button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -130,7 +133,7 @@ fun OnboardingScreen(
                     Box(
                         modifier = Modifier
                             .size(36.dp)
-                            .clip(CircleShape)
+                            .clip(RoundedCornerShape(10.dp))
                             .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
@@ -142,7 +145,7 @@ fun OnboardingScreen(
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    val marcellusFamily = remember { androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.aura.reader.R.font.marcellus_regular)) }
+                    val marcellusFamily = remember { FontFamily(androidx.compose.ui.text.font.Font(R.font.marcellus_regular)) }
                     Text(
                         text = strings.appName,
                         fontFamily = marcellusFamily,
@@ -175,26 +178,25 @@ fun OnboardingScreen(
                     .fillMaxWidth()
             ) { page ->
                 when (page) {
-                    0 -> OnboardingStyleSlide(
+                    0 -> OnboardingWelcomeAndStyleSlide(
                         currentStyle = appDesignStyle,
+                        currentTheme = readerSettings.appThemeMode,
                         onStyleSelected = { style ->
                             coroutineScope.launch {
                                 preferencesManager.setAppDesignStyle(style)
                             }
+                        },
+                        onThemeSelected = { mode ->
+                            coroutineScope.launch {
+                                preferencesManager.updateAppThemeMode(mode)
+                                preferencesManager.updateThemeMode(mode)
+                            }
                         }
                     )
-                    1 -> OnboardingFormatsSlide(isGlass = isGlass)
-                    2 -> OnboardingTtsSlide(isGlass = isGlass)
-                    3 -> OnboardingCommunitySlide(
-                        isGlass = isGlass,
-                        onOpenTelegram = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/koukkuteka"))
-                            context.startActivity(intent)
-                        },
-                        onOpenGithub = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Kouqqu/aura-reader"))
-                            context.startActivity(intent)
-                        }
+                    1 -> OnboardingWordActionSlide(isGlass = isGlass)
+                    2 -> OnboardingMoreFeaturesSlide(isGlass = isGlass)
+                    3 -> OnboardingFinishSlide(
+                        onFinish = finishOnboarding
                     )
                 }
             }
@@ -269,8 +271,7 @@ fun OnboardingScreen(
                             }
                     ) {
                         Row(
-                            modifier = Modifier
-                                .padding(horizontal = 24.dp),
+                            modifier = Modifier.padding(horizontal = 24.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -338,12 +339,14 @@ fun OnboardingScreen(
 }
 
 /**
- * Slide 0: Choose Design Style (Material 3 Expressive vs Liquid Glass) with instant reactive transformation.
+ * Slide 0: «Добро пожаловать» — Style selector and Theme mode selector (Dark by default).
  */
 @Composable
-private fun OnboardingStyleSlide(
+private fun OnboardingWelcomeAndStyleSlide(
     currentStyle: AppDesignStyle,
-    onStyleSelected: (AppDesignStyle) -> Unit
+    currentTheme: ReaderThemeMode,
+    onStyleSelected: (AppDesignStyle) -> Unit,
+    onThemeSelected: (ReaderThemeMode) -> Unit
 ) {
     val strings = LocalAppStrings.current
     val scrollState = rememberScrollState()
@@ -356,17 +359,71 @@ private fun OnboardingStyleSlide(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Expressive Scalloped Flower Badge
-        ExpressiveScallopedBadge(
-            icon = Icons.Rounded.Palette,
-            petalColor = MaterialTheme.colorScheme.primaryContainer,
-            iconTint = MaterialTheme.colorScheme.primary
+        // Design Style Options
+        MaterialStyleOptionCard(
+            title = strings.designStyleMaterial,
+            subtitle = strings.designStyleDescMaterial,
+            isSelected = currentStyle == AppDesignStyle.MATERIAL,
+            onClick = { onStyleSelected(AppDesignStyle.MATERIAL) }
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        LiquidGlassStyleOptionCard(
+            title = strings.designStyleLiquidGlass,
+            subtitle = strings.designStyleDescLiquidGlass,
+            isSelected = currentStyle == AppDesignStyle.LIQUID_GLASS,
+            onClick = { onStyleSelected(AppDesignStyle.LIQUID_GLASS) }
+        )
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // Segmented Theme Mode Selector (Light / Dark / System)
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Light Mode
+                ThemeOptionPill(
+                    icon = Icons.Rounded.LightMode,
+                    title = strings.themeLight,
+                    isSelected = currentTheme == ReaderThemeMode.LIGHT,
+                    onClick = { onThemeSelected(ReaderThemeMode.LIGHT) },
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Dark Mode (Active by default)
+                ThemeOptionPill(
+                    icon = Icons.Rounded.DarkMode,
+                    title = strings.themeDark,
+                    isSelected = currentTheme == ReaderThemeMode.DARK || currentTheme == ReaderThemeMode.AMOLED,
+                    onClick = { onThemeSelected(ReaderThemeMode.DARK) },
+                    modifier = Modifier.weight(1f)
+                )
+
+                // System Mode
+                ThemeOptionPill(
+                    icon = Icons.Rounded.BrightnessAuto,
+                    title = strings.themeSystem,
+                    isSelected = currentTheme == ReaderThemeMode.SYSTEM_DYNAMIC,
+                    onClick = { onThemeSelected(ReaderThemeMode.SYSTEM_DYNAMIC) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
 
         Text(
-            text = strings.onboardingStyleTitle,
+            text = strings.onboardingWelcomeTitle,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
@@ -376,31 +433,433 @@ private fun OnboardingStyleSlide(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = strings.onboardingStyleDesc,
+            text = strings.onboardingWelcomeDesc,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun ThemeOptionPill(
+    icon: ImageVector,
+    title: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val bgColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = bgColor,
+        modifier = modifier.height(44.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(17.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = contentColor
+            )
+        }
+    }
+}
+
+/**
+ * Slide 1: «Зажми слово» — Text selection mockup with real toolbar buttons: Цитата, Словарь, Перевод.
+ */
+@Composable
+private fun OnboardingWordActionSlide(isGlass: Boolean = false) {
+    val strings = LocalAppStrings.current
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Book Text & Floating Selection Toolbar Mockup
+        Surface(
+            shape = RoundedCornerShape(22.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Floating Selection Toolbar Mockup
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    shadowElevation = 8.dp,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Button 1: Quote (Цитата)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.FormatQuote,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = strings.quoteAction,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .height(14.dp)
+                                .width(1.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        )
+
+                        // Button 2: Dictionary (Словарь)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.AutoStories,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = strings.dictionaryAction,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .height(14.dp)
+                                .width(1.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        )
+
+                        // Button 3: Translation (Перевод)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.Translate,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = strings.translateAction,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Line of book text with highlighted word
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Он ",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontSize = 21.sp,
+                            fontStyle = FontStyle.Italic
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.28f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "улыбнулся",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontStyle = FontStyle.Italic
+                            ),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Text(
+                        text = " в ответ",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontSize = 21.sp,
+                            fontStyle = FontStyle.Italic
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Text(
+            text = strings.onboardingWordActionTitle,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = strings.onboardingWordActionDesc,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+/**
+ * Slide 2: «И ещё много всего» — 4 feature tiles (OPDS, TTS, Comics/PDF, E-Ink).
+ */
+@Composable
+private fun OnboardingMoreFeaturesSlide(isGlass: Boolean = false) {
+    val strings = LocalAppStrings.current
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // 2x2 Grid of Feature Tiles
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                FeatureSquareCard(
+                    icon = Icons.Rounded.CloudDownload,
+                    title = "Каталог OPDS",
+                    subtitle = "Поиск и загрузка книг",
+                    modifier = Modifier.weight(1f)
+                )
+                FeatureSquareCard(
+                    icon = Icons.AutoMirrored.Rounded.VolumeUp,
+                    title = "Чтение вслух",
+                    subtitle = "Встроенный TTS-плеер",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                FeatureSquareCard(
+                    icon = Icons.Rounded.AutoStories,
+                    title = "Комиксы и PDF",
+                    subtitle = "Лента и масштаб",
+                    modifier = Modifier.weight(1f)
+                )
+                FeatureSquareCard(
+                    icon = Icons.Rounded.Contrast,
+                    title = "Режим E-Ink",
+                    subtitle = "Для электронных книг",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Text(
+            text = strings.onboardingMoreFeaturesTitle,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = strings.onboardingMoreFeaturesDesc,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun FeatureSquareCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 15.sp
+            )
+        }
+    }
+}
+
+/**
+ * Slide 3: «Приятного чтения!» — Aura Reader squircle logo and Start Reading button.
+ */
+@Composable
+private fun OnboardingFinishSlide(
+    onFinish: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Prominent Squircle Logo
+        Image(
+            painter = painterResource(R.drawable.ic_aura_logo_squircle),
+            contentDescription = strings.appName,
+            modifier = Modifier
+                .size(112.dp)
+                .clip(RoundedCornerShape(26.dp))
+        )
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Text(
+            text = strings.onboardingEnjoyTitle,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = strings.onboardingEnjoyDesc,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        // Option 1: Material 3 Expressive (Solid tonal surfaces, expressive shape, dynamic swatches)
-        MaterialStyleOptionCard(
-            title = strings.designStyleMaterial,
-            subtitle = strings.designStyleDescMaterial,
-            isSelected = currentStyle == AppDesignStyle.MATERIAL,
-            onClick = { onStyleSelected(AppDesignStyle.MATERIAL) }
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Option 2: Liquid Glass (Frosted translucent gradient, specular glossy borders, neon cyan glow)
-        LiquidGlassStyleOptionCard(
-            title = strings.designStyleLiquidGlass,
-            subtitle = strings.designStyleDescLiquidGlass,
-            isSelected = currentStyle == AppDesignStyle.LIQUID_GLASS,
-            onClick = { onStyleSelected(AppDesignStyle.LIQUID_GLASS) }
-        )
+        Button(
+            onClick = onFinish,
+            shape = RoundedCornerShape(24.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp),
+            modifier = Modifier.height(52.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Check,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = strings.onboardingStartReading,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
@@ -420,7 +879,7 @@ private fun MaterialStyleOptionCard(
     }
 
     Card(
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
         border = BorderStroke(borderWidth, borderColor),
         modifier = Modifier
@@ -430,13 +889,12 @@ private fun MaterialStyleOptionCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Material Tonal Icon Box
             Box(
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(44.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
                         if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest
@@ -447,11 +905,11 @@ private fun MaterialStyleOptionCard(
                     imageVector = Icons.Rounded.Palette,
                     contentDescription = null,
                     tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -460,21 +918,19 @@ private fun MaterialStyleOptionCard(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
-            // Material Expressive Selection Indicator
             Box(
                 modifier = Modifier
-                    .size(26.dp)
+                    .size(24.dp)
                     .clip(CircleShape)
                     .border(
                         width = if (isSelected) 0.dp else 2.dp,
@@ -491,7 +947,7 @@ private fun MaterialStyleOptionCard(
                         imageVector = Icons.Rounded.Check,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                 }
             }
@@ -507,16 +963,14 @@ private fun LiquidGlassStyleOptionCard(
     onClick: () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
-    val glassShape = RoundedCornerShape(24.dp)
+    val glassShape = RoundedCornerShape(22.dp)
 
-    // Luminous, translucent frosted glass (clearly visible, frosted silver-grey in dark mode, NOT black!)
     val cardBgColor = if (isDark) {
         if (isSelected) Color(0x2EFFFFFF) else Color(0x1AFFFFFF)
     } else {
         if (isSelected) Color(0xF5FFFFFF) else Color(0xD8FFFFFF)
     }
 
-    // Top-lit specular glass rim
     val borderBrush = Brush.verticalGradient(
         listOf(
             Color.White.copy(alpha = if (isSelected) 0.38f else 0.16f),
@@ -542,13 +996,12 @@ private fun LiquidGlassStyleOptionCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Frosted glass icon vessel
             Box(
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(44.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
                         if (isDark) Color(0x22FFFFFF) else Color(0x0C000000)
@@ -564,11 +1017,11 @@ private fun LiquidGlassStyleOptionCard(
                     imageVector = Icons.Rounded.AutoAwesome,
                     contentDescription = null,
                     tint = if (isDark) Color.White else Color(0xFF191B1F),
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -577,7 +1030,7 @@ private fun LiquidGlassStyleOptionCard(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
@@ -585,12 +1038,11 @@ private fun LiquidGlassStyleOptionCard(
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
-            // Clean iOS Selection Indicator
             Box(
                 modifier = Modifier
-                    .size(26.dp)
+                    .size(24.dp)
                     .clip(CircleShape)
                     .background(
                         if (isSelected) Color(0xFF007AFF) else Color.Transparent
@@ -607,606 +1059,10 @@ private fun LiquidGlassStyleOptionCard(
                         imageVector = Icons.Rounded.Check,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                 }
             }
-        }
-    }
-}
-
-/**
- * Slide 1: Supported formats & OPDS catalogs
- */
-@Composable
-private fun OnboardingFormatsSlide(isGlass: Boolean = false) {
-    val strings = LocalAppStrings.current
-    val scrollState = rememberScrollState()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        ExpressiveScallopedBadge(
-            icon = Icons.AutoMirrored.Rounded.MenuBook,
-            petalColor = MaterialTheme.colorScheme.secondaryContainer,
-            iconTint = MaterialTheme.colorScheme.secondary
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = strings.onboardingFormatsTitle,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = strings.onboardingFormatsDesc,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        FeatureHighlightCard(
-            icon = Icons.Rounded.AutoAwesome,
-            title = "EPUB, FB2, MOBI, PDF, TXT, CBZ, HTML, MD",
-            description = "Умный парсер глав, сохранение изображений, сноски и таблицы",
-            isGlass = isGlass
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        FeatureHighlightCard(
-            icon = Icons.AutoMirrored.Rounded.MenuBook,
-            title = "Каталоги OPDS",
-            description = "Поиск и загрузка тысяч книг напрямую из онлайн-библиотек",
-            isGlass = isGlass
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        FeatureHighlightCard(
-            icon = Icons.Rounded.BarChart,
-            title = "Статистика чтения",
-            description = "Трекинг времени, ежедневный стрик и точный персональный WPM",
-            isGlass = isGlass
-        )
-    }
-}
-
-/**
- * Slide 2: Real-time TTS Narration with Word Highlight
- */
-@Composable
-private fun OnboardingTtsSlide(isGlass: Boolean = false) {
-    val strings = LocalAppStrings.current
-    val scrollState = rememberScrollState()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        ExpressiveScallopedBadge(
-            icon = Icons.AutoMirrored.Rounded.VolumeUp,
-            petalColor = MaterialTheme.colorScheme.tertiaryContainer,
-            iconTint = MaterialTheme.colorScheme.tertiary
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = strings.onboardingTtsTitle,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = strings.onboardingTtsDesc,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        FeatureHighlightCard(
-            icon = Icons.Rounded.AutoAwesome,
-            title = "Подсветка слов в реальном времени",
-            description = "Слово, произносимое прямо сейчас, мягко подсвечивается в тексте",
-            isGlass = isGlass
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        FeatureHighlightCard(
-            icon = Icons.AutoMirrored.Rounded.MenuBook,
-            title = "Озвучка с любого места",
-            description = "Нажмите на любое слово в книге, чтобы начать чтение именно с него",
-            isGlass = isGlass
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        FeatureHighlightCard(
-            icon = Icons.AutoMirrored.Rounded.VolumeUp,
-            title = "Большой выбор голосов",
-            description = "Высокое качество речи, регулировка темпа и высоты тона",
-            isGlass = isGlass
-        )
-    }
-}
-
-/**
- * Slide 3: Community, Telegram channel & GitHub
- */
-@Composable
-private fun OnboardingCommunitySlide(
-    isGlass: Boolean = false,
-    onOpenTelegram: () -> Unit,
-    onOpenGithub: () -> Unit
-) {
-    val strings = LocalAppStrings.current
-    val scrollState = rememberScrollState()
-    val isDark = isSystemInDarkTheme()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        ExpressiveScallopedBadge(
-            painterResId = R.drawable.ic_telegram,
-            petalColor = Color(0xFF2AABEE).copy(alpha = 0.2f),
-            iconTint = Color(0xFF2AABEE)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = strings.onboardingCommunityTitle,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = strings.onboardingCommunityDesc,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        // Telegram Channel Card
-        if (isGlass) {
-            val shape = RoundedCornerShape(22.dp)
-            LiquidGlassSurface(
-                shape = shape,
-                isDark = isDark,
-                shadowElevation = 4.dp,
-                tintColor = if (isDark) Color(0x221E2330) else Color(0xD0FFFFFF),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(0.8.dp, Color.White.copy(alpha = if (isDark) 0.18f else 0.45f), shape)
-                    .expressiveClickable(scaleDown = 0.98f, onClick = onOpenTelegram)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF2AABEE).copy(alpha = 0.20f))
-                            .border(1.dp, Color(0xFF2AABEE).copy(alpha = 0.40f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_telegram),
-                            contentDescription = null,
-                            tint = Color(0xFF2AABEE),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Telegram: @koukkuteka",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Официальный канал обновлений и предложений",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                        contentDescription = null,
-                        tint = Color(0xFF2AABEE),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        } else {
-            Card(
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .expressiveClickable(scaleDown = 0.98f, onClick = onOpenTelegram)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF2AABEE).copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_telegram),
-                            contentDescription = null,
-                            tint = Color(0xFF2AABEE),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Telegram: @koukkuteka",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Официальный канал обновлений и предложений",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                        contentDescription = null,
-                        tint = Color(0xFF2AABEE),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // GitHub Repository Card
-        if (isGlass) {
-            val shape = RoundedCornerShape(22.dp)
-            LiquidGlassSurface(
-                shape = shape,
-                isDark = isDark,
-                shadowElevation = 4.dp,
-                tintColor = if (isDark) Color(0x221E2330) else Color(0xD0FFFFFF),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(0.8.dp, Color.White.copy(alpha = if (isDark) 0.18f else 0.45f), shape)
-                    .expressiveClickable(scaleDown = 0.98f, onClick = onOpenGithub)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(if (isDark) Color(0x30FFFFFF) else Color(0x12000000))
-                            .border(1.dp, Color.White.copy(alpha = if (isDark) 0.35f else 0.45f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_github),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "GitHub Repository",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Kouqqu/aura-reader",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        } else {
-            Card(
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .expressiveClickable(scaleDown = 0.98f, onClick = onOpenGithub)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_github),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "GitHub Repository",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Kouqqu/aura-reader",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FeatureHighlightCard(
-    icon: ImageVector,
-    title: String,
-    description: String,
-    isGlass: Boolean = false
-) {
-    val isDark = isSystemInDarkTheme()
-    val shape = RoundedCornerShape(20.dp)
-
-    if (isGlass) {
-        LiquidGlassSurface(
-            shape = shape,
-            isDark = isDark,
-            shadowElevation = 4.dp,
-            tintColor = if (isDark) Color(0x221E2330) else Color(0xD0FFFFFF),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(
-                    width = 0.8.dp,
-                    color = Color.White.copy(alpha = if (isDark) 0.18f else 0.45f),
-                    shape = shape
-                )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            if (isDark) Color(0x3000C6FF) else Color(0x200284C7)
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = Color.White.copy(alpha = if (isDark) 0.35f else 0.55f),
-                            shape = RoundedCornerShape(12.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Column {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    } else {
-        Card(
-            shape = shape,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Column {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-/**
- * Material 3 Expressive Scalloped Flower Badge Container
- * Generates an organic 12-lobed flower/starburst shape with smooth sinusoidal petals.
- */
-@Composable
-private fun ExpressiveScallopedBadge(
-    icon: ImageVector? = null,
-    painterResId: Int? = null,
-    petalColor: Color,
-    iconTint: Color,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.size(110.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val center = Offset(size.width / 2f, size.height / 2f)
-            val baseRadius = size.minDimension / 2f * 0.82f
-            val amplitude = size.minDimension / 2f * 0.12f
-            val lobes = 10
-
-            val path = Path()
-            val points = 360
-            for (i in 0 until points) {
-                val theta = (i * 2.0 * PI / points).toFloat()
-                val r = baseRadius + amplitude * cos(lobes * theta)
-                val x = center.x + r * cos(theta)
-                val y = center.y + r * sin(theta)
-                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-            }
-            path.close()
-            drawPath(path = path, color = petalColor)
-        }
-
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(48.dp)
-            )
-        } else if (painterResId != null) {
-            Icon(
-                painter = painterResource(painterResId),
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(48.dp)
-            )
         }
     }
 }
