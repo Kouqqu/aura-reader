@@ -113,6 +113,7 @@ class PreferencesManager(private val context: Context) {
         val BOTTOM_PROGRESS_MODE_KEY = intPreferencesKey("reader_bottom_progress_mode")
         val READER_TAP_ZONES_HINT_SHOWN_KEY = booleanPreferencesKey("reader_tap_zones_hint_shown")
         val AUTO_FETCH_METADATA_KEY = booleanPreferencesKey("auto_fetch_metadata")
+        val BOOK_PAGING_MODES_KEY = stringPreferencesKey("book_paging_modes_json")
     }
 
     val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -583,6 +584,27 @@ class PreferencesManager(private val context: Context) {
         }
     }
 
+    val bookPagingModesJson: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[BOOK_PAGING_MODES_KEY]
+    }
+
+    suspend fun setPagingModeForBook(bookId: String, pagingMode: Boolean) {
+        context.dataStore.edit { prefs ->
+            val currentJson = prefs[BOOK_PAGING_MODES_KEY]
+            val json = if (!currentJson.isNullOrBlank()) {
+                try {
+                    org.json.JSONObject(currentJson)
+                } catch (_: Exception) {
+                    org.json.JSONObject()
+                }
+            } else {
+                org.json.JSONObject()
+            }
+            json.put(bookId, pagingMode)
+            prefs[BOOK_PAGING_MODES_KEY] = json.toString()
+        }
+    }
+
     suspend fun updatePagingMode(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PAGING_MODE_KEY] = enabled
@@ -961,6 +983,7 @@ class PreferencesManager(private val context: Context) {
                 if (settings.has("userAverageWpm")) prefs[AVERAGE_WPM_KEY] = settings.getDouble("userAverageWpm").toFloat()
                 if (settings.has("seasonalEffectsEnabled")) prefs[SEASONAL_EFFECTS_ENABLED_KEY] = settings.getBoolean("seasonalEffectsEnabled")
                 if (settings.has("mangaModeRtl")) prefs[MANGA_MODE_RTL_KEY] = settings.getBoolean("mangaModeRtl")
+                if (manifest.has("bookPagingModes")) prefs[BOOK_PAGING_MODES_KEY] = manifest.getJSONObject("bookPagingModes").toString()
             }
         }
     }

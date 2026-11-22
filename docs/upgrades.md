@@ -3,7 +3,13 @@
 This file records why the build stack looks the way it does, so that a future
 session (human or assistant) does not have to rediscover it.
 
-Last updated: 2026-11-22, release `2.3.0-beta.43` (`versionCode 208`).
+Last updated: 2026-11-22, release `2.3.0-beta.44` (`versionCode 209`).
+`2.3.0-beta.44` changed no dependencies:
+- Clean Reader Settings sheet: Removed Material You theme toggle from book reader settings, keeping book styling strictly dedicated to typography and reading preferences (`ReaderSettingsBottomSheet.kt`).
+- Online catalog file size formatting: Formatted OPDS file sizes in megabytes (MB) across the catalog instead of kilobytes (`OpdsService.kt`).
+- Per-book and per-format reading mode defaults & overrides: PDF and comic formats (CBZ, CBR, CBT) now default to continuous scroll mode (свиток), while regular books default to user preference; changing reading mode persists per-book in DataStore and restores across reading sessions (`PreferencesManager.kt`, `ReaderViewModel.kt`, `BackupManager.kt`).
+- Unified PDF single-chapter architecture & seamless transitions: Restructured `PdfParser.kt` to assemble all PDF pages as blocks within a single chapter instead of generating separate dummy chapters per page, completely eliminating flashing `ChapterTransitionSpread` screens between pages in paging mode and enabling true uninterrupted continuous vertical scrolling in scroll mode (`PdfParser.kt`, `BookRepository.kt`, `ChapterPagingView.kt`).
+- Selective typography for header greeting vs holiday congratulations: Restored large prominent `24.sp` typography for regular daily greetings ("Доброе утро", "Добрый день"), while retaining neat `14.sp` subtitle typography exclusively for longer holiday congratulations to prevent truncation (`LibraryTopBar.kt`).
 `2.3.0-beta.43` changed no dependencies:
 - Clean comic & manga page swipe gesture pipeline: Replaced unconditional gesture consumption on comic/manga images with unconsumed single-finger gesture passthrough when unzoomed (`zoomScale <= 1.05f`), allowing horizontal swipe across the entire image to turn pages naturally via `HorizontalPager` and instant swipe handlers without interference from zooming; added two-finger pinch zoom, bounded 1-finger and 2-finger panning while zoomed in, and left/right 72dp edge tap page navigation on comic images (`ReaderBlocks.kt`, `ChapterPagingView.kt`, `ChapterContentView.kt`).
 - Removed confusing Manga RTL mode from settings: Removed the Japanese Right-to-Left manga toggle from the reader settings bottom sheet and restored standard LTR page flipping across the reader, while retaining backward compatibility in the settings/backup schema (`ReaderSettingsBottomSheet.kt`, `ChapterPagingView.kt`).

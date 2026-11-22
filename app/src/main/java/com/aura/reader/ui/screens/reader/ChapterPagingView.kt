@@ -460,24 +460,36 @@ fun ChapterPagingView(
                         }
                     }
             ) {
+                val isComicOrManga = remember(blocks) {
+                    blocks.isNotEmpty() && blocks.all { it.type == BlockType.IMAGE }
+                }
+
                 if (hasPrev && spreadIdx == 0) {
-                    ChapterTransitionSpread(
-                        isNext = false,
-                        chapterTitle = prevChapter?.title ?: "",
-                        chapterNumber = chapterIndex,
-                        settings = settings,
-                        resolvedFontFamily = resolvedFontFamily,
-                        onClick = onPrevChapter
-                    )
+                    if (isComicOrManga) {
+                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+                    } else {
+                        ChapterTransitionSpread(
+                            isNext = false,
+                            chapterTitle = prevChapter.title,
+                            chapterNumber = chapterIndex,
+                            settings = settings,
+                            resolvedFontFamily = resolvedFontFamily,
+                            onClick = onPrevChapter
+                        )
+                    }
                 } else if (hasNext && spreadIdx == totalPagerSpreads - 1) {
-                    ChapterTransitionSpread(
-                        isNext = true,
-                        chapterTitle = nextChapter?.title ?: "",
-                        chapterNumber = chapterIndex + 2,
-                        settings = settings,
-                        resolvedFontFamily = resolvedFontFamily,
-                        onClick = onNextChapter
-                    )
+                    if (isComicOrManga) {
+                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+                    } else {
+                        ChapterTransitionSpread(
+                            isNext = true,
+                            chapterTitle = nextChapter.title,
+                            chapterNumber = chapterIndex + 2,
+                            settings = settings,
+                            resolvedFontFamily = resolvedFontFamily,
+                            onClick = onNextChapter
+                        )
+                    }
                 } else {
                     val contentSpreadIdx = spreadIdx - prevPageOffset
                     androidx.compose.runtime.key(selectionResetKey) {

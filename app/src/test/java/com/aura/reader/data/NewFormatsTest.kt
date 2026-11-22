@@ -95,4 +95,45 @@ class NewFormatsTest {
         assertTrue(ch1Blocks.any { it.type == BlockType.SUBTITLE && it.text == "Section 1.1" })
         assertTrue(ch1Blocks.any { it.type == BlockType.DIVIDER })
     }
+
+    @Test
+    fun testOpdsFileSizeInMb() {
+        fun formatFileSize(bytes: Long): String {
+            val mb = bytes / (1024f * 1024f)
+            return when {
+                mb >= 10f -> String.format(java.util.Locale.US, "%.1f МБ", mb)
+                mb >= 1f -> String.format(java.util.Locale.US, "%.1f МБ", mb)
+                mb >= 0.1f -> String.format(java.util.Locale.US, "%.1f МБ", mb)
+                mb > 0f -> String.format(java.util.Locale.US, "%.2f МБ", mb)
+                else -> "0 МБ"
+            }
+        }
+
+        assertEquals("1.5 МБ", formatFileSize((1.5 * 1024 * 1024).toLong()))
+        assertEquals("0.8 МБ", formatFileSize((800 * 1024).toLong()))
+        assertEquals("0.3 МБ", formatFileSize((350 * 1024).toLong()))
+        assertEquals("0.05 МБ", formatFileSize((50 * 1024).toLong()))
+    }
+
+    @Test
+    fun testPagingModeDefaultsByFormat() {
+        fun resolvePagingMode(format: BookFormat, baseSetting: Boolean, override: Boolean?): Boolean {
+            return override ?: when (format) {
+                BookFormat.PDF, BookFormat.CBZ -> false
+                else -> baseSetting
+            }
+        }
+
+        // Comics & PDF default to Scroll (false) regardless of global setting
+        assertFalse(resolvePagingMode(BookFormat.PDF, baseSetting = true, override = null))
+        assertFalse(resolvePagingMode(BookFormat.CBZ, baseSetting = true, override = null))
+
+        // Normal books default to global base setting
+        assertTrue(resolvePagingMode(BookFormat.EPUB, baseSetting = true, override = null))
+        assertFalse(resolvePagingMode(BookFormat.FB2, baseSetting = false, override = null))
+
+        // Explicit per-book override wins
+        assertTrue(resolvePagingMode(BookFormat.PDF, baseSetting = false, override = true))
+        assertFalse(resolvePagingMode(BookFormat.EPUB, baseSetting = true, override = false))
+    }
 }

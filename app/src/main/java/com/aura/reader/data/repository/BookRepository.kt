@@ -160,9 +160,16 @@ class BookRepository(
         }
         val existingInMemory = _currentBook.value
         if (existingInMemory != null && existingInMemory.id == bookToOpen.id && existingInMemory.chapters.isNotEmpty()) {
+            val isSingleChapterPdf = existingInMemory.format == BookFormat.PDF && existingInMemory.chapters.size == 1
+            val resolvedChapter = if (isSingleChapterPdf) 0 else bookToOpen.currentChapterIndex
+            val resolvedOffset = if (isSingleChapterPdf && bookToOpen.currentChapterIndex > 0 && bookToOpen.currentScrollOffset == 0) {
+                bookToOpen.currentChapterIndex
+            } else {
+                bookToOpen.currentScrollOffset
+            }
             val updated = existingInMemory.copy(
-                currentChapterIndex = bookToOpen.currentChapterIndex,
-                currentScrollOffset = bookToOpen.currentScrollOffset,
+                currentChapterIndex = resolvedChapter,
+                currentScrollOffset = resolvedOffset,
                 currentBlockTextOffset = bookToOpen.currentBlockTextOffset,
                 currentScrollPixelOffset = bookToOpen.currentScrollPixelOffset,
                 progressPercent = bookToOpen.progressPercent,
@@ -183,14 +190,21 @@ class BookRepository(
 
         val result = ingestionPipeline.ingest(inputStream, uri, fileName, bookToOpen)
         result.onSuccess { book ->
+            val isSingleChapterPdf = book.format == BookFormat.PDF && book.chapters.size == 1
+            val resolvedChapter = if (isSingleChapterPdf) 0 else bookToOpen.currentChapterIndex
+            val resolvedOffset = if (isSingleChapterPdf && bookToOpen.currentChapterIndex > 0 && bookToOpen.currentScrollOffset == 0) {
+                bookToOpen.currentChapterIndex
+            } else {
+                bookToOpen.currentScrollOffset
+            }
             val resolved = book.copy(
                 id = bookToOpen.id,
                 title = if (bookToOpen.title.isNotBlank()) bookToOpen.title else book.title,
                 author = if (bookToOpen.author.isNotBlank()) bookToOpen.author else book.author,
                 series = bookToOpen.series ?: book.series,
                 seriesNumber = bookToOpen.seriesNumber ?: book.seriesNumber,
-                currentChapterIndex = bookToOpen.currentChapterIndex,
-                currentScrollOffset = bookToOpen.currentScrollOffset,
+                currentChapterIndex = resolvedChapter,
+                currentScrollOffset = resolvedOffset,
                 currentBlockTextOffset = bookToOpen.currentBlockTextOffset,
                 currentScrollPixelOffset = bookToOpen.currentScrollPixelOffset,
                 progressPercent = bookToOpen.progressPercent,

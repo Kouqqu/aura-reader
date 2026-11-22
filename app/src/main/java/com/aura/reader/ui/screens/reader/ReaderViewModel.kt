@@ -29,8 +29,31 @@ class ReaderViewModel(
     val currentBook: StateFlow<Book?> = bookRepository.currentBook
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val readerSettings: StateFlow<ReaderSettings> = preferencesManager.readerSettings
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReaderSettings())
+    val readerSettings: StateFlow<ReaderSettings> = combine(
+        preferencesManager.readerSettings,
+        bookRepository.currentBook,
+        preferencesManager.bookPagingModesJson
+    ) { baseSettings, book, modesJson ->
+        if (book != null) {
+            val bookMode = if (!modesJson.isNullOrBlank()) {
+                try {
+                    val obj = org.json.JSONObject(modesJson)
+                    if (obj.has(book.id)) obj.getBoolean(book.id) else null
+                } catch (_: Exception) {
+                    null
+                }
+            } else null
+
+            val effectivePagingMode = bookMode ?: when (book.format) {
+                com.aura.reader.data.model.BookFormat.PDF,
+                com.aura.reader.data.model.BookFormat.CBZ -> false
+                else -> baseSettings.pagingMode
+            }
+            baseSettings.copy(pagingMode = effectivePagingMode)
+        } else {
+            baseSettings
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReaderSettings())
 
     val materialYouEnabled: StateFlow<Boolean> = preferencesManager.materialYouEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
@@ -304,7 +327,11 @@ class ReaderViewModel(
     }
 
     fun setPagingMode(enabled: Boolean) {
+        val book = currentBook.value
         viewModelScope.launch {
+            if (book != null) {
+                preferencesManager.setPagingModeForBook(book.id, enabled)
+            }
             preferencesManager.updatePagingMode(enabled)
         }
     }

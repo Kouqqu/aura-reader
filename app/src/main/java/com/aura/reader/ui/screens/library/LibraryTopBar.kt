@@ -361,12 +361,18 @@ AnimatedContent(
                     }
                     Text(
                         text = greeting,
-                        // The greeting reads as a clean secondary subtitle under the app name
                         modifier = Modifier.padding(start = logoBoxSize + titleSpacing),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 14.sp,
-                            letterSpacing = 0.1.sp
-                        ),
+                        style = if (isHoliday) {
+                            MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 14.sp,
+                                letterSpacing = 0.1.sp
+                            )
+                        } else {
+                            MaterialTheme.typography.headlineMedium.copy(
+                                fontSize = 24.sp,
+                                letterSpacing = 0.sp
+                            )
+                        },
                         fontWeight = if (isHoliday) FontWeight.Medium else FontWeight.Normal,
                         color = if (isHoliday) {
                             holidaySeason.primaryAccent

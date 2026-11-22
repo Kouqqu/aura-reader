@@ -91,6 +91,7 @@ class BackupManager(
                     put("quotes", quotesArr)
 
                     put("readingStats", try { JSONObject(readingStatsJson) } catch (_: Exception) { JSONObject() })
+                    put("bookPagingModes", try { JSONObject(preferencesManager.bookPagingModesJson.first() ?: "{}") } catch (_: Exception) { JSONObject() })
 
                     put("settings", JSONObject().apply {
                         put("fontSize", readerSettings.fontSizeSp)
