@@ -27,7 +27,7 @@ internal fun newSecureDocumentBuilder(): javax.xml.parsers.DocumentBuilder {
     runCatching { factory.setFeature("http://xml.org/sax/features/external-general-entities", false) }
     runCatching { factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false) }
     runCatching { factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false) }
-    factory.isXIncludeAware = false
-    factory.isExpandEntityReferences = false
+    runCatching { factory.isXIncludeAware = false }
+    runCatching { factory.isExpandEntityReferences = false }
     return factory.newDocumentBuilder()
 }
