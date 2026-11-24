@@ -136,7 +136,7 @@ fun ChapterPagingView(
         val topPaddingDp = maxOf(statusBarTopInset, cutoutTopInset, 42.dp) + 6.dp
         val bottomNavInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
-        val pillClearanceDp = 48.dp
+        val pillClearanceDp = 56.dp
         val bottomPaddingDp = bottomNavInset + pillClearanceDp
         val usableContentHeightDp = (screenHeightDp - topPaddingDp.value - bottomPaddingDp.value).coerceAtLeast(120f)
 
@@ -750,7 +750,7 @@ fun ChapterPagingView(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(bottom = 8.dp)
+                .padding(bottom = 18.dp)
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),

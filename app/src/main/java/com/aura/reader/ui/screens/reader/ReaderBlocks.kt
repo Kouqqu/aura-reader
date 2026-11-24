@@ -474,7 +474,10 @@ fun RenderBlock(
                 } else {
                     MaterialTheme.colorScheme.surfaceContainerLow
                 }
-                var showZoomDialog by remember { mutableStateOf(false) }
+                var zoomScale by remember { mutableFloatStateOf(1f) }
+                var zoomOffset by remember { mutableStateOf(Offset.Zero) }
+                val animScale by animateFloatAsState(zoomScale, label = "inlineImgZoomScale")
+                val animOffset by animateOffsetAsState(zoomOffset, label = "inlineImgZoomOffset")
 
                 Column(
                     modifier = Modifier
@@ -490,12 +493,87 @@ fun RenderBlock(
                         elevation = CardDefaults.cardElevation(defaultElevation = if (shouldApplyLightCard) 3.dp else 2.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { showZoomDialog = true }
+                            .pointerInput(onToggleControls) {
+                                detectTapGestures(
+                                    onDoubleTap = { tapOffset ->
+                                        if (zoomScale > 1.05f) {
+                                            zoomScale = 1f
+                                            zoomOffset = Offset.Zero
+                                        } else {
+                                            zoomScale = 2.2f
+                                            val center = Offset(size.width / 2f, size.height / 2f)
+                                            val delta = (center - tapOffset) * 1.2f
+                                            val maxX = (size.width * 1.2f) / 2f
+                                            val maxY = (size.height * 1.2f) / 2f
+                                            zoomOffset = Offset(
+                                                x = delta.x.coerceIn(-maxX, maxX),
+                                                y = delta.y.coerceIn(-maxY, maxY)
+                                            )
+                                        }
+                                    },
+                                    onTap = {
+                                        if (zoomScale > 1.05f) {
+                                            zoomScale = 1f
+                                            zoomOffset = Offset.Zero
+                                        } else {
+                                            onToggleControls()
+                                        }
+                                    }
+                                )
+                            }
+                            .pointerInput(Unit) {
+                                awaitEachGesture {
+                                    awaitFirstDown(requireUnconsumed = false)
+                                    do {
+                                        val event = awaitPointerEvent()
+                                        val pointerCount = event.changes.count { it.pressed }
+                                        if (zoomScale > 1.05f) {
+                                            val pan = event.calculatePan()
+                                            val zoom = event.calculateZoom()
+                                            val newScale = (zoomScale * zoom).coerceIn(1f, 4f)
+                                            zoomScale = newScale
+                                            if (newScale > 1.05f) {
+                                                val maxX = (size.width * (newScale - 1f)) / 2f
+                                                val maxY = (size.height * (newScale - 1f)) / 2f
+                                                zoomOffset = Offset(
+                                                    x = (zoomOffset.x + pan.x).coerceIn(-maxX, maxX),
+                                                    y = (zoomOffset.y + pan.y).coerceIn(-maxY, maxY)
+                                                )
+                                            } else {
+                                                zoomScale = 1f
+                                                zoomOffset = Offset.Zero
+                                            }
+                                            event.changes.forEach {
+                                                if (it.positionChanged()) it.consume()
+                                            }
+                                        } else if (pointerCount >= 2) {
+                                            val zoom = event.calculateZoom()
+                                            if (kotlin.math.abs(zoom - 1f) > 0.01f) {
+                                                val newScale = (zoomScale * zoom).coerceIn(1f, 4f)
+                                                zoomScale = newScale
+                                                if (newScale > 1.05f) {
+                                                    val pan = event.calculatePan()
+                                                    val maxX = (size.width * (newScale - 1f)) / 2f
+                                                    val maxY = (size.height * (newScale - 1f)) / 2f
+                                                    zoomOffset = Offset(
+                                                        x = (zoomOffset.x + pan.x).coerceIn(-maxX, maxX),
+                                                        y = (zoomOffset.y + pan.y).coerceIn(-maxY, maxY)
+                                                    )
+                                                }
+                                                event.changes.forEach {
+                                                    if (it.positionChanged()) it.consume()
+                                                }
+                                            }
+                                        }
+                                    } while (event.changes.any { it.pressed })
+                                }
+                            }
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(if (shouldApplyLightCard) 12.dp else 0.dp),
+                                .padding(if (shouldApplyLightCard) 12.dp else 0.dp)
+                                .clip(RoundedCornerShape(if (shouldApplyLightCard) 8.dp else 16.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             AsyncImage(
@@ -509,12 +587,17 @@ fun RenderBlock(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(max = 420.dp)
-                                    .clip(RoundedCornerShape(if (shouldApplyLightCard) 8.dp else 16.dp))
                                     .then(
                                         if (shouldApplyLightCard) {
                                             Modifier.background(Color.White)
                                         } else Modifier
                                     )
+                                    .graphicsLayer {
+                                        scaleX = animScale
+                                        scaleY = animScale
+                                        translationX = animOffset.x
+                                        translationY = animOffset.y
+                                    }
                             )
                         }
                     }
@@ -533,69 +616,6 @@ fun RenderBlock(
                                     indication = null
                                 ) { onToggleControls() }
                         )
-                    }
-                }
-
-                if (showZoomDialog) {
-                    Dialog(
-                        onDismissRequest = { showZoomDialog = false },
-                        properties = DialogProperties(usePlatformDefaultWidth = false)
-                    ) {
-                        var lbScale by remember { mutableFloatStateOf(1f) }
-                        var lbOffset by remember { mutableStateOf(Offset.Zero) }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.94f))
-                                .pointerInput(Unit) {
-                                    detectTransformGestures { _, pan, zoom, _ ->
-                                        val newScale = (lbScale * zoom).coerceIn(1f, 5f)
-                                        lbScale = newScale
-                                        lbOffset = if (newScale > 1.02f) lbOffset + pan else Offset.Zero
-                                    }
-                                }
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(LocalContext.current)
-                                        .data(imageModel)
-                                        .decoderFactory(SvgDecoder.Factory())
-                                        .build(),
-                                    contentDescription = block.subText,
-                                    contentScale = ContentScale.Fit,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .then(
-                                            if (shouldApplyLightCard) Modifier.background(Color.White, RoundedCornerShape(12.dp)).padding(8.dp)
-                                            else Modifier
-                                        )
-                                        .graphicsLayer {
-                                            scaleX = lbScale
-                                            scaleY = lbScale
-                                            translationX = lbOffset.x
-                                            translationY = lbOffset.y
-                                        }
-                                )
-                            }
-                            IconButton(
-                                onClick = { showZoomDialog = false },
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(16.dp)
-                                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Close,
-                                    contentDescription = null,
-                                    tint = Color.White
-                                )
-                            }
-                        }
                     }
                 }
             }

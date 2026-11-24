@@ -186,6 +186,7 @@ class ReaderViewModel(
     fun setChapter(index: Int, offset: Int = 0, textOffset: Int = 0) {
         val book = currentBook.value ?: return
         if (index in book.chapters.indices) {
+            pendingProgressSave?.cancel()
             val chapterChanged = _currentChapterIndex.value != index
             isAtBookEnd = (index >= book.chapters.size - 1) && (offset == Int.MAX_VALUE)
             _currentChapterIndex.value = index

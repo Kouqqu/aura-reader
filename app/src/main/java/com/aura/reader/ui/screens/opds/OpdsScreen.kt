@@ -1100,31 +1100,21 @@ fun OpdsBookCard(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         val recFormat = book.recommendedFormat
-                        if (book.fb2Url != null) {
-                            val isRec = recFormat == BookFormat.FB2
+                        val formatBadges = listOfNotNull(
+                            book.fb2Url?.let { BookFormat.FB2 to "FB2" },
+                            book.epubUrl?.let { BookFormat.EPUB to "EPUB" },
+                            book.mobiUrl?.let { BookFormat.MOBI to "MOBI" },
+                            book.pdfUrl?.let { BookFormat.PDF to "PDF" }
+                        )
+                        formatBadges.forEach { (fmt, label) ->
+                            val isRec = recFormat == fmt
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
                                 color = if (isRec) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
                                 else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
                             ) {
                                 Text(
-                                    text = if (isRec) "FB2 ★" else "FB2",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isRec) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                        if (book.epubUrl != null) {
-                            val isRec = recFormat == BookFormat.EPUB
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = if (isRec) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
-                                else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
-                            ) {
-                                Text(
-                                    text = if (isRec) "EPUB ★" else "EPUB",
+                                    text = if (isRec) "$label ★" else label,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = if (isRec) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
