@@ -44,7 +44,7 @@ data class OpdsBook(
 ) {
     val recommendedFormat: BookFormat?
         get() {
-            val haystack = (categories + listOf(title)).joinToString(" ").lowercase()
+            val haystack = (categories + listOf(title, annotation)).joinToString(" ").lowercase()
             val preferEpub = STUDY_TECH_KEYWORDS.any { haystack.contains(it) }
             return when {
                 preferEpub && epubUrl != null -> BookFormat.EPUB
