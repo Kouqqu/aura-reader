@@ -84,6 +84,7 @@ object Fb2Parser {
         var inParagraph = false
 
         var sectionDepth = 0
+        var currentChapterDepth = 0
         val currentBlocks = mutableListOf<FormattedBlock>()
         var currentSectionTitleLines = mutableListOf<String>()
         val currentText = StringBuilder()
@@ -131,7 +132,8 @@ object Fb2Parser {
                             title = resolvedTitle,
                             content = plainText,
                             blocks = ArrayList(currentBlocks),
-                            order = chapters.size
+                            order = chapters.size,
+                            depth = currentChapterDepth
                         )
                     )
                 }
@@ -225,7 +227,7 @@ object Fb2Parser {
                                 currentNoteTitle = ""
                                 currentNoteText.setLength(0)
                             } else if (inBody) {
-                                if (sectionDepth == 0 && currentBlocks.isNotEmpty()) {
+                                if (currentBlocks.isNotEmpty()) {
                                     flushChapter()
                                 }
                                 val secId = parser.getAttributeValue(null, "id")
@@ -234,6 +236,7 @@ object Fb2Parser {
                                     sectionIdToChapter[secId.removePrefix("#")] = chapters.size
                                 }
                                 sectionDepth++
+                                currentChapterDepth = (sectionDepth - 1).coerceAtLeast(0)
                             }
                         }
                         "title" -> {
@@ -382,7 +385,11 @@ object Fb2Parser {
                                     }
                                 }
                             } else if (inBody) {
+                                if (currentBlocks.isNotEmpty()) {
+                                    flushChapter()
+                                }
                                 if (sectionDepth > 0) sectionDepth--
+                                currentChapterDepth = (sectionDepth - 1).coerceAtLeast(0)
                             }
                         }
                         "body" -> {

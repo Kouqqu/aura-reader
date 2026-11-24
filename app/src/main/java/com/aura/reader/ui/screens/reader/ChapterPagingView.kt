@@ -1,5 +1,7 @@
 package com.aura.reader.ui.screens.reader
 
+import androidx.compose.runtime.mutableStateOf
+
 import androidx.compose.foundation.BorderStroke
 import com.aura.reader.data.model.Quote
 import androidx.compose.foundation.background
@@ -108,6 +110,7 @@ fun ChapterPagingView(
     selectionResetKey: Int = 0,
     onPageTurn: (Int) -> Unit = {},
     targetBlockIndex: Int?,
+    targetTextOffset: Int = 0,
     targetPage: Int?,
     onConsumeTargetBlock: () -> Unit,
     onConsumeTargetPage: () -> Unit,
@@ -230,6 +233,7 @@ fun ChapterPagingView(
         val haptic = LocalHapticFeedback.current
         var lastHapticSpread by remember { mutableIntStateOf(-1) }
         var lastHapticOffset by remember { mutableFloatStateOf(pagerState.currentPage.toFloat()) }
+        var hasNotifiedBookEnd by remember { mutableStateOf(false) }
 
         // Continuous finger-following haptics during page flip
         LaunchedEffect(pagerState.isScrollInProgress, pagerState.currentPageOffsetFraction, isEInk) {
@@ -264,8 +268,9 @@ fun ChapterPagingView(
         LaunchedEffect(pagerState.currentPage, prevPageOffset, contentSpreadsCount, isTwoColumn, pages) {
             val currentSpread = pagerState.currentPage - prevPageOffset
             if (currentSpread in 0 until contentSpreadsCount) {
+                val userFlipped = lastHapticSpread != -1
                 if (currentSpread != lastHapticSpread) {
-                    if (lastHapticSpread != -1 && settings.hapticFeedbackEnabled) {
+                    if (userFlipped && settings.hapticFeedbackEnabled) {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     }
                     lastHapticSpread = currentSpread
@@ -276,7 +281,12 @@ fun ChapterPagingView(
 
                 val currentBlock = pages.getOrNull(activePageIdx)?.firstOrNull()?.first ?: 0
                 val textOffset = pages.getOrNull(activePageIdx)?.firstOrNull()?.second?.sourceTextOffset ?: 0
-                onUpdateProgress(currentBlock, blocks.size.coerceAtLeast(1), textOffset, 0, false)
+                val atBookEnd = currentSpread >= contentSpreadsCount - 1 && chapterIndex >= totalChapters - 1
+                onUpdateProgress(currentBlock, blocks.size.coerceAtLeast(1), textOffset, 0, atBookEnd)
+                if (userFlipped && atBookEnd && !hasNotifiedBookEnd) {
+                    hasNotifiedBookEnd = true
+                    onBookFinished()
+                }
             }
         }
 
@@ -301,13 +311,15 @@ fun ChapterPagingView(
             }
         }
 
-        // Jump to search match page if target is given
-        LaunchedEffect(targetBlockIndex) {
+        // Jump to search match / return anchor page if target is given
+        LaunchedEffect(targetBlockIndex, targetTextOffset) {
             if (targetBlockIndex != null) {
-                val foundPage = pages.indexOfFirst { page ->
-                    page.any { it.first == targetBlockIndex }
-                }
-                if (foundPage >= 0) {
+                val foundPage = com.aura.reader.data.model.ReadingPosition.pageForAnchor(
+                    pages = pages,
+                    block = targetBlockIndex,
+                    textOffset = targetTextOffset
+                )
+                if (foundPage in pages.indices) {
                     val targetSpread = if (isTwoColumn) foundPage / 2 else foundPage
                     val targetPagerSpread = prevPageOffset + targetSpread
                     if (settings.pageAnimation == PageTurnAnimation.INSTANT) {
@@ -626,7 +638,16 @@ fun ChapterPagingView(
                                 }
                             } else {
                                 val pageBlocks = pages.getOrNull(contentSpreadIdx) ?: emptyList()
-                                val isSingleImagePage = pageBlocks.size == 1 && pageBlocks[0].second.type == BlockType.IMAGE
+                                val isSingleImagePage = pageBlocks.size == 1 &&
+                                    pageBlocks[0].second.type == BlockType.IMAGE &&
+                                    (pageBlocks[0].second.text.startsWith("aura-pdf:") ||
+                                     pageBlocks[0].second.text.startsWith("aurapdf://") ||
+                                     pageBlocks[0].second.text.contains("cbz_", ignoreCase = true) ||
+                                     pageBlocks[0].second.text.contains("cbr_", ignoreCase = true) ||
+                                     pageBlocks[0].second.text.contains("cbt_", ignoreCase = true) ||
+                                     pageBlocks[0].second.subText?.contains("comic", ignoreCase = true) == true ||
+                                     pageBlocks[0].second.subText?.contains("pdf", ignoreCase = true) == true ||
+                                     pageBlocks[0].second.subText?.contains("image_page", ignoreCase = true) == true)
                                 Column(
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -706,30 +727,20 @@ fun ChapterPagingView(
             onPageTurn(wordsCount)
         }
 
-        val bottomProgressMode = settings.bottomProgressMode
-
-        val bottomText = when (bottomProgressMode) {
-            0 -> "$overallPercent%"
-            1 -> strings.minutesLeftInChapter(minutesLeft)
-            else -> {
-                if (isTwoColumn) {
-                    val p1 = contentSpreadForProgress * 2 + 1
-                    val p2 = (contentSpreadForProgress * 2 + 2).coerceAtMost(pages.size)
-                    if (p1 == p2) "${strings.page} $p1 ${strings.ofPages} ${pages.size}" else "${strings.page} $p1–$p2 ${strings.ofPages} ${pages.size}"
-                } else {
-                    "${strings.page} ${contentSpreadForProgress + 1} ${strings.ofPages} ${pages.size}"
-                }
-            }
+        val displayPercent = if (contentSpreadForProgress >= contentSpreadsCount - 1 && chapterIndex >= totalChapters - 1) {
+            100
+        } else {
+            overallPercent
+        }
+        val pageLabel = if (isTwoColumn) {
+            val p1 = contentSpreadForProgress * 2 + 1
+            val p2 = (contentSpreadForProgress * 2 + 2).coerceAtMost(pages.size)
+            if (p1 == p2) "${strings.page} $p1/${pages.size}" else "${strings.page} $p1–$p2/${pages.size}"
+        } else {
+            "${strings.page} ${contentSpreadForProgress + 1}/${pages.size}"
         }
 
         Surface(
-            onClick = {
-                val nextMode = (bottomProgressMode + 1) % 3
-                onBottomProgressModeChange(nextMode)
-                if (settings.hapticFeedbackEnabled) {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                }
-            },
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f),
             border = androidx.compose.foundation.BorderStroke(
@@ -747,40 +758,18 @@ fun ChapterPagingView(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Icon(
-                    imageVector = when (bottomProgressMode) {
-                        0 -> Icons.AutoMirrored.Rounded.MenuBook
-                        1 -> Icons.Rounded.Timer
-                        else -> Icons.Rounded.AutoStories
-                    },
+                    imageVector = Icons.Rounded.AutoStories,
                     contentDescription = null,
                     modifier = Modifier.size(13.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
 
                 Text(
-                    text = bottomText,
+                    text = "$pageLabel  •  ~$minutesLeft мин  •  $displayPercent%",
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                // 3 interactive indicator dots showing the 3 modes: • ○ ○
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(3.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    repeat(3) { idx ->
-                        Box(
-                            modifier = Modifier
-                                .size(if (idx == bottomProgressMode) 4.5.dp else 3.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (idx == bottomProgressMode) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
-                                )
-                        )
-                    }
-                }
             }
         }
     }

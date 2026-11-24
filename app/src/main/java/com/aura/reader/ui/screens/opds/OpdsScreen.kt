@@ -883,7 +883,7 @@ fun OpdsScreen(
                                                     inspectingCoverBook = book
                                                 },
                                                 onDownloadFb2 = {
-                                                    viewModel.downloadBook(context, book, BookFormat.FB2)
+                                                    viewModel.downloadBook(context, book, book.recommendedFormat ?: BookFormat.FB2)
                                                 },
                                                 onOpenBook = { b ->
                                                     onOpenBook(b)
@@ -922,7 +922,7 @@ fun OpdsScreen(
                                                     inspectingCoverBook = book
                                                 },
                                                 onDownloadFb2 = {
-                                                    viewModel.downloadBook(context, book, BookFormat.FB2)
+                                                    viewModel.downloadBook(context, book, book.recommendedFormat ?: BookFormat.FB2)
                                                 },
                                                 onOpenBook = { b ->
                                                     onOpenBook(b)
@@ -1099,30 +1099,35 @@ fun OpdsBookCard(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
+                        val recFormat = book.recommendedFormat
                         if (book.fb2Url != null) {
+                            val isRec = recFormat == BookFormat.FB2
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                                color = if (isRec) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
+                                else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
                             ) {
                                 Text(
-                                    text = "FB2",
+                                    text = if (isRec) "FB2 ★" else "FB2",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    color = if (isRec) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
                         }
                         if (book.epubUrl != null) {
+                            val isRec = recFormat == BookFormat.EPUB
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+                                color = if (isRec) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
+                                else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
                             ) {
                                 Text(
-                                    text = "EPUB",
+                                    text = if (isRec) "EPUB ★" else "EPUB",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    color = if (isRec) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
@@ -1576,34 +1581,57 @@ fun OpdsBookDetailsBottomSheet(
                         .padding(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    val recFormat = book.recommendedFormat
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         if (book.fb2Url != null) {
-                            Button(
-                                onClick = { onDownload(BookFormat.FB2) },
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                            ) {
-                                Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(strings.downloadFb2)
+                            val isRec = recFormat == BookFormat.FB2
+                            if (isRec) {
+                                Button(
+                                    onClick = { onDownload(BookFormat.FB2) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.weight(1f).height(48.dp)
+                                ) {
+                                    Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("${strings.downloadFb2} ★")
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = { onDownload(BookFormat.FB2) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.weight(1f).height(48.dp)
+                                ) {
+                                    Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(strings.downloadFb2)
+                                }
                             }
                         }
                         if (book.epubUrl != null) {
-                            OutlinedButton(
-                                onClick = { onDownload(BookFormat.EPUB) },
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                            ) {
-                                Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(strings.downloadEpub)
+                            val isRec = recFormat == BookFormat.EPUB
+                            if (isRec) {
+                                Button(
+                                    onClick = { onDownload(BookFormat.EPUB) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.weight(1f).height(48.dp)
+                                ) {
+                                    Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("${strings.downloadEpub} ★")
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = { onDownload(BookFormat.EPUB) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.weight(1f).height(48.dp)
+                                ) {
+                                    Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(strings.downloadEpub)
+                                }
                             }
                         }
                     }

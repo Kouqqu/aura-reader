@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -186,11 +187,7 @@ class ReaderViewModel(
         val book = currentBook.value ?: return
         if (index in book.chapters.indices) {
             val chapterChanged = _currentChapterIndex.value != index
-            if (index < book.chapters.size - 1) {
-                isAtBookEnd = false
-            } else {
-                isAtBookEnd = true
-            }
+            isAtBookEnd = (index >= book.chapters.size - 1) && (offset == Int.MAX_VALUE)
             _currentChapterIndex.value = index
             _savedScrollOffset.value = offset
             _savedTextOffset.value = textOffset
@@ -528,33 +525,49 @@ class ReaderViewModel(
         }
     }
 
-    private val _navReturnPoint = MutableStateFlow<NavReturnPoint?>(null)
-    val navReturnPoint: StateFlow<NavReturnPoint?> = _navReturnPoint.asStateFlow()
+    private val _targetTextOffset = MutableStateFlow(0)
+    val targetTextOffset: StateFlow<Int> = _targetTextOffset.asStateFlow()
+
+    private val _navReturnStack = MutableStateFlow<List<NavReturnPoint>>(emptyList())
+    val navReturnStack: StateFlow<List<NavReturnPoint>> = _navReturnStack.asStateFlow()
+    val navReturnPoint: StateFlow<NavReturnPoint?> = _navReturnStack
+        .map { it.lastOrNull() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun navigateToPositionWithReturn(targetChapter: Int, targetBlock: Int, title: String = "") {
         val curCh = _currentChapterIndex.value
         val curBlk = _savedScrollOffset.value
+        val curTextOffset = _savedTextOffset.value
+        val curPixelOffset = _savedPixelOffset.value
         val curTitle = currentBook.value?.chapters?.getOrNull(curCh)?.title ?: "Глава ${curCh + 1}"
         if (curCh != targetChapter || kotlin.math.abs(curBlk - targetBlock) > 1) {
-            _navReturnPoint.value = NavReturnPoint(
+            _navReturnStack.value = _navReturnStack.value + NavReturnPoint(
                 chapterIndex = curCh,
                 blockIndex = curBlk,
+                textOffset = curTextOffset,
+                pixelOffset = curPixelOffset,
                 chapterTitle = curTitle
             )
         }
         jumpToPosition(targetChapter, targetBlock)
     }
 
-    fun jumpToPosition(chapterIndex: Int, blockIndex: Int) {
+    fun jumpToPosition(chapterIndex: Int, blockIndex: Int, textOffset: Int = 0, pixelOffset: Int = 0) {
         val book = currentBook.value ?: return
         if (chapterIndex in book.chapters.indices) {
             val safeBlock = blockIndex.coerceAtLeast(0)
+            val safeText = textOffset.coerceAtLeast(0)
+            val safePixel = pixelOffset.coerceAtLeast(0)
             if (chapterIndex != _currentChapterIndex.value) {
-                setChapter(chapterIndex, safeBlock)
+                setChapter(chapterIndex, safeBlock, safeText)
+                _savedPixelOffset.value = safePixel
             } else {
                 _savedScrollOffset.value = safeBlock
+                _savedTextOffset.value = safeText
+                _savedPixelOffset.value = safePixel
                 saveCurrentProgress()
             }
+            _targetTextOffset.value = safeText
             _targetScrollOffset.value = safeBlock
         }
     }
@@ -584,22 +597,25 @@ class ReaderViewModel(
         val curCh = _currentChapterIndex.value
         val curBlk = _savedScrollOffset.value
         val curTitle = book.chapters.getOrNull(curCh)?.title ?: "Глава ${curCh + 1}"
-        _navReturnPoint.value = NavReturnPoint(
+        _navReturnStack.value = _navReturnStack.value + NavReturnPoint(
             chapterIndex = curCh,
             blockIndex = curBlk,
+            textOffset = _savedTextOffset.value,
+            pixelOffset = _savedPixelOffset.value,
             chapterTitle = curTitle
         )
         jumpToPosition(quote.chapterIndex, targetBlock)
     }
 
     fun returnToPreviousPosition() {
-        val point = _navReturnPoint.value ?: return
-        _navReturnPoint.value = null
-        jumpToPosition(point.chapterIndex, point.blockIndex)
+        val stack = _navReturnStack.value
+        val point = stack.lastOrNull() ?: return
+        _navReturnStack.value = stack.dropLast(1)
+        jumpToPosition(point.chapterIndex, point.blockIndex, point.textOffset, point.pixelOffset)
     }
 
     fun clearNavReturnPoint() {
-        _navReturnPoint.value = null
+        _navReturnStack.value = emptyList()
     }
 
     fun updateBottomProgressMode(mode: Int) {
@@ -681,9 +697,11 @@ class ReaderViewModel(
         val curCh = _currentChapterIndex.value
         val curBlk = _savedScrollOffset.value
         val curTitle = book.chapters.getOrNull(curCh)?.title ?: "Глава ${curCh + 1}"
-        _navReturnPoint.value = NavReturnPoint(
+        _navReturnStack.value = _navReturnStack.value + NavReturnPoint(
             chapterIndex = curCh,
             blockIndex = curBlk,
+            textOffset = _savedTextOffset.value,
+            pixelOffset = _savedPixelOffset.value,
             chapterTitle = curTitle
         )
         jumpToPosition(targetChapter, targetBlock)
@@ -829,6 +847,8 @@ class ReaderViewModel(
 data class NavReturnPoint(
     val chapterIndex: Int,
     val blockIndex: Int,
+    val textOffset: Int = 0,
+    val pixelOffset: Int = 0,
     val chapterTitle: String = ""
 )
 

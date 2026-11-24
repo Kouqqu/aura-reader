@@ -71,8 +71,51 @@ internal fun paginateBlocks(
     for ((originalIndex, block) in blocks.withIndex()) {
         when (block.type) {
             BlockType.IMAGE -> {
-                flushPage()
-                pages.add(listOf(originalIndex to block))
+                val isGraphicBlock = block.text.startsWith("aura-pdf:") ||
+                    block.text.startsWith("aurapdf://") ||
+                    block.text.contains("cbz_", ignoreCase = true) ||
+                    block.text.contains("cbr_", ignoreCase = true) ||
+                    block.text.contains("cbt_", ignoreCase = true) ||
+                    block.subText?.contains("comic", ignoreCase = true) == true ||
+                    block.subText?.contains("pdf", ignoreCase = true) == true ||
+                    block.subText?.contains("image_page", ignoreCase = true) == true
+
+                if (isGraphicBlock) {
+                    flushPage()
+                    pages.add(listOf(originalIndex to block))
+                } else {
+                    val ratio = com.aura.reader.util.GraphicPageDimensionsCache
+                        .getOrReadAspectRatio(block.text)
+                        .coerceIn(0.25f, 4.0f)
+                    val cardInnerWidthPx = (maxWidthPx - with(density) { 24.dp.toPx() }).coerceAtLeast(100f)
+                    val rawImgHeightPx = cardInnerWidthPx / ratio
+                    val maxImgHeightPx = minOf(with(density) { 420.dp.toPx() }, maxHeightPx * 0.68f)
+                    val imgHeightPx = minOf(rawImgHeightPx, maxImgHeightPx)
+
+                    var captionHeightPx = 0f
+                    if (!block.subText.isNullOrBlank()) {
+                        val capStyle = TextStyle(
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            fontStyle = FontStyle.Italic,
+                            textAlign = TextAlign.Center
+                        )
+                        val capLayout = textMeasurer.measure(
+                            block.subText,
+                            capStyle,
+                            constraints = Constraints(maxWidth = maxWidthPx)
+                        )
+                        captionHeightPx = capLayout.size.height + with(density) { 8.dp.toPx() }
+                    }
+
+                    val totalImageBlockHeightPx = imgHeightPx + captionHeightPx + with(density) { 52.dp.toPx() }
+                    val effectiveMax = getEffectiveMaxHeightPx()
+                    if (currentHeightPx + totalImageBlockHeightPx > effectiveMax && currentPage.isNotEmpty()) {
+                        flushPage()
+                    }
+                    currentPage.add(originalIndex to block)
+                    currentHeightPx += totalImageBlockHeightPx
+                }
             }
             BlockType.TITLE -> {
                 val style = TextStyle(

@@ -58,6 +58,8 @@ class BookRepository(
                     val addedTimestamp = obj.optLong("addedTimestamp", obj.optLong("lastReadTimestamp", System.currentTimeMillis()))
                     val firstOpenedTimestamp = if (obj.has("firstOpenedTimestamp") && !obj.isNull("firstOpenedTimestamp")) obj.getLong("firstOpenedTimestamp") else null
                     val description = if (obj.has("description") && !obj.isNull("description")) obj.getString("description") else null
+                    val charCount = obj.optLong("charCount", 0L)
+                    val wordCount = obj.optInt("wordCount", 0)
 
                     list.add(
                         Book(
@@ -83,7 +85,9 @@ class BookRepository(
                             addedTimestamp = addedTimestamp,
                             firstOpenedTimestamp = firstOpenedTimestamp,
                             description = description,
-                            genres = genresList
+                            genres = genresList,
+                            charCount = charCount,
+                            wordCount = wordCount
                         )
                     )
                 }
@@ -132,6 +136,12 @@ class BookRepository(
                 }
                 if (b.description != null) {
                     put("description", b.description)
+                }
+                if (b.charCount > 0L) {
+                    put("charCount", b.charCount)
+                }
+                if (b.wordCount > 0) {
+                    put("wordCount", b.wordCount)
                 }
                 val gArr = JSONArray()
                 for (g in b.genres) gArr.put(g)
@@ -215,7 +225,9 @@ class BookRepository(
                 genres = if (bookToOpen.genres.isNotEmpty()) bookToOpen.genres else book.genres,
                 fileSizeBytes = if (bookToOpen.fileSizeBytes > 0) bookToOpen.fileSizeBytes else book.fileSizeBytes,
                 addedTimestamp = bookToOpen.addedTimestamp,
-                deletedAtTimestamp = bookToOpen.deletedAtTimestamp
+                deletedAtTimestamp = bookToOpen.deletedAtTimestamp,
+                charCount = if (book.charCount > 0L) book.charCount else bookToOpen.charCount,
+                wordCount = if (book.wordCount > 0) book.wordCount else bookToOpen.wordCount
             )
             _currentBook.value = resolved
             addOrUpdateRecentBook(resolved)

@@ -306,7 +306,7 @@ fun BoxScope.ReaderBottomBar(
                                     }
 
                                     Text(
-                                        text = "${strings.page} ${effectiveCurrentPage + 1} ${strings.ofPages} $effectiveTotalPages  •  ${strings.pagingHint}",
+                                        text = "${strings.page} ${effectiveCurrentPage + 1} ${strings.ofPages} $effectiveTotalPages",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.65f)) else MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -469,13 +469,6 @@ fun BoxScope.ReaderBottomBar(
                                              )
                                         }
                                     }
-
-                                    Text(
-                                        text = strings.chaptersNavigationHint,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.65f)) else MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                                    )
                                 }
                             }
                         }

@@ -49,7 +49,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.aura.reader.data.model.BlockType
 import com.aura.reader.data.model.FormattedBlock
@@ -466,15 +474,12 @@ fun RenderBlock(
                 } else {
                     MaterialTheme.colorScheme.surfaceContainerLow
                 }
+                var showZoomDialog by remember { mutableStateOf(false) }
 
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 14.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { onToggleControls() },
+                        .padding(vertical = 14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Card(
@@ -483,7 +488,9 @@ fun RenderBlock(
                             containerColor = imageCardBg
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = if (shouldApplyLightCard) 3.dp else 2.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showZoomDialog = true }
                     ) {
                         Box(
                             modifier = Modifier
@@ -494,12 +501,14 @@ fun RenderBlock(
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
                                     .data(imageModel)
+                                    .decoderFactory(SvgDecoder.Factory())
                                     .crossfade(true)
                                     .build(),
                                 contentDescription = block.subText,
-                                contentScale = ContentScale.FillWidth,
+                                contentScale = ContentScale.Fit,
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .heightIn(max = 420.dp)
                                     .clip(RoundedCornerShape(if (shouldApplyLightCard) 8.dp else 16.dp))
                                     .then(
                                         if (shouldApplyLightCard) {
@@ -517,8 +526,76 @@ fun RenderBlock(
                             fontStyle = FontStyle.Italic,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 16.dp)
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) { onToggleControls() }
                         )
+                    }
+                }
+
+                if (showZoomDialog) {
+                    Dialog(
+                        onDismissRequest = { showZoomDialog = false },
+                        properties = DialogProperties(usePlatformDefaultWidth = false)
+                    ) {
+                        var lbScale by remember { mutableFloatStateOf(1f) }
+                        var lbOffset by remember { mutableStateOf(Offset.Zero) }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.94f))
+                                .pointerInput(Unit) {
+                                    detectTransformGestures { _, pan, zoom, _ ->
+                                        val newScale = (lbScale * zoom).coerceIn(1f, 5f)
+                                        lbScale = newScale
+                                        lbOffset = if (newScale > 1.02f) lbOffset + pan else Offset.Zero
+                                    }
+                                }
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(imageModel)
+                                        .decoderFactory(SvgDecoder.Factory())
+                                        .build(),
+                                    contentDescription = block.subText,
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .then(
+                                            if (shouldApplyLightCard) Modifier.background(Color.White, RoundedCornerShape(12.dp)).padding(8.dp)
+                                            else Modifier
+                                        )
+                                        .graphicsLayer {
+                                            scaleX = lbScale
+                                            scaleY = lbScale
+                                            translationX = lbOffset.x
+                                            translationY = lbOffset.y
+                                        }
+                                )
+                            }
+                            IconButton(
+                                onClick = { showZoomDialog = false },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(16.dp)
+                                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = null,
+                                    tint = Color.White
+                                )
+                            }
+                        }
                     }
                 }
             }

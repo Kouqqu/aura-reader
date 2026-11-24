@@ -75,8 +75,19 @@ object MarkdownParser {
 
         var paragraphBuffer = StringBuilder()
 
+        fun cleanInlineMarkdown(input: String): String {
+            return input
+                .replace(Regex("""!\[([^\]]*)\]\([^)]+\)""")) { m -> m.groupValues[1].trim() }
+                .replace(Regex("""\[([^\]]+)\]\([^)]+\)"""), "$1")
+                .replace(Regex("""\*\*(.+?)\*\*"""), "$1")
+                .replace(Regex("""__(.+?)__"""), "$1")
+                .replace(Regex("""\*(.+?)\*"""), "$1")
+                .replace(Regex("""`([^`]+)`"""), "$1")
+                .trim()
+        }
+
         fun flushParagraph() {
-            val p = paragraphBuffer.toString().trim()
+            val p = cleanInlineMarkdown(paragraphBuffer.toString().trim())
             if (p.isNotEmpty()) {
                 currentBlocks.add(FormattedBlock(type = BlockType.PARAGRAPH, text = p))
             }
@@ -132,6 +143,16 @@ object MarkdownParser {
             if (trimmed == "---" || trimmed == "***" || trimmed == "___") {
                 flushParagraph()
                 currentBlocks.add(FormattedBlock(type = BlockType.DIVIDER, text = ""))
+                continue
+            }
+
+            // Bullet / numbered list items -> own paragraph so they don't merge into a wall of text
+            if (trimmed.matches(Regex("""^([-*+]\s+|\d+\.\s+).+"""))) {
+                flushParagraph()
+                val bulletText = cleanInlineMarkdown(trimmed)
+                if (bulletText.isNotEmpty()) {
+                    currentBlocks.add(FormattedBlock(type = BlockType.PARAGRAPH, text = bulletText))
+                }
                 continue
             }
 

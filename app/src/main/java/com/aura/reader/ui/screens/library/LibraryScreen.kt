@@ -1,4 +1,6 @@
 package com.aura.reader.ui.screens.library
+
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.BorderStroke
@@ -426,6 +428,11 @@ fun LibraryScreen(
     var showBatchCollectionDialog by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
     var showHeroMenu by remember { mutableStateOf(false) }
+
+    LaunchedEffect(activePage, isSearchExpanded) {
+        showSortMenu = false
+        showHeroMenu = false
+    }
     var rootCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var sortButtonCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
@@ -1482,7 +1489,8 @@ fun LibraryScreen(
         AnimatedVisibility(
             visible = showSortMenu,
             enter = fadeIn(tween(200, easing = FastOutSlowInEasing)),
-            exit = fadeOut(tween(160, easing = FastOutSlowInEasing))
+            exit = fadeOut(tween(160, easing = FastOutSlowInEasing)),
+            modifier = Modifier.zIndex(50f)
         ) {
             val menuWidthDp = 240.dp
             val estimatedMenuHeightDp = 250.dp
@@ -1645,7 +1653,8 @@ fun LibraryScreen(
             AnimatedVisibility(
                 visible = showHeroMenu,
                 enter = fadeIn(tween(220, easing = FastOutSlowInEasing)),
-                exit = fadeOut(tween(180, easing = FastOutSlowInEasing))
+                exit = fadeOut(tween(180, easing = FastOutSlowInEasing)),
+                modifier = Modifier.zIndex(50f)
             ) {
                 Box(
                     modifier = Modifier

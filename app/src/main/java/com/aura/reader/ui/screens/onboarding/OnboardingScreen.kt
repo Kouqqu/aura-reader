@@ -72,6 +72,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.IconButton
 import com.aura.reader.R
 import com.aura.reader.data.model.AppDesignStyle
 import com.aura.reader.data.model.ReaderSettings
@@ -777,6 +781,7 @@ private fun OnboardingFinishSlide(
     onFinish: () -> Unit
 ) {
     val strings = LocalAppStrings.current
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
 
     Column(
@@ -838,6 +843,55 @@ private fun OnboardingFinishSlide(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = Color(0xFF2AABEE).copy(alpha = 0.14f),
+                border = BorderStroke(1.dp, Color(0xFF2AABEE).copy(alpha = 0.28f)),
+                modifier = Modifier.size(44.dp)
+            ) {
+                IconButton(
+                    onClick = {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/koukkuteka")))
+                    },
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_telegram),
+                        contentDescription = strings.telegramChannelTitle,
+                        tint = Color(0xFF2AABEE),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                modifier = Modifier.size(44.dp)
+            ) {
+                IconButton(
+                    onClick = {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Kouqqu/aura-reader")))
+                    },
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_github),
+                        contentDescription = strings.githubRepository,
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
     }
 }

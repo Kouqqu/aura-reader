@@ -23,7 +23,8 @@ class ReadingPositionTest {
             Chapter("b", "Long", "", listOf(paragraph("b".repeat(900))), 1)))
         assertEquals(10, ReadingPosition.percent(book, 1, 0))
         assertEquals(55, ReadingPosition.percent(book, 1, 0, 450))
-        assertEquals(99, ReadingPosition.percent(book, 1, 0, 900))
+        assertEquals(99, ReadingPosition.percent(book, 1, 0, 895))
+        assertEquals(100, ReadingPosition.percent(book, 1, 0, 900))
     }
     @Test fun emptyAndInvalidPositionsAreClamped() {
         val book = Book("empty", "Title", format = BookFormat.TXT, uriString = "test")

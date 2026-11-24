@@ -289,6 +289,7 @@ object OpdsService {
         var currentPdfUrl: String? = null
         var currentDownloadSize: String? = null
         var currentCategoryPath: String? = null
+        val currentCategories = mutableListOf<String>()
         var inAuthor = false
 
         while (eventType != XmlPullParser.END_DOCUMENT) {
@@ -309,6 +310,17 @@ object OpdsService {
                             currentPdfUrl = null
                             currentDownloadSize = null
                             currentCategoryPath = null
+                            currentCategories.clear()
+                        }
+                        "category" -> {
+                            if (inEntry) {
+                                val label = parser.getAttributeValue(null, "label")?.trim()
+                                val term = parser.getAttributeValue(null, "term")?.trim()
+                                val value = label?.takeIf { it.isNotBlank() } ?: term?.takeIf { it.isNotBlank() }
+                                if (value != null) {
+                                    currentCategories.add(value)
+                                }
+                            }
                         }
                         "title" -> {
                             if (inEntry) {
@@ -473,7 +485,8 @@ object OpdsService {
                                         downloadsCount = parsedDownloads,
                                         isSeries = isSeriesCategory,
                                         isAuthorCategory = isAuthorCat,
-                                        itemCount = parsedItemCount
+                                        itemCount = parsedItemCount,
+                                        categories = currentCategories.distinct()
                                     )
                                 )
                             }

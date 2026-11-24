@@ -79,6 +79,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Refresh
+import com.aura.reader.data.model.formatVolumeShort
 import com.aura.reader.ui.theme.LocalAppStrings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -379,7 +380,19 @@ fun BookCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                val volumeShort = remember(book.charCount, book.wordCount) { book.formatVolumeShort() }
+                if (volumeShort != null) {
+                    Text(
+                        text = volumeShort,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Column {
                     Row(

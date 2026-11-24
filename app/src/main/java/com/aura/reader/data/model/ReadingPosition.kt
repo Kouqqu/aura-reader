@@ -26,7 +26,6 @@ object ReadingPosition {
         var read = chapters.take(chapter).sumOf { it.sumOf(::weight).coerceAtLeast(1L) }
         read += current.take(block).sumOf(::weight)
         read += minOf(textOffset.coerceAtLeast(0).toLong(), current.getOrNull(block)?.let(::weight) ?: 0L)
-        // Completion is an explicit reader action, not a side effect of showing the last block.
-        return ((read.toDouble() / total.coerceAtLeast(1L)) * 100).toInt().coerceIn(0, 99)
+        return ((read.toDouble() / total.coerceAtLeast(1L)) * 100).toInt().coerceIn(0, 100)
     }
 }

@@ -39,5 +39,31 @@ data class OpdsBook(
     val downloadsCount: Int = 0,
     val isSeries: Boolean = false,
     val isAuthorCategory: Boolean = false,
-    val itemCount: Int? = null
-)
+    val itemCount: Int? = null,
+    val categories: List<String> = emptyList()
+) {
+    val recommendedFormat: BookFormat?
+        get() {
+            val haystack = (categories + listOf(title, annotation)).joinToString(" ").lowercase()
+            val preferEpub = STUDY_TECH_KEYWORDS.any { haystack.contains(it) }
+            return when {
+                preferEpub && epubUrl != null -> BookFormat.EPUB
+                !preferEpub && fb2Url != null -> BookFormat.FB2
+                epubUrl != null -> BookFormat.EPUB
+                fb2Url != null -> BookFormat.FB2
+                mobiUrl != null -> BookFormat.MOBI
+                pdfUrl != null -> BookFormat.PDF
+                else -> null
+            }
+        }
+
+    companion object {
+        private val STUDY_TECH_KEYWORDS = listOf(
+            "учеб", "пособи", "справоч", "науч", "техн", "программ", "информат",
+            "математ", "физик", "хими", "биолог", "эконом", "право", "юрид",
+            "медиц", "словар", "энциклоп", "компьютер", "руководств", "лекци",
+            "study", "textbook", "science", "tech", "programming", "reference",
+            "manual", "nonfiction", "non-fiction", "computers", "education", "documentation"
+        )
+    }
+}

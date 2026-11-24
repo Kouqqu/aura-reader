@@ -244,11 +244,13 @@ fun ReaderScreen(
     val searchResults by viewModel.searchResults.collectAsState()
     val currentSearchIndex by viewModel.currentSearchIndex.collectAsState()
     val targetScrollOffset by viewModel.targetScrollOffset.collectAsState()
+    val targetTextOffset by viewModel.targetTextOffset.collectAsState()
 
     // Bookmarks and Quotes
     val bookmarks by viewModel.bookmarks.collectAsState()
     val quotes by viewModel.quotes.collectAsState()
     val savedWords by viewModel.savedWords.collectAsState()
+    val navReturnStack by viewModel.navReturnStack.collectAsState()
     val navReturnPoint by viewModel.navReturnPoint.collectAsState()
     val userWpm by viewModel.userAverageWpm.collectAsState()
     val ttsState by com.aura.reader.service.BookTtsService.ttsState.collectAsState()
@@ -297,6 +299,15 @@ fun ReaderScreen(
     }
     val view = LocalView.current
     val window = remember(view) { (view.context as? Activity)?.window }
+
+    DisposableEffect(view, window) {
+        view.keepScreenOn = true
+        window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose {
+            view.keepScreenOn = false
+            window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 
     DisposableEffect(showControls, isThemeDark, window) {
         if (window != null) {
@@ -605,6 +616,7 @@ fun ReaderScreen(
                                     selectionResetKey = selectionResetKey,
                                     onPageTurn = { words -> viewModel.onPageOrSectionTurn(words) },
                                     targetBlockIndex = targetScrollOffset,
+                                    targetTextOffset = targetTextOffset,
                                     targetPage = requestPagingPage,
                                     onConsumeTargetBlock = { viewModel.consumeTargetScrollOffset() },
                                     onConsumeTargetPage = { requestPagingPage = null },
@@ -837,6 +849,8 @@ fun ReaderScreen(
                                         isTtsHighlightActive = isTtsHighlightActive,
                                         isAutoScrolling = isAutoScrolling && !settings.pagingMode,
                                         autoScrollSpeedMultiplier = autoScrollSpeedMultiplier,
+                                        overallProgress = book?.progressPercent,
+                                        userWpm = userWpm,
                                         onSelectionTextChange = { text ->
                                             if (text.isNotEmpty()) selectedReaderText = text
                                         }
@@ -1113,8 +1127,13 @@ fun ReaderScreen(
                                 modifier = Modifier.size(18.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
+                            val returnLabel = if (navReturnStack.size > 1) {
+                                "Вернуться (${navReturnStack.size}): $returnTitle"
+                            } else {
+                                "Вернуться: $returnTitle"
+                            }
                             Text(
-                                text = "Вернуться: $returnTitle",
+                                text = returnLabel,
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,

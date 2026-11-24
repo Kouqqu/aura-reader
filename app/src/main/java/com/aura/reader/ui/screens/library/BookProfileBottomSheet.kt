@@ -78,6 +78,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.Book
+import com.aura.reader.data.model.formatVolumeShort
 import com.aura.reader.ui.theme.LocalAppStrings
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -286,6 +287,19 @@ fun BookProfileBottomSheet(
                                 color = subtitleColor,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        val volumeInfo = remember(book.charCount, book.wordCount) {
+                            val short = book.formatVolumeShort()
+                            if (short != null && book.wordCount > 0) "$short · ${book.wordCount} слов" else short
+                        }
+                        if (volumeInfo != null) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = volumeInfo,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = subtitleColor
                             )
                         }
 

@@ -173,32 +173,55 @@ object EpubParser {
                 }
             }
 
-            // Parse TOC (Table of Contents) from NCX
-            // IMPORTANT: do not overwrite parent titles with sub-chapter anchors!
+            // Parse TOC (Table of Contents) from NCX with nesting depth
             val tocTitles = mutableMapOf<String, String>()
+            val tocDepths = mutableMapOf<String, Int>()
             if (ncxHref != null) {
                 val resolvedNcxPath = resolvePath(opfDir, ncxHref)
                 val ncxBytes = readEntry(findEntry(resolvedNcxPath))
                 if (ncxBytes != null) {
                     try {
                         val ncxDoc = docBuilder.parse(ByteArrayInputStream(ncxBytes))
-                        val navPoints = ncxDoc.getElementsByTagName("navPoint")
-                        for (i in 0 until navPoints.length) {
-                            val np = navPoints.item(i) as Element
-                            val text = np.getElementsByTagName("text").item(0)?.textContent?.trim() ?: continue
-                            val contentEl = np.getElementsByTagName("content").item(0) as? Element ?: continue
-                            val fullSrc = contentEl.getAttribute("src")
-                            val cleanSrc = fullSrc.substringBefore("#")
-                            if (cleanSrc.isNotBlank() && text.isNotBlank()) {
-                                // Only put if absent so the parent/primary title is preserved!
-                                if (!tocTitles.containsKey(cleanSrc)) {
-                                    tocTitles[cleanSrc] = text
-                                }
-                                val fileOnly = cleanSrc.substringAfterLast("/")
-                                if (!tocTitles.containsKey(fileOnly)) {
-                                    tocTitles[fileOnly] = text
+                        fun walkNavPoints(parent: org.w3c.dom.Node, depth: Int) {
+                            val children = parent.childNodes
+                            for (i in 0 until children.length) {
+                                val node = children.item(i) as? Element ?: continue
+                                if (node.tagName.equals("navPoint", ignoreCase = true) ||
+                                    node.localName?.equals("navPoint", ignoreCase = true) == true
+                                ) {
+                                    val labelNodes = node.childNodes
+                                    var labelText: String? = null
+                                    var fullSrc: String? = null
+                                    for (j in 0 until labelNodes.length) {
+                                        val child = labelNodes.item(j) as? Element ?: continue
+                                        when {
+                                            child.tagName.equals("navLabel", ignoreCase = true) -> {
+                                                labelText = child.getElementsByTagName("text").item(0)?.textContent?.trim()
+                                            }
+                                            child.tagName.equals("content", ignoreCase = true) -> {
+                                                fullSrc = child.getAttribute("src")
+                                            }
+                                        }
+                                    }
+                                    val cleanSrc = fullSrc?.substringBefore("#").orEmpty()
+                                    if (cleanSrc.isNotBlank() && !labelText.isNullOrBlank()) {
+                                        if (!tocTitles.containsKey(cleanSrc)) {
+                                            tocTitles[cleanSrc] = labelText
+                                            tocDepths[cleanSrc] = depth
+                                        }
+                                        val fileOnly = cleanSrc.substringAfterLast("/")
+                                        if (!tocTitles.containsKey(fileOnly)) {
+                                            tocTitles[fileOnly] = labelText
+                                            tocDepths[fileOnly] = depth
+                                        }
+                                    }
+                                    walkNavPoints(node, depth + 1)
                                 }
                             }
+                        }
+                        val navMap = ncxDoc.getElementsByTagName("navMap").item(0)
+                        if (navMap != null) {
+                            walkNavPoints(navMap, 0)
                         }
                     } catch (e: Exception) {
                         // Ignore NCX parsing failure
@@ -315,7 +338,7 @@ object EpubParser {
                     isInitialFrontMatter && cleanHref.contains("copy", ignoreCase = true) -> "Информация об издании"
                     isInitialFrontMatter && cleanHref.contains("annot", ignoreCase = true) -> "Аннотация"
                     else -> title.ifBlank { "Книга" }
-                }
+                }.replace("\uFFFC", "").trim().ifBlank { title.ifBlank { "Книга" } }
 
                 // 2) Parse blocks from HTML (Headings, Subtitles, Epigraphs, Paragraphs)
                 val blocks = mutableListOf<FormattedBlock>()
@@ -324,6 +347,39 @@ object EpubParser {
                 val elements = body.select("h1, h2, h3, h4, h5, h6, blockquote, div.epigraph, div.cite, p, pre, img, figure, li, nav a, div.toc > a, div.toc > p, ol > li")
                 val chDir = if (resolvedChPath.contains("/")) resolvedChPath.substringBeforeLast("/") else ""
 
+                fun resolveImageSource(rawSrc: String): String? {
+                    if (rawSrc.startsWith("data:image/") && rawSrc.contains("base64,") && imagesDir != null) {
+                        return try {
+                            val ext = rawSrc.substringAfter("data:image/").substringBefore(";").substringBefore("+").ifBlank { "png" }
+                            val b64 = rawSrc.substringAfter("base64,")
+                            val imgBytes = Base64.decode(b64, Base64.DEFAULT)
+                            val name = "inline_${UUID.randomUUID()}.$ext"
+                            val f = File(imagesDir, name)
+                            f.writeBytes(imgBytes)
+                            f.absolutePath
+                        } catch (_: Exception) {
+                            null
+                        }
+                    }
+                    val resolvedImgPath = resolvePath(chDir, rawSrc)
+                    return extractedImages[resolvedImgPath] ?: extractedImages[rawSrc.substringAfterLast("/")]
+                }
+
+                fun addImageOrDivider(localPath: String, caption: String?) {
+                    val isTinyRule = try {
+                        val opts = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                        android.graphics.BitmapFactory.decodeFile(localPath, opts)
+                        opts.outHeight in 1..16 && opts.outWidth > opts.outHeight * 6
+                    } catch (_: Exception) {
+                        false
+                    }
+                    if (isTinyRule) {
+                        blocks.add(FormattedBlock(BlockType.DIVIDER, ""))
+                    } else {
+                        blocks.add(FormattedBlock(BlockType.IMAGE, text = localPath, subText = caption?.ifBlank { null }))
+                    }
+                }
+
                 for (el in elements) {
                     val tagName = el.tagName().lowercase()
 
@@ -331,13 +387,12 @@ object EpubParser {
                     if (tagName == "figure") {
                         val imgEl = el.select("img, image").firstOrNull()
                         if (imgEl != null) {
-                            val src = (imgEl.attr("src").ifBlank { imgEl.attr("xlink:href") }).trim()
+                            val src = imgEl.attr("src").ifBlank { imgEl.attr("xlink:href") }.ifBlank { imgEl.attr("href") }.trim()
                             val caption = el.select("figcaption").firstOrNull()?.text()?.trim()
                                 ?: imgEl.attr("alt").ifBlank { imgEl.attr("title") }
-                            val resolvedImgPath = resolvePath(chDir, src)
-                            val local = extractedImages[resolvedImgPath] ?: extractedImages[src.substringAfterLast("/")]
+                            val local = resolveImageSource(src)
                             if (local != null) {
-                                blocks.add(FormattedBlock(BlockType.IMAGE, text = local, subText = caption.ifBlank { null }))
+                                addImageOrDivider(local, caption)
                             }
                         }
                         continue
@@ -346,12 +401,15 @@ object EpubParser {
                     // 2) Handle standalone img / image
                     if (tagName == "img" || tagName == "image") {
                         if (el.parents().any { it.tagName() == "figure" }) continue
-                        val src = (el.attr("src").ifBlank { el.attr("xlink:href") }).trim()
+                        val src = el.attr("src")
+                            .ifBlank { el.attr("xlink:href") }
+                            .ifBlank { el.attr("href") }
+                            .ifBlank { el.attr("srcset").substringBefore(",").trim().substringBefore(" ") }
+                            .trim()
                         val alt = el.attr("alt").ifBlank { el.attr("title") }.trim()
-                        val resolvedImgPath = resolvePath(chDir, src)
-                        val local = extractedImages[resolvedImgPath] ?: extractedImages[src.substringAfterLast("/")]
+                        val local = resolveImageSource(src)
                         if (local != null) {
-                            blocks.add(FormattedBlock(BlockType.IMAGE, text = local, subText = alt.ifBlank { null }))
+                            addImageOrDivider(local, alt)
                         }
                         continue
                     }
@@ -461,8 +519,15 @@ object EpubParser {
                             blocks.add(FormattedBlock(BlockType.VERSE, text, links = blockLinks))
                         }
                         else -> {
-                            // Check if paragraph is an epigraph by class
-                            if (el.className().contains("epigraph", ignoreCase = true) || el.className().contains("quote", ignoreCase = true)) {
+                            // Attach caption paragraph directly to the preceding image block when appropriate
+                            val lastImg = blocks.lastOrNull()
+                            if (lastImg != null &&
+                                lastImg.type == BlockType.IMAGE &&
+                                lastImg.subText.isNullOrBlank() &&
+                                el.className().contains("caption", ignoreCase = true)
+                            ) {
+                                blocks[blocks.lastIndex] = lastImg.copy(subText = text)
+                            } else if (el.className().contains("epigraph", ignoreCase = true) || el.className().contains("quote", ignoreCase = true)) {
                                 blocks.add(FormattedBlock(BlockType.EPIGRAPH, text, links = blockLinks))
                             } else {
                                 blocks.add(FormattedBlock(BlockType.PARAGRAPH, text, links = blockLinks))
@@ -479,6 +544,7 @@ object EpubParser {
                 }
 
                 if (blocks.isNotEmpty()) {
+                    val chapterDepth = tocDepths[chHref] ?: tocDepths[cleanHref] ?: 0
                     if (startsNewChapter || chapters.isEmpty()) {
                         chapters.add(
                             Chapter(
@@ -486,7 +552,8 @@ object EpubParser {
                                 title = resolvedTitle,
                                 content = rawText,
                                 blocks = blocks,
-                                order = chapters.size
+                                order = chapters.size,
+                                depth = chapterDepth
                             )
                         )
                     } else {

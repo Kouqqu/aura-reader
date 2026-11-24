@@ -97,6 +97,15 @@ object HtmlParser {
                 "hr" -> {
                     currentBlocks.add(FormattedBlock(BlockType.DIVIDER, ""))
                 }
+                "figure" -> {
+                    val img = element.selectFirst("img")
+                    if (img != null) processElement(img)
+                    val cap = element.selectFirst("figcaption")?.text()?.trim()
+                    if (!cap.isNullOrBlank() && currentBlocks.lastOrNull()?.type == BlockType.IMAGE) {
+                        val last = currentBlocks.removeAt(currentBlocks.lastIndex)
+                        currentBlocks.add(last.copy(subText = cap))
+                    }
+                }
                 "img" -> {
                     val src = element.attr("src")
                     if (src.startsWith("data:image/") && imagesDir != null) {

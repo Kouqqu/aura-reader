@@ -6,6 +6,7 @@ import com.aura.reader.data.io.copyBoundedTo
 import com.aura.reader.data.io.readBoundedBytes
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.BookFormat
+import com.aura.reader.data.model.withComputedVolume
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
@@ -250,7 +251,7 @@ class BookIngestionPipeline(
                 description = savedBook?.description ?: parsedBook.description,
                 genres = if (savedBook?.genres?.isNotEmpty() == true) savedBook.genres else parsedBook.genres,
                 deletedAtTimestamp = savedBook?.deletedAtTimestamp
-            )
+            ).withComputedVolume()
             Result.success(resolved)
         } catch (e: Exception) {
             Result.failure(e)
@@ -314,7 +315,7 @@ class BookIngestionPipeline(
                     description = savedBook?.description ?: parsed.description,
                     genres = if (savedBook?.genres?.isNotEmpty() == true) savedBook.genres else parsed.genres,
                     deletedAtTimestamp = savedBook?.deletedAtTimestamp
-                )
+                ).withComputedVolume()
             )
         } catch (error: Exception) {
             return Result.failure(error)

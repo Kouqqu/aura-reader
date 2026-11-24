@@ -46,7 +46,8 @@ data class Chapter(
     val title: String,
     val content: String,
     val blocks: List<FormattedBlock> = emptyList(),
-    val order: Int
+    val order: Int,
+    val depth: Int = 0
 )
 
 @Immutable
@@ -75,8 +76,57 @@ data class Book(
     val addedTimestamp: Long = System.currentTimeMillis(),
     val firstOpenedTimestamp: Long? = null,
     val description: String? = null,
-    val genres: List<String> = emptyList()
+    val genres: List<String> = emptyList(),
+    val charCount: Long = 0L,
+    val wordCount: Int = 0
 )
+
+fun Book.withComputedVolume(): Book {
+    if (charCount > 0L && wordCount > 0) return this
+    var chars = 0L
+    var words = 0
+    for (ch in chapters) {
+        if (ch.blocks.isNotEmpty()) {
+            for (b in ch.blocks) {
+                if (b.type != BlockType.IMAGE && b.type != BlockType.DIVIDER) {
+                    val t = b.text.trim()
+                    if (t.isNotEmpty()) {
+                        chars += t.length
+                        words += t.split(Regex("\\s+")).count { it.isNotBlank() }
+                    }
+                }
+            }
+        } else if (ch.content.isNotBlank()) {
+            chars += ch.content.length
+            words += ch.content.split(Regex("\\s+")).count { it.isNotBlank() }
+        }
+    }
+    return copy(charCount = chars, wordCount = words)
+}
+
+fun Book.estimatedPaperPages(): Int {
+    if (charCount <= 0L) return 0
+    return (charCount / 1800L).toInt().coerceAtLeast(1)
+}
+
+fun Book.estimatedReadingMinutes(wpm: Float = 200f): Int {
+    if (wordCount <= 0) return 0
+    return (wordCount / wpm.coerceAtLeast(80f)).toInt().coerceAtLeast(1)
+}
+
+fun Book.formatVolumeShort(wpm: Float = 200f): String? {
+    val pages = estimatedPaperPages()
+    val mins = estimatedReadingMinutes(wpm)
+    if (pages <= 0 || mins <= 0) return null
+    val timeStr = if (mins >= 60) {
+        val h = mins / 60
+        val m = mins % 60
+        if (m >= 10) "~$h ч $m мин" else "~$h ч"
+    } else {
+        "~$mins мин"
+    }
+    return "~$pages стр. · $timeStr"
+}
 
 @Immutable
 data class Bookmark(

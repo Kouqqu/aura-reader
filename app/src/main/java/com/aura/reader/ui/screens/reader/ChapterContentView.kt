@@ -53,6 +53,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material3.Surface
+import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import com.aura.reader.ui.components.jellyOverscroll
 import com.aura.reader.data.model.BlockType
 import com.aura.reader.data.model.Chapter
@@ -93,6 +100,8 @@ fun ChapterContentView(
     onSelectionTextChange: (String) -> Unit = {},
     isAutoScrolling: Boolean = false,
     autoScrollSpeedMultiplier: Float = 1.0f,
+    overallProgress: Int? = null,
+    userWpm: Float = 200f,
     onBookFinished: () -> Unit = {}
 ) {
     val selectionState = rememberSelectionState()
@@ -315,5 +324,67 @@ fun ChapterContentView(
             }
         }
     }
+
+        if (!isComicOrManga && blocks.isNotEmpty()) {
+            val totalChapterChars = remember(blocks) {
+                blocks.sumOf { it.text.length.coerceAtLeast(1) }
+            }
+            val estTotalPages = remember(totalChapterChars) {
+                (totalChapterChars / 1400).coerceAtLeast(1)
+            }
+            val currentIdx = listState.firstVisibleItemIndex.coerceIn(0, (blocks.size - 1).coerceAtLeast(0))
+            val atScrollEnd = !listState.canScrollForward && (listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= blocks.size - 1
+            val readChars = remember(blocks, currentIdx) {
+                blocks.take(currentIdx).sumOf { it.text.length.coerceAtLeast(1) }
+            }
+            val estCurrentPage = if (atScrollEnd) {
+                estTotalPages
+            } else {
+                ((readChars.toFloat() / totalChapterChars.coerceAtLeast(1)) * estTotalPages).toInt().plus(1).coerceIn(1, estTotalPages)
+            }
+            val remainingWords = remember(blocks, currentIdx) {
+                var w = 0
+                for (i in currentIdx until blocks.size) {
+                    w += blocks[i].text.split(Regex("\\s+")).count { it.isNotBlank() }
+                }
+                w
+            }
+            val minutesLeft = (remainingWords / userWpm.coerceAtLeast(80f)).roundToInt().coerceAtLeast(1)
+            val fallbackPercent = (((pageIndex + (estCurrentPage.toFloat() / estTotalPages.coerceAtLeast(1))) / chaptersCount.coerceAtLeast(1)) * 100).toInt().coerceIn(0, 100)
+            val displayPercent = if (atScrollEnd && pageIndex >= chaptersCount - 1) 100 else (overallProgress ?: fallbackPercent)
+
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f),
+                border = BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                ),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(bottom = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.AutoStories,
+                        contentDescription = null,
+                        modifier = Modifier.size(13.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+
+                    Text(
+                        text = "${strings.page} $estCurrentPage/$estTotalPages  •  ~$minutesLeft мин  •  $displayPercent%",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
 }
 }
