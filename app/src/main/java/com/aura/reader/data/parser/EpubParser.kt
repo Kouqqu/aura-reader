@@ -17,8 +17,8 @@ import java.util.UUID
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import com.aura.reader.data.io.copyBoundedTo
+import com.aura.reader.data.io.newSecureDocumentBuilder
 import com.aura.reader.data.io.readBoundedBytes
-import javax.xml.parsers.DocumentBuilderFactory
 
 object EpubParser {
 
@@ -91,7 +91,7 @@ object EpubParser {
             val containerBytes = readEntry(findEntry("META-INF/container.xml"))
                 ?: throw IllegalArgumentException("Неверный EPUB формат: отсутствует META-INF/container.xml")
 
-            val docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+            val docBuilder = newSecureDocumentBuilder()
             val containerDoc = docBuilder.parse(ByteArrayInputStream(containerBytes))
             val rootfileElement = containerDoc.getElementsByTagName("rootfile").item(0) as? Element
                 ?: throw IllegalArgumentException("Не найден rootfile в container.xml")

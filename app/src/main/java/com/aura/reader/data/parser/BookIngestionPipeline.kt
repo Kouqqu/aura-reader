@@ -149,7 +149,7 @@ class BookIngestionPipeline(
                             var htmlBytes = ByteArray(0)
                             while (e != null) {
                                 if (e.name == entryName) {
-                                    htmlBytes = zis.readBytes()
+                                    htmlBytes = zis.readBoundedBytes(32L * 1024 * 1024)
                                     break
                                 }
                                 e = zis.nextEntry
@@ -162,7 +162,7 @@ class BookIngestionPipeline(
                             var mdBytes = ByteArray(0)
                             while (e != null) {
                                 if (e.name == entryName) {
-                                    mdBytes = zis.readBytes()
+                                    mdBytes = zis.readBoundedBytes(32L * 1024 * 1024)
                                     break
                                 }
                                 e = zis.nextEntry
@@ -175,7 +175,7 @@ class BookIngestionPipeline(
                             var txtBytes = ByteArray(0)
                             while (e != null) {
                                 if (e.name == entryName) {
-                                    txtBytes = zis.readBytes()
+                                    txtBytes = zis.readBoundedBytes(32L * 1024 * 1024)
                                     break
                                 }
                                 e = zis.nextEntry

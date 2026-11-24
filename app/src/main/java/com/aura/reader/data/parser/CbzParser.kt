@@ -15,8 +15,10 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.UUID
 import java.util.zip.ZipEntry
+import com.aura.reader.data.io.copyBoundedTo
+import com.aura.reader.data.io.newSecureDocumentBuilder
+import com.aura.reader.data.io.readBoundedBytes
 import java.util.zip.ZipInputStream
-import javax.xml.parsers.DocumentBuilderFactory
 
 object CbzParser {
 
@@ -58,8 +60,14 @@ object CbzParser {
         val zis = ZipInputStream(inputStream)
         var entry: ZipEntry? = zis.nextEntry
         var counter = 0
+        var totalExtractedBytes = 0L
+        var totalEntries = 0
+        val maxEntryBytes = 32L * 1024 * 1024
+        val maxTotalBytes = 512L * 1024 * 1024
 
         while (entry != null) {
+            totalEntries++
+            require(totalEntries <= 10000) { "Too many CBZ entries" }
             val name = entry.name.replace("\\", "/")
             val cleanName = name.substringAfterLast("/")
             val lower = name.lowercase()
@@ -70,12 +78,16 @@ object CbzParser {
                     counter++
                     val safeFileName = "page_${counter.toString().padStart(5, '0')}_${cleanName.replace(Regex("[^a-zA-Z0-9._-]"), "_")}"
                     val outFile = File(targetDir, safeFileName)
-                    FileOutputStream(outFile).use { out ->
-                        zis.copyTo(out)
+                    val remaining = (maxTotalBytes - totalExtractedBytes).coerceAtLeast(0L)
+                    val written = FileOutputStream(outFile).use { out ->
+                        zis.copyBoundedTo(out, minOf(maxEntryBytes, remaining))
                     }
+                    totalExtractedBytes += written
                     imageFiles.add(name to outFile)
                 } else if (cleanName.equals("comicinfo.xml", ignoreCase = true)) {
-                    comicInfoBytes = zis.readBytes()
+                    val remaining = (maxTotalBytes - totalExtractedBytes).coerceAtLeast(0L)
+                    comicInfoBytes = zis.readBoundedBytes(minOf(2L * 1024 * 1024, remaining))
+                    totalExtractedBytes += comicInfoBytes.size
                 }
             }
             zis.closeEntry()
@@ -97,7 +109,7 @@ object CbzParser {
 
         if (comicInfoBytes != null) {
             try {
-                val docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+                val docBuilder = newSecureDocumentBuilder()
                 val doc = docBuilder.parse(ByteArrayInputStream(comicInfoBytes))
 
                 title = doc.getElementsByTagName("Title").item(0)?.textContent?.trim()

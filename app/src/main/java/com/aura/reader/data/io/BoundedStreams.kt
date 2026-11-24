@@ -20,3 +20,14 @@ internal fun InputStream.copyBoundedTo(output: OutputStream, limit: Long): Long 
 
 internal fun InputStream.readBoundedBytes(limit: Long): ByteArray =
     ByteArrayOutputStream().also { copyBoundedTo(it, limit) }.toByteArray()
+
+internal fun newSecureDocumentBuilder(): javax.xml.parsers.DocumentBuilder {
+    val factory = javax.xml.parsers.DocumentBuilderFactory.newInstance()
+    runCatching { factory.setFeature(javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING, true) }
+    runCatching { factory.setFeature("http://xml.org/sax/features/external-general-entities", false) }
+    runCatching { factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false) }
+    runCatching { factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false) }
+    factory.isXIncludeAware = false
+    factory.isExpandEntityReferences = false
+    return factory.newDocumentBuilder()
+}

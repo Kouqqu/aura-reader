@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
 
       - name: Set up JDK 21
         uses: actions/setup-java@v6
@@ -170,6 +172,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare Beta Release Notes
+        if: github.ref == 'refs/heads/beta' && contains(env.APP_VERSION, 'beta')
+        run: |
+          {
+            echo "# Aura Reader v${APP_VERSION}"
+            echo ""
+            echo "### Что нового в этой бете:"
+            git log -1 --pretty=format:"%B"
+            echo ""
+            echo ""
+            echo "🛡️ **Проверка на вирусы**: [Отчёт безопасности VirusTotal](https://www.virustotal.com/gui/file/${APK_SHA256})"
+            echo ""
+            echo "Политика конфиденциальности: [PRIVACY.md](https://github.com/Kouqqu/aura-reader/blob/beta/PRIVACY.md)"
+          } > beta-release-notes.md
+
       - name: Publish GitHub Beta Release
         if: github.ref == 'refs/heads/beta' && contains(env.APP_VERSION, 'beta')
         uses: softprops/action-gh-release@v3
@@ -179,33 +196,7 @@ jobs:
           name: "Aura Reader v${{ env.APP_VERSION }} (Beta)"
           prerelease: true
           make_latest: false
-          body: |
-            # Aura Reader v${{ env.APP_VERSION }} 🎉
-
-            ### ✨ Что нового в этой сборке:
-            - 🪶 **Облегчённые выпадающие плашки**: массивные толстые плашки заголовков настроек заменены на тонкие полупрозрачные капсулы с аккуратной микро-рамкой и чистым шевроном без тяжелых подложек.
-            - 🧹 **Очистка настроек**: убраны разовые кнопки скачивания обложек и метаданных из настроек — оставлен только чистый фоновый тумблер автозагрузки (поштучный ручной поиск доступен в профиле книги).
-            - 🖤 **Полная калибровка тёмной темы (стиль «Шелеста»)**: нейтральный обсидиановый фон (`#121212`) и контейнеры карточек (`#1E1E1E`), полностью очищенные от сине-фиолетовых отливов в Liquid Glass.
-            - ⚡ **Островная разгрузка настроек**: карточки разбиты на компактные логические группы («Каталог и книги» и «Чтение и память»).
-            - 🛡️ **Проверка на вирусы**: [Отчёт безопасности VirusTotal](https://www.virustotal.com/gui/file/${{ env.APK_SHA256 }})
-
-            ### 📦 Ранее в бетах 2.3.0:
-            - 🛡️ Безопасность и чистые разрешения: удалено `REQUEST_INSTALL_PACKAGES` для прозрачных обновлений через браузер.
-            - 📦 Версии в названиях файлов (например, `AuraReader-v${{ env.APP_VERSION }}.apk`).
-            - 🧹 Очистка кэша и мусора: ручной инструмент очистки кэша в настройках.
-            - 🪄 Трансформируемый док настроек с кнопкой «Назад» и капсулой категорий.
-            - 📱 Единый HorizontalPager для библиотеки и разделов настроек.
-            - 🌟 Карточный дизайн настроек и роскошное свечение ауры логотипа.
-            - 📖 Контекстное меню по трем точкам на карточках книг в сетке и списке.
-
-            ### 🔍 Что стоит проверить:
-            - Отсутствие предупреждений защиты Play Protect при установке;
-            - Корректность работы кнопки очистки кэша в настройках;
-            - Поведение кнопки обновления;
-            - Центровку буквы Å на иконке.
-
-            Полный список технических изменений: [docs/upgrades.md](https://github.com/Kouqqu/aura-reader/blob/beta/docs/upgrades.md)
-            Политика конфиденциальности: [PRIVACY.md](https://github.com/Kouqqu/aura-reader/blob/beta/PRIVACY.md)
+          body_path: beta-release-notes.md
           files: AuraReader-v${{ env.APP_VERSION }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

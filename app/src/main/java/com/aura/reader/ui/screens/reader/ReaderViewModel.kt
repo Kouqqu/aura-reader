@@ -279,6 +279,12 @@ class ReaderViewModel(
         _targetScrollOffset.value = blockIndex
     }
 
+    fun flushPendingProgress() {
+        pendingProgressSave?.cancel()
+        pendingProgressSave = null
+        saveCurrentProgress()
+    }
+
     fun saveCurrentProgress() {
         val book = currentBook.value ?: return
         val chapterIdx = _currentChapterIndex.value

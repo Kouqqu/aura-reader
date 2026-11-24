@@ -293,6 +293,7 @@ fun ReaderScreen(
 
     DisposableEffect(Unit) {
         onDispose {
+            viewModel.flushPendingProgress()
             AmbientSoundPlayer.stop()
             com.aura.reader.util.GraphicPageDimensionsCache.clear()
         }
