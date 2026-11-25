@@ -24,7 +24,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -423,10 +424,10 @@ fun RenderBlock(
                                 .then(if (isInScrollMode) Modifier.aspectRatio(pageRatio) else Modifier.fillMaxHeight()),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(32.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+                            LoadingIndicator(
+                                modifier = Modifier.size(36.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.65f)
                             )
                         }
                     } else {

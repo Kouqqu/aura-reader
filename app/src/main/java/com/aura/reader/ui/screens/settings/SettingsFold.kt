@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.dp
  * the caption becomes an interactive row with an animated chevron, allowing long
  * settings sheets to stay clean, organized, and pleasant to navigate.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SettingsFoldHeader(
     title: String,
@@ -54,7 +56,7 @@ internal fun SettingsFoldHeader(
 ) {
     val chevronRotation by animateFloatAsState(
         targetValue = if (expanded) 90f else 0f,
-        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "settingsFoldChevron"
     )
     val isDark = LocalIsThemeDark.current
@@ -108,18 +110,20 @@ internal fun SettingsFoldHeader(
 }
 
 /** The body of a folding settings section. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SettingsFoldContent(
     isGlass: Boolean,
     expanded: Boolean,
     content: @Composable () -> Unit
 ) {
+    val motion = MaterialTheme.motionScheme
     AnimatedVisibility(
         visible = expanded,
-        enter = expandVertically(tween(durationMillis = 350, easing = FastOutSlowInEasing)) +
-            fadeIn(tween(durationMillis = 300, easing = LinearOutSlowInEasing)),
-        exit = shrinkVertically(tween(durationMillis = 320, easing = FastOutSlowInEasing)) +
-            fadeOut(tween(durationMillis = 240, easing = FastOutLinearInEasing))
+        enter = expandVertically(motion.defaultSpatialSpec()) +
+            fadeIn(motion.defaultEffectsSpec()),
+        exit = shrinkVertically(motion.defaultSpatialSpec()) +
+            fadeOut(motion.defaultEffectsSpec())
     ) {
         Column(
             modifier = Modifier

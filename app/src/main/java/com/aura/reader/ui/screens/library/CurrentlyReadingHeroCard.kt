@@ -38,6 +38,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -65,6 +66,7 @@ import androidx.palette.graphics.Palette
 import com.aura.reader.data.model.Book
 import com.aura.reader.ui.components.liquidGlassMenuAppearance
 import com.aura.reader.ui.components.PopupBlurBehind
+import com.aura.reader.ui.components.WavyProgressIndicator
 import com.aura.reader.ui.theme.LocalAppStrings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -342,18 +344,31 @@ fun CurrentlyReadingHeroCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        LinearProgressIndicator(
-                            progress = { progressFraction },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            strokeCap = StrokeCap.Round,
-                            color = primaryAccent,
-                            trackColor = if (isGlass) {
-                                if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
-                            } else MaterialTheme.colorScheme.surfaceVariant
-                        )
+                        val isEInk = com.aura.reader.ui.theme.LocalEInkMode.current
+                        if (!isGlass && !isEInk && progressPercent in 1..99) {
+                            WavyProgressIndicator(
+                                progress = progressFraction,
+                                color = primaryAccent,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                strokeWidth = 4.dp,
+                                amplitude = 2.dp,
+                                waveLength = 24.dp,
+                                modifier = Modifier.weight(1f)
+                            )
+                        } else {
+                            LinearProgressIndicator(
+                                progress = { progressFraction },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                strokeCap = StrokeCap.Round,
+                                color = primaryAccent,
+                                trackColor = if (isGlass) {
+                                    if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+                                } else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        }
                         Spacer(modifier = Modifier.width(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (progressPercent >= 100) {
@@ -375,10 +390,11 @@ fun CurrentlyReadingHeroCard(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Continue reading button (Material 3 Expressive pill button)
+                    // Continue reading button (Material 3 Expressive morphing pill button)
+                    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
                     Button(
                         onClick = { onBookClick(book) },
-                        shape = RoundedCornerShape(20.dp),
+                        shapes = ButtonDefaults.shapes(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = primaryAccent,
                             contentColor = MaterialTheme.colorScheme.onPrimary

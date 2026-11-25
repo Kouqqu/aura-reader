@@ -14,7 +14,8 @@ import com.aura.reader.ui.components.PixelFullScreenBurst
 import com.aura.reader.ui.components.triggerThemeHaptic
 import androidx.compose.foundation.BorderStroke
 import com.aura.reader.data.model.ReaderThemeMode
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -869,10 +870,10 @@ fun ReaderScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(36.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                strokeWidth = 3.dp
+                            @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+                            LoadingIndicator(
+                                modifier = Modifier.size(44.dp),
+                                color = MaterialTheme.colorScheme.primary
                             )
                             Text(
                                 text = strings.loadingBook,

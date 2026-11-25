@@ -79,6 +79,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.rounded.Person
 import com.aura.reader.data.model.OpdsSearchType
@@ -669,13 +671,11 @@ fun OpdsScreen(
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            // Material 3 Expressive Circular Progress Indicator
-                            CircularProgressIndicator(
+                            // Material 3 Expressive Loading Indicator
+                            @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+                            LoadingIndicator(
                                 modifier = Modifier.size(48.dp),
-                                strokeWidth = 4.dp,
-                                strokeCap = StrokeCap.Round,
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                                color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(18.dp))
                             Text(
@@ -1559,9 +1559,10 @@ fun OpdsBookDetailsBottomSheet(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (downloadedBook != null) {
+                        @OptIn(ExperimentalMaterial3ExpressiveApi::class)
                         Button(
                             onClick = { onOpenBook(downloadedBook) },
-                            shape = RoundedCornerShape(12.dp),
+                            shapes = ButtonDefaults.shapes(),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1587,9 +1588,10 @@ fun OpdsBookDetailsBottomSheet(
                             if (showFb2) {
                                 val isRec = recFormat == BookFormat.FB2
                                 if (isRec) {
+                                    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
                                     Button(
                                         onClick = { onDownload(BookFormat.FB2) },
-                                        shape = RoundedCornerShape(12.dp),
+                                        shapes = ButtonDefaults.shapes(),
                                         contentPadding = PaddingValues(horizontal = 10.dp),
                                         modifier = Modifier.weight(1f).height(48.dp)
                                     ) {
@@ -1625,9 +1627,10 @@ fun OpdsBookDetailsBottomSheet(
                             if (showEpub) {
                                 val isRec = recFormat == BookFormat.EPUB
                                 if (isRec) {
+                                    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
                                     Button(
                                         onClick = { onDownload(BookFormat.EPUB) },
-                                        shape = RoundedCornerShape(12.dp),
+                                        shapes = ButtonDefaults.shapes(),
                                         contentPadding = PaddingValues(horizontal = 10.dp),
                                         modifier = Modifier.weight(1f).height(48.dp)
                                     ) {

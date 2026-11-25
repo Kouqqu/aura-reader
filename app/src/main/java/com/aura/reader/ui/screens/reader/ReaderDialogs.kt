@@ -30,7 +30,8 @@ import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
@@ -227,7 +228,8 @@ fun DictionaryDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+                            LoadingIndicator(color = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
                                 text = strings.dictionaryLoading,
@@ -444,7 +446,8 @@ fun TranslationDialog(
                             .height(100.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+                        LoadingIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 } else if (translatedText != null) {
                     Text(

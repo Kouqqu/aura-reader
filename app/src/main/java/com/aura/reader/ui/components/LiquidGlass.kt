@@ -72,6 +72,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -315,6 +316,7 @@ fun LiquidGlassSurface(
  * In [AppDesignStyle.MATERIAL]:
  * Material 3 Expressive pill container.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FloatingNavigationIsland(
     designStyle: AppDesignStyle,
@@ -738,10 +740,7 @@ fun FloatingNavigationIsland(
                         modifier = Modifier
                             .fillMaxHeight()
                             .animateContentSize(
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioNoBouncy,
-                                    stiffness = Spring.StiffnessMediumLow
-                                )
+                                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
                             )
                     ) {
                         Row(
@@ -763,17 +762,11 @@ fun FloatingNavigationIsland(
                             )
                             AnimatedVisibility(
                                 visible = isTabActive,
-                                enter = fadeIn(tween(180)) + expandHorizontally(
-                                    animationSpec = spring<IntSize>(
-                                        dampingRatio = Spring.DampingRatioNoBouncy,
-                                        stiffness = Spring.StiffnessMediumLow
-                                    )
+                                enter = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()) + expandHorizontally(
+                                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
                                 ),
-                                exit = fadeOut(tween(120)) + shrinkHorizontally(
-                                    animationSpec = spring<IntSize>(
-                                        dampingRatio = Spring.DampingRatioNoBouncy,
-                                        stiffness = Spring.StiffnessMediumLow
-                                    )
+                                exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()) + shrinkHorizontally(
+                                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
                                 )
                             ) {
                                 Row {

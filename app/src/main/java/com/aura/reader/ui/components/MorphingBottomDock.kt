@@ -39,6 +39,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -215,6 +216,7 @@ fun RoundBackGlassButton(
  * The selected category expands with its label text, while inactive categories
  * display only their icons.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SettingsCategoryDock(
     selectedCategory: Int, // 0 = Interface, 1 = General, 2 = About
@@ -320,10 +322,7 @@ fun SettingsCategoryDock(
                     modifier = Modifier
                         .fillMaxHeight()
                         .animateContentSize(
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessMediumLow
-                            )
+                            animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
                         )
                 ) {
                     Row(
@@ -345,17 +344,11 @@ fun SettingsCategoryDock(
                         )
                         AnimatedVisibility(
                             visible = isSelected,
-                            enter = fadeIn(tween(180)) + expandHorizontally(
-                                animationSpec = spring<IntSize>(
-                                    dampingRatio = Spring.DampingRatioNoBouncy,
-                                    stiffness = Spring.StiffnessMediumLow
-                                )
+                            enter = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()) + expandHorizontally(
+                                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
                             ),
-                            exit = fadeOut(tween(120)) + shrinkHorizontally(
-                                animationSpec = spring<IntSize>(
-                                    dampingRatio = Spring.DampingRatioNoBouncy,
-                                    stiffness = Spring.StiffnessMediumLow
-                                )
+                            exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()) + shrinkHorizontally(
+                                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
                             )
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {

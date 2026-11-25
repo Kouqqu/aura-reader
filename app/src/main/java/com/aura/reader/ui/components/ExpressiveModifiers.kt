@@ -3,6 +3,7 @@ package com.aura.reader.ui.components
 import android.view.HapticFeedbackConstants
 import com.aura.reader.ui.theme.LocalEInkMode
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -32,6 +33,7 @@ import kotlin.math.abs
  * Material 3 Expressive spring physics bounce modifier.
  * Scales down dynamically on touch press and springs back on release with organic damping.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun Modifier.expressiveBounce(
     interactionSource: MutableInteractionSource,
@@ -42,10 +44,7 @@ fun Modifier.expressiveBounce(
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed && enabled) scaleDown else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "expressiveBounce"
     )
     return this.graphicsLayer {
@@ -58,6 +57,7 @@ fun Modifier.expressiveBounce(
  * Clickable modifier with Material 3 Expressive bouncy spring feedback and subtle haptic tick.
  * [hasRipple] defaults to false to provide an authentic iOS / Liquid Glass press feel without square Android ripples.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun Modifier.expressiveClickable(
     scaleDown: Float = 0.96f,
     enabled: Boolean = true,
@@ -71,10 +71,7 @@ fun Modifier.expressiveClickable(
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed && enabled) scaleDown else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "expressiveClickableScale"
     )
 
