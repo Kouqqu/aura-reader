@@ -787,7 +787,11 @@ fun ReaderScreen(
                             LaunchedEffect(currentChapterIndex) {
                                 if (!isScreenActive) return@LaunchedEffect
                                 if (pagerState.currentPage != currentChapterIndex && currentChapterIndex in chapters.indices) {
-                                    pagerState.animateScrollToPage(currentChapterIndex)
+                                    if (kotlin.math.abs(pagerState.currentPage - currentChapterIndex) > 1) {
+                                        pagerState.scrollToPage(currentChapterIndex)
+                                    } else {
+                                        pagerState.animateScrollToPage(currentChapterIndex)
+                                    }
                                 }
                             }
 
@@ -1316,13 +1320,21 @@ fun ReaderScreen(
             }
 
             if (showChaptersSheet) {
+                val isGraphicChapters = remember(chapters) {
+                    chapters.isNotEmpty() && chapters.all { it.blocks.size == 1 && it.blocks[0].type == BlockType.IMAGE }
+                }
                 ChaptersBottomSheet(
                     chapters = chapters,
                     currentChapterIndex = currentChapterIndex,
                     onChapterSelected = { selected ->
                         viewModel.setChapter(selected)
-                        requestPagingPage = selected
-                        viewModel.requestScrollToBlock(selected)
+                        if (isGraphicChapters) {
+                            requestPagingPage = selected
+                            viewModel.requestScrollToBlock(selected)
+                        } else {
+                            requestPagingPage = if (settings.pagingMode) 0 else null
+                            viewModel.requestScrollToBlock(0)
+                        }
                     },
                     onDismiss = { showChaptersSheet = false }
                 )

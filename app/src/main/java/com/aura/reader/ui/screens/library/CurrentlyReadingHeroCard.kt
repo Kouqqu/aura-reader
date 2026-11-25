@@ -66,7 +66,6 @@ import androidx.palette.graphics.Palette
 import com.aura.reader.data.model.Book
 import com.aura.reader.ui.components.liquidGlassMenuAppearance
 import com.aura.reader.ui.components.PopupBlurBehind
-import com.aura.reader.ui.components.WavyProgressIndicator
 import com.aura.reader.ui.theme.LocalAppStrings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -344,31 +343,18 @@ fun CurrentlyReadingHeroCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val isEInk = com.aura.reader.ui.theme.LocalEInkMode.current
-                        if (!isGlass && !isEInk && progressPercent in 1..99) {
-                            WavyProgressIndicator(
-                                progress = progressFraction,
-                                color = primaryAccent,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                strokeWidth = 4.dp,
-                                amplitude = 2.dp,
-                                waveLength = 24.dp,
-                                modifier = Modifier.weight(1f)
-                            )
-                        } else {
-                            LinearProgressIndicator(
-                                progress = { progressFraction },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp)),
-                                strokeCap = StrokeCap.Round,
-                                color = primaryAccent,
-                                trackColor = if (isGlass) {
-                                    if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
-                                } else MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        }
+                        LinearProgressIndicator(
+                            progress = { progressFraction },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            strokeCap = StrokeCap.Round,
+                            color = primaryAccent,
+                            trackColor = if (isGlass) {
+                                if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+                            } else MaterialTheme.colorScheme.surfaceVariant
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (progressPercent >= 100) {

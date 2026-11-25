@@ -332,9 +332,15 @@ class BookRepository(
     suspend fun updateReadingProgress(chapterIndex: Int, scrollOffset: Int, progressPercent: Int, textOffset: Int = 0, pixelOffset: Int = 0, expectedBookId: String? = null) = withLibraryLock {
         val current = _currentBook.value ?: return@withLibraryLock
         if (expectedBookId != null && current.id != expectedBookId) return@withLibraryLock
+        val updatedManualShelf = when {
+            progressPercent >= 100 && current.manualShelf == "READING" -> null
+            progressPercent in 1..99 && (current.manualShelf == "FINISHED" || current.manualShelf == "UNREAD") -> null
+            else -> current.manualShelf
+        }
         if (current.currentChapterIndex == chapterIndex &&
             current.currentScrollOffset == scrollOffset &&
             current.progressPercent == progressPercent &&
+            current.manualShelf == updatedManualShelf &&
             current.currentBlockTextOffset == textOffset && current.currentScrollPixelOffset == pixelOffset) {
             return@withLibraryLock
         }
@@ -344,6 +350,7 @@ class BookRepository(
             currentBlockTextOffset = textOffset.coerceAtLeast(0),
             currentScrollPixelOffset = pixelOffset.coerceAtLeast(0),
             progressPercent = progressPercent,
+            manualShelf = updatedManualShelf,
             lastReadTimestamp = System.currentTimeMillis()
         )
         _currentBook.value = updated
