@@ -651,32 +651,30 @@ fun LibraryScreen(
                 }
             }
             if (libraryPageOffset < 0.999f) {
-                Box(
-                    modifier = Modifier
-                        .hazeSource(menuHazeState)
-                        .hazeSource(hazeState)
-                ) {
-                    LibraryTopBar(
-                        isSearchExpanded = isSearchExpanded,
-                        isGlass = isGlass,
-                        isThemeDark = isThemeDark,
-                        searchQuery = searchQuery,
-                        libraryViewMode = libraryViewMode,
-                        scrollBehavior = scrollBehavior,
-                        pageOffset = libraryPageOffset,
-                        onSearchExpandedChange = { isSearchExpanded = it },
-                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                        onToggleViewMode = { viewModel.toggleLibraryViewMode() },
-                        onOpenSettings = {
-                            smoothScrollToPage(2)
-                        },
-                        onHolidayBadgeClick = { origin ->
-                            holidayBurstKey = System.currentTimeMillis()
-                            holidayBurstOrigin = origin
-                            triggerThemeHaptic(context)
-                            com.aura.reader.util.HolidaySoundPlayer.playHolidaySound(context, holidaySeason)
-                        }
-                    )
+                Box(modifier = Modifier.hazeSource(menuHazeState)) {
+                    Box(modifier = Modifier.hazeSource(hazeState)) {
+                        LibraryTopBar(
+                            isSearchExpanded = isSearchExpanded,
+                            isGlass = isGlass,
+                            isThemeDark = isThemeDark,
+                            searchQuery = searchQuery,
+                            libraryViewMode = libraryViewMode,
+                            scrollBehavior = scrollBehavior,
+                            pageOffset = libraryPageOffset,
+                            onSearchExpandedChange = { isSearchExpanded = it },
+                            onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                            onToggleViewMode = { viewModel.toggleLibraryViewMode() },
+                            onOpenSettings = {
+                                smoothScrollToPage(2)
+                            },
+                            onHolidayBadgeClick = { origin ->
+                                holidayBurstKey = System.currentTimeMillis()
+                                holidayBurstOrigin = origin
+                                triggerThemeHaptic(context)
+                                com.aura.reader.util.HolidaySoundPlayer.playHolidaySound(context, holidaySeason)
+                            }
+                        )
+                    }
                 }
             }
         },
@@ -738,7 +736,13 @@ fun LibraryScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .hazeSource(menuHazeState)
+                    .background(mainScreenBg)
+            ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
                     .hazeSource(hazeState)
+                    .background(mainScreenBg)
             ) {
             if (showAddBooksSheet) {
                 AddBooksBottomSheet(
@@ -1491,6 +1495,7 @@ fun LibraryScreen(
                     }
                 }
             }
+            }
         }
 
         // --- In-Window Sort Menu Overlay (placed outside hazeSource to sample genuine blur) ---
@@ -1564,7 +1569,7 @@ fun LibraryScreen(
                             isGlass = isGlass,
                             isDark = isThemeDark,
                             isSepia = isSepiaTheme,
-                            hazeState = hazeState
+                            hazeState = menuHazeState
                         ) {
                             val isRecent = librarySortOrder == LibrarySortOption.RECENT
                             LiquidGlassMenuItem(

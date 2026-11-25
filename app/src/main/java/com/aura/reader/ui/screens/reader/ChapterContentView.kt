@@ -369,6 +369,7 @@ fun ChapterContentView(
             val fallbackPercent = (((pageIndex + (estCurrentPage.toFloat() / estTotalPages.coerceAtLeast(1))) / chaptersCount.coerceAtLeast(1)) * 100).toInt().coerceIn(0, 100)
             val displayPercent = if (atScrollEnd && pageIndex >= chaptersCount - 1) 100 else (overallProgress ?: fallbackPercent)
 
+            val pillBackdropBg = MaterialTheme.colorScheme.background
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -378,11 +379,12 @@ fun ChapterContentView(
                     .hazeBlur(
                         input = HazeInput.Sources(statusPillHazeState),
                         style = HazeBlurStyle {
-                            blurRadius(20.dp)
+                            blurRadius(18.dp)
                             noiseFactor(0.015f)
+                            backgroundColor(pillBackdropBg)
                         }
                     )
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.82f))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f))
                     .border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),

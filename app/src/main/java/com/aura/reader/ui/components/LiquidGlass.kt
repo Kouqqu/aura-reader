@@ -1433,12 +1433,21 @@ fun LiquidGlassMenuContainer(
             )
         }
 
+        val hazeBackdropBg = if (isDark) {
+            if (isAmoled) Color.Black else Color(0xFF101114)
+        } else if (isSepia) {
+            SepiaBackground
+        } else {
+            Color(0xFFF6F7FA)
+        }
+
         val hazeModifier = if (hazeState != null) {
             Modifier.clip(shape).hazeBlur(
                 input = HazeInput.Sources(hazeState),
                 style = HazeBlurStyle {
                     blurRadius(24.dp)
                     noiseFactor(0.015f)
+                    backgroundColor(hazeBackdropBg)
                 }
             )
         } else Modifier
