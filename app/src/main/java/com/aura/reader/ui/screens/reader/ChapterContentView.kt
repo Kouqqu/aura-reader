@@ -135,8 +135,8 @@ fun ChapterContentView(
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = clampedInitialOffset, initialFirstVisibleItemScrollOffset = initialPixelOffset.coerceAtLeast(0))
 
     if (isCurrentChapter) {
-        LaunchedEffect(isCurrentChapter, clampedInitialOffset, initialPixelOffset) {
-            if (isCurrentChapter && (clampedInitialOffset != listState.firstVisibleItemIndex || (clampedInitialOffset == 0 && initialPixelOffset == 0 && listState.firstVisibleItemScrollOffset > 0))) {
+        LaunchedEffect(chapter.id, isCurrentChapter) {
+            if (isCurrentChapter && !listState.isScrollInProgress && (clampedInitialOffset != listState.firstVisibleItemIndex || (clampedInitialOffset == 0 && initialPixelOffset == 0 && listState.firstVisibleItemScrollOffset > 0))) {
                 listState.scrollToItem(clampedInitialOffset, initialPixelOffset.coerceAtLeast(0))
             }
         }
