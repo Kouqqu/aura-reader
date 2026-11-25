@@ -138,7 +138,7 @@ fun ChapterPagingView(
         val topPaddingDp = maxOf(statusBarTopInset, cutoutTopInset, 42.dp) + 6.dp
         val bottomNavInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
-        val pillClearanceDp = 56.dp
+        val pillClearanceDp = 46.dp
         val bottomPaddingDp = bottomNavInset + pillClearanceDp
 
         val isTwoColumn = when (settings.twoColumnMode) {

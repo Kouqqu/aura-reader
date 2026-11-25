@@ -34,8 +34,8 @@ internal fun paginateBlocks(
     if (blocks.isEmpty()) return listOf(emptyList())
 
     val safeWidthPx = columnWidthPx.coerceAtLeast(100)
-    // Minimal margin for font ascender/descender overhang and antialiasing
-    val safetyBufferPx = with(density) { 4.dp.roundToPx() }
+    // Minimal margin for font descender overhang and antialiasing
+    val safetyBufferPx = with(density) { 2.dp.roundToPx() }
     val maxHeightPx = (contentHeightPx - safetyBufferPx).coerceAtLeast(100)
     val paragraphSpacingPx = with(density) { 8.dp.roundToPx() }
 
@@ -303,8 +303,15 @@ internal fun paginateBlocks(
                         if (chunkLayout.lineCount > 1) {
                             val prevLineEnd = chunkLayout.getLineEnd(chunkLayout.lineCount - 2, visibleEnd = true)
                                 .coerceIn(0, candidateChunk.length - 1)
-                            val spaceBefore = candidateChunk.lastIndexOf(' ', prevLineEnd)
-                            verifiedEnd = if (spaceBefore > 0) spaceBefore else prevLineEnd
+                            val cutsMidWord = prevLineEnd in 1 until candidateChunk.length &&
+                                !candidateChunk[prevLineEnd].isWhitespace() &&
+                                !candidateChunk[prevLineEnd - 1].isWhitespace()
+                            if (cutsMidWord) {
+                                val spaceBefore = candidateChunk.lastIndexOf(' ', prevLineEnd - 1)
+                                verifiedEnd = if (spaceBefore > 0) spaceBefore else prevLineEnd
+                            } else {
+                                verifiedEnd = prevLineEnd
+                            }
                         } else {
                             val spaceBefore = candidateChunk.lastIndexOf(' ', (verifiedEnd - 1).coerceAtLeast(0))
                             verifiedEnd = if (spaceBefore > 0) spaceBefore else 0
