@@ -623,6 +623,7 @@ fun LibraryScreen(
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val hazeState = remember { HazeState() }
+    val menuHazeState = remember { HazeState() }
 
     CompositionLocalProvider(LocalHazeState provides hazeState) {
         val mainScreenBg = if (isThemeDark && readerSettings.appThemeMode == ReaderThemeMode.AMOLED) {
@@ -650,7 +651,11 @@ fun LibraryScreen(
                 }
             }
             if (libraryPageOffset < 0.999f) {
-                Box(modifier = Modifier.hazeSource(hazeState)) {
+                Box(
+                    modifier = Modifier
+                        .hazeSource(menuHazeState)
+                        .hazeSource(hazeState)
+                ) {
                     LibraryTopBar(
                         isSearchExpanded = isSearchExpanded,
                         isGlass = isGlass,
@@ -732,6 +737,7 @@ fun LibraryScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .hazeSource(menuHazeState)
                     .hazeSource(hazeState)
             ) {
             if (showAddBooksSheet) {
@@ -1693,7 +1699,7 @@ fun LibraryScreen(
                                 isGlass = isGlass,
                                 isDark = isThemeDark,
                                 isSepia = isSepiaTheme,
-                                hazeState = hazeState
+                                hazeState = menuHazeState
                             ) {
                                 LiquidGlassMenuItem(
                                     text = strings.shareBookFile,

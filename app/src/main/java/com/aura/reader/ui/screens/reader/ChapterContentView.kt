@@ -207,13 +207,18 @@ fun ChapterContentView(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        androidx.compose.runtime.key(selectionResetKey) {
-            SelectionContainer(state = selectionState) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .hazeSource(statusPillHazeState)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .hazeSource(statusPillHazeState)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            androidx.compose.runtime.key(selectionResetKey) {
+                SelectionContainer(state = selectionState) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxSize()
                         .jellyOverscroll()
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -333,6 +338,7 @@ fun ChapterContentView(
                 }
             }
         }
+        }
     }
 
         if (!isComicOrManga && blocks.isNotEmpty()) {
@@ -376,7 +382,7 @@ fun ChapterContentView(
                             noiseFactor(0.015f)
                         }
                     )
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.82f))
                     .border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
