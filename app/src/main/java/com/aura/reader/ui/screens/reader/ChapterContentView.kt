@@ -3,6 +3,7 @@ package com.aura.reader.ui.screens.reader
 import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.Quote
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.draw.clip
 import dev.chrisbanes.haze.HazeInput
@@ -207,14 +208,12 @@ fun ChapterContentView(
             .background(MaterialTheme.colorScheme.background)
     ) {
         androidx.compose.runtime.key(selectionResetKey) {
-            SelectionContainer(
-                state = selectionState,
-                modifier = Modifier.hazeSource(statusPillHazeState)
-            ) {
+            SelectionContainer(state = selectionState) {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
                         .fillMaxSize()
+                        .hazeSource(statusPillHazeState)
                         .jellyOverscroll()
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -364,13 +363,7 @@ fun ChapterContentView(
             val fallbackPercent = (((pageIndex + (estCurrentPage.toFloat() / estTotalPages.coerceAtLeast(1))) / chaptersCount.coerceAtLeast(1)) * 100).toInt().coerceIn(0, 100)
             val displayPercent = if (atScrollEnd && pageIndex >= chaptersCount - 1) 100 else (overallProgress ?: fallbackPercent)
 
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f),
-                border = BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                ),
+            Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .windowInsetsPadding(WindowInsets.navigationBars)
@@ -379,9 +372,15 @@ fun ChapterContentView(
                     .hazeBlur(
                         input = HazeInput.Sources(statusPillHazeState),
                         style = HazeBlurStyle {
-                            blurRadius(18.dp)
+                            blurRadius(20.dp)
                             noiseFactor(0.015f)
                         }
+                    )
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f))
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(12.dp)
                     )
             ) {
                 Row(

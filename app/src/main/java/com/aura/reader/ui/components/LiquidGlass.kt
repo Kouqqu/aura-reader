@@ -1394,11 +1394,11 @@ fun LiquidGlassMenuContainer(
         // free of any matte bluish tint or opacity blockage.
         val menuFill = if (hazeState != null) {
             if (isDark) {
-                if (isAmoled) Color(0x750A0A0C) else Color(0x65141416)
+                if (isAmoled) Color(0x600A0A0C) else Color(0x52141416)
             } else if (isSepia) {
-                Color(0x80EDE5D6)
+                Color(0x70EDE5D6)
             } else {
-                Color(0x85F8FAFC)
+                Color(0x72F8FAFC)
             }
         } else {
             if (isDark) {

@@ -1551,19 +1551,6 @@ fun OpdsBookDetailsBottomSheet(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-            } else if (downloadedBook != null) {
-                Button(
-                    onClick = { onOpenBook(downloadedBook) },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                ) {
-                    Icon(Icons.AutoMirrored.Rounded.MenuBook, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(strings.openBookAction, fontWeight = FontWeight.Bold)
-                }
             } else {
                 Column(
                     modifier = Modifier
@@ -1571,94 +1558,116 @@ fun OpdsBookDetailsBottomSheet(
                         .padding(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val recFormat = book.recommendedFormat
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        if (book.fb2Url != null) {
-                            val isRec = recFormat == BookFormat.FB2
-                            if (isRec) {
-                                Button(
-                                    onClick = { onDownload(BookFormat.FB2) },
-                                    shape = RoundedCornerShape(12.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp),
-                                    modifier = Modifier.weight(1f).height(48.dp)
-                                ) {
-                                    Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = strings.downloadFb2,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Icon(Icons.Rounded.Star, contentDescription = null, modifier = Modifier.size(15.dp))
-                                }
-                            } else {
-                                OutlinedButton(
-                                    onClick = { onDownload(BookFormat.FB2) },
-                                    shape = RoundedCornerShape(12.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp),
-                                    modifier = Modifier.weight(1f).height(48.dp)
-                                ) {
-                                    Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = strings.downloadFb2,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-                        if (book.epubUrl != null) {
-                            val isRec = recFormat == BookFormat.EPUB
-                            if (isRec) {
-                                Button(
-                                    onClick = { onDownload(BookFormat.EPUB) },
-                                    shape = RoundedCornerShape(12.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp),
-                                    modifier = Modifier.weight(1f).height(48.dp)
-                                ) {
-                                    Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = strings.downloadEpub,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Icon(Icons.Rounded.Star, contentDescription = null, modifier = Modifier.size(15.dp))
-                                }
-                            } else {
-                                OutlinedButton(
-                                    onClick = { onDownload(BookFormat.EPUB) },
-                                    shape = RoundedCornerShape(12.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp),
-                                    modifier = Modifier.weight(1f).height(48.dp)
-                                ) {
-                                    Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = strings.downloadEpub,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
+                    if (downloadedBook != null) {
+                        Button(
+                            onClick = { onOpenBook(downloadedBook) },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Rounded.MenuBook, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(strings.openBookAction, fontWeight = FontWeight.Bold)
                         }
                     }
-                    if (book.mobiUrl != null || book.pdfUrl != null) {
+
+                    val showFb2 = book.fb2Url != null && downloadedBook?.format != BookFormat.FB2
+                    val showEpub = book.epubUrl != null && downloadedBook?.format != BookFormat.EPUB
+                    val showMobi = book.mobiUrl != null && downloadedBook?.format != BookFormat.MOBI
+                    val showPdf = book.pdfUrl != null && downloadedBook?.format != BookFormat.PDF
+                    val recFormat = book.recommendedFormat
+
+                    if (showFb2 || showEpub) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            if (book.mobiUrl != null) {
+                            if (showFb2) {
+                                val isRec = recFormat == BookFormat.FB2
+                                if (isRec) {
+                                    Button(
+                                        onClick = { onDownload(BookFormat.FB2) },
+                                        shape = RoundedCornerShape(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp),
+                                        modifier = Modifier.weight(1f).height(48.dp)
+                                    ) {
+                                        Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = strings.downloadFb2,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(Icons.Rounded.Star, contentDescription = null, modifier = Modifier.size(15.dp))
+                                    }
+                                } else {
+                                    OutlinedButton(
+                                        onClick = { onDownload(BookFormat.FB2) },
+                                        shape = RoundedCornerShape(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp),
+                                        modifier = Modifier.weight(1f).height(48.dp)
+                                    ) {
+                                        Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = strings.downloadFb2,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+                            if (showEpub) {
+                                val isRec = recFormat == BookFormat.EPUB
+                                if (isRec) {
+                                    Button(
+                                        onClick = { onDownload(BookFormat.EPUB) },
+                                        shape = RoundedCornerShape(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp),
+                                        modifier = Modifier.weight(1f).height(48.dp)
+                                    ) {
+                                        Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = strings.downloadEpub,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(Icons.Rounded.Star, contentDescription = null, modifier = Modifier.size(15.dp))
+                                    }
+                                } else {
+                                    OutlinedButton(
+                                        onClick = { onDownload(BookFormat.EPUB) },
+                                        shape = RoundedCornerShape(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp),
+                                        modifier = Modifier.weight(1f).height(48.dp)
+                                    ) {
+                                        Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = strings.downloadEpub,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (showMobi || showPdf) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            if (showMobi) {
                                 OutlinedButton(
                                     onClick = { onDownload(BookFormat.MOBI) },
                                     shape = RoundedCornerShape(12.dp),
@@ -1671,7 +1680,7 @@ fun OpdsBookDetailsBottomSheet(
                                     Text(strings.opdsDownloadMobi)
                                 }
                             }
-                            if (book.pdfUrl != null) {
+                            if (showPdf) {
                                 OutlinedButton(
                                     onClick = { onDownload(BookFormat.PDF) },
                                     shape = RoundedCornerShape(12.dp),
