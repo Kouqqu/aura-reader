@@ -1582,21 +1582,35 @@ fun OpdsBookDetailsBottomSheet(
                                 Button(
                                     onClick = { onDownload(BookFormat.FB2) },
                                     shape = RoundedCornerShape(12.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp),
                                     modifier = Modifier.weight(1f).height(48.dp)
                                 ) {
                                     Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("${strings.downloadFb2} ★")
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = strings.downloadFb2,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(Icons.Rounded.Star, contentDescription = null, modifier = Modifier.size(15.dp))
                                 }
                             } else {
                                 OutlinedButton(
                                     onClick = { onDownload(BookFormat.FB2) },
                                     shape = RoundedCornerShape(12.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp),
                                     modifier = Modifier.weight(1f).height(48.dp)
                                 ) {
                                     Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(strings.downloadFb2)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = strings.downloadFb2,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
                             }
                         }
@@ -1606,21 +1620,35 @@ fun OpdsBookDetailsBottomSheet(
                                 Button(
                                     onClick = { onDownload(BookFormat.EPUB) },
                                     shape = RoundedCornerShape(12.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp),
                                     modifier = Modifier.weight(1f).height(48.dp)
                                 ) {
                                     Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("${strings.downloadEpub} ★")
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = strings.downloadEpub,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(Icons.Rounded.Star, contentDescription = null, modifier = Modifier.size(15.dp))
                                 }
                             } else {
                                 OutlinedButton(
                                     onClick = { onDownload(BookFormat.EPUB) },
                                     shape = RoundedCornerShape(12.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp),
                                     modifier = Modifier.weight(1f).height(48.dp)
                                 ) {
                                     Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(strings.downloadEpub)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = strings.downloadEpub,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
                             }
                         }

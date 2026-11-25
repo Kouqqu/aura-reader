@@ -650,27 +650,29 @@ fun LibraryScreen(
                 }
             }
             if (libraryPageOffset < 0.999f) {
-                LibraryTopBar(
-                    isSearchExpanded = isSearchExpanded,
-                    isGlass = isGlass,
-                    isThemeDark = isThemeDark,
-                    searchQuery = searchQuery,
-                    libraryViewMode = libraryViewMode,
-                    scrollBehavior = scrollBehavior,
-                    pageOffset = libraryPageOffset,
-                    onSearchExpandedChange = { isSearchExpanded = it },
-                    onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                    onToggleViewMode = { viewModel.toggleLibraryViewMode() },
-                    onOpenSettings = {
-                        smoothScrollToPage(2)
-                    },
-                    onHolidayBadgeClick = { origin ->
-                        holidayBurstKey = System.currentTimeMillis()
-                        holidayBurstOrigin = origin
-                        triggerThemeHaptic(context)
-                        com.aura.reader.util.HolidaySoundPlayer.playHolidaySound(context, holidaySeason)
-                    }
-                )
+                Box(modifier = Modifier.hazeSource(hazeState)) {
+                    LibraryTopBar(
+                        isSearchExpanded = isSearchExpanded,
+                        isGlass = isGlass,
+                        isThemeDark = isThemeDark,
+                        searchQuery = searchQuery,
+                        libraryViewMode = libraryViewMode,
+                        scrollBehavior = scrollBehavior,
+                        pageOffset = libraryPageOffset,
+                        onSearchExpandedChange = { isSearchExpanded = it },
+                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                        onToggleViewMode = { viewModel.toggleLibraryViewMode() },
+                        onOpenSettings = {
+                            smoothScrollToPage(2)
+                        },
+                        onHolidayBadgeClick = { origin ->
+                            holidayBurstKey = System.currentTimeMillis()
+                            holidayBurstOrigin = origin
+                            triggerThemeHaptic(context)
+                            com.aura.reader.util.HolidaySoundPlayer.playHolidaySound(context, holidaySeason)
+                        }
+                    )
+                }
             }
         },
         floatingActionButton = {

@@ -162,7 +162,7 @@ fun CurrentlyReadingHeroCard(
                 if (isDark) {
                     if (isAmoled) Color(0xF2121316)
                     else Color(0xEE181A20)
-                } else Color(0xF6F7FA)
+                } else Color(0xEEF6F7FA)
             } else MaterialTheme.colorScheme.surfaceContainerHigh
         ),
         border = heroBorder,

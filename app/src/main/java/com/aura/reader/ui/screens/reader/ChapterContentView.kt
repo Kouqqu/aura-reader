@@ -4,6 +4,12 @@ import com.aura.reader.data.model.Book
 import com.aura.reader.data.model.Quote
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.clip
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.hazeBlur
+import dev.chrisbanes.haze.hazeSource
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.WindowInsets
@@ -193,13 +199,18 @@ fun ChapterContentView(
         blocks.isNotEmpty() && blocks.all { it.type == BlockType.IMAGE }
     }
 
+    val statusPillHazeState = remember { HazeState() }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
         androidx.compose.runtime.key(selectionResetKey) {
-            SelectionContainer(state = selectionState) {
+            SelectionContainer(
+                state = selectionState,
+                modifier = Modifier.hazeSource(statusPillHazeState)
+            ) {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
@@ -355,7 +366,7 @@ fun ChapterContentView(
 
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f),
                 border = BorderStroke(
                     1.dp,
                     MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
@@ -364,6 +375,14 @@ fun ChapterContentView(
                     .align(Alignment.BottomCenter)
                     .windowInsetsPadding(WindowInsets.navigationBars)
                     .padding(bottom = 18.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .hazeBlur(
+                        input = HazeInput.Sources(statusPillHazeState),
+                        style = HazeBlurStyle {
+                            blurRadius(18.dp)
+                            noiseFactor(0.015f)
+                        }
+                    )
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
