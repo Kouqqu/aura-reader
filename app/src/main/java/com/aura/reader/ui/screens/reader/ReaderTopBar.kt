@@ -269,7 +269,7 @@ fun BoxScope.ReaderTopBar(
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = currentChapter?.title ?: "",
+                                    text = book?.author?.takeIf { it.isNotBlank() } ?: (currentChapter?.title ?: ""),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = if (isGlass) (if (isThemeDark) Color.White.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.65f)) else MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,

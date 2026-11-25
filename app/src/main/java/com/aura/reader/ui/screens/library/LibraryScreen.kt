@@ -257,6 +257,8 @@ fun LibraryScreen(
     val librarySearchHistory by viewModel.librarySearchHistory.collectAsState()
     val todayMinutes by viewModel.todayReadingMinutes.collectAsState()
     val readingStatsData by viewModel.readingStatsData.collectAsState()
+    val savedWords by viewModel.savedWords.collectAsState()
+    var showVocabularySheet by remember { mutableStateOf(false) }
     var showReadingStatsSheet by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsState()
     val updateInfo by viewModel.updateInfo.collectAsState()
@@ -667,6 +669,9 @@ fun LibraryScreen(
                             onToggleViewMode = { viewModel.toggleLibraryViewMode() },
                             onOpenSettings = {
                                 smoothScrollToPage(2)
+                            },
+                            onOpenVocabulary = {
+                                showVocabularySheet = true
                             },
                             onHolidayBadgeClick = { origin ->
                                 holidayBurstKey = System.currentTimeMillis()
@@ -2083,6 +2088,27 @@ fun LibraryScreen(
             },
             isLiquidGlass = isGlass,
             isDark = isThemeDark
+        )
+    }
+
+    if (showVocabularySheet) {
+        VocabularyBottomSheet(
+            savedWords = savedWords,
+            books = recentBooks,
+            onToggleMastered = { viewModel.toggleSavedWordMastered(it) },
+            onDeleteWord = { viewModel.deleteSavedWord(it) },
+            onOpenBookAtWord = { word ->
+                recentBooks.firstOrNull { it.id == word.bookId }?.let { book ->
+                    onBookSelected(
+                        book.copy(
+                            currentChapterIndex = word.chapterIndex,
+                            currentScrollOffset = 0,
+                            currentScrollPixelOffset = 0
+                        )
+                    )
+                }
+            },
+            onDismiss = { showVocabularySheet = false }
         )
     }
 

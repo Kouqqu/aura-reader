@@ -347,6 +347,17 @@ class LibraryViewModel(
     val userCollections: StateFlow<List<String>> = bookRepository.userCollections
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val savedWords: StateFlow<List<com.aura.reader.data.model.SavedWord>> = bookRepository.savedWords
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun deleteSavedWord(id: String) {
+        viewModelScope.launch { bookRepository.removeSavedWord(id) }
+    }
+
+    fun toggleSavedWordMastered(id: String) {
+        viewModelScope.launch { bookRepository.toggleSavedWordMastered(id) }
+    }
+
     val privateBookIds: StateFlow<Set<String>> = preferencesManager.privateBookIds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 

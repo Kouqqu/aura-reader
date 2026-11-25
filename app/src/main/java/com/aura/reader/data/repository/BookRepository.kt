@@ -481,6 +481,7 @@ class BookRepository(
     val savedWords = preferencesManager.savedWords
     suspend fun addSavedWord(word: com.aura.reader.data.model.SavedWord) = preferencesManager.addSavedWord(word)
     suspend fun removeSavedWord(id: String) = preferencesManager.removeSavedWord(id)
+    suspend fun toggleSavedWordMastered(id: String) = preferencesManager.toggleSavedWordMastered(id)
 
     val todayReadingMinutes = preferencesManager.todayReadingMinutes
     val readingStatsData = preferencesManager.readingStatsData

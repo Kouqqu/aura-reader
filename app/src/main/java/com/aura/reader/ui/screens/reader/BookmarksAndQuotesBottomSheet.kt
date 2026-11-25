@@ -92,8 +92,14 @@ fun BookmarksAndQuotesBottomSheet(
     val bookQuotes = remember(quotes, currentBookId) {
         quotes.filter { it.bookId == currentBookId }
     }
-    val bookSavedWords = remember(savedWords, currentBookId) {
-        savedWords.filter { it.bookId.isEmpty() || it.bookId == currentBookId }
+    var showAllBooksWords by remember { mutableStateOf(false) }
+    val bookSavedWords = remember(savedWords, currentBookId, showAllBooksWords) {
+        if (showAllBooksWords) {
+            savedWords.sortedByDescending { it.timestamp }
+        } else {
+            savedWords.filter { it.bookId.isEmpty() || it.bookId == currentBookId }
+                .sortedByDescending { it.timestamp }
+        }
     }
 
     ModalBottomSheet(
@@ -362,6 +368,21 @@ fun BookmarksAndQuotesBottomSheet(
                 }
                 2 -> {
                     // Saved Words Tab
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        androidx.compose.material3.FilterChip(
+                            selected = !showAllBooksWords,
+                            onClick = { showAllBooksWords = false },
+                            label = { Text("Эта книга") }
+                        )
+                        androidx.compose.material3.FilterChip(
+                            selected = showAllBooksWords,
+                            onClick = { showAllBooksWords = true },
+                            label = { Text("Все книги (${savedWords.size})") }
+                        )
+                    }
                     if (bookSavedWords.isEmpty()) {
                         Box(
                             modifier = Modifier

@@ -1,5 +1,6 @@
 package com.aura.reader.ui.screens.library
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.GridView
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.LocalTextStyle
@@ -109,6 +111,7 @@ internal fun LibraryTopBar(
     onSearchQueryChange: (String) -> Unit,
     onToggleViewMode: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenVocabulary: () -> Unit = {},
     onHolidayBadgeClick: (Offset) -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
@@ -385,7 +388,15 @@ AnimatedContent(
                 }
             }
         },
-        actions = {},
+        actions = {
+            IconButton(onClick = onOpenVocabulary) {
+                Icon(
+                    imageVector = Icons.Rounded.Translate,
+                    contentDescription = strings.savedWordsTabTitle,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
         scrollBehavior = scrollBehavior,
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,

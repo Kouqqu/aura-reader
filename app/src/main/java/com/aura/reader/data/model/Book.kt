@@ -160,7 +160,8 @@ data class SavedWord(
     val definition: String,
     val contextText: String = "",
     val chapterIndex: Int = 0,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val isMastered: Boolean = false
 )
 
 val Book.isReadingStarted: Boolean

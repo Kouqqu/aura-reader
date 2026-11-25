@@ -924,7 +924,8 @@ class PreferencesManager(private val context: Context) {
                         definition = o.getString("definition"),
                         contextText = o.optString("contextText"),
                         chapterIndex = o.optInt("chapterIndex", 0),
-                        timestamp = o.optLong("timestamp", System.currentTimeMillis())
+                        timestamp = o.optLong("timestamp", System.currentTimeMillis()),
+                        isMastered = o.optBoolean("isMastered", false)
                     )
                 )
             }
@@ -947,6 +948,7 @@ class PreferencesManager(private val context: Context) {
                 put("contextText", word.contextText)
                 put("chapterIndex", word.chapterIndex)
                 put("timestamp", word.timestamp)
+                put("isMastered", word.isMastered)
             }
             var updated = false
             for (i in 0 until arr.length()) {
@@ -978,6 +980,22 @@ class PreferencesManager(private val context: Context) {
                 }
             }
             prefs[SAVED_WORDS_KEY] = newArr.toString()
+        }
+    }
+
+    suspend fun toggleSavedWordMastered(id: String) {
+        context.dataStore.edit { prefs ->
+            val json = prefs[SAVED_WORDS_KEY] ?: "[]"
+            val arr = try { JSONArray(json) } catch (_: Exception) { JSONArray() }
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                if (o.optString("id") == id) {
+                    o.put("isMastered", !o.optBoolean("isMastered", false))
+                    arr.put(i, o)
+                    break
+                }
+            }
+            prefs[SAVED_WORDS_KEY] = arr.toString()
         }
     }
 
