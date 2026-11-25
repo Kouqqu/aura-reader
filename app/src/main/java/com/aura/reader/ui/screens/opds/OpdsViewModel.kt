@@ -187,8 +187,8 @@ class OpdsViewModel(
     val activeDownloads: StateFlow<Map<String, Int>> = _activeDownloads.asStateFlow()
     private val downloadJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
 
-    private val _downloadedBooks = MutableStateFlow<Map<String, Book>>(emptyMap())
-    val downloadedBooks: StateFlow<Map<String, Book>> = _downloadedBooks.asStateFlow()
+    private val _downloadedBooks = MutableStateFlow<Map<String, List<Book>>>(emptyMap())
+    val downloadedBooks: StateFlow<Map<String, List<Book>>> = _downloadedBooks.asStateFlow()
 
     private val _selectedBookForDetails = MutableStateFlow<OpdsBook?>(null)
     val selectedBookForDetails: StateFlow<OpdsBook?> = _selectedBookForDetails.asStateFlow()
@@ -220,28 +220,34 @@ class OpdsViewModel(
     }
 
     private fun syncDownloadedBooks(libraryBooks: List<Book>) {
+        val byId = libraryBooks.associateBy { it.id }
         _downloadedBooks.update { currentMap ->
-            currentMap.filter { (_, book) ->
-                libraryBooks.any { it.id == book.id } &&
-                (book.uriString.isBlank() || !book.uriString.startsWith("file://") || File(Uri.parse(book.uriString).path ?: "").exists())
-            }
+            currentMap.mapValues { (_, list) ->
+                list.mapNotNull { book ->
+                    val fresh = byId[book.id] ?: return@mapNotNull null
+                    val exists = fresh.uriString.isBlank() ||
+                        !fresh.uriString.startsWith("file://") ||
+                        File(Uri.parse(fresh.uriString).path ?: "").exists()
+                    if (exists) fresh else null
+                }
+            }.filterValues { it.isNotEmpty() }
         }
     }
 
     private fun matchCatalogWithLibrary(books: List<OpdsBook>) {
         val library = bookRepository.recentBooks.value
         if (library.isEmpty()) return
-        val newMatches = mutableMapOf<String, Book>()
+        val newMatches = mutableMapOf<String, List<Book>>()
         for (opdsBook in books) {
             val safeBookId = opdsBook.id.replace(Regex("[^a-zA-Z0-9_-]"), "_").takeLast(20)
-            val match = library.firstOrNull { lib ->
+            val matches = library.filter { lib ->
                 (lib.uriString.contains(safeBookId) ||
                  (lib.title.isNotBlank() && lib.title.trim().equals(opdsBook.title.trim(), ignoreCase = true) &&
                   (lib.author.isBlank() || opdsBook.author.isBlank() || lib.author.trim().equals(opdsBook.author.trim(), ignoreCase = true)))) &&
                 (!lib.uriString.startsWith("file://") || File(Uri.parse(lib.uriString).path ?: "").exists())
-            }
-            if (match != null) {
-                newMatches[opdsBook.id] = match
+            }.distinctBy { it.format }
+            if (matches.isNotEmpty()) {
+                newMatches[opdsBook.id] = matches
             }
         }
         if (newMatches.isNotEmpty()) {
@@ -420,7 +426,11 @@ class OpdsViewModel(
                 result.onSuccess { file ->
                     val openResult = bookRepository.openBookFromUri(Uri.fromFile(file))
                     openResult.onSuccess { loadedBook ->
-                        _downloadedBooks.update { it + (bookId to loadedBook) }
+                        _downloadedBooks.update { map ->
+                            val currentList = map[bookId].orEmpty()
+                                .filterNot { it.id == loadedBook.id || it.format == loadedBook.format }
+                            map + (bookId to (currentList + loadedBook))
+                        }
                         onComplete?.invoke(loadedBook)
                     }
                 }.onFailure { e ->

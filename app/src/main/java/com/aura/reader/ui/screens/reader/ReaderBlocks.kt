@@ -126,7 +126,7 @@ internal fun readerEpigraphTextStyle(
         fontStyle = FontStyle.Italic,
         textAlign = TextAlign.End,
         hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
-        lineBreak = LineBreak.Simple
+        lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
     )
 )
 
@@ -153,7 +153,7 @@ internal fun readerVerseTextStyle(
         fontFamily = resolvedFontFamily,
         fontStyle = FontStyle.Italic,
         hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
-        lineBreak = LineBreak.Simple
+        lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
     )
 )
 
@@ -171,7 +171,7 @@ internal fun readerParagraphTextStyle(
         color = color,
         textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp),
         hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
-        lineBreak = LineBreak.Simple
+        lineBreak = if (settings.autoHyphenation) LineBreak.Paragraph else LineBreak.Simple
     )
 )
 
