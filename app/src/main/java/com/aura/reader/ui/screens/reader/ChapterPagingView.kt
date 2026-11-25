@@ -59,6 +59,7 @@ import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -128,8 +129,9 @@ fun ChapterPagingView(
     onBottomProgressModeChange: (Int) -> Unit = {}
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val screenHeightDp = maxHeight.value
         val screenWidthDp = maxWidth.value
+        val maxRootWidthPx = constraints.maxWidth
+        val maxRootHeightPx = constraints.maxHeight
 
         val statusBarTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val cutoutTopInset = WindowInsets.displayCutout.asPaddingValues().calculateTopPadding()
@@ -138,18 +140,11 @@ fun ChapterPagingView(
 
         val pillClearanceDp = 56.dp
         val bottomPaddingDp = bottomNavInset + pillClearanceDp
-        val usableContentHeightDp = (screenHeightDp - topPaddingDp.value - bottomPaddingDp.value).coerceAtLeast(120f)
 
         val isTwoColumn = when (settings.twoColumnMode) {
             TwoColumnMode.ALWAYS -> true
             TwoColumnMode.OFF -> false
             TwoColumnMode.AUTO -> screenWidthDp >= 600f
-        }
-
-        val columnWidthDp = if (isTwoColumn) {
-            ((screenWidthDp - 72f) / 2f).coerceAtLeast(120f)
-        } else {
-            (screenWidthDp - 48f).coerceAtLeast(120f)
         }
 
         val blocks = remember(chapter) {
@@ -164,17 +159,45 @@ fun ChapterPagingView(
 
         val textMeasurer = rememberTextMeasurer()
         val density = LocalDensity.current
+        val baseTextStyle = LocalTextStyle.current
+
+        val (columnWidthPx, contentHeightPx) = remember(
+            maxRootWidthPx,
+            maxRootHeightPx,
+            topPaddingDp,
+            bottomPaddingDp,
+            isTwoColumn,
+            density
+        ) {
+            with(density) {
+                val topPx = topPaddingDp.roundToPx()
+                val bottomPx = bottomPaddingDp.roundToPx()
+                val usableHeightPx = (maxRootHeightPx - topPx - bottomPx).coerceAtLeast(100)
+                val horizontalPadPx = 24.dp.roundToPx()
+                val colWidthPx = if (isTwoColumn) {
+                    val gapPx = 24.dp.roundToPx()
+                    val dividerPx = 1.dp.roundToPx()
+                    ((maxRootWidthPx - horizontalPadPx * 2 - gapPx * 2 - dividerPx) / 2).coerceAtLeast(100)
+                } else {
+                    (maxRootWidthPx - horizontalPadPx * 2).coerceAtLeast(100)
+                }
+                colWidthPx to usableHeightPx
+            }
+        }
 
         val pages = remember(
             blocks,
             settings.fontSizeSp,
             settings.lineHeightMultiplier,
             settings.fontFamily,
+            settings.fontName,
             settings.autoHyphenation,
             settings.twoColumnMode,
             resolvedFontFamily,
-            usableContentHeightDp,
-            screenWidthDp
+            baseTextStyle,
+            contentHeightPx,
+            columnWidthPx,
+            footnotes
         ) {
             paginateBlocks(
                 blocks = blocks,
@@ -182,9 +205,10 @@ fun ChapterPagingView(
                 resolvedFontFamily = resolvedFontFamily,
                 textMeasurer = textMeasurer,
                 density = density,
-                contentHeightDp = usableContentHeightDp,
-                screenWidthDp = screenWidthDp,
-                columnWidthDp = columnWidthDp
+                contentHeightPx = contentHeightPx,
+                columnWidthPx = columnWidthPx,
+                baseTextStyle = baseTextStyle,
+                footnotes = footnotes
             )
         }
 

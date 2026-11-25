@@ -83,6 +83,138 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 
 // ------------------------------------------------------------------------------------------------
+// SHARED READER TYPOGRAPHY & MEASUREMENT HELPERS
+// ------------------------------------------------------------------------------------------------
+
+internal fun readerTitleTextStyle(
+    settings: ReaderSettings,
+    resolvedFontFamily: FontFamily,
+    baseStyle: TextStyle = TextStyle.Default
+): TextStyle = baseStyle.merge(
+    TextStyle(
+        fontSize = (settings.fontSizeSp * 1.35f).sp,
+        lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.25f).sp,
+        fontFamily = resolvedFontFamily,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center
+    )
+)
+
+internal fun readerSubtitleTextStyle(
+    settings: ReaderSettings,
+    resolvedFontFamily: FontFamily,
+    baseStyle: TextStyle = TextStyle.Default
+): TextStyle = baseStyle.merge(
+    TextStyle(
+        fontSize = (settings.fontSizeSp * 1.15f).sp,
+        lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.15f).sp,
+        fontFamily = resolvedFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        textAlign = TextAlign.Center
+    )
+)
+
+internal fun readerEpigraphTextStyle(
+    settings: ReaderSettings,
+    resolvedFontFamily: FontFamily,
+    baseStyle: TextStyle = TextStyle.Default
+): TextStyle = baseStyle.merge(
+    TextStyle(
+        fontSize = (settings.fontSizeSp * 0.92f).sp,
+        lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
+        fontFamily = resolvedFontFamily,
+        fontStyle = FontStyle.Italic,
+        textAlign = TextAlign.End,
+        hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
+        lineBreak = if (settings.autoHyphenation) {
+            LineBreak(strategy = LineBreak.Strategy.HighQuality, strictness = LineBreak.Strictness.Loose, wordBreak = LineBreak.WordBreak.Default)
+        } else LineBreak.Simple
+    )
+)
+
+internal fun readerEpigraphAuthorTextStyle(
+    settings: ReaderSettings,
+    resolvedFontFamily: FontFamily,
+    baseStyle: TextStyle = TextStyle.Default
+): TextStyle = baseStyle.merge(
+    TextStyle(
+        fontSize = (settings.fontSizeSp * 0.82f).sp,
+        fontFamily = resolvedFontFamily,
+        textAlign = TextAlign.End
+    )
+)
+
+internal fun readerVerseTextStyle(
+    settings: ReaderSettings,
+    resolvedFontFamily: FontFamily,
+    baseStyle: TextStyle = TextStyle.Default
+): TextStyle = baseStyle.merge(
+    TextStyle(
+        fontSize = (settings.fontSizeSp * 0.95f).sp,
+        lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 0.95f).sp,
+        fontFamily = resolvedFontFamily,
+        fontStyle = FontStyle.Italic,
+        hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
+        lineBreak = if (settings.autoHyphenation) {
+            LineBreak(strategy = LineBreak.Strategy.HighQuality, strictness = LineBreak.Strictness.Loose, wordBreak = LineBreak.WordBreak.Default)
+        } else LineBreak.Simple
+    )
+)
+
+internal fun readerParagraphTextStyle(
+    settings: ReaderSettings,
+    resolvedFontFamily: FontFamily,
+    isContinuation: Boolean,
+    color: Color = Color.Unspecified,
+    baseStyle: TextStyle = TextStyle.Default
+): TextStyle = baseStyle.merge(
+    TextStyle(
+        fontSize = settings.fontSizeSp.sp,
+        lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
+        fontFamily = resolvedFontFamily,
+        color = color,
+        textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp),
+        hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
+        lineBreak = if (settings.autoHyphenation) {
+            LineBreak(strategy = LineBreak.Strategy.HighQuality, strictness = LineBreak.Strictness.Loose, wordBreak = LineBreak.WordBreak.Default)
+        } else LineBreak.Simple
+    )
+)
+
+private val footnotePatternRegex = Regex("""\[([a-zA-Z0-9а-яА-ЯёЁ_\s-]{1,25})\]|\{([0-9]+)\}|([¹²³⁴⁵⁶⁷⁸⁹⁰]+)|»\s*(\d{1,4})""")
+
+internal fun buildMeasuredBlockText(
+    rawText: String,
+    links: List<BookLink>,
+    footnotes: Map<String, String>,
+    isBionic: Boolean
+): AnnotatedString = buildAnnotatedString {
+    append(rawText)
+    if (isBionic) {
+        applyBionicStyles(rawText)
+    }
+    for (bookLink in links) {
+        val s = bookLink.start.coerceIn(0, rawText.length)
+        val e = bookLink.end.coerceIn(s, rawText.length)
+        if (s < e) {
+            addStyle(SpanStyle(fontWeight = FontWeight.SemiBold), s, e)
+        }
+    }
+    if (footnotes.isNotEmpty()) {
+        for (match in footnotePatternRegex.findAll(rawText)) {
+            if (links.any { it.start <= match.range.first && it.end >= match.range.last + 1 }) continue
+            val matchValue = match.value
+            val ref = matchValue.removePrefix("»").trim()
+            val resolved = resolveFootnoteText(ref, footnotes)
+            val isExplicitRef = matchValue.startsWith("[") || matchValue.startsWith("{") || matchValue.any { it in "¹²³⁴⁵⁶⁷⁸⁹⁰" }
+            if (resolved != null || isExplicitRef) {
+                addStyle(SpanStyle(fontWeight = FontWeight.Bold), match.range.first, match.range.last + 1)
+            }
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
 // BIONIC READING HELPER
 // ------------------------------------------------------------------------------------------------
 
@@ -145,16 +277,11 @@ fun RenderBlock(
     }
     when (block.type) {
         BlockType.TITLE -> {
-            val titleStyle = TextStyle(
-                fontSize = (settings.fontSizeSp * 1.35f).sp,
-                lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.25f).sp,
-                fontFamily = resolvedFontFamily,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
+            val titleStyle = readerTitleTextStyle(settings, resolvedFontFamily)
+            val formattedTitle = remember(block.text) { formatTypography(block.text) }
             if (block.links.isNotEmpty()) {
                 InteractiveText(
-                    rawText = block.text,
+                    rawText = formattedTitle,
                     style = titleStyle,
                     searchQuery = searchQuery,
                     footnotes = footnotes,
@@ -173,7 +300,7 @@ fun RenderBlock(
                 )
             } else {
                 Text(
-                    text = block.text,
+                    text = formattedTitle,
                     style = titleStyle,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier
@@ -187,16 +314,11 @@ fun RenderBlock(
             }
         }
         BlockType.SUBTITLE -> {
-            val subtitleStyle = TextStyle(
-                fontSize = (settings.fontSizeSp * 1.15f).sp,
-                lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.15f).sp,
-                fontFamily = resolvedFontFamily,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
-            )
+            val subtitleStyle = readerSubtitleTextStyle(settings, resolvedFontFamily)
+            val formattedSubtitle = remember(block.text) { formatTypography(block.text) }
             if (block.links.isNotEmpty()) {
                 InteractiveText(
-                    rawText = block.text,
+                    rawText = formattedSubtitle,
                     style = subtitleStyle,
                     searchQuery = searchQuery,
                     footnotes = footnotes,
@@ -215,7 +337,7 @@ fun RenderBlock(
                 )
             } else {
                 Text(
-                    text = block.text,
+                    text = formattedSubtitle,
                     style = subtitleStyle,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
                     modifier = Modifier
@@ -229,6 +351,9 @@ fun RenderBlock(
             }
         }
         BlockType.EPIGRAPH -> {
+            val epigraphStyle = readerEpigraphTextStyle(settings, resolvedFontFamily)
+            val epigraphAuthorStyle = readerEpigraphAuthorTextStyle(settings, resolvedFontFamily)
+            val formattedEpigraph = remember(block.text) { formatTypography(block.text) }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -236,38 +361,31 @@ fun RenderBlock(
                 horizontalAlignment = Alignment.End
             ) {
                 Text(
-                    text = block.text,
-                    fontSize = (settings.fontSizeSp * 0.92f).sp,
-                    lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
-                    fontFamily = resolvedFontFamily,
-                    fontStyle = FontStyle.Italic,
-                    textAlign = TextAlign.End,
+                    text = formattedEpigraph,
+                    style = epigraphStyle,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                 )
                 if (!block.subText.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = block.subText,
-                        fontSize = (settings.fontSizeSp * 0.82f).sp,
-                        fontFamily = resolvedFontFamily,
-                        textAlign = TextAlign.End,
+                        style = epigraphAuthorStyle,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f)
                     )
                 }
             }
         }
         BlockType.VERSE -> {
+            val verseStyle = readerVerseTextStyle(settings, resolvedFontFamily)
+            val formattedVerse = remember(block.text) { formatTypography(block.text) }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 28.dp, end = 16.dp, top = 6.dp, bottom = 12.dp)
             ) {
                 Text(
-                    text = block.text,
-                    fontSize = (settings.fontSizeSp * 0.95f).sp,
-                    lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 0.95f).sp,
-                    fontFamily = resolvedFontFamily,
-                    fontStyle = FontStyle.Italic,
+                    text = formattedVerse,
+                    style = verseStyle,
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
@@ -623,14 +741,11 @@ fun RenderBlock(
         }
         BlockType.PARAGRAPH -> {
             val isContinuation = block.subText == "continuation"
-            val paragraphStyle = TextStyle(
-                fontSize = settings.fontSizeSp.sp,
-                lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
-                fontFamily = resolvedFontFamily,
-                color = MaterialTheme.colorScheme.onBackground,
-                textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp),
-                hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
-                lineBreak = if (settings.autoHyphenation) LineBreak(strategy = LineBreak.Strategy.HighQuality, strictness = LineBreak.Strictness.Loose, wordBreak = LineBreak.WordBreak.Default) else LineBreak.Simple
+            val paragraphStyle = readerParagraphTextStyle(
+                settings = settings,
+                resolvedFontFamily = resolvedFontFamily,
+                isContinuation = isContinuation,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             val formattedText = remember(block.text) { formatTypography(block.text.trim()) }

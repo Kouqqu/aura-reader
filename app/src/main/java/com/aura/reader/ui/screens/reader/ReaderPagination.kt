@@ -1,24 +1,20 @@
 package com.aura.reader.ui.screens.reader
 
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
-import androidx.compose.ui.text.style.Hyphens
-import androidx.compose.ui.text.style.LineBreak
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.Density
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextIndent
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aura.reader.data.model.BlockType
+import com.aura.reader.data.model.BookLink
 import com.aura.reader.data.model.FormattedBlock
 import com.aura.reader.data.model.ReaderSettings
+import kotlin.math.ceil
 
 // ------------------------------------------------------------------------------------------------
 // PAGINATION HELPER
@@ -30,43 +26,61 @@ internal fun paginateBlocks(
     resolvedFontFamily: FontFamily,
     textMeasurer: TextMeasurer,
     density: Density,
-    contentHeightDp: Float = 600f,
-    screenWidthDp: Float = 380f,
-    columnWidthDp: Float? = null
+    contentHeightPx: Int,
+    columnWidthPx: Int,
+    baseTextStyle: TextStyle = TextStyle.Default,
+    footnotes: Map<String, String> = emptyMap()
 ): List<List<Pair<Int, FormattedBlock>>> {
     if (blocks.isEmpty()) return listOf(emptyList())
 
-    val usableWidthDp = columnWidthDp ?: (screenWidthDp - 48f).coerceAtLeast(100f)
-    val maxWidthPx = with(density) { usableWidthDp.dp.roundToPx() }
-
-    val safetyBufferPx = with(density) { 18.dp.toPx() }
-    val maxHeightPx = (with(density) { contentHeightDp.dp.toPx() } - safetyBufferPx).coerceAtLeast(100f)
-    val firstPageExtraBufferPx = with(density) { 48.dp.toPx() }
-    val paragraphSpacingPx = with(density) { 8.dp.toPx() }
+    val safeWidthPx = columnWidthPx.coerceAtLeast(100)
+    // Minimal margin for font ascender/descender overhang and antialiasing
+    val safetyBufferPx = with(density) { 4.dp.roundToPx() }
+    val maxHeightPx = (contentHeightPx - safetyBufferPx).coerceAtLeast(100)
+    val paragraphSpacingPx = with(density) { 8.dp.roundToPx() }
 
     val pages = mutableListOf<List<Pair<Int, FormattedBlock>>>()
     var currentPage = mutableListOf<Pair<Int, FormattedBlock>>()
-    var currentHeightPx = 0f
-
-    fun getEffectiveMaxHeightPx(): Float {
-        val isFirstPage = pages.isEmpty() || currentPage.any { it.second.type == BlockType.TITLE }
-        return if (isFirstPage) {
-            (maxHeightPx - firstPageExtraBufferPx).coerceAtLeast(100f)
-        } else {
-            maxHeightPx
-        }
-    }
+    var currentHeightPx = 0
 
     fun flushPage() {
         if (currentPage.isNotEmpty()) {
             pages.add(ArrayList(currentPage))
             currentPage.clear()
-            currentHeightPx = 0f
+            currentHeightPx = 0
         }
     }
 
     val isBionic = settings.fontName.equals("Bionic", ignoreCase = true) ||
             settings.fontName.equals("Бионический", ignoreCase = true)
+
+    fun measureBlockText(
+        text: String,
+        style: TextStyle,
+        maxWidth: Int = safeWidthPx,
+        links: List<BookLink> = emptyList(),
+        useRichSpans: Boolean = false
+    ): TextLayoutResult {
+        return if (useRichSpans && (isBionic || links.isNotEmpty() || footnotes.isNotEmpty())) {
+            val annotated = buildMeasuredBlockText(
+                rawText = text,
+                links = links,
+                footnotes = footnotes,
+                isBionic = isBionic
+            )
+            textMeasurer.measure(
+                text = annotated,
+                style = style,
+                constraints = Constraints(maxWidth = maxWidth)
+            )
+        } else {
+            textMeasurer.measure(
+                text = text,
+                style = style,
+                constraints = Constraints(maxWidth = maxWidth)
+            )
+        }
+    }
 
     for ((originalIndex, block) in blocks.withIndex()) {
         when (block.type) {
@@ -87,30 +101,33 @@ internal fun paginateBlocks(
                     val ratio = com.aura.reader.util.GraphicPageDimensionsCache
                         .getOrReadAspectRatio(block.text)
                         .coerceIn(0.25f, 4.0f)
-                    val cardInnerWidthPx = (maxWidthPx - with(density) { 24.dp.toPx() }).coerceAtLeast(100f)
-                    val rawImgHeightPx = cardInnerWidthPx / ratio
-                    val maxImgHeightPx = minOf(with(density) { 420.dp.toPx() }, maxHeightPx * 0.68f)
+                    val cardInnerWidthPx = (safeWidthPx - with(density) { 24.dp.roundToPx() }).coerceAtLeast(100)
+                    val rawImgHeightPx = (cardInnerWidthPx / ratio).toInt()
+                    val maxImgHeightPx = minOf(with(density) { 420.dp.roundToPx() }, (maxHeightPx * 0.68f).toInt())
                     val imgHeightPx = minOf(rawImgHeightPx, maxImgHeightPx)
 
-                    var captionHeightPx = 0f
+                    var captionHeightPx = 0
                     if (!block.subText.isNullOrBlank()) {
-                        val capStyle = TextStyle(
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
-                            fontStyle = FontStyle.Italic,
-                            textAlign = TextAlign.Center
+                        val capStyle = baseTextStyle.merge(
+                            TextStyle(
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                fontStyle = FontStyle.Italic,
+                                textAlign = TextAlign.Center
+                            )
                         )
+                        val capWidthPx = (safeWidthPx - with(density) { 32.dp.roundToPx() }).coerceAtLeast(80)
                         val capLayout = textMeasurer.measure(
                             block.subText,
                             capStyle,
-                            constraints = Constraints(maxWidth = maxWidthPx)
+                            constraints = Constraints(maxWidth = capWidthPx)
                         )
-                        captionHeightPx = capLayout.size.height + with(density) { 8.dp.toPx() }
+                        captionHeightPx = capLayout.size.height + with(density) { 8.dp.roundToPx() }
                     }
 
-                    val totalImageBlockHeightPx = imgHeightPx + captionHeightPx + with(density) { 52.dp.toPx() }
-                    val effectiveMax = getEffectiveMaxHeightPx()
-                    if (currentHeightPx + totalImageBlockHeightPx > effectiveMax && currentPage.isNotEmpty()) {
+                    val verticalPadPx = with(density) { 28.dp.roundToPx() + 24.dp.roundToPx() }
+                    val totalImageBlockHeightPx = imgHeightPx + captionHeightPx + verticalPadPx
+                    if (currentHeightPx + totalImageBlockHeightPx > maxHeightPx && currentPage.isNotEmpty()) {
                         flushPage()
                     }
                     currentPage.add(originalIndex to block)
@@ -118,93 +135,69 @@ internal fun paginateBlocks(
                 }
             }
             BlockType.TITLE -> {
-                val style = TextStyle(
-                    fontSize = (settings.fontSizeSp * 1.35f).sp,
-                    lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.25f).sp,
-                    fontFamily = resolvedFontFamily,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                val style = readerTitleTextStyle(settings, resolvedFontFamily, baseTextStyle)
+                val formattedTitle = formatTypography(block.text)
+                val layout = measureBlockText(
+                    text = formattedTitle,
+                    style = style,
+                    links = block.links,
+                    useRichSpans = block.links.isNotEmpty()
                 )
-                val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = maxWidthPx))
-                val titlePaddingPx = with(density) { 22.dp.toPx() } // 8dp top + 14dp bottom
+                val titlePaddingPx = with(density) { 8.dp.roundToPx() + 14.dp.roundToPx() }
                 val totalTitleHeight = layout.size.height + titlePaddingPx
-                val effectiveMax = getEffectiveMaxHeightPx()
-                if (currentHeightPx > effectiveMax * 0.45f || (currentHeightPx + totalTitleHeight > effectiveMax && currentPage.isNotEmpty())) {
+                if (currentHeightPx > (maxHeightPx * 0.45f).toInt() || (currentHeightPx + totalTitleHeight > maxHeightPx && currentPage.isNotEmpty())) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
                 currentHeightPx += totalTitleHeight
             }
             BlockType.SUBTITLE -> {
-                val style = TextStyle(
-                    fontSize = (settings.fontSizeSp * 1.15f).sp,
-                    lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 1.15f).sp,
-                    fontFamily = resolvedFontFamily,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
+                val style = readerSubtitleTextStyle(settings, resolvedFontFamily, baseTextStyle)
+                val formattedSubtitle = formatTypography(block.text)
+                val layout = measureBlockText(
+                    text = formattedSubtitle,
+                    style = style,
+                    links = block.links,
+                    useRichSpans = block.links.isNotEmpty()
                 )
-                val layout = textMeasurer.measure(block.text, style, constraints = Constraints(maxWidth = maxWidthPx))
-                val subPaddingPx = with(density) { 14.dp.toPx() } // 14dp bottom
+                val subPaddingPx = with(density) { 14.dp.roundToPx() }
                 val totalSubHeight = layout.size.height + subPaddingPx
-                val effectiveMax = getEffectiveMaxHeightPx()
-                if (currentHeightPx > effectiveMax * 0.6f || (currentHeightPx + totalSubHeight > effectiveMax && currentPage.isNotEmpty())) {
+                if (currentHeightPx > (maxHeightPx * 0.6f).toInt() || (currentHeightPx + totalSubHeight > maxHeightPx && currentPage.isNotEmpty())) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
                 currentHeightPx += totalSubHeight
             }
             BlockType.DIVIDER -> {
-                val dividerHeightPx = with(density) { 16.dp.toPx() }
-                val effectiveMax = getEffectiveMaxHeightPx()
-                if (currentHeightPx + dividerHeightPx > effectiveMax && currentPage.isNotEmpty()) {
+                val dividerHeightPx = with(density) { 16.dp.roundToPx() }
+                if (currentHeightPx + dividerHeightPx > maxHeightPx && currentPage.isNotEmpty()) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
                 currentHeightPx += dividerHeightPx
             }
             BlockType.EPIGRAPH -> {
-                val epigraphWidthPx = with(density) { (usableWidthDp - 44f).coerceAtLeast(80f).dp.roundToPx() }
-                val style = TextStyle(
-                    fontSize = (settings.fontSizeSp * 0.92f).sp,
-                    lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
-                    fontFamily = resolvedFontFamily,
-                    fontStyle = FontStyle.Italic,
-                    textAlign = TextAlign.End,
-                    hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
-                    lineBreak = if (settings.autoHyphenation) LineBreak(strategy = LineBreak.Strategy.HighQuality, strictness = LineBreak.Strictness.Loose, wordBreak = LineBreak.WordBreak.Default) else LineBreak.Simple
-                )
-                val layout = textMeasurer.measure(formatTypography(block.text), style, constraints = Constraints(maxWidth = epigraphWidthPx))
-                var totalHeight = layout.size.height + with(density) { 16.dp.toPx() } // 4dp top + 12dp bottom
+                val epigraphWidthPx = (safeWidthPx - with(density) { 36.dp.roundToPx() + 8.dp.roundToPx() }).coerceAtLeast(80)
+                val style = readerEpigraphTextStyle(settings, resolvedFontFamily, baseTextStyle)
+                val layout = measureBlockText(formatTypography(block.text), style, maxWidth = epigraphWidthPx)
+                var totalHeight = layout.size.height + with(density) { 4.dp.roundToPx() + 12.dp.roundToPx() }
                 if (!block.subText.isNullOrBlank()) {
-                    val subStyle = TextStyle(
-                        fontSize = (settings.fontSizeSp * 0.82f).sp,
-                        fontFamily = resolvedFontFamily,
-                        textAlign = TextAlign.End
-                    )
+                    val subStyle = readerEpigraphAuthorTextStyle(settings, resolvedFontFamily, baseTextStyle)
                     val subLayout = textMeasurer.measure(block.subText, subStyle, constraints = Constraints(maxWidth = epigraphWidthPx))
-                    totalHeight += subLayout.size.height + with(density) { 4.dp.toPx() } // 4dp spacer
+                    totalHeight += subLayout.size.height + with(density) { 4.dp.roundToPx() }
                 }
-                val effectiveMax = getEffectiveMaxHeightPx()
-                if (currentHeightPx + totalHeight > effectiveMax && currentPage.isNotEmpty()) {
+                if (currentHeightPx + totalHeight > maxHeightPx && currentPage.isNotEmpty()) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
                 currentHeightPx += totalHeight
             }
             BlockType.VERSE -> {
-                val verseWidthPx = with(density) { (usableWidthDp - 44f).coerceAtLeast(80f).dp.roundToPx() }
-                val style = TextStyle(
-                    fontSize = (settings.fontSizeSp * 0.95f).sp,
-                    lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier * 0.95f).sp,
-                    fontFamily = resolvedFontFamily,
-                    fontStyle = FontStyle.Italic,
-                    hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
-                    lineBreak = if (settings.autoHyphenation) LineBreak(strategy = LineBreak.Strategy.HighQuality, strictness = LineBreak.Strictness.Loose, wordBreak = LineBreak.WordBreak.Default) else LineBreak.Simple
-                )
-                val layout = textMeasurer.measure(formatTypography(block.text), style, constraints = Constraints(maxWidth = verseWidthPx))
-                val totalHeight = layout.size.height + with(density) { 18.dp.toPx() } // 6dp top + 12dp bottom
-                val effectiveMax = getEffectiveMaxHeightPx()
-                if (currentHeightPx + totalHeight > effectiveMax && currentPage.isNotEmpty()) {
+                val verseWidthPx = (safeWidthPx - with(density) { 28.dp.roundToPx() + 16.dp.roundToPx() }).coerceAtLeast(80)
+                val style = readerVerseTextStyle(settings, resolvedFontFamily, baseTextStyle)
+                val layout = measureBlockText(formatTypography(block.text), style, maxWidth = verseWidthPx)
+                val totalHeight = layout.size.height + with(density) { 6.dp.roundToPx() + 12.dp.roundToPx() }
+                if (currentHeightPx + totalHeight > maxHeightPx && currentPage.isNotEmpty()) {
                     flushPage()
                 }
                 currentPage.add(originalIndex to block)
@@ -212,99 +205,146 @@ internal fun paginateBlocks(
             }
             BlockType.PARAGRAPH -> {
                 val formattedText = formatTypography(block.text.trim())
-                var remainingText = formattedText
+                var currentOffset = 0
                 var isContinuation = false
                 var loopGuard = 0
 
-                while (remainingText.isNotEmpty() && loopGuard++ < 1000) {
-                    val effectiveMax = getEffectiveMaxHeightPx()
-                    val availableHeightPx = effectiveMax - currentHeightPx
+                while (currentOffset < formattedText.length && loopGuard++ < 1000) {
+                    while (currentOffset < formattedText.length && formattedText[currentOffset].isWhitespace()) {
+                        currentOffset++
+                    }
+                    if (currentOffset >= formattedText.length) break
 
-                    val style = TextStyle(
-                        fontSize = settings.fontSizeSp.sp,
-                        lineHeight = (settings.fontSizeSp * settings.lineHeightMultiplier).sp,
-                        fontFamily = resolvedFontFamily,
-                        textIndent = if (isContinuation) TextIndent.None else TextIndent(firstLine = (settings.fontSizeSp * 1.2f).sp),
-                        hyphens = if (settings.autoHyphenation) Hyphens.Auto else Hyphens.None,
-                        lineBreak = if (settings.autoHyphenation) LineBreak(strategy = LineBreak.Strategy.HighQuality, strictness = LineBreak.Strictness.Loose, wordBreak = LineBreak.WordBreak.Default) else LineBreak.Simple
-                    )
-
-                    val layoutResult = if (isBionic) {
-                        val annotated = androidx.compose.ui.text.buildAnnotatedString {
-                            append(remainingText)
-                            applyBionicStyles(remainingText)
-                        }
-                        textMeasurer.measure(
-                            text = annotated,
-                            style = style,
-                            constraints = Constraints(maxWidth = maxWidthPx)
-                        )
-                    } else {
-                        textMeasurer.measure(
-                            text = remainingText,
-                            style = style,
-                            constraints = Constraints(maxWidth = maxWidthPx)
-                        )
+                    val remainingText = formattedText.substring(currentOffset)
+                    val availableHeightPx = maxHeightPx - currentHeightPx
+                    if (availableHeightPx <= 0) {
+                        flushPage()
+                        continue
                     }
 
-                    if (layoutResult.size.height + paragraphSpacingPx <= availableHeightPx) {
+                    val style = readerParagraphTextStyle(
+                        settings = settings,
+                        resolvedFontFamily = resolvedFontFamily,
+                        isContinuation = isContinuation,
+                        baseStyle = baseTextStyle
+                    )
+
+                    val layoutResult = measureBlockText(
+                        text = remainingText,
+                        style = style,
+                        links = if (currentOffset == 0) block.links else emptyList(),
+                        useRichSpans = true
+                    )
+
+                    // Whole remaining paragraph fits comfortably above bottom boundary
+                    if (layoutResult.size.height <= availableHeightPx) {
                         currentPage.add(originalIndex to block.copy(
                             text = remainingText,
-                            sourceTextOffset = formattedText.length - remainingText.length,
+                            sourceTextOffset = currentOffset,
                             subText = if (isContinuation) "continuation" else block.subText
                         ))
                         currentHeightPx += layoutResult.size.height + paragraphSpacingPx
-                        remainingText = ""
-                    } else {
-                        var fittingLines = 0
-                        for (lineIdx in 0 until layoutResult.lineCount) {
-                            val lineBottom = layoutResult.getLineBottom(lineIdx)
-                            if (lineBottom + paragraphSpacingPx <= availableHeightPx) {
-                                fittingLines = lineIdx + 1
-                            } else {
-                                break
-                            }
-                        }
+                        currentOffset = formattedText.length
+                        continue
+                    }
 
-                        if (fittingLines < 2 && currentPage.isNotEmpty()) {
+                    // Otherwise count how many lines fit completely inside availableHeightPx
+                    var fittingLines = 0
+                    for (lineIdx in 0 until layoutResult.lineCount) {
+                        val lineBottomPx = ceil(layoutResult.getLineBottom(lineIdx).toDouble()).toInt()
+                        if (lineBottomPx <= availableHeightPx) {
+                            fittingLines = lineIdx + 1
+                        } else {
+                            break
+                        }
+                    }
+
+                    // Avoid orphan single lines when page already has blocks, and never force 0-line fit on non-empty page
+                    if ((fittingLines == 0 || (fittingLines < 2 && currentPage.isNotEmpty())) && currentPage.isNotEmpty()) {
+                        flushPage()
+                        continue
+                    }
+
+                    val targetLines = fittingLines.coerceAtLeast(1)
+                    val lastLineIdx = (targetLines - 1).coerceIn(0, layoutResult.lineCount - 1)
+                    var endOffset = layoutResult.getLineEnd(lastLineIdx, visibleEnd = true).coerceIn(0, remainingText.length)
+
+                    // Snap to word boundary so Hyphens.Auto doesn't cut mid-word across pages
+                    if (endOffset in 1 until remainingText.length &&
+                        !remainingText[endOffset].isWhitespace() &&
+                        !remainingText[endOffset - 1].isWhitespace()
+                    ) {
+                        val lastSpace = remainingText.lastIndexOf(' ', endOffset - 1)
+                        if (lastSpace > 0) {
+                            endOffset = lastSpace
+                        }
+                    }
+
+                    // Re-measure the sliced chunk itself!
+                    // LineBreak.Strategy.HighQuality re-balances paragraphs when shortened, which can add +1 line
+                    // if we only measure the unsplit paragraph. Shrink until the actual rendered chunk fits.
+                    var verifiedEnd = endOffset
+                    var verifyGuard = 0
+                    while (verifiedEnd > 0 && verifyGuard++ < 24) {
+                        val candidateChunk = remainingText.substring(0, verifiedEnd).trimEnd()
+                        if (candidateChunk.isEmpty()) {
+                            verifiedEnd = 0
+                            break
+                        }
+                        val chunkLayout = measureBlockText(
+                            text = candidateChunk,
+                            style = style,
+                            links = if (currentOffset == 0) block.links else emptyList(),
+                            useRichSpans = true
+                        )
+                        if (chunkLayout.size.height <= availableHeightPx) {
+                            break
+                        }
+                        if (chunkLayout.lineCount > 1) {
+                            val prevLineEnd = chunkLayout.getLineEnd(chunkLayout.lineCount - 2, visibleEnd = true)
+                                .coerceIn(0, candidateChunk.length - 1)
+                            val spaceBefore = candidateChunk.lastIndexOf(' ', prevLineEnd)
+                            verifiedEnd = if (spaceBefore > 0) spaceBefore else prevLineEnd
+                        } else {
+                            val spaceBefore = candidateChunk.lastIndexOf(' ', (verifiedEnd - 1).coerceAtLeast(0))
+                            verifiedEnd = if (spaceBefore > 0) spaceBefore else 0
+                        }
+                    }
+
+                    if (verifiedEnd <= 0) {
+                        if (currentPage.isNotEmpty()) {
                             flushPage()
                             continue
                         }
-
-                        val linesToTake = fittingLines.coerceAtLeast(1)
-                        val lastLineIdx = (linesToTake - 1).coerceIn(0, layoutResult.lineCount - 1)
-                        var endOffset = layoutResult.getLineEnd(lastLineIdx, visibleEnd = true).coerceIn(0, remainingText.length)
-                        if (endOffset in 1 until remainingText.length && !remainingText[endOffset].isWhitespace() && !remainingText[endOffset - 1].isWhitespace()) {
-                            val lastSpace = remainingText.lastIndexOf(' ', endOffset)
-                            if (lastSpace > 0) {
-                                endOffset = lastSpace
+                        // Extreme fallback (single unbreakable token wider/taller than whole screen): binary search char fit
+                        var lo = 1
+                        var hi = remainingText.length
+                        var best = 1
+                        while (lo <= hi) {
+                            val mid = (lo + hi) ushr 1
+                            val sub = remainingText.substring(0, mid)
+                            val subLayout = measureBlockText(text = sub, style = style, useRichSpans = true)
+                            if (subLayout.size.height <= availableHeightPx) {
+                                best = mid
+                                lo = mid + 1
+                            } else {
+                                hi = mid - 1
                             }
                         }
-
-                        if (endOffset <= 0 || endOffset >= remainingText.length) {
-                            currentPage.add(originalIndex to block.copy(
-                                text = remainingText,
-                                sourceTextOffset = formattedText.length - remainingText.length,
-                                subText = if (isContinuation) "continuation" else block.subText
-                            ))
-                            flushPage()
-                            remainingText = ""
-                        } else {
-                            val chunk = remainingText.substring(0, endOffset).trim()
-                            val nextChunk = remainingText.substring(endOffset).trim()
-
-                            if (chunk.isNotEmpty()) {
-                                currentPage.add(originalIndex to block.copy(
-                                    text = chunk,
-                                    sourceTextOffset = formattedText.length - remainingText.length,
-                                    subText = if (isContinuation) "continuation" else block.subText
-                                ))
-                            }
-                            flushPage()
-                            remainingText = nextChunk
-                            isContinuation = true
-                        }
+                        verifiedEnd = best.coerceIn(1, remainingText.length)
                     }
+
+                    val chunk = remainingText.substring(0, verifiedEnd).trimEnd()
+                    if (chunk.isNotEmpty()) {
+                        currentPage.add(originalIndex to block.copy(
+                            text = chunk,
+                            sourceTextOffset = currentOffset,
+                            subText = if (isContinuation) "continuation" else block.subText
+                        ))
+                    }
+                    flushPage()
+                    currentOffset += verifiedEnd
+                    isContinuation = true
                 }
             }
         }
