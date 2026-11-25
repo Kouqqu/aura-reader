@@ -203,6 +203,7 @@ import com.aura.reader.data.model.LocalHolidaySeason
 fun LibraryScreen(
     viewModel: LibraryViewModel,
     onBookSelected: (Book) -> Unit,
+    onOpenBookAtWord: (Book, com.aura.reader.data.model.SavedWord) -> Unit = { b, _ -> onBookSelected(b) },
     onOpenCatalog: () -> Unit,
     onOpenOnboarding: () -> Unit = {}
 ) {
@@ -2099,13 +2100,7 @@ fun LibraryScreen(
             onDeleteWord = { viewModel.deleteSavedWord(it) },
             onOpenBookAtWord = { word ->
                 recentBooks.firstOrNull { it.id == word.bookId }?.let { book ->
-                    onBookSelected(
-                        book.copy(
-                            currentChapterIndex = word.chapterIndex,
-                            currentScrollOffset = 0,
-                            currentScrollPixelOffset = 0
-                        )
-                    )
+                    onOpenBookAtWord(book, word)
                 }
             },
             onDismiss = { showVocabularySheet = false }

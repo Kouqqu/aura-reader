@@ -183,6 +183,52 @@ class ReaderViewModel(
         }
     }
 
+    fun openBookAtWord(book: Book, savedWord: com.aura.reader.data.model.SavedWord) {
+        isAtBookEnd = false
+        val initialChapter = savedWord.chapterIndex.coerceAtLeast(0)
+        _currentChapterIndex.value = initialChapter
+        _savedScrollOffset.value = 0
+        _savedTextOffset.value = 0
+        _savedPixelOffset.value = 0
+        bookRepository.prepareBook(book)
+        viewModelScope.launch {
+            val result = bookRepository.openBook(book)
+            result.onSuccess { opened ->
+                val targetChapter = savedWord.chapterIndex.coerceIn(0, (opened.chapters.size - 1).coerceAtLeast(0))
+                val chapter = opened.chapters.getOrNull(targetChapter)
+                val word = savedWord.word.trim()
+                val context = savedWord.contextText.trim()
+                val targetBlock = if (chapter != null) {
+                    val foundContext = if (context.isNotBlank()) {
+                        chapter.blocks.indexOfFirst {
+                            it.text.contains(context) || (context.length > 20 && it.text.contains(context.take(30)))
+                        }
+                    } else -1
+                    if (foundContext >= 0) {
+                        foundContext
+                    } else if (word.isNotBlank()) {
+                        val foundWord = chapter.blocks.indexOfFirst { it.text.contains(word, ignoreCase = true) }
+                        if (foundWord >= 0) foundWord else 0
+                    } else 0
+                } else 0
+                _currentChapterIndex.value = targetChapter
+                _savedScrollOffset.value = targetBlock
+                _savedTextOffset.value = 0
+                _savedPixelOffset.value = 0
+                _targetTextOffset.value = 0
+                _targetScrollOffset.value = targetBlock
+                saveCurrentProgress()
+                if (word.isNotBlank()) {
+                    _highlightedWord.value = word
+                    kotlinx.coroutines.delay(2500)
+                    if (_highlightedWord.value == word) {
+                        _highlightedWord.value = null
+                    }
+                }
+            }
+        }
+    }
+
     fun setChapter(index: Int, offset: Int = 0, textOffset: Int = 0) {
         val book = currentBook.value ?: return
         if (index in book.chapters.indices) {

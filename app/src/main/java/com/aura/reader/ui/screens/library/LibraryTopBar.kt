@@ -1,6 +1,6 @@
 package com.aura.reader.ui.screens.library
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Translate
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.GridView
@@ -37,7 +37,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.LocalTextStyle
@@ -391,7 +390,7 @@ AnimatedContent(
         actions = {
             IconButton(onClick = onOpenVocabulary) {
                 Icon(
-                    imageVector = Icons.Rounded.Translate,
+                    imageVector = Icons.AutoMirrored.Rounded.MenuBook,
                     contentDescription = strings.savedWordsTabTitle,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )

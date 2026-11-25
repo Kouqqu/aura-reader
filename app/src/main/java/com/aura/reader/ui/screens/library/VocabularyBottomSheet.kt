@@ -28,7 +28,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
+import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
@@ -42,6 +44,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
@@ -414,11 +418,8 @@ fun VocabularyBottomSheet(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     FilterChip(
-                        selected = filterMode == VocabFilterMode.ALL && selectedBookId == null,
-                        onClick = {
-                            filterMode = VocabFilterMode.ALL
-                            selectedBookId = null
-                        },
+                        selected = filterMode == VocabFilterMode.ALL,
+                        onClick = { filterMode = VocabFilterMode.ALL },
                         label = { Text("Все (${savedWords.size})") }
                     )
                     FilterChip(
@@ -435,20 +436,79 @@ fun VocabularyBottomSheet(
                         },
                         label = { Text("Изучено ($masteredCount)") }
                     )
-                    bookGroups.forEach { (bId, title, count) ->
+                }
+
+                if (bookGroups.isNotEmpty()) {
+                    var bookMenuExpanded by remember { mutableStateOf(false) }
+                    val selectedBookLabel = remember(selectedBookId, bookGroups, savedWords.size) {
+                        if (selectedBookId == null) {
+                            "Все книги (${savedWords.size})"
+                        } else {
+                            val match = bookGroups.firstOrNull { it.first == selectedBookId }
+                            if (match != null) "${match.second} (${match.third})" else "Все книги"
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Box {
                         FilterChip(
-                            selected = selectedBookId == bId,
-                            onClick = {
-                                selectedBookId = if (selectedBookId == bId) null else bId
+                            selected = selectedBookId != null,
+                            onClick = { bookMenuExpanded = true },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Rounded.AutoStories,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    Icons.Rounded.ArrowDropDown,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             },
                             label = {
                                 Text(
-                                    text = "$title ($count)",
+                                    text = selectedBookLabel,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
                         )
+                        DropdownMenu(
+                            expanded = bookMenuExpanded,
+                            onDismissRequest = { bookMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Все книги (${savedWords.size})") },
+                                trailingIcon = if (selectedBookId == null) {
+                                    { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                                } else null,
+                                onClick = {
+                                    selectedBookId = null
+                                    bookMenuExpanded = false
+                                }
+                            )
+                            bookGroups.forEach { (bId, title, count) ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "$title ($count)",
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    },
+                                    trailingIcon = if (selectedBookId == bId) {
+                                        { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                                    } else null,
+                                    onClick = {
+                                        selectedBookId = bId
+                                        bookMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
 

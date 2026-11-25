@@ -137,6 +137,12 @@ fun AuraNavGraph(
                                     launchSingleTop = true
                                 }
                             },
+                            onOpenBookAtWord = { book, savedWord ->
+                                readerViewModel.openBookAtWord(book, savedWord)
+                                navController.navigate(NavRoutes.READER) {
+                                    launchSingleTop = true
+                                }
+                            },
                             onOpenCatalog = {
                                 navController.navigate(NavRoutes.CATALOG)
                             },
