@@ -813,47 +813,59 @@ fun ChapterTransitionSpread(
     onClick: () -> Unit = {}
 ) {
     val strings = LocalAppStrings.current
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { onClick() }
-            .padding(horizontal = 32.dp, vertical = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = if (isNext) Icons.Rounded.SkipNext else Icons.Rounded.SkipPrevious,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-            modifier = Modifier.size(40.dp)
+    val holidaySeason = com.aura.reader.data.model.LocalHolidaySeason.current
+    val isDark = settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.DARK ||
+        settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.AMOLED ||
+        (settings.themeMode == com.aura.reader.data.model.ReaderThemeMode.SYSTEM_DYNAMIC && androidx.compose.foundation.isSystemInDarkTheme())
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        com.aura.reader.ui.components.ChristmasChapterTransitionOverlay(
+            holidaySeason = holidaySeason,
+            isDark = isDark,
+            modifier = Modifier.matchParentSize()
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = if (isNext) strings.next.uppercase() else strings.previous.uppercase(),
-            style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.5.sp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "${strings.chapters} $chapterNumber",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        if (chapterTitle.isNotBlank()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { onClick() }
+                .padding(horizontal = 32.dp, vertical = 48.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = if (isNext) Icons.Rounded.SkipNext else Icons.Rounded.SkipPrevious,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                modifier = Modifier.size(40.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = if (isNext) strings.next.uppercase() else strings.previous.uppercase(),
+                style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.5.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = chapterTitle,
-                style = MaterialTheme.typography.bodyLarge,
-                fontFamily = resolvedFontFamily,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                text = "${strings.chapters} $chapterNumber",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
             )
+            if (chapterTitle.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = chapterTitle,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontFamily = resolvedFontFamily,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

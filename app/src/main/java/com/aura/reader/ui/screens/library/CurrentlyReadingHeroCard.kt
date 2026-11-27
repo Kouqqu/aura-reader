@@ -173,29 +173,30 @@ fun CurrentlyReadingHeroCard(
             .clip(RoundedCornerShape(24.dp))
             .clickable { onBookClick(book) }
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    if (isGlass) {
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                cardBg.copy(alpha = if (isDark) 0.18f else 0.08f),
-                                Color.Transparent
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        if (isGlass) {
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    cardBg.copy(alpha = if (isDark) 0.18f else 0.08f),
+                                    Color.Transparent
+                                )
                             )
-                        )
-                    } else {
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                cardBg.copy(alpha = if (isDark) 0.32f else 0.10f),
-                                cardBg.copy(alpha = if (isDark) 0.10f else 0.03f),
-                                Color.Transparent
+                        } else {
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    cardBg.copy(alpha = if (isDark) 0.32f else 0.10f),
+                                    cardBg.copy(alpha = if (isDark) 0.10f else 0.03f),
+                                    Color.Transparent
+                                )
                             )
-                        )
-                    }
-                )
-                .padding(18.dp)
-        ) {
+                        }
+                    )
+                    .padding(18.dp)
+            ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -405,6 +406,12 @@ fun CurrentlyReadingHeroCard(
                     }
                 }
             }
+            }
+            com.aura.reader.ui.components.ChristmasHeroCardDecoration(
+                holidaySeason = holidaySeason,
+                isDark = isDark,
+                modifier = Modifier.matchParentSize()
+            )
         }
     }
 }

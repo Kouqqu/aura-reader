@@ -91,6 +91,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.aura.reader.data.model.HolidaySeason
 import com.aura.reader.data.model.LocalHolidaySeason
+import com.aura.reader.ui.components.ChristmasLogoDecoration
+import com.aura.reader.ui.components.ChristmasTopBarOverlay
+import com.aura.reader.ui.components.isChristmasSeason
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.platform.LocalDensity
 import kotlin.math.sin
@@ -284,6 +287,16 @@ AnimatedContent(
                     }
                 }
         ) {
+            val topBarScrollAlpha = (1f - scrollBehavior.state.collapsedFraction / 0.35f).coerceIn(0f, 1f) *
+                (1f - pageOffset).coerceIn(0f, 1f)
+            if (holidaySeason.isChristmasSeason()) {
+                ChristmasTopBarOverlay(
+                    holidaySeason = holidaySeason,
+                    scrollAlpha = topBarScrollAlpha,
+                    isThemeDark = isThemeDark,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
             LargeTopAppBar(
                 modifier = Modifier.graphicsLayer {
                     translationX = -pageOffset * size.width * 0.35f
@@ -305,22 +318,37 @@ AnimatedContent(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(titleSpacing)
                         ) {
-                            Surface(
-                                shape = RoundedCornerShape(logoCorner),
-                                color = Color(0xFF1E1B4B),
-                                modifier = Modifier
-                                    .size(logoBoxSize)
-                                    .onGloballyPositioned { logoCoords ->
-                                        if (!isSmallTitle) {
-                                            expandedLogoCoords = logoCoords
+                            Box(contentAlignment = Alignment.Center) {
+                                Surface(
+                                    shape = RoundedCornerShape(logoCorner),
+                                    color = Color(0xFF1E1B4B),
+                                    modifier = Modifier
+                                        .size(logoBoxSize)
+                                        .onGloballyPositioned { logoCoords ->
+                                            if (!isSmallTitle) {
+                                                expandedLogoCoords = logoCoords
+                                            }
                                         }
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        AuraLogoIcon(
+                                            modifier = Modifier.size(if (isSmallTitle) 20.dp else 34.dp),
+                                            bookColor = MaterialTheme.colorScheme.primary,
+                                            lineColor = MaterialTheme.colorScheme.primaryContainer
+                                        )
                                     }
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    AuraLogoIcon(
-                                        modifier = Modifier.size(if (isSmallTitle) 20.dp else 34.dp),
-                                        bookColor = MaterialTheme.colorScheme.primary,
-                                        lineColor = MaterialTheme.colorScheme.primaryContainer
+                                }
+                                if (holidaySeason.isChristmasSeason()) {
+                                    ChristmasLogoDecoration(
+                                        holidaySeason = holidaySeason,
+                                        isSmallTitle = isSmallTitle,
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .size(if (isSmallTitle) 14.dp else 22.dp)
+                                            .offset(
+                                                x = if (isSmallTitle) 4.dp else 6.dp,
+                                                y = if (isSmallTitle) (-5).dp else (-8).dp
+                                            )
                                     )
                                 }
                             }

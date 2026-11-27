@@ -2109,20 +2109,31 @@ fun LibraryScreen(
 
     if (holidayBurstKey != 0L) {
         val holidaySeason = com.aura.reader.data.model.LocalHolidaySeason.current
-        PixelFullScreenBurst(
-            triggerKey = holidayBurstKey,
-            origin = if (holidayBurstOrigin != Offset.Zero) {
-                holidayBurstOrigin
-            } else {
-                Offset(
-                    x = context.resources.displayMetrics.widthPixels / 2f,
-                    y = context.resources.displayMetrics.heightPixels / 4f
-                )
-            },
-            colors = holidaySeason.burstColors,
-            symbols = holidaySeason.burstSymbols,
-            durationMillis = 2600
-        )
+        val burstOrigin = if (holidayBurstOrigin != Offset.Zero) {
+            holidayBurstOrigin
+        } else {
+            Offset(
+                x = context.resources.displayMetrics.widthPixels / 2f,
+                y = context.resources.displayMetrics.heightPixels / 4f
+            )
+        }
+        if (holidaySeason == com.aura.reader.data.model.HolidaySeason.CHRISTMAS_WESTERN ||
+            holidaySeason == com.aura.reader.data.model.HolidaySeason.CHRISTMAS_ORTHODOX
+        ) {
+            com.aura.reader.ui.components.ChristmasSnowGlobeBurst(
+                triggerKey = holidayBurstKey,
+                origin = burstOrigin,
+                holidaySeason = holidaySeason
+            )
+        } else {
+            PixelFullScreenBurst(
+                triggerKey = holidayBurstKey,
+                origin = burstOrigin,
+                colors = holidaySeason.burstColors,
+                symbols = holidaySeason.burstSymbols,
+                durationMillis = 2600
+            )
+        }
     }
 
     if (showSetupPrivatePasswordDialog) {
