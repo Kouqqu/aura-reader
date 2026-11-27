@@ -93,7 +93,7 @@ import com.aura.reader.data.model.HolidaySeason
 import com.aura.reader.data.model.LocalHolidaySeason
 import com.aura.reader.ui.components.ChristmasLogoDecoration
 import com.aura.reader.ui.components.ChristmasTopBarOverlay
-import com.aura.reader.ui.components.isChristmasSeason
+import com.aura.reader.ui.components.hasWinterEffects
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.platform.LocalDensity
 import kotlin.math.sin
@@ -289,7 +289,7 @@ AnimatedContent(
         ) {
             val topBarScrollAlpha = (1f - scrollBehavior.state.collapsedFraction / 0.35f).coerceIn(0f, 1f) *
                 (1f - pageOffset).coerceIn(0f, 1f)
-            if (holidaySeason.isChristmasSeason()) {
+            if (holidaySeason.hasWinterEffects()) {
                 ChristmasTopBarOverlay(
                     holidaySeason = holidaySeason,
                     scrollAlpha = topBarScrollAlpha,
@@ -318,11 +318,15 @@ AnimatedContent(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(titleSpacing)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
+                            val hasLogoOrnament = holidaySeason.hasWinterEffects()
+                            val ornamentTopPad = if (hasLogoOrnament) (if (isSmallTitle) 5.dp else 9.dp) else 0.dp
+                            val ornamentEndPad = if (hasLogoOrnament) (if (isSmallTitle) 4.dp else 7.dp) else 0.dp
+                            Box(contentAlignment = Alignment.BottomStart) {
                                 Surface(
                                     shape = RoundedCornerShape(logoCorner),
                                     color = Color(0xFF1E1B4B),
                                     modifier = Modifier
+                                        .padding(top = ornamentTopPad, end = ornamentEndPad)
                                         .size(logoBoxSize)
                                         .onGloballyPositioned { logoCoords ->
                                             if (!isSmallTitle) {
@@ -338,17 +342,13 @@ AnimatedContent(
                                         )
                                     }
                                 }
-                                if (holidaySeason.isChristmasSeason()) {
+                                if (hasLogoOrnament) {
                                     ChristmasLogoDecoration(
                                         holidaySeason = holidaySeason,
                                         isSmallTitle = isSmallTitle,
                                         modifier = Modifier
                                             .align(Alignment.TopEnd)
-                                            .size(if (isSmallTitle) 14.dp else 22.dp)
-                                            .offset(
-                                                x = if (isSmallTitle) 4.dp else 6.dp,
-                                                y = if (isSmallTitle) (-5).dp else (-8).dp
-                                            )
+                                            .size(if (isSmallTitle) 15.dp else 24.dp)
                                     )
                                 }
                             }

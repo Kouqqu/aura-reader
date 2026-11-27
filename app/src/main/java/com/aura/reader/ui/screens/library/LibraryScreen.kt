@@ -2117,9 +2117,12 @@ fun LibraryScreen(
                 y = context.resources.displayMetrics.heightPixels / 4f
             )
         }
-        if (holidaySeason == com.aura.reader.data.model.HolidaySeason.CHRISTMAS_WESTERN ||
-            holidaySeason == com.aura.reader.data.model.HolidaySeason.CHRISTMAS_ORTHODOX
-        ) {
+        if (holidaySeason == com.aura.reader.data.model.HolidaySeason.NEW_YEAR) {
+            com.aura.reader.ui.components.NewYearFireworksBurst(
+                triggerKey = holidayBurstKey,
+                origin = burstOrigin
+            )
+        } else if (holidaySeason.isWinterSeason) {
             com.aura.reader.ui.components.ChristmasSnowGlobeBurst(
                 triggerKey = holidayBurstKey,
                 origin = burstOrigin,
